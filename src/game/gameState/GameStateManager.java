@@ -31,7 +31,7 @@ public class GameStateManager {
 
 		gameStates = new ArrayList<GameState>();
 		JukeBox.init();
-		currentState = WELCOMESTATE;
+		currentState = MENUSTATE;
 		gameStates.add(new MenuState(this));
 		gameStates.add(new PlayState(this));
 		gameStates.add(new GameOverState(this));

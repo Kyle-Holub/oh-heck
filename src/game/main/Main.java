@@ -1,6 +1,7 @@
 package game.main;
 
 import java.awt.EventQueue;
+import java.util.Objects;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -36,22 +37,17 @@ import javax.swing.JFrame;
  */
 public class Main extends JFrame {
 
-	private static final long serialVersionUID = -1711838873031101909L;
 	public static final boolean DEBUG = false;
-	public static final String VERSION = "v1.0.4";
+	public static final String VERSION = "v1.0.5";
 
 	public static void main(String[] args) {
 		final Main main = new Main();
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				main.launch();
-			}
-		});
+		EventQueue.invokeLater(main::launch);
 	}
 
 	private void launch() {
 		setTitle("Oh Heck!");
-		ImageIcon icon = new ImageIcon(getClass().getResource("/images/favicon2.png"));
+		ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/images/favicon2.png")));
 		setIconImage(icon.getImage());
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setResizable(false);

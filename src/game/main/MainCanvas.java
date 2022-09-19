@@ -13,9 +13,6 @@ import game.Game;
  */
 public class MainCanvas extends Canvas implements Runnable {
 
-	private static final long serialVersionUID = 6672476347767342423L;
-	
-
 	// target frames per second
 	private static final float MAX_FPS = 65;
 
