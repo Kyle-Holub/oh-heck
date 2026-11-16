@@ -13,6 +13,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -48,11 +49,12 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 
 	// timings, in seconds at normal speed
 	private static final float AI_DELAY = 0.8f;
-	private static final float TRICK_PAUSE = 1.7f, COLLECT_TIME = 0.45f;
+	private static final float TRICK_PAUSE = 1.7f, COLLECT_TIME = 0.45f, TRICK_WON_SHOW = 0.9f;
+	private static final float HAND_END_SHOW = 2.4f;
 	private static final float PLAY_FLIGHT = 0.25f;
 	private static final float DEAL_INTERVAL = 0.06f, DEAL_FLIGHT = 0.3f;
 	private static final float HINT_TIME = 2.2f;
-	private static final float AUTOPLAY_DELAY = 1.2f, AUTOPLAY_CONFIRM = 0.7f, HAND_OVER_AUTO = 3f;
+	private static final float AUTOPLAY_DELAY = 1.2f, AUTOPLAY_CONFIRM = 0.7f, HAND_OVER_AUTO = 2.2f;
 
 	// touch
 	private static final float DRAG_START = 12f, LIFT = 22f, SELECTED_LIFT = 44f;
@@ -79,7 +81,9 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	private Match match;
 	private float time; // game time, for animations
 	private float timer; // computer turn / autoplay timer
-	private float trickPause;
+	private float trickPause, trickTotal;
+	private boolean humanWonTrick;
+	private float handOverT; // time since the hand ended: first "Bid Tricks!"/"Set!", then the table
 	private String lastTrickText = "";
 	private String hint = "";
 	private float hintTime;
@@ -287,8 +291,12 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			}
 			break;
 		case HAND_OVER:
-			match.nextHand();
-			timer = 0;
+			if (handOverT < HAND_END_SHOW) {
+				handOverT = HAND_END_SHOW;
+			} else {
+				match.nextHand();
+				timer = 0;
+			}
 			break;
 		case GAME_OVER:
 			newGame();
@@ -431,12 +439,9 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			}
 			break;
 		case HAND_OVER:
-			if (options.autoplayHuman) {
-				timer += dt;
-				if (timer >= HAND_OVER_AUTO) {
-					timer = 0;
-					tap(w / 2, h / 2);
-				}
+			handOverT += dt;
+			if (options.autoplayHuman && handOverT >= HAND_END_SHOW + HAND_OVER_AUTO) {
+				tap(w / 2, h / 2);
 			}
 			break;
 		default:
@@ -478,7 +483,10 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			Card best = trick.get(match.lastTrickSeats().indexOf(winner));
 			boolean trumped = best.suit() == match.trump() && trick.get(0).suit() != match.trump();
 			lastTrickText = NAMES[winner] + (trumped ? " trumped" : " won") + " with the " + pretty(best);
-			trickPause = TRICK_PAUSE;
+			humanWonTrick = winner == HUMAN;
+			trickTotal = TRICK_PAUSE + (humanWonTrick ? TRICK_WON_SHOW : 0);
+			trickPause = trickTotal;
+			handOverT = 0;
 		}
 	}
 
@@ -560,7 +568,11 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			if (match.phase() == Match.Phase.BIDDING && match.currentSeat() == HUMAN) {
 				drawBidPanel();
 			} else if (match.phase() == Match.Phase.HAND_OVER) {
-				drawHandResults();
+				if (handOverT < HAND_END_SHOW) {
+					drawHandEnd();
+				} else {
+					drawHandResults();
+				}
 			} else if (match.phase() == Match.Phase.GAME_OVER) {
 				drawGameOver();
 			}
@@ -628,31 +640,43 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		}
 	}
 
-	/** Top-left corner of an opponent's name tag. */
-	private float tagX(int seat) {
-		return seat == 1 ? 12 : seat == 2 ? w / 2 - 70 : w - 152;
+	// ---- player panels: name, dealer icon, score, and a row of bid/trick icons as in the original game
+
+	private static final float PANEL_W = 214, PANEL_H = 80;
+	private static final float ICON_W = 21, ICON_H = 27, ICON_GAP = 3;
+	private static final Color PANEL_BG = new Color(0.04f, 0.06f, 0.2f, 0.78f);
+	private static final Color TURN_BG = new Color(0f, 0.5f, 0.3f, 0.85f);
+	private static final Color TURN_EDGE = new Color(0f, 0.96f, 0.5f, 1f);
+	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.38f);
+
+	/** Top-left corner of a seat's panel. */
+	private float panelX(int seat) {
+		return seat == HUMAN || seat == 1 ? 12 : seat == 2 ? w / 2 - PANEL_W / 2 : w - 12 - PANEL_W;
 	}
 
-	private float tagTop(int seat) {
-		return seat == 2 ? h - 8 : h / 2 + 70;
+	private float panelTop(int seat) {
+		return seat == HUMAN ? 12 + PANEL_H : seat == 2 ? h - 6 : h / 2 + 78;
 	}
 
 	private void drawOpponent(int seat) {
-		float x = tagX(seat), top = tagTop(seat);
-		BitmapFont f = font(1.1f);
-		f.setColor(isTurn(seat) ? GOLD : Color.WHITE);
-		f.draw(batch, NAMES[seat] + (match.dealer() == seat ? "  (dealer)" : ""), x, top);
-		f.setColor(Color.WHITE);
-		f.draw(batch, bidLine(seat), x, top - LINE);
-		f.draw(batch, "Score " + match.score(seat), x, top - 2 * LINE);
-
+		drawPanel(seat);
 		int n = isDealing() ? dealtTo(seat) : match.hand(seat).size();
 		float bw = Assets.CARD_W * BACK_SCALE, bh = Assets.CARD_H * BACK_SCALE;
-		float y = top - 3 * LINE - 8 - bh;
+		Vector2 fan = fanOrigin(seat);
 		for (int i = 0; i < n; i++) {
-			float cx = seat == 3 ? x + 140 - bw - (n - 1 - i) * 12 : x + i * 12;
-			batch.draw(assets.cardBack, cx, y, bw, bh);
+			float cx = seat == 3 ? fan.x - bw - (n - 1 - i) * 12 : fan.x + i * 12;
+			batch.draw(assets.cardBack, cx, fan.y, bw, bh);
 		}
+	}
+
+	/** Where an opponent's face-down cards start: beside the top panel, under the side panels. */
+	private Vector2 fanOrigin(int seat) {
+		float bh = Assets.CARD_H * BACK_SCALE;
+		float x = panelX(seat), top = panelTop(seat);
+		if (seat == 2) {
+			return new Vector2(x + PANEL_W + 10, top - PANEL_H / 2 - bh / 2);
+		}
+		return new Vector2(seat == 3 ? x + PANEL_W : x, top - PANEL_H - 6 - bh);
 	}
 
 	/** Centre of where a seat's cards are, for cards flying to and from it. */
@@ -660,10 +684,9 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		if (seat == HUMAN) {
 			return new Vector2(w / 2, 70);
 		}
-		float bh = Assets.CARD_H * BACK_SCALE;
-		float y = tagTop(seat) - 3 * LINE - 8 - bh / 2;
-		float x = seat == 1 ? 12 + 40 : seat == 2 ? w / 2 : w - 52;
-		return new Vector2(x, y);
+		Vector2 f = fanOrigin(seat);
+		float bw = Assets.CARD_W * BACK_SCALE, bh = Assets.CARD_H * BACK_SCALE;
+		return new Vector2(seat == 3 ? f.x - bw : f.x + bw, f.y + bh / 2);
 	}
 
 	private boolean isTurn(int seat) {
@@ -672,18 +695,57 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	}
 
 	private void drawHumanTag() {
-		BitmapFont f = font(1.1f);
-		float x = 12, y = 12 + 3 * LINE;
-		f.setColor(isTurn(HUMAN) ? GOLD : Color.WHITE);
-		f.draw(batch, "You" + (match.dealer() == HUMAN ? "  (dealer)" : ""), x, y);
-		f.setColor(Color.WHITE);
-		f.draw(batch, bidLine(HUMAN), x, y - LINE);
-		f.draw(batch, "Score " + match.score(HUMAN), x, y - 2 * LINE);
+		drawPanel(HUMAN);
 	}
 
-	private String bidLine(int seat) {
-		Integer b = match.bid(seat);
-		return "Bid " + (b == null ? "-" : b.toString()) + "   Won " + match.tricksWon(seat);
+	private void drawPanel(int seat) {
+		float x = panelX(seat), top = panelTop(seat), y = top - PANEL_H;
+		boolean turn = isTurn(seat);
+		if (turn) {
+			rect(x - 2, y - 2, PANEL_W + 4, PANEL_H + 4, TURN_EDGE);
+		}
+		rect(x, y, PANEL_W, PANEL_H, turn ? TURN_BG : PANEL_BG);
+
+		// name, dealer icon and score
+		BitmapFont f = font(1.3f);
+		f.setColor(Color.WHITE);
+		glyphs.setText(f, NAMES[seat]);
+		f.draw(batch, NAMES[seat], x + 10, top - 9);
+		if (match.dealer() == seat) {
+			batch.draw(assets.dealerIcon, x + 16 + glyphs.width, top - 32, 24, 24);
+		}
+		f.setColor(GOLD);
+		text(f, String.valueOf(match.score(seat)), x + PANEL_W - 10, top - 9, false);
+
+		// one icon per trick bid or won: faded = bid but not won yet, solid = won, red = won over the bid
+		float iy = y + 9;
+		Integer bid = match.bid(seat);
+		int won = match.tricksWon(seat);
+		if (bid == null) {
+			BitmapFont s = font(1f);
+			s.setColor(Color.LIGHT_GRAY);
+			s.draw(batch, isDealing() ? "" : turn ? "bidding..." : "no bid yet", x + 10, iy + 20);
+			return;
+		}
+		int icons = Math.max(bid, won);
+		if (icons == 0) {
+			BitmapFont s = font(1f);
+			s.setColor(Color.LIGHT_GRAY);
+			s.draw(batch, "bid 0", x + 10, iy + 20);
+			return;
+		}
+		for (int i = 0; i < icons; i++) {
+			float ix = x + 10 + i * (ICON_W + ICON_GAP);
+			if (i < Math.min(bid, won)) {
+				batch.draw(assets.trickIcon, ix, iy, ICON_W, ICON_H);
+			} else if (i < bid) {
+				batch.setColor(BID_FADE);
+				batch.draw(assets.trickIcon, ix, iy, ICON_W, ICON_H);
+				batch.setColor(Color.WHITE);
+			} else {
+				batch.draw(assets.overIcon, ix, iy, ICON_W, ICON_H);
+			}
+		}
 	}
 
 	private void drawHand() {
@@ -697,7 +759,8 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		}
 		int shown = isDealing() ? dealtTo(HUMAN) : n;
 		float cw = Assets.CARD_W * HAND_SCALE, ch = Assets.CARD_H * HAND_SCALE;
-		float maxWidth = w - 300;
+		// leave room for your panel on the left and the menu button on the right
+		float maxWidth = Math.max(330, w - 2 * (PANEL_W + 26));
 		float gap = n == 1 ? 0 : Math.min(cw + 6, (maxWidth - cw) / (n - 1));
 		float start = (w - (gap * (n - 1) + cw)) / 2;
 
@@ -738,7 +801,15 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			cards = match.lastTrick();
 			seats = match.lastTrickSeats();
 			winner = match.lastTrickWinner();
-			collect = MathUtils.clamp(1 - trickPause / COLLECT_TIME, 0, 1);
+			float elapsed = trickTotal - trickPause;
+			collect = MathUtils.clamp((elapsed - (TRICK_PAUSE - COLLECT_TIME)) / COLLECT_TIME, 0, 1);
+			if (humanWonTrick && elapsed > TRICK_PAUSE - COLLECT_TIME / 2) {
+				float a = MathUtils.clamp((elapsed - (TRICK_PAUSE - COLLECT_TIME / 2)) / 0.3f, 0, 1);
+				drawArt(assets.trickWonText, w / 2, h / 2 + 5, 0.8f, a);
+			}
+			if (elapsed >= TRICK_PAUSE) {
+				return; // the cards have gone to the winner
+			}
 		} else {
 			cards = match.currentTrick();
 			seats = match.currentTrickSeats();
@@ -805,10 +876,13 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
 		rect(px, py, pw, ph, PANEL);
 
-		BitmapFont f = font(1.3f);
-		f.setColor(pendingBid >= 0 ? GOLD : Color.WHITE);
-		text(f, pendingBid >= 0 ? "Tap " + pendingBid + " again to bid " + pendingBid : "How many tricks will you take?",
-				w / 2, py + ph - 14, true);
+		if (pendingBid >= 0) {
+			BitmapFont f = font(1.3f);
+			f.setColor(GOLD);
+			text(f, "Tap " + pendingBid + " again to bid " + pendingBid, w / 2, py + ph - 14, true);
+		} else {
+			drawArt(assets.makeBidText, w / 2, py + ph - 26, 0.52f, 1f);
+		}
 		BitmapFont s = font(1f);
 		s.setColor(Color.LIGHT_GRAY);
 		int forbidden = match.forbiddenBid();
@@ -830,6 +904,38 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			bf.setColor(ok ? Color.WHITE : DIM);
 			text(bf, String.valueOf(b), r.x + bs / 2, r.y + bs / 2 + 12, true);
 		}
+	}
+
+	/** Draws one of the original title-art images centred on (cx, cy). */
+	private void drawArt(Texture t, float cx, float cy, float scale, float alpha) {
+		float aw = t.getWidth() * scale, ah = t.getHeight() * scale;
+		batch.setColor(1f, 1f, 1f, alpha);
+		batch.draw(t, cx - aw / 2, cy - ah / 2, aw, ah);
+		batch.setColor(Color.WHITE);
+	}
+
+	/** The original end-of-hand moment: "Bid Tricks!" or "You got set!", and how each opponent did. */
+	private void drawHandEnd() {
+		float a = MathUtils.clamp(handOverT / 0.3f, 0, 1);
+		drawArt(match.madeBid(HUMAN) ? assets.bidTricksText : assets.setText, w / 2, h / 2 + 5, 0.95f, a);
+		BitmapFont f = assets.serif;
+		f.getData().setScale(1.9f * Assets.SERIF_BASE);
+		for (int seat = 1; seat <= 3; seat++) {
+			String s = match.madeBid(seat) ? "Bid tricks!" : "Set!";
+			glyphs.setText(f, s);
+			Vector2 o = fanOrigin(seat);
+			float bh = Assets.CARD_H * BACK_SCALE;
+			float x = seat == 3 ? o.x - glyphs.width : o.x;
+			float y = o.y + bh / 2 + glyphs.height / 2;
+			f.setColor(0f, 0f, 0f, 0.8f * a);
+			f.draw(batch, s, x + 2, y - 2);
+			Color c = match.madeBid(seat) ? GOLD : SET_RED;
+			f.setColor(c.r, c.g, c.b, a);
+			f.draw(batch, s, x, y);
+		}
+		BitmapFont t = font(1f);
+		t.setColor(Color.LIGHT_GRAY);
+		text(t, "Tap for the scores", w / 2, h / 2 - 40, true);
 	}
 
 	private void drawHandResults() {
@@ -1010,7 +1116,8 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			return "deal:" + hand;
 		}
 		if (trickPause > 0) {
-			return (trickPause < COLLECT_TIME ? "collect:" : "trick:") + hand;
+			float elapsed = trickTotal - trickPause;
+			return (elapsed >= TRICK_PAUSE ? "trickwon:" : elapsed > TRICK_PAUSE - COLLECT_TIME ? "collect:" : "trick:") + hand;
 		}
 		switch (match.phase()) {
 		case BIDDING:
@@ -1024,7 +1131,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			}
 			return "playing:" + hand;
 		case HAND_OVER:
-			return "handover:" + hand;
+			return (handOverT < HAND_END_SHOW ? "handend:" : "handover:") + hand;
 		default:
 			return "gameover";
 		}

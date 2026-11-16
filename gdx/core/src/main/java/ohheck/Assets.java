@@ -26,6 +26,10 @@ public final class Assets implements Disposable {
 	public final Texture cardSheet;
 	public final Texture cardBack;
 	public final Texture titleText;
+	/** Title art from the original game. */
+	public final Texture bidTricksText, setText, trickWonText, makeBidText;
+	/** Player bar icons from the original game: dealer, trick, trick over the bid. */
+	public final Texture dealerIcon, trickIcon, overIcon;
 	/** A 1x1 white texture, tinted to draw panels and buttons. */
 	public final Texture white;
 	/** Sans-serif text for the table and panels. */
@@ -41,6 +45,13 @@ public final class Assets implements Disposable {
 		cardSheet = mipmapped("images/cards.png");
 		cardBack = mipmapped("images/cardback.png");
 		titleText = mipmapped("images/titleText.png");
+		bidTricksText = mipmapped("images/bidTricks.png");
+		setText = mipmapped("images/setText.png");
+		trickWonText = mipmapped("images/trickWonText.png");
+		makeBidText = mipmapped("images/makeBidText.png");
+		dealerIcon = pixelArt("images/dealerIcon.png");
+		trickIcon = pixelArt("images/trickIcon.png");
+		overIcon = pixelArt("images/underBidIcon.png");
 		for (int suit = 0; suit < 4; suit++) {
 			for (int rank = 0; rank < 13; rank++) {
 				faces[suit][rank] = new TextureRegion(cardSheet, rank * CARD_W, suit * CARD_H, CARD_W, CARD_H);
@@ -77,6 +88,13 @@ public final class Assets implements Disposable {
 		return t;
 	}
 
+	/** Small icons: scaled up with hard pixel edges rather than blurred. */
+	private static Texture pixelArt(String path) {
+		Texture t = new Texture(Gdx.files.internal(path));
+		t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+		return t;
+	}
+
 	private static Texture linear(Texture t) {
 		t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 		return t;
@@ -88,6 +106,9 @@ public final class Assets implements Disposable {
 		cardSheet.dispose();
 		cardBack.dispose();
 		titleText.dispose();
+		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, dealerIcon, trickIcon, overIcon }) {
+			t.dispose();
+		}
 		white.dispose();
 		font.getRegion().getTexture().dispose();
 		serif.getRegion().getTexture().dispose();

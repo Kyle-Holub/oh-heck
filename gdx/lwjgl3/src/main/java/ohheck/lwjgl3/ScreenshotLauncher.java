@@ -23,7 +23,7 @@ import ohheck.OhHeckGame;
 public class ScreenshotLauncher {
 
 	/** Prefixes of states to capture, as reported by PlayScreen.stateTag(). */
-	private static final String[] WANTED = { "title", "rules", "options", "deal:3", "bid:3", "bidconfirm:3", "selected:4:", "trick:4", "collect:4", "handover:4", "menu:6", "play:8:", "gameover" };
+	private static final String[] WANTED = { "title", "rules", "options", "deal:3", "bid:3", "bidconfirm:3", "selected:4:", "trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "menu:6", "play:8:", "gameover" };
 
 	public static void main(String[] args) {
 		final String outDir = args.length > 0 ? args[0] : "screenshots";
