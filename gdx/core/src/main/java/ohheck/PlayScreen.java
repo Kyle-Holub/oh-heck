@@ -62,6 +62,8 @@ public class PlayScreen extends ScreenAdapter {
 	private static final Color BUTTON_OFF = new Color(0.3f, 0.3f, 0.3f, 1f);
 	private static final Color GOLD = new Color(1f, 0.82f, 0.25f, 1f);
 	private static final Color DIM = new Color(0.55f, 0.55f, 0.55f, 1f);
+	private static final Color MENU_BACKDROP = new Color(0f, 0f, 0f, 0.78f);
+	private static final Color MENU_BUTTON = new Color(0.2f, 0.2f, 0.2f, 1f);
 	private static final Color SET_RED = new Color(1f, 0.55f, 0.5f, 1f);
 
 	private final Assets assets;
@@ -540,9 +542,11 @@ public class PlayScreen extends ScreenAdapter {
 		if (isDealing()) {
 			drawDealing();
 		}
-		drawMenuButton();
+		if (!menuOpen) {
+			drawMenuButton();
+		}
 
-		if (trickPause <= 0 && !isDealing()) {
+		if (trickPause <= 0 && !isDealing() && !menuOpen) {
 			if (match.phase() == Match.Phase.BIDDING && match.currentSeat() == HUMAN) {
 				drawBidPanel();
 			} else if (match.phase() == Match.Phase.HAND_OVER) {
@@ -903,7 +907,7 @@ public class PlayScreen extends ScreenAdapter {
 	}
 
 	private void drawMenu() {
-		rect(0, 0, w, h, new Color(0, 0, 0, 0.55f));
+		rect(0, 0, w, h, MENU_BACKDROP);
 		float bw = 260, bh = 56, gap = 14;
 		float total = MENU.length * bh + (MENU.length - 1) * gap;
 		float top = h / 2 + total / 2 + 20;
@@ -915,7 +919,7 @@ public class PlayScreen extends ScreenAdapter {
 		for (int i = 0; i < MENU.length; i++) {
 			Rectangle r = new Rectangle((w - bw) / 2, top - (i + 1) * bh - i * gap, bw, bh);
 			menuItems.add(r);
-			rect(r.x, r.y, r.width, r.height, i == 0 ? BUTTON : PANEL);
+			rect(r.x, r.y, r.width, r.height, i == 0 ? BUTTON : MENU_BUTTON);
 			f.setColor(Color.WHITE);
 			text(f, MENU[i], w / 2, r.y + bh / 2 + 10, true);
 		}
