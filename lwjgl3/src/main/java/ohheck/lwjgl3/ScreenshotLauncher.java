@@ -52,7 +52,7 @@ public class ScreenshotLauncher {
 					done[0] = false;
 				}
 				// let each state settle before capturing it; the menus need a moment longer
-				float settle = state.equals("title") ? 1.2f : state.equals("rules") ? 0.75f : state.startsWith("deal") ? 0.7f : state.startsWith("shuffle") ? 0.7f : 0.12f;
+				float settle = state.equals("title") ? 0.8f : state.equals("rules") ? 0.45f : state.startsWith("deal") ? 0.7f : state.startsWith("shuffle") ? 0.7f : 0.12f;
 				if (!done[0] && (now - seenAt[0]) / 1e9f >= settle) {
 					done[0] = true;
 					for (String w : WANTED) {
