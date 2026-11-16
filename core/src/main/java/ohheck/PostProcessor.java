@@ -34,12 +34,15 @@ final class PostProcessor implements Disposable {
 	private static final String HEADER = "#ifdef GL_ES\nprecision mediump float;\n#endif\n"
 			+ "varying vec2 v_uv;\nuniform sampler2D u_texture;\n";
 
-	/** Keeps only the bright parts (gold highlights, glints, sparkles). */
+	/**
+	 * Keeps only the brightest parts: sparkles, glints and gold highlights, not
+	 * the cream card faces (whose brightest channel stays below the threshold).
+	 */
 	private static final String BRIGHT = HEADER
 			+ "void main() {\n"
 			+ "  vec3 c = texture2D(u_texture, v_uv).rgb;\n"
-			+ "  float l = dot(c, vec3(0.299, 0.587, 0.114));\n"
-			+ "  gl_FragColor = vec4(c * smoothstep(0.55, 0.9, l), 1.0);\n"
+			+ "  float m = max(c.r, max(c.g, c.b));\n"
+			+ "  gl_FragColor = vec4(c * smoothstep(0.96, 1.0, m), 1.0);\n"
 			+ "}\n";
 
 	/** One direction of a 9-tap Gaussian blur. */
@@ -59,7 +62,7 @@ final class PostProcessor implements Disposable {
 			+ "uniform vec2 u_size;\n"
 			+ "void main() {\n"
 			+ "  vec3 c = texture2D(u_texture, v_uv).rgb;\n"
-			+ "  c += texture2D(u_bloom, v_uv).rgb * 0.75;\n"
+			+ "  c += texture2D(u_bloom, v_uv).rgb * 0.55;\n"
 			// warm grade: lift reds, ease blues, a touch more contrast in the mids
 			+ "  c *= vec3(1.04, 1.0, 0.92);\n"
 			+ "  c = mix(c, c * c * (3.0 - 2.0 * c), 0.25);\n"

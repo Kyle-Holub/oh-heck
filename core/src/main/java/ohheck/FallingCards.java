@@ -166,7 +166,8 @@ public final class FallingCards {
 		float lit = 0.38f + 0.62f * Math.abs(n.dot(LIGHT));
 		// further away is darker, so the shower has depth
 		float depth = (f.pos.z - NEAR) / (FAR - NEAR);
-		float b = lit * MathUtils.lerp(1.05f, 0.42f, depth);
+		// (capped at 1: packed vertex colours overflow into the next channel above that)
+		float b = Math.min(0.94f, lit * MathUtils.lerp(1.05f, 0.42f, depth));
 		float d = defocus(f.pos.z);
 
 		// a glint when the card turns its face towards the light
