@@ -1,2 +1,2 @@
 rootProject.name = 'oh-heck'
-include 'core', 'android'
+include 'core', 'android', 'lwjgl3'
