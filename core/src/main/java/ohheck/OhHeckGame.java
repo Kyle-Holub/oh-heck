@@ -52,9 +52,12 @@ public class OhHeckGame extends Game {
 	@Override
 	public void render() {
 		boolean effects = settings.effects() && post.begin();
-		super.render();
+		float delta = options.fixedStep > 0 ? options.fixedStep : Gdx.graphics.getDeltaTime();
+		if (getScreen() != null) {
+			getScreen().render(delta);
+		}
 		if (effects) {
-			post.end(Gdx.graphics.getDeltaTime());
+			post.end(delta);
 		}
 		Screen s = getScreen();
 		if (options.frameListener != null && s instanceof Tagged) {

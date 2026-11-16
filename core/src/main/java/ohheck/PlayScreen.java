@@ -432,6 +432,12 @@ public class PlayScreen extends BaseScreen {
 		hintTime -= dt;
 		updateSparks(dt);
 
+		// scripted runs play some hands instantly, to get to the interesting ones sooner
+		while (options.autoplayHuman && match.phase() == Match.Phase.BIDDING && match.handIndex() != dealtHand
+				&& options.skipHands.contains(match.handIndex() + 1)) {
+			playHandInstantly();
+		}
+
 		// a new hand starts with the deal
 		if (match.phase() == Match.Phase.BIDDING && match.handIndex() != dealtHand) {
 			dealtHand = match.handIndex();
@@ -504,6 +510,22 @@ public class PlayScreen extends BaseScreen {
 		}
 	}
 
+	/** Plays the current hand to the end with the bot in every seat, then deals the next. */
+	private void playHandInstantly() {
+		while (match.phase() == Match.Phase.BIDDING || match.phase() == Match.Phase.PLAYING) {
+			int s = match.currentSeat();
+			if (match.phase() == Match.Phase.BIDDING) {
+				match.placeBid(s, bot.chooseBid(match.hand(s), match.trump(), match.bidsSoFar()));
+			} else {
+				match.playCard(s, bot.choosePlay(match.hand(s), match.currentTrick(), match.trump(), match.bid(s),
+						match.tricksWon(s)));
+			}
+		}
+		if (match.phase() == Match.Phase.HAND_OVER) {
+			match.nextHand();
+		}
+	}
+
 	private void botMove(int seat) {
 		if (match.phase() == Match.Phase.BIDDING) {
 			match.placeBid(seat, bot.chooseBid(match.hand(seat), match.trump(), match.bidsSoFar()));
@@ -554,7 +576,7 @@ public class PlayScreen extends BaseScreen {
 	private void autoplayHuman(float dt) {
 		timer += dt;
 		// once per game, open and close the menu to capture it
-		if (!menuDemoDone && match.handIndex() == 5 && match.phase() == Match.Phase.BIDDING) {
+		if (!menuDemoDone && match.handIndex() == 6 && match.phase() == Match.Phase.BIDDING) {
 			menuDemoDone = true;
 			timer = 0;
 			tapCentre(menuButton);

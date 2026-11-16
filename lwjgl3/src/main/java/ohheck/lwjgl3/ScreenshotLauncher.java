@@ -1,5 +1,6 @@
 package ohheck.lwjgl3;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,44 +18,65 @@ import ohheck.OhHeckGame;
 
 /**
  * Plays a seeded game with the bot in every seat, saving a screenshot the
- * first time each interesting state appears, then exits. Run headless on CI
+ * first time each interesting state appears, then exits. Game time advances a
+ * fixed step per frame, so it runs as fast as frames can be drawn. Run headless on CI
  * under Xvfb so the layout can be reviewed without a phone.
  */
 public class ScreenshotLauncher {
 
-	/** Prefixes of states to capture, as reported by PlayScreen.stateTag(). */
-	private static final String[] WANTED = { "title", "rules", "options", "shuffle:1", "deal:3", "deal:7", "bid:3", "bidconfirm:3", "selected:4:", "trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "menu:6", "play:8:", "gameover" };
+	/** Prefixes of states to capture, as reported by the screens' stateTag(). */
+	private static final String[] WANTED = { "title", "rules", "options", "shuffle:1", "deal:3", "bid:3", "bidconfirm:3",
+			"selected:4:", "trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:7", "menu:7", "play:8:",
+			"gameover" };
+
+	/** Hands played instantly: nothing on the list happens in them. */
+	private static final Integer[] SKIP = { 2, 5, 6 };
+
+	/** Each frame advances the game this far; screens cap a frame at 0.1 s. */
+	private static final float STEP = 0.1f;
+
+	/** Frames to wait in a state before capturing it, so animations are under way. */
+	private static int settleFrames(String state) {
+		if (state.equals("title")) {
+			return 10; // cards falling, before the scripted run moves on at ~17 frames
+		}
+		if (state.equals("rules")) {
+			return 8; // scrolled down a little
+		}
+		if (state.startsWith("shuffle")) {
+			return 9; // mid-riffle
+		}
+		if (state.startsWith("deal")) {
+			return 8; // about a third of the cards dealt
+		}
+		return 2;
+	}
 
 	public static void main(String[] args) {
 		final String outDir = args.length > 0 ? args[0] : "screenshots";
-		final Set<String> wanted = new HashSet<String>();
-		for (String s : WANTED) {
-			wanted.add(s);
-		}
+		final Set<String> wanted = new HashSet<String>(Arrays.asList(WANTED));
 		final int[] frames = { 0 };
 		final String[] seen = { "" };
-		final long[] seenAt = { 0 };
-		final boolean[] done = { false };
+		final int[] inState = { 0 };
+		final long start = System.nanoTime();
 
 		GameOptions o = new GameOptions();
 		o.seed = 20261116L;
 		o.autoplayHuman = true;
 		o.persist = false;
-		o.speed = 3f; // the game defaults to Slow; keep the scripted run short
+		o.speed = 2f;
+		o.fixedStep = STEP; // game time per frame, not wall-clock time: runs as fast as frames are drawn
+		o.skipHands.addAll(Arrays.asList(SKIP));
 		o.frameListener = new GameOptions.FrameListener() {
 			@Override
 			public void onFrame(String state) {
 				frames[0]++;
-				long now = System.nanoTime();
 				if (!state.equals(seen[0])) {
 					seen[0] = state;
-					seenAt[0] = now;
-					done[0] = false;
+					inState[0] = 0;
 				}
-				// let each state settle before capturing it; the menus need a moment longer
-				float settle = state.equals("title") ? 0.8f : state.equals("rules") ? 0.45f : state.startsWith("deal") ? 0.7f : state.startsWith("shuffle") ? 0.7f : 0.12f;
-				if (!done[0] && (now - seenAt[0]) / 1e9f >= settle) {
-					done[0] = true;
+				inState[0]++;
+				if (inState[0] == settleFrames(state)) {
 					for (String w : WANTED) {
 						if (state.startsWith(w) && wanted.remove(w)) {
 							save(outDir + "/" + String.format("%02d-", WANTED.length - wanted.size()) + state.replace(':', '-') + ".png");
@@ -62,13 +84,18 @@ public class ScreenshotLauncher {
 						}
 					}
 				}
-				if (wanted.isEmpty() || (state.equals("gameover") && done[0]) || frames[0] > 60 * 60 * 5) {
+				boolean finished = wanted.isEmpty() || (state.equals("gameover") && inState[0] > settleFrames(state));
+				if (finished || frames[0] > 20000) {
+					System.out.printf("Screenshots: %d frames in %.1f s, %d states not seen: %s%n", frames[0],
+							(System.nanoTime() - start) / 1e9, wanted.size(), wanted);
 					Gdx.app.exit();
 				}
 			}
 		};
 		Lwjgl3ApplicationConfiguration config = Lwjgl3Launcher.config(1560, 720);
 		config.disableAudio(true);
+		config.useVsync(false);
+		config.setForegroundFPS(0); // as fast as possible
 		new Lwjgl3Application(new OhHeckGame(o), config);
 	}
 

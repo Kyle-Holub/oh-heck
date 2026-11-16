@@ -15,6 +15,16 @@ public final class GameOptions {
 	/** Multiplies the speed of all pauses; 2 = twice as fast. */
 	public float speed = 1f;
 
+	/**
+	 * If above 0, every frame advances the game by exactly this many seconds
+	 * instead of the real time since the last frame, so a scripted run goes as
+	 * fast as frames can be drawn. (Screens cap one frame's step at 0.1 s.)
+	 */
+	public float fixedStep = 0f;
+
+	/** Hands (1-based) that autoplay resolves instantly without drawing them. */
+	public java.util.Set<Integer> skipHands = new java.util.HashSet<Integer>();
+
 	/** Called once per frame after drawing, with a short description of what is on screen (used for automated screenshots). */
 	public FrameListener frameListener = null;
 
