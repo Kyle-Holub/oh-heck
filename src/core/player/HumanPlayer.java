@@ -77,6 +77,7 @@ public class HumanPlayer extends Player {
 		try {
 			makeBidText = ImageIO.read(getClass().getResourceAsStream("/images/makeBidText.png"));
 			JukeBox.load("/sfx/win.mp3", "win");
+			JukeBox.setVolume("win", 0.5f);
 			JukeBox.load("/sfx/lose.mp3", "lose");
 		} catch (IOException e) {
 			e.printStackTrace();

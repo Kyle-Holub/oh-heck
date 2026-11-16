@@ -7,6 +7,7 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 
 public class JukeBox {
 	
@@ -88,6 +89,18 @@ public class JukeBox {
 		clips.get(s).setLoopPoints(start, end);
 		clips.get(s).setFramePosition(frame);
 		clips.get(s).loop(Clip.LOOP_CONTINUOUSLY);
+	}
+	
+	/**
+	 * Scale a clip's volume, e.g. 0.5 for half volume.
+	 * Does nothing if the clip isn't loaded or the audio device has no gain control.
+	 */
+	public static void setVolume(String s, float factor) {
+		Clip c = clips.get(s);
+		if (c == null || !c.isControlSupported(FloatControl.Type.MASTER_GAIN)) return;
+		FloatControl gain = (FloatControl) c.getControl(FloatControl.Type.MASTER_GAIN);
+		float dB = (float) (20.0 * Math.log10(factor));
+		gain.setValue(Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), dB)));
 	}
 	
 	public static void setPosition(String s, int frame) {

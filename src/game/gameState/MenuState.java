@@ -4,9 +4,12 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.ImageObserver;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
@@ -48,6 +51,16 @@ public class MenuState extends GameState {
 	private static BufferedImage titleText;
 	private static BufferedImage loadingText;
 	
+	// animated background (falling cards); drawn scaled to the screen width
+	private static Image menuBg;
+	private static final int BG_H = MainCanvas.SCREEN_W * 270 / 480;
+	private static final int BG_Y = (MainCanvas.SCREEN_H - BG_H) / 2;
+	private static final Color BG_SHADE = new Color(0, 0, 0, 120);
+
+	// keeps the GIF animating; the game renders actively, so no repaint is needed
+	private static final ImageObserver BG_OBSERVER = (img, flags, x, y, w, h) ->
+			(flags & (ImageObserver.ALLBITS | ImageObserver.ABORT)) == 0;
+
 	// title alignment
 	private static int titlePosY;
 	private static int titlePosX;
@@ -76,6 +89,10 @@ public class MenuState extends GameState {
 		try {
 			titleText = ImageIO.read(getClass().getResourceAsStream("/images/titleText.png"));
 			loadingText = ImageIO.read(getClass().getResourceAsStream("/images/loadingText.png"));
+			// ImageIO only reads the first frame of a GIF, so load it through Toolkit to animate it
+			if (menuBg == null) {
+				menuBg = Toolkit.getDefaultToolkit().createImage(getClass().getResource("/images/menuBg.gif"));
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -116,6 +133,11 @@ public class MenuState extends GameState {
 			if (fm == null) {
 				fm = g.getFontMetrics();
 			}
+
+			// draw animated background, shaded so the menu text stays readable
+			g.drawImage(menuBg, 0, BG_Y, MainCanvas.SCREEN_W, BG_H, BG_OBSERVER);
+			g.setColor(BG_SHADE);
+			g.fillRect(0, BG_Y, MainCanvas.SCREEN_W, BG_H);
 
 			// draw title
 			g.drawImage(titleText, titlePosX, titlePosY, null);
