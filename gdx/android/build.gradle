@@ -49,6 +49,11 @@ android {
     }
   }
 
+  androidResources {
+    // the desktop title animation (7 MB) isn't needed: the phone draws its own
+    ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!menuBg.gif'
+  }
+
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_1_8
     targetCompatibility JavaVersion.VERSION_1_8

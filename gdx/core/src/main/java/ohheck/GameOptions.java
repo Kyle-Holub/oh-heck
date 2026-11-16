@@ -12,7 +12,7 @@ public final class GameOptions {
 	/** Multiplies the speed of all pauses; 2 = twice as fast. */
 	public float speed = 1f;
 
-	/** Called once per frame after drawing, with a short description of what is on screen. */
+	/** Called once per frame after drawing, with a short description of what is on screen (used for automated screenshots). */
 	public FrameListener frameListener = null;
 
 	public interface FrameListener {

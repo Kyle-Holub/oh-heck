@@ -37,7 +37,7 @@ import rules.Suit;
  * Playing a card: tap it to lift it, then tap it again (or drag it up onto
  * the table). Bidding: tap a number, then tap it again to confirm.
  */
-public class PlayScreen extends ScreenAdapter {
+public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 
 	private static final int HUMAN = 0;
 	private static final String[] NAMES = { "You", "Tom", "Max", "Dan" };
@@ -66,6 +66,7 @@ public class PlayScreen extends ScreenAdapter {
 	private static final Color MENU_BUTTON = new Color(0.2f, 0.2f, 0.2f, 1f);
 	private static final Color SET_RED = new Color(1f, 0.55f, 0.5f, 1f);
 
+	private final OhHeckGame game;
 	private final Assets assets;
 	private final GameOptions options;
 	private final ExtendViewport viewport = new ExtendViewport(WORLD_W, WORLD_H);
@@ -109,11 +110,12 @@ public class PlayScreen extends ScreenAdapter {
 	private final List<Card> handOrder = new ArrayList<Card>();
 	private final Rectangle menuButton = new Rectangle();
 	private final List<Rectangle> menuItems = new ArrayList<Rectangle>();
-	private static final String[] MENU = { "Resume", "New game", "Quit" };
+	private static final String[] MENU = { "Resume", "New game", "Main menu" };
 
-	public PlayScreen(Assets assets, GameOptions options) {
-		this.assets = assets;
-		this.options = options;
+	public PlayScreen(OhHeckGame game) {
+		this.game = game;
+		this.assets = game.assets;
+		this.options = game.options;
 		this.rng = options.seed == null ? new Random() : new Random(options.seed);
 		newGame();
 	}
@@ -130,6 +132,7 @@ public class PlayScreen extends ScreenAdapter {
 
 	@Override
 	public void show() {
+		game.audio.startMusic();
 		Gdx.input.setCatchKey(Input.Keys.BACK, true);
 		Gdx.input.setInputProcessor(new InputAdapter() {
 			@Override
@@ -177,6 +180,11 @@ public class PlayScreen extends ScreenAdapter {
 	@Override
 	public void hide() {
 		Gdx.input.setInputProcessor(null);
+		game.audio.stopMusic();
+	}
+
+	public boolean isGameOver() {
+		return match.phase() == Match.Phase.GAME_OVER;
 	}
 
 	@Override
@@ -331,7 +339,7 @@ public class PlayScreen extends ScreenAdapter {
 		if (i == 1) {
 			newGame();
 		} else if (i == 2) {
-			Gdx.app.exit();
+			game.showTitle();
 		}
 	}
 
@@ -368,11 +376,8 @@ public class PlayScreen extends ScreenAdapter {
 
 	@Override
 	public void render(float delta) {
-		update(Math.min(delta, 0.1f) * options.speed);
+		update(Math.min(delta, 0.1f) * options.speed * (game.settings.fast() ? 1.8f : 1f));
 		draw();
-		if (options.frameListener != null) {
-			options.frameListener.onFrame(stateTag());
-		}
 	}
 
 	private void update(float dt) {
@@ -395,6 +400,7 @@ public class PlayScreen extends ScreenAdapter {
 			dealT = 0;
 			dealDuration = 4 * match.handSize() * DEAL_INTERVAL + DEAL_FLIGHT + 0.15f;
 			flights.clear();
+			game.audio.play(Audio.Effect.SHUFFLE);
 		}
 		if (isDealing()) {
 			dealT += dt;
@@ -463,6 +469,10 @@ public class PlayScreen extends ScreenAdapter {
 	private void play(int seat, Card c) {
 		int winner = match.playCard(seat, c);
 		timer = 0;
+		game.audio.play(Audio.Effect.PLAY_CARD);
+		if (match.phase() == Match.Phase.HAND_OVER) {
+			game.audio.play(match.madeBid(HUMAN) ? Audio.Effect.WIN : Audio.Effect.LOSE);
+		}
 		if (winner >= 0) {
 			List<Card> trick = match.lastTrick();
 			Card best = trick.get(match.lastTrickSeats().indexOf(winner));
@@ -938,7 +948,7 @@ public class PlayScreen extends ScreenAdapter {
 	// --------------------------------------------------------------- helpers
 
 	private BitmapFont font(float scale) {
-		assets.font.getData().setScale(scale);
+		assets.font.getData().setScale(scale * Assets.UI_BASE);
 		return assets.font;
 	}
 
@@ -990,6 +1000,7 @@ public class PlayScreen extends ScreenAdapter {
 	};
 
 	/** A short description of what is on screen, for automated screenshots. */
+	@Override
 	public String stateTag() {
 		int hand = match.handIndex() + 1;
 		if (menuOpen) {

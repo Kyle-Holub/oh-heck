@@ -8,6 +8,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -22,7 +23,7 @@ import ohheck.OhHeckGame;
 public class ScreenshotLauncher {
 
 	/** Prefixes of states to capture, as reported by PlayScreen.stateTag(). */
-	private static final String[] WANTED = { "deal:3", "bid:3", "bidconfirm:3", "selected:4:", "trick:4", "collect:4", "handover:4", "menu:6", "play:8:", "gameover" };
+	private static final String[] WANTED = { "title", "rules", "options", "deal:3", "bid:3", "bidconfirm:3", "selected:4:", "trick:4", "collect:4", "handover:4", "menu:6", "play:8:", "gameover" };
 
 	public static void main(String[] args) {
 		final String outDir = args.length > 0 ? args[0] : "screenshots";
@@ -32,7 +33,8 @@ public class ScreenshotLauncher {
 		}
 		final int[] frames = { 0 };
 		final String[] seen = { "" };
-		final int[] seenFrames = { 0 };
+		final long[] seenAt = { 0 };
+		final boolean[] done = { false };
 
 		GameOptions o = new GameOptions();
 		o.seed = 20261116L;
@@ -42,13 +44,16 @@ public class ScreenshotLauncher {
 			@Override
 			public void onFrame(String state) {
 				frames[0]++;
+				long now = System.nanoTime();
 				if (!state.equals(seen[0])) {
 					seen[0] = state;
-					seenFrames[0] = 0;
+					seenAt[0] = now;
+					done[0] = false;
 				}
-				seenFrames[0]++;
-				// let a state settle for a few frames before capturing it
-				if (seenFrames[0] == 2) {
+				// let each state settle before capturing it; the menus need a moment longer
+				float settle = state.equals("title") ? 1.2f : state.equals("rules") ? 0.75f : 0.12f;
+				if (!done[0] && (now - seenAt[0]) / 1e9f >= settle) {
+					done[0] = true;
 					for (String w : WANTED) {
 						if (state.startsWith(w) && wanted.remove(w)) {
 							save(outDir + "/" + String.format("%02d-", WANTED.length - wanted.size()) + state.replace(':', '-') + ".png");
@@ -56,12 +61,14 @@ public class ScreenshotLauncher {
 						}
 					}
 				}
-				if (wanted.isEmpty() || (state.equals("gameover") && seenFrames[0] > 2) || frames[0] > 60 * 60 * 5) {
+				if (wanted.isEmpty() || (state.equals("gameover") && done[0]) || frames[0] > 60 * 60 * 5) {
 					Gdx.app.exit();
 				}
 			}
 		};
-		new Lwjgl3Application(new OhHeckGame(o), Lwjgl3Launcher.config(1560, 720));
+		Lwjgl3ApplicationConfiguration config = Lwjgl3Launcher.config(1560, 720);
+		config.disableAudio(true);
+		new Lwjgl3Application(new OhHeckGame(o), config);
 	}
 
 	private static void save(String path) {
