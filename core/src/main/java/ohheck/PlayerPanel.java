@@ -6,17 +6,14 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 /**
  * A player's bar, after the original game's: name, dealer icon and score, and
  * one card icon per trick: faded = bid but not won yet, solid = won, red =
- * won over the bid. Green while it's that player's turn.
+ * won over the bid. Glows gold while it's that player's turn.
  */
 final class PlayerPanel {
 
 	static final float W = 214, H = 80;
 
 	private static final float ICON_MAX_W = 28, ICON_GAP = 3;
-	private static final Color BG = new Color(0.04f, 0.06f, 0.2f, 0.78f);
-	private static final Color TURN_BG = new Color(0f, 0.5f, 0.3f, 0.85f);
-	private static final Color TURN_EDGE = new Color(0f, 0.96f, 0.5f, 1f);
-	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.38f);
+	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.32f);
 
 	private final BaseScreen screen;
 
@@ -33,18 +30,19 @@ final class PlayerPanel {
 		Assets assets = screen.assets;
 		float y = top - H;
 		if (turn) {
-			screen.rect(x - 2, y - 2, W + 4, H + 4, TURN_EDGE);
+			screen.frame(assets.panelTurn, x - 4, y - 4, W + 8, H + 8);
+		} else {
+			screen.frame(assets.panel, x, y, W, H);
 		}
-		screen.rect(x, y, W, H, turn ? TURN_BG : BG);
 
 		// name, dealer icon and score
 		BitmapFont f = screen.ui(1.3f);
-		f.setColor(Color.WHITE);
+		f.setColor(turn ? Palette.GOLD_LIGHT : Palette.CREAM);
 		screen.glyphs.setText(f, name);
 		float nameW = screen.glyphs.width;
 		f.draw(screen.batch, name, x + 10, top - 9);
 		if (dealer) {
-			screen.batch.draw(assets.dealerIcon, x + 16 + nameW, top - 32, 24, 24);
+			screen.batch.draw(assets.dealerIcon, x + 16 + nameW, top - 33, 26, 26);
 		}
 		f.setColor(BaseScreen.GOLD);
 		screen.text(f, String.valueOf(score), x + W - 10, top - 9, false);
@@ -52,7 +50,7 @@ final class PlayerPanel {
 		float iy = y + 6;
 		if (bid == null || Math.max(bid, won) == 0) {
 			BitmapFont s = screen.ui(1f);
-			s.setColor(Color.LIGHT_GRAY);
+			s.setColor(Palette.MUTED);
 			String note = bid != null ? "bid 0" : dealing ? "" : turn ? "bidding..." : "no bid yet";
 			s.draw(screen.batch, note, x + 10, iy + 20);
 			return;

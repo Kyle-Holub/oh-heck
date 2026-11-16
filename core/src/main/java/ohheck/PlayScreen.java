@@ -54,11 +54,6 @@ public class PlayScreen extends BaseScreen {
 	// touch
 	private static final float DRAG_START = 12f, LIFT = 22f, SELECTED_LIFT = 44f;
 
-	private static final Color BUTTON_OFF = new Color(0.3f, 0.3f, 0.3f, 1f);
-	private static final Color DIM = new Color(0.55f, 0.55f, 0.55f, 1f);
-	private static final Color MENU_BACKDROP = new Color(0f, 0f, 0f, 0.78f);
-	private static final Color MENU_BUTTON = new Color(0.2f, 0.2f, 0.2f, 1f);
-	private static final Color SET_RED = new Color(1f, 0.55f, 0.5f, 1f);
 
 	private final GameOptions options;
 	private final PlayerPanel panel = new PlayerPanel(this);
@@ -552,7 +547,7 @@ public class PlayScreen extends BaseScreen {
 	// ------------------------------------------------------------------ draw
 
 	private void draw() {
-		ScreenUtils.clear(Color.BLACK);
+		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 
@@ -599,7 +594,7 @@ public class PlayScreen extends BaseScreen {
 
 	private void drawInfo() {
 		BitmapFont f = ui(1.1f);
-		f.setColor(Color.WHITE);
+		f.setColor(Palette.CREAM);
 		float y = h - 10;
 		if (match.phase() != Match.Phase.GAME_OVER) {
 			f.draw(batch, "Hand " + (match.handIndex() + 1) + " of 8  -  " + match.handSize()
@@ -638,10 +633,10 @@ public class PlayScreen extends BaseScreen {
 	private void drawTrump() {
 		float cw = Assets.CARD_W * TRUMP_SCALE, ch = Assets.CARD_H * TRUMP_SCALE;
 		BitmapFont f = ui(1f);
-		f.setColor(Color.WHITE);
+		f.setColor(Palette.CREAM);
 		text(f, "Trump", w - 12 - cw / 2, h - 10, true);
 		if (isDealing()) {
-			batch.draw(assets.cardBack, w - 12 - cw, h - 30 - ch, cw, ch);
+			batch.draw(assets.back(), w - 12 - cw, h - 30 - ch, cw, ch);
 		} else {
 			batch.draw(assets.face(match.trumpCard()), w - 12 - cw, h - 30 - ch, cw, ch);
 		}
@@ -667,7 +662,7 @@ public class PlayScreen extends BaseScreen {
 		Vector2 fan = fanOrigin(seat);
 		for (int i = 0; i < n; i++) {
 			float cx = seat == 3 ? fan.x - bw - (n - 1 - i) * 12 : fan.x + i * 12;
-			batch.draw(assets.cardBack, cx, fan.y, bw, bh);
+			batch.draw(assets.back(), cx, fan.y, bw, bh);
 		}
 	}
 
@@ -733,9 +728,9 @@ public class PlayScreen extends BaseScreen {
 				continue;
 			}
 			if (c == selected) {
-				rect(x - 3, y - 3, cw + 6, ch + 6, GOLD);
+				frame(assets.panelTurn, x - 7, y - 7, cw + 14, ch + 14);
 			}
-			batch.setColor(myTurn && !canPlay ? DIM : Color.WHITE);
+			batch.setColor(myTurn && !canPlay ? Palette.CARD_DIM : Color.WHITE);
 			batch.draw(assets.face(c), x, y, cw, ch);
 		}
 		batch.setColor(Color.WHITE);
@@ -789,7 +784,7 @@ public class PlayScreen extends BaseScreen {
 				y = MathUtils.lerp(y, sink.y - ch / 4, p);
 				scale = MathUtils.lerp(1f, 0.5f, p);
 			} else if (seats.get(i) == winner) {
-				rect(x - 4, y - 4, cw + 8, ch + 8, GOLD);
+				frame(assets.panelTurn, x - 7, y - 7, cw + 14, ch + 14);
 			}
 			batch.draw(assets.face(c), x, y, cw * scale, ch * scale);
 		}
@@ -820,7 +815,7 @@ public class PlayScreen extends BaseScreen {
 			int seat = (match.dealer() + 1 + k) % 4;
 			Vector2 to = seatAnchor(seat);
 			float p = Interpolation.pow2Out.apply((dealT - start) / DEAL_FLIGHT);
-			batch.draw(assets.cardBack, MathUtils.lerp(from.x, to.x, p) - bw / 2, MathUtils.lerp(from.y, to.y, p) - bh / 2,
+			batch.draw(assets.back(), MathUtils.lerp(from.x, to.x, p) - bw / 2, MathUtils.lerp(from.y, to.y, p) - bh / 2,
 					bw, bh);
 		}
 	}
@@ -831,7 +826,7 @@ public class PlayScreen extends BaseScreen {
 		float rowW = (n + 1) * bs + n * gap;
 		float pw = Math.max(rowW + 40, 440), ph = 160;
 		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
-		rect(px, py, pw, ph, PANEL);
+		frame(assets.panel, px, py, pw, ph);
 
 		if (pendingBid >= 0) {
 			BitmapFont f = ui(1.3f);
@@ -841,7 +836,7 @@ public class PlayScreen extends BaseScreen {
 			drawArt(assets.makeBidText, w / 2, py + ph - 26, 0.52f, 1f);
 		}
 		BitmapFont s = ui(1f);
-		s.setColor(Color.LIGHT_GRAY);
+		s.setColor(Palette.MUTED);
 		int forbidden = match.forbiddenBid();
 		String note = "Bids so far: " + match.bidsSoFar() + " of " + n
 				+ (forbidden >= 0 ? "   -   as dealer you can't bid " + forbidden : "");
@@ -855,10 +850,10 @@ public class PlayScreen extends BaseScreen {
 			bidButtons.add(r);
 			boolean ok = match.isLegalBid(b);
 			if (b == pendingBid) {
-				rect(r.x - 3, r.y - 3, r.width + 6, r.height + 6, GOLD);
+				frame(assets.panelTurn, r.x - 6, r.y - 6, r.width + 12, r.height + 12);
 			}
-			rect(r.x, r.y, r.width, r.height, ok ? BUTTON : BUTTON_OFF);
-			bf.setColor(ok ? Color.WHITE : DIM);
+			frame(ok ? assets.button : assets.buttonOff, r.x, r.y, r.width, r.height);
+			bf.setColor(ok ? Palette.CREAM : Palette.MUTED);
 			text(bf, String.valueOf(b), r.x + bs / 2, r.y + bs / 2 + 12, true);
 		}
 	}
@@ -886,34 +881,34 @@ public class PlayScreen extends BaseScreen {
 			float y = o.y + bh / 2 + glyphs.height / 2;
 			f.setColor(0f, 0f, 0f, 0.8f * a);
 			f.draw(batch, s, x + 2, y - 2);
-			Color c = match.madeBid(seat) ? GOLD : SET_RED;
+			Color c = match.madeBid(seat) ? GOLD : Palette.RED;
 			f.setColor(c.r, c.g, c.b, a);
 			f.draw(batch, s, x, y);
 		}
 		BitmapFont t = ui(1f);
-		t.setColor(Color.LIGHT_GRAY);
+		t.setColor(Palette.MUTED);
 		text(t, "Tap for the scores", w / 2, h / 2 - 40, true);
 	}
 
 	private void drawHandResults() {
 		float pw = 470, ph = 220;
 		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
-		rect(px, py, pw, ph, PANEL);
+		frame(assets.panel, px, py, pw, ph);
 		BitmapFont f = ui(1.3f);
-		f.setColor(Color.WHITE);
+		f.setColor(Palette.CREAM);
 		text(f, "Hand " + (match.handIndex() + 1) + " results", w / 2, py + ph - 14, true);
 
 		BitmapFont t = ui(1.1f);
 		float[] cols = { px + 24, px + 150, px + 215, px + 290, px + 380 };
 		String[] head = { "Player", "Bid", "Won", "Points", "Total" };
 		float y = py + ph - 52;
-		t.setColor(Color.LIGHT_GRAY);
+		t.setColor(Palette.MUTED);
 		for (int c = 0; c < cols.length; c++) {
 			t.draw(batch, head[c], cols[c], y);
 		}
 		for (int seat = 0; seat < 4; seat++) {
 			y -= 26;
-			t.setColor(match.madeBid(seat) ? Color.WHITE : SET_RED);
+			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
 			int pts = match.lastHandPoints(seat);
 			String[] row = { NAMES[seat] + (match.madeBid(seat) ? "" : "  (set)"), String.valueOf(match.bid(seat)),
 					String.valueOf(match.tricksWon(seat)), (pts > 0 ? "+" : "") + pts, String.valueOf(match.score(seat)) };
@@ -929,7 +924,7 @@ public class PlayScreen extends BaseScreen {
 	private void drawGameOver() {
 		float pw = 420, ph = 290;
 		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
-		rect(px, py, pw, ph, PANEL);
+		frame(assets.panel, px, py, pw, ph);
 		drawArt(assets.gameOverText, w / 2, py + ph - 38, 0.66f, 1f);
 
 		List<Integer> leaders = match.leaders();
@@ -962,7 +957,7 @@ public class PlayScreen extends BaseScreen {
 		BitmapFont t = ui(1.2f);
 		float y = py + ph - 122;
 		for (int s : order) {
-			t.setColor(Color.WHITE);
+			t.setColor(Palette.CREAM);
 			t.draw(batch, NAMES[s], px + 110, y);
 			text(t, String.valueOf(match.score(s)), px + pw - 120, y, false);
 			y -= 28;
@@ -974,14 +969,14 @@ public class PlayScreen extends BaseScreen {
 
 	private void drawMenuButton() {
 		menuButton.set(w - 92, 10, 80, 38);
-		rect(menuButton.x, menuButton.y, menuButton.width, menuButton.height, PANEL);
+		frame(assets.buttonAlt, menuButton.x, menuButton.y, menuButton.width, menuButton.height);
 		BitmapFont f = ui(1.2f);
-		f.setColor(Color.WHITE);
+		f.setColor(Palette.CREAM);
 		text(f, "Menu", menuButton.x + menuButton.width / 2, menuButton.y + 27, true);
 	}
 
 	private void drawMenu() {
-		rect(0, 0, w, h, MENU_BACKDROP);
+		rect(0, 0, w, h, Palette.BACKDROP);
 		float bw = 260, bh = 56, gap = 14;
 		float total = MENU.length * bh + (MENU.length - 1) * gap;
 		float top = h / 2 + total / 2 + 20;
@@ -993,8 +988,8 @@ public class PlayScreen extends BaseScreen {
 		for (int i = 0; i < MENU.length; i++) {
 			Rectangle r = new Rectangle((w - bw) / 2, top - (i + 1) * bh - i * gap, bw, bh);
 			menuItems.add(r);
-			rect(r.x, r.y, r.width, r.height, i == 0 ? BUTTON : MENU_BUTTON);
-			f.setColor(Color.WHITE);
+			frame(i == 0 ? assets.button : assets.buttonAlt, r.x, r.y, r.width, r.height);
+			f.setColor(Palette.CREAM);
 			text(f, MENU[i], w / 2, r.y + bh / 2 + 10, true);
 		}
 	}
@@ -1004,7 +999,7 @@ public class PlayScreen extends BaseScreen {
 		glyphs.setText(f, hint);
 		float pw = glyphs.width + 32, ph = 40;
 		float px = (w - pw) / 2, py = 8 + Assets.CARD_H * HAND_SCALE + SELECTED_LIFT + 6;
-		rect(px, py, pw, ph, PANEL);
+		frame(assets.panel, px, py, pw, ph);
 		f.setColor(GOLD);
 		f.draw(batch, hint, px + 16, py + ph / 2 + 8);
 	}

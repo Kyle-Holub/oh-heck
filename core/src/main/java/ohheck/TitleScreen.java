@@ -13,8 +13,6 @@ import com.badlogic.gdx.utils.ScreenUtils;
 /** The main menu, over a shower of falling cards. */
 public class TitleScreen extends BaseScreen {
 
-	private static final Color SHADE = new Color(0f, 0f, 0f, 0.38f);
-	private static final Color ITEM = new Color(0f, 0f, 0f, 0.8f);
 
 	private final FallingCards cards;
 	private final List<String> items = new ArrayList<String>();
@@ -49,10 +47,10 @@ public class TitleScreen extends BaseScreen {
 			return;
 		}
 
-		ScreenUtils.clear(Color.BLACK);
+		ScreenUtils.clear(Palette.BG);
 		begin();
 		cards.draw(batch, w / 2, h / 2);
-		rect(0, 0, w, h, SHADE);
+		rect(0, 0, w, h, Palette.SHADE);
 
 		// title, as in the original game
 		float tw = assets.titleText.getWidth() * 0.85f, th = assets.titleText.getHeight() * 0.85f;
@@ -64,12 +62,12 @@ public class TitleScreen extends BaseScreen {
 		float bw = 270, bh = 46, gap = 10;
 		float y = titleY - 18 - bh;
 		for (String s : items) {
-			hits.add(button(s, w / 2, y, bw, bh, s.equals(items.get(0)) ? BUTTON : ITEM));
+			hits.add(button(s, w / 2, y, bw, bh, s.equals(items.get(0)) ? assets.button : assets.buttonAlt));
 			y -= bh + gap;
 		}
 
 		BitmapFont f = ui(0.9f);
-		f.setColor(Color.LIGHT_GRAY);
+		f.setColor(Palette.MUTED);
 		f.draw(batch, OhHeckGame.VERSION, 10, 22);
 		String c = "©2026 Kyle Holub";
 		glyphs.setText(f, c);

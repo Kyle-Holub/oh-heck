@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Disposable;
 
@@ -13,7 +14,12 @@ import rules.Card;
 /** Textures and fonts shared by the screens. */
 public final class Assets implements Disposable {
 
+	/** A card's size in world units (the original game's pixels). */
 	public static final int CARD_W = 73, CARD_H = 98;
+	/** A card's size in the high-resolution sheet drawn by tools/make_art.py (3x). */
+	private static final int SHEET_W = 219, SHEET_H = 294;
+	/** Transparent margin around each card in the blurred sheet. */
+	public static final int BLUR_PAD = 24;
 
 	/**
 	 * The fonts are baked large (see tools/make_fonts.py) and drawn scaled
@@ -23,12 +29,17 @@ public final class Assets implements Disposable {
 	public static final float UI_BASE = 16f / 42f, SERIF_BASE = 16f / 52f;
 
 	public final Texture table;
-	public final Texture cardSheet;
-	public final Texture cardBack;
+	public final Texture cardSheet, cardBack, cardSheetBlur, cardBackBlur;
+	/** Soft shadow under a card: the card covers the middle 120x160 of 160x200. */
+	public final Texture shadow;
+	/** A round white glow, tinted when drawn (sparkles). */
+	public final Texture glow;
+	/** Rounded frames: panels, the current player's panel, and buttons. */
+	public final NinePatch panel, panelTurn, button, buttonAlt, buttonOff;
 	public final Texture titleText;
 	/** Title art from the original game. */
 	public final Texture bidTricksText, setText, trickWonText, makeBidText, gameOverText;
-	/** Player bar icons from the original game: dealer, trick, trick over the bid. */
+	/** Player bar icons: dealer button, trick, trick over the bid. */
 	public final Texture dealerIcon, trickIcon, overIcon;
 	/** A 1x1 white texture, tinted to draw panels and buttons. */
 	public final Texture white;
@@ -38,27 +49,40 @@ public final class Assets implements Disposable {
 	public final BitmapFont serif;
 
 	private final TextureRegion[][] faces = new TextureRegion[4][13];
-	private final TextureRegion back;
+	private final TextureRegion back, backBlur;
+	private final TextureRegion[][] blurred = new TextureRegion[4][13];
 
 	public Assets() {
-		table = linear(new Texture(Gdx.files.internal("images/table8.jpg")));
-		cardSheet = mipmapped("images/cards.png");
-		cardBack = mipmapped("images/cardback.png");
+		table = linear(new Texture(Gdx.files.internal("images/table.png")));
+		cardSheet = mipmapped("images/cards_hd.png");
+		cardBack = mipmapped("images/back_hd.png");
+		cardSheetBlur = mipmapped("images/cards_blur.png");
+		cardBackBlur = mipmapped("images/back_blur.png");
+		shadow = linear(new Texture(Gdx.files.internal("images/shadow.png")));
+		glow = mipmapped("images/glow.png");
+		panel = ninePatch("panel");
+		panelTurn = ninePatch("panel_turn");
+		button = ninePatch("button");
+		buttonAlt = ninePatch("button_alt");
+		buttonOff = ninePatch("button_off");
 		titleText = mipmapped("images/titleText.png");
 		bidTricksText = mipmapped("images/bidTricks.png");
 		setText = mipmapped("images/setText.png");
 		trickWonText = mipmapped("images/trickWonText.png");
 		makeBidText = mipmapped("images/makeBidText.png");
 		gameOverText = mipmapped("images/gameOver.png");
-		dealerIcon = pixelArt("images/dealerIcon.png");
-		trickIcon = pixelArt("images/trickIcon.png");
-		overIcon = pixelArt("images/underBidIcon.png");
+		dealerIcon = mipmapped("images/icon_dealer.png");
+		trickIcon = mipmapped("images/icon_trick.png");
+		overIcon = mipmapped("images/icon_over.png");
 		for (int suit = 0; suit < 4; suit++) {
 			for (int rank = 0; rank < 13; rank++) {
-				faces[suit][rank] = new TextureRegion(cardSheet, rank * CARD_W, suit * CARD_H, CARD_W, CARD_H);
+				faces[suit][rank] = new TextureRegion(cardSheet, rank * SHEET_W, suit * SHEET_H, SHEET_W, SHEET_H);
+				int bw = SHEET_W + 2 * BLUR_PAD, bh = SHEET_H + 2 * BLUR_PAD;
+				blurred[suit][rank] = new TextureRegion(cardSheetBlur, rank * bw, suit * bh, bw, bh);
 			}
 		}
 		back = new TextureRegion(cardBack);
+		backBlur = new TextureRegion(cardBackBlur);
 		Pixmap p = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
 		p.setColor(Color.WHITE);
 		p.fill();
@@ -76,6 +100,31 @@ public final class Assets implements Disposable {
 		return back;
 	}
 
+	/** Blurred versions, with {@link #BLUR_PAD} of margin (in sheet pixels) around the card. */
+	public TextureRegion blurredFace(Card c) {
+		return blurred[c.suit().ordinal()][c.rank().ordinal()];
+	}
+
+	public TextureRegion blurredBack() {
+		return backBlur;
+	}
+
+	/** Fraction of a blurred region's width taken by the margin on each side. */
+	public static float blurMarginX() {
+		return BLUR_PAD / (float) (SHEET_W + 2 * BLUR_PAD);
+	}
+
+	public static float blurMarginY() {
+		return BLUR_PAD / (float) (SHEET_H + 2 * BLUR_PAD);
+	}
+
+	private static NinePatch ninePatch(String name) {
+		Texture t = new Texture(Gdx.files.internal("images/" + name + ".png"));
+		t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+		NinePatch p = new NinePatch(t, 16, 16, 16, 16);
+		return p;
+	}
+
 	private static BitmapFont bitmapFont(String name) {
 		Texture t = mipmapped("fonts/" + name + ".png");
 		BitmapFont f = new BitmapFont(Gdx.files.internal("fonts/" + name + ".fnt"), new TextureRegion(t), false);
@@ -89,13 +138,6 @@ public final class Assets implements Disposable {
 		return t;
 	}
 
-	/** Small icons: scaled up with hard pixel edges rather than blurred. */
-	private static Texture pixelArt(String path) {
-		Texture t = new Texture(Gdx.files.internal(path));
-		t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-		return t;
-	}
-
 	private static Texture linear(Texture t) {
 		t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 		return t;
@@ -106,6 +148,13 @@ public final class Assets implements Disposable {
 		table.dispose();
 		cardSheet.dispose();
 		cardBack.dispose();
+		cardSheetBlur.dispose();
+		cardBackBlur.dispose();
+		shadow.dispose();
+		glow.dispose();
+		for (NinePatch p : new NinePatch[] { panel, panelTurn, button, buttonAlt, buttonOff }) {
+			p.getTexture().dispose();
+		}
 		titleText.dispose();
 		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, gameOverText, dealerIcon, trickIcon, overIcon }) {
 			t.dispose();

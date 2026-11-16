@@ -7,6 +7,7 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -16,9 +17,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 
 	static final float WORLD_W = 800, WORLD_H = 480;
-	static final Color PANEL = new Color(0f, 0f, 0f, 0.72f);
-	static final Color BUTTON = new Color(0.16f, 0.42f, 0.24f, 1f);
-	static final Color GOLD = new Color(1f, 0.82f, 0.25f, 1f);
+	static final Color GOLD = Palette.GOLD;
 
 	protected final OhHeckGame game;
 	protected final Assets assets;
@@ -135,11 +134,17 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		batch.setColor(Color.WHITE);
 	}
 
+	/** Draws a rounded frame (panel or button) at full opacity. */
+	protected void frame(NinePatch p, float x, float y, float fw, float fh) {
+		batch.setColor(Color.WHITE);
+		p.draw(batch, x, y, fw, fh);
+	}
+
 	/** A labelled button; returns its tap area. */
-	protected Rectangle button(String label, float cx, float y, float bw, float bh, Color fill) {
-		rect(cx - bw / 2, y, bw, bh, fill);
+	protected Rectangle button(String label, float cx, float y, float bw, float bh, NinePatch style) {
+		frame(style, cx - bw / 2, y, bw, bh);
 		BitmapFont f = serif(1.5f);
-		f.setColor(Color.WHITE);
+		f.setColor(style == assets.buttonOff ? Palette.MUTED : Palette.CREAM);
 		glyphs.setText(f, label);
 		f.draw(batch, label, cx - glyphs.width / 2, y + bh / 2 + glyphs.height / 2);
 		return new Rectangle(cx - bw / 2, y, bw, bh);

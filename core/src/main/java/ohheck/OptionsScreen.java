@@ -11,9 +11,6 @@ import com.badlogic.gdx.utils.ScreenUtils;
 /** Music, sound effects and game speed, saved on the device. */
 public class OptionsScreen extends BaseScreen {
 
-	private static final Color DIMMED = new Color(0.35f, 0.35f, 0.35f, 1f);
-	private static final Color ROW = new Color(0f, 0f, 0f, 0.6f);
-	private static final Color OFF = new Color(0.35f, 0.35f, 0.35f, 1f);
 
 	private final List<Rectangle> rows = new ArrayList<Rectangle>();
 	private Rectangle backButton = new Rectangle();
@@ -30,11 +27,9 @@ public class OptionsScreen extends BaseScreen {
 			return;
 		}
 		Settings s = game.settings;
-		ScreenUtils.clear(Color.BLACK);
+		ScreenUtils.clear(Palette.BG);
 		begin();
-		batch.setColor(DIMMED);
 		batch.draw(assets.table, 0, 0, w, h);
-		batch.setColor(Color.WHITE);
 
 		BitmapFont t = serif(2.2f);
 		t.setColor(GOLD);
@@ -46,24 +41,24 @@ public class OptionsScreen extends BaseScreen {
 		rows.clear();
 		float rw = 460, rh = 62, x = (w - rw) / 2, y = h - 130 - rh;
 		for (int i = 0; i < labels.length; i++) {
-			rect(x, y, rw, rh, ROW);
+			frame(assets.panel, x, y, rw, rh);
 			BitmapFont f = serif(1.6f);
-			f.setColor(Color.WHITE);
+			f.setColor(Palette.CREAM);
 			glyphs.setText(f, labels[i]);
 			f.draw(batch, labels[i], x + 24, y + rh / 2 + glyphs.height / 2);
 			float vw = 120;
-			rect(x + rw - vw - 14, y + 10, vw, rh - 20, on[i] ? BUTTON : OFF);
+			frame(on[i] ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 9, vw, rh - 18);
 			BitmapFont v = ui(1.4f);
-			v.setColor(Color.WHITE);
+			v.setColor(on[i] ? Palette.CREAM : Palette.MUTED);
 			glyphs.setText(v, values[i]);
 			v.draw(batch, values[i], x + rw - 14 - vw / 2 - glyphs.width / 2, y + rh / 2 + glyphs.height / 2);
 			rows.add(new Rectangle(x, y, rw, rh));
 			y -= rh + 14;
 		}
 		BitmapFont hint = ui(1f);
-		hint.setColor(Color.LIGHT_GRAY);
+		hint.setColor(Palette.MUTED);
 		centred(hint, "Tap a row to change it", w / 2, y + rh - 6);
-		backButton = button("Back", 70, h - 52, 110, 40, BUTTON);
+		backButton = button("Back", 70, h - 52, 110, 40, assets.buttonAlt);
 		batch.end();
 	}
 
