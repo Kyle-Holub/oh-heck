@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Random;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
@@ -27,7 +28,10 @@ import rules.Suit;
  * pinhole camera at the origin looking down +z, and projected onto the
  * screen; the card is drawn as a grid of small textured quads so the
  * perspective barely warps the artwork. The side facing the camera decides
- * whether the face or the back is drawn, and the angle to a light shades it.
+ * whether the face or the back is drawn, and the angle to a warm light shades
+ * it, with a glint as it turns towards the light. Cards away from the focus
+ * depth fade into pre-blurred copies (depth of field), and gold sparkles
+ * drift through the same space.
  */
 public final class FallingCards {
 
@@ -80,6 +84,7 @@ public final class FallingCards {
 			}
 		}
 		time += dt;
+		updateSparkles(dt, viewW, viewH);
 		spawnDebt += spawnRate() * dt;
 		while (spawnDebt >= 1f) {
 			spawnDebt -= 1f;
@@ -125,28 +130,87 @@ public final class FallingCards {
 		flakes.add(f);
 	}
 
-	/** Draws the cards with the screen centre at (cx, cy). */
+	// ---- drawing
+
+	/** Depth that is in sharp focus; cards nearer or further are blurred. */
+	private static final float FOCUS = 1050f;
+	private static final float WARM_R = 1f, WARM_G = 0.9f, WARM_B = 0.76f;
+	private static final Vector3 VIEW_LIGHT = new Vector3();
+
+	private final List<Flake> glinting = new ArrayList<Flake>();
+	private final float[] glintStrength = new float[MAX_CARDS + 1];
+
+	/** Draws sparkles and cards with the screen centre at (cx, cy). */
 	public void draw(SpriteBatch batch, float cx, float cy) {
 		Collections.sort(flakes, FAR_FIRST);
+		drawSparkles(batch, cx, cy, true);
+		glinting.clear();
 		for (Flake f : flakes) {
 			drawFlake(batch, f, cx, cy);
 		}
+		drawSparkles(batch, cx, cy, false);
+		drawGlints(batch, cx, cy);
+	}
+
+	/** How out of focus a depth is: 0 = sharp, 1 = fully blurred. Near cards blur faster than far ones. */
+	private static float defocus(float z) {
+		return MathUtils.clamp(z < FOCUS ? (FOCUS - z) / 420f : (z - FOCUS) / 950f, 0f, 1f);
 	}
 
 	private void drawFlake(SpriteBatch batch, Flake f, float cx, float cy) {
-		// which side faces the camera, and how brightly it is lit
+		// which side faces the camera, and how it is lit
 		n.set(0, 0, -1);
 		f.rot.transform(n);
-		toCam.set(f.pos).scl(-1);
+		toCam.set(f.pos).scl(-1).nor();
 		boolean front = n.dot(toCam) > 0;
-		float b = 0.42f + 0.58f * Math.abs(n.dot(LIGHT));
-		float color = Color.toFloatBits(b, b, b, 1f);
-		TextureRegion r = front ? assets.face(f.card) : assets.back();
+		float lit = 0.38f + 0.62f * Math.abs(n.dot(LIGHT));
+		// further away is darker, so the shower has depth
+		float depth = (f.pos.z - NEAR) / (FAR - NEAR);
+		float b = lit * MathUtils.lerp(1.05f, 0.42f, depth);
+		float d = defocus(f.pos.z);
 
-		// project the grid of points across the card
+		// a glint when the card turns its face towards the light
+		VIEW_LIGHT.set(LIGHT).add(toCam).nor();
+		float spec = (float) Math.pow(Math.abs(n.dot(VIEW_LIGHT)), 40) * (1 - d);
+		if (spec > 0.04f && glinting.size() < glintStrength.length) {
+			glintStrength[glinting.size()] = spec;
+			glinting.add(f);
+		}
+
+		if (d > 0.02f) {
+			TextureRegion blur = front ? assets.blurredFace(f.card) : assets.blurredBack();
+			float grow = 1f / (1f - 2f * Assets.blurMarginX()), growY = 1f / (1f - 2f * Assets.blurMarginY());
+			float a = Math.min(1f, d * 3f);
+			drawQuad(batch, f, cx, cy, blur, CARD_W * grow, CARD_H * growY, Color.toFloatBits(b * WARM_R, b * WARM_G, b * WARM_B, a));
+		}
+		if (d < 0.98f) {
+			TextureRegion r = front ? assets.face(f.card) : assets.back();
+			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(b * WARM_R, b * WARM_G, b * WARM_B, 1f - d));
+		}
+	}
+
+	/** Adds the glints on top, with additive blending so they brighten what is there. */
+	private void drawGlints(SpriteBatch batch, float cx, float cy) {
+		if (glinting.isEmpty()) {
+			return;
+		}
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		for (int i = 0; i < glinting.size(); i++) {
+			Flake f = glinting.get(i);
+			n.set(0, 0, -1);
+			f.rot.transform(n);
+			toCam.set(f.pos).scl(-1);
+			TextureRegion r = n.dot(toCam) > 0 ? assets.face(f.card) : assets.back();
+			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(1f, 0.88f, 0.62f, Math.min(0.7f, glintStrength[i])));
+		}
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+	}
+
+	/** Projects a card-shaped grid of size w x h and draws region across it. */
+	private void drawQuad(SpriteBatch batch, Flake f, float cx, float cy, TextureRegion r, float w, float h, float color) {
 		for (int j = 0; j <= GRID_Y; j++) {
 			for (int i = 0; i <= GRID_X; i++) {
-				v.set(((float) i / GRID_X - 0.5f) * CARD_W, ((float) j / GRID_Y - 0.5f) * CARD_H, 0);
+				v.set(((float) i / GRID_X - 0.5f) * w, ((float) j / GRID_Y - 0.5f) * h, 0);
 				f.rot.transform(v);
 				v.add(f.pos);
 				if (v.z < 1f) {
@@ -181,6 +245,67 @@ public final class FallingCards {
 		quad[o + 2] = color;
 		quad[o + 3] = u;
 		quad[o + 4] = v;
+	}
+
+	// ---- gold sparkles: glowing specks drifting in the same 3D space as the cards
+
+	private static final int SPARKLES = 170;
+	private final float[] sx = new float[SPARKLES], sy = new float[SPARKLES], sz = new float[SPARKLES];
+	private final float[] sDrift = new float[SPARKLES], sPhase = new float[SPARKLES], sRate = new float[SPARKLES],
+			sSize = new float[SPARKLES], sHue = new float[SPARKLES];
+	private boolean sparklesReady;
+
+	private void initSparkles(float viewW, float viewH) {
+		for (int i = 0; i < SPARKLES; i++) {
+			placeSparkle(i, viewW, viewH, (rng.nextFloat() * 2 - 1));
+		}
+		sparklesReady = true;
+	}
+
+	/** Puts sparkle i at a random depth, at height fraction yFrac (-1 bottom .. 1 top). */
+	private void placeSparkle(int i, float viewW, float viewH, float yFrac) {
+		float z = 300f + rng.nextFloat() * (FAR + 400f - 300f);
+		sz[i] = z;
+		sx[i] = (rng.nextFloat() * 2 - 1) * halfW(z, viewW) * 1.1f;
+		sy[i] = yFrac * halfH(z, viewH) * 1.1f;
+		sDrift[i] = 6f + rng.nextFloat() * 22f;
+		sPhase[i] = rng.nextFloat() * MathUtils.PI2;
+		sRate[i] = 0.6f + rng.nextFloat() * 2.2f;
+		sSize[i] = 3f + rng.nextFloat() * 6f;
+		sHue[i] = rng.nextFloat();
+	}
+
+	private void updateSparkles(float dt, float viewW, float viewH) {
+		if (!sparklesReady) {
+			initSparkles(viewW, viewH);
+		}
+		for (int i = 0; i < SPARKLES; i++) {
+			sy[i] -= sDrift[i] * dt; // a slow fall, like dust in a light beam
+			sx[i] += MathUtils.sin(time * 0.4f + sPhase[i]) * 6f * dt;
+			if (sy[i] < -halfH(sz[i], viewH) * 1.15f) {
+				placeSparkle(i, viewW, viewH, 1.1f);
+			}
+		}
+	}
+
+	private void drawSparkles(SpriteBatch batch, float cx, float cy, boolean behind) {
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		for (int i = 0; i < SPARKLES; i++) {
+			if ((sz[i] >= FOCUS) != behind) {
+				continue;
+			}
+			float scale = FOCAL / sz[i];
+			float d = defocus(sz[i]);
+			// out-of-focus sparkles spread into large, faint discs of light (bokeh)
+			float size = sSize[i] * scale * (1f + d * 5f);
+			float twinkle = 0.55f + 0.45f * MathUtils.sin(time * sRate[i] * 2f + sPhase[i]);
+			float a = twinkle * MathUtils.lerp(0.95f, 0.22f, d) * MathUtils.clamp(scale * 1.4f, 0.25f, 1f);
+			float g = MathUtils.lerp(0.62f, 0.86f, sHue[i]);
+			batch.setColor(1f, g, MathUtils.lerp(0.25f, 0.55f, sHue[i]), a);
+			batch.draw(assets.glow, cx + sx[i] * scale - size / 2, cy + sy[i] * scale - size / 2, size, size);
+		}
+		batch.setColor(Color.WHITE);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	private static final Comparator<Flake> FAR_FIRST = new Comparator<Flake>() {

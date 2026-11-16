@@ -49,6 +49,10 @@ public class TitleScreen extends BaseScreen {
 
 		ScreenUtils.clear(Palette.BG);
 		begin();
+		// a dim spotlit backdrop behind the shower
+		batch.setColor(0.5f, 0.5f, 0.5f, 1f);
+		batch.draw(assets.table, 0, 0, w, h);
+		batch.setColor(Color.WHITE);
 		cards.draw(batch, w / 2, h / 2);
 		rect(0, 0, w, h, Palette.SHADE);
 
