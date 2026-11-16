@@ -643,7 +643,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	// ---- player panels: name, dealer icon, score, and a row of bid/trick icons as in the original game
 
 	private static final float PANEL_W = 214, PANEL_H = 80;
-	private static final float ICON_W = 21, ICON_H = 27, ICON_GAP = 3;
+	private static final float ICON_MAX_W = 28, ICON_GAP = 3;
 	private static final Color PANEL_BG = new Color(0.04f, 0.06f, 0.2f, 0.78f);
 	private static final Color TURN_BG = new Color(0f, 0.5f, 0.3f, 0.85f);
 	private static final Color TURN_EDGE = new Color(0f, 0.96f, 0.5f, 1f);
@@ -718,7 +718,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		text(f, String.valueOf(match.score(seat)), x + PANEL_W - 10, top - 9, false);
 
 		// one icon per trick bid or won: faded = bid but not won yet, solid = won, red = won over the bid
-		float iy = y + 9;
+		float iy = y + 6;
 		Integer bid = match.bid(seat);
 		int won = match.tricksWon(seat);
 		if (bid == null) {
@@ -734,16 +734,18 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			s.draw(batch, "bid 0", x + 10, iy + 20);
 			return;
 		}
+		// as big as fits: 28 wide for a few tricks, shrinking to fit 8
+		float iw = Math.min(ICON_MAX_W, (PANEL_W - 20) / icons - ICON_GAP), ih = iw * 18f / 14f;
 		for (int i = 0; i < icons; i++) {
-			float ix = x + 10 + i * (ICON_W + ICON_GAP);
+			float ix = x + 10 + i * (iw + ICON_GAP);
 			if (i < Math.min(bid, won)) {
-				batch.draw(assets.trickIcon, ix, iy, ICON_W, ICON_H);
+				batch.draw(assets.trickIcon, ix, iy, iw, ih);
 			} else if (i < bid) {
 				batch.setColor(BID_FADE);
-				batch.draw(assets.trickIcon, ix, iy, ICON_W, ICON_H);
+				batch.draw(assets.trickIcon, ix, iy, iw, ih);
 				batch.setColor(Color.WHITE);
 			} else {
-				batch.draw(assets.overIcon, ix, iy, ICON_W, ICON_H);
+				batch.draw(assets.overIcon, ix, iy, iw, ih);
 			}
 		}
 	}
