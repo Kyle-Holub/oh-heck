@@ -3,11 +3,14 @@ package core.player;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.ListIterator;
 
 import core.card.Card;
-import core.card.Card.Suit;
+import core.card.CardComparator;
 import core.card.PlayerCard;
+import rules.Rules;
+import rules.Suit;
 
 /**
  * An abstract class for players of the game.
@@ -154,52 +157,17 @@ public abstract class Player {
 		return playerIndex;
 	}
 	
+	/** The hand as rules-package cards, in hand order. */
+	public List<rules.Card> handCards() {
+		return CardComparator.toRules(hand);
+	}
+
 	public int getCardIndex(Card cardToPlay) {
 		return hand.indexOf(cardToPlay);
 	}
 	
 	public abstract void centerCards();
 	
-	public PlayerCard getHighestCard(ArrayList<PlayerCard> playableCards) {
-		PlayerCard highest = playableCards.get(0);
-		for (PlayerCard card: playableCards) {
-			if (card.greaterFaceValue(highest.getFaceValue())) {
-				highest = card;
-			}
-		}
-		return highest;
-	}
-
-	public Card getHighestCard() {
-		Card highest = hand.get(0);
-		for (Card card: hand) {
-			if (card.greaterFaceValue(highest.getFaceValue())) {
-				highest = card;
-			}
-		}
-		return highest;
-	}
-
-	public PlayerCard getLowestCard() {
-		PlayerCard lowest = hand.get(0);
-		for (PlayerCard card: hand) {
-			if (!card.greaterFaceValue(lowest.getFaceValue())) {
-				lowest = card;
-			}
-		}
-		return lowest;
-	}
-	
-	public PlayerCard getLowestCard(ArrayList<PlayerCard> cards) {
-		PlayerCard lowest = cards.get(0);
-		for (PlayerCard card: cards) {
-			if (!card.greaterFaceValue(lowest.getFaceValue())) {
-				lowest = card;
-			}
-		}
-		return lowest;
-	}
- 
 	public void setName(String name) {
 		this.nameTag.setName(name);
 	}
@@ -244,12 +212,7 @@ public abstract class Player {
 	}
 	
 	public void tallyScore() {
-		if (bet == tricks) {
-			score += 10 + (2 * bet);
-		} else {
-			int i = Math.abs(bet - tricks);
-			score += (i * -5);
-		}
+		score += Rules.score(bet, tricks);
 		bet = 0;
 		tricks = 0;
 	}

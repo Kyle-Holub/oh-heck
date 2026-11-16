@@ -11,14 +11,16 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ListIterator;
 
 import javax.imageio.ImageIO;
 
 import core.card.Card;
-import core.card.Card.Suit;
 import core.card.Deck;
 import core.card.PlayerCard;
+import rules.Rules;
+import rules.Suit;
 import game.main.MainCanvas;
 import util.JukeBox;
 
@@ -109,31 +111,15 @@ public class HumanPlayer extends Player {
 		return playableCards;
 	}
 
+	/**
+	 * Marks which cards may be played.
+	 * @param firstCardSuit the suit led this trick, or null when leading
+	 */
 	public void setPlayableCards(Suit firstCardSuit) {
-		playableCards = new boolean[this.getNumberOfCards()];
-		// if suit is null, there is no first card, play anything
-		if (firstCardSuit == null) {
-			for (int i = 0; i < playableCards.length; i++) {
-				playableCards[i] = true;
-			}
-		} else {
-			int i = 0;
-			boolean playable = false;
-			// check for cards of the same suit as first card
-			for (Card card: this.getHand()) {
-				if (card.sameSuit(firstCardSuit)) {
-					playableCards[i] = true;
-					playable = true;
-				}
-				i++;
-			}
-			// if still no cards match, all cards are playable
-			if (!playable) {
-				i = 0;
-				for (i = 0; i < getHand().size(); i++) {
-					playableCards[i] = true;
-				}
-			} 
+		List<rules.Card> hand = handCards();
+		playableCards = new boolean[hand.size()];
+		for (int i = 0; i < hand.size(); i++) {
+			playableCards[i] = Rules.isLegalPlay(hand, hand.get(i), firstCardSuit);
 		}
 
 		// set currChoice to first available card
@@ -273,7 +259,7 @@ public class HumanPlayer extends Player {
 	}
 
 	public void selectBid() {
-		if (isDealer() && currChoice == this.getNumberOfCards() - totalBets) {
+		if (!Rules.isLegalBid(currChoice, getNumberOfCards(), totalBets, isDealer())) {
 			if (!errorDisplayed) {
 				errorDisplayed = true;
 			}

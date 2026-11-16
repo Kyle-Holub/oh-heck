@@ -7,8 +7,11 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import rules.Rank;
+import rules.Suit;
+
 /**
- * A class which stores a card's suit and face value.
+ * A card on screen: a rules.Card plus its image and position.
  * 
  * @author Kyle Holub
  * @version 1.0
@@ -18,11 +21,8 @@ public class Card {
 
 	private static BufferedImage cardBackImage;
 
-	// suit
-	private Suit suit;
-
-	// face value
-	private FaceValue value;
+	// the card's suit and rank
+	private rules.Card card;
 
 	// image
 	private BufferedImage cardImage;
@@ -38,14 +38,11 @@ public class Card {
 	/**
 	 * Constructor
 	 * 
-	 * @param suit
-	 *            Suit
-	 * @param value
-	 *            FaceValue
+	 * @param card
+	 *            the card's suit and rank
 	 */
-	public Card(Suit suit, FaceValue value, BufferedImage cardImage) {
-		this.suit = suit;
-		this.value = value;
+	public Card(rules.Card card, BufferedImage cardImage) {
+		this.card = card;
 		this.cardImage = cardImage;
 		try {
 			cardBackImage = ImageIO.read(getClass().getResourceAsStream("/images/cardback.png"));
@@ -64,8 +61,7 @@ public class Card {
 	 * @param card
 	 */
 	public Card(Card card) {
-		this.suit = card.suit;
-		this.value = card.value;
+		this.card = card.card;
 		this.cardImage = card.cardImage;
 	}
 
@@ -158,16 +154,23 @@ public class Card {
 	 * @return Suit
 	 */
 	public Suit getSuit() {
-		return suit;
+		return card.suit();
 	}
 
 	/**
-	 * Gets the face value.
+	 * Gets the rank.
 	 * 
-	 * @return FaceValue
+	 * @return Rank
 	 */
-	public FaceValue getFaceValue() {
-		return value;
+	public Rank getFaceValue() {
+		return card.rank();
+	}
+
+	/**
+	 * The card's suit and rank, for use with the rules package.
+	 */
+	public rules.Card rulesCard() {
+		return card;
 	}
 
 	public BufferedImage getImage() {
@@ -181,60 +184,13 @@ public class Card {
 	 * @return true if this card is of the same suit, else false.
 	 */
 	public boolean sameSuit(Suit suit) {
-		if (this.suit.equals(suit)) {
-			return true;
-		}
-		return false;
-	}
-
-	public boolean greaterFaceValue(FaceValue value) {
-		if (this.value.getValue() > value.getValue()) {
-			return true;
-		} else {
-			return false;
-		}
+		return card.suit() == suit;
 	}
 
 	/**
 	 * Returns a string representation of the card.
 	 */
 	public String toString() {
-		return value.toString() + " of " + suit.toString();
-	}
-
-	/**
-	 * Enumeration for four possible suits.
-	 */
-	public enum Suit {
-		CLUBS(0), SPADES(1), HEARTS(2), DIAMONDS(3);
-
-		private int value;
-
-		Suit(int value) {
-			this.value = value;
-		}
-
-		public int getValue() {
-			return value;
-		}
-	}
-
-	/**
-	 * Enumeration for the face values.
-	 */
-	public enum FaceValue {
-		ACE(12), TWO(0), THREE(1), FOUR(2), FIVE(3), SIX(4), SEVEN(5), EIGHT(6), NINE(7), TEN(8), JACK(9), QUEEN(
-				10), KING(11);
-
-		private int value;
-
-		FaceValue(int value) {
-			this.value = value;
-		}
-
-		public int getValue() {
-			return value;
-		}
-
+		return card.toString();
 	}
 }

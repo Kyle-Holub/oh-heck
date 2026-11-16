@@ -12,7 +12,6 @@ import java.util.Iterator;
 import javax.imageio.ImageIO;
 
 import core.card.Card;
-import core.card.Card.Suit;
 import core.card.CardComparator;
 import core.card.Deck;
 import core.card.PlayerCard;
@@ -21,6 +20,8 @@ import core.player.Player;
 import core.player.PlayerQueue;
 import game.gameState.PlayState;
 import game.main.MainCanvas;
+import rules.Rules;
+import rules.Suit;
 
 /**
  * A class for managing the game rounds.
@@ -30,9 +31,6 @@ import game.main.MainCanvas;
  * @since 1.0 8/21/2015 initial version
  */
 public class RoundKeeper {
-	
-	// number of cards at the beginning
-	private static final int NUM_CARDS_AT_START = 1;
 	
 	// time to wait when selecting winner (for suspense)
 	private static final int WINNER_SELECT_TIME = 1;
@@ -48,7 +46,8 @@ public class RoundKeeper {
 	// player queue
 	private PlayerQueue players;
 	
-	// cards per player
+	// which hand of the game this is (0-based), and its cards per player
+	private int handIndex;
 	private int cardsPerPlayer;
 	
 	// the deck of cards
@@ -78,9 +77,6 @@ public class RoundKeeper {
 	// flag for game over
 	private boolean gameOver;
 	
-	// indicates if the number of cards dealt is decreasing
-	private boolean dealerDecreasing;
-	
 	// true if human player won a trick
 	private boolean playerWon;
 	
@@ -104,7 +100,8 @@ public class RoundKeeper {
 	 */
 	public RoundKeeper(PlayerQueue players) {
 		this.players = players;
-		this.cardsPerPlayer = NUM_CARDS_AT_START;
+		this.handIndex = 0;
+		this.cardsPerPlayer = Rules.handSize(handIndex);
 		
 		try {
 			trickWon = ImageIO.read(getClass().getResourceAsStream("/images/trickWonText.png"));
@@ -112,8 +109,6 @@ public class RoundKeeper {
 			e.printStackTrace();
 		}
 		
-		// init all flags
-		dealerDecreasing = true;
 		winnerFont = new Font("Serif", Font.BOLD, 26);
 		
 		// init deck and deal
@@ -191,15 +186,7 @@ public class RoundKeeper {
 				
 				// format the display string
 				String won;
-				boolean trump = false;
-				
-				// if the winning card is the same as the trump suit but not the same suit as the first card
-				if (CardComparator.isSameSuit(winningCard, trumpSuit) 
-						&& !CardComparator.isSameSuit(winningCard, PlayerQueue.getPlayedCards().get(0).getSuit())) {
-					// the card is a trump card
-					trump = true;
-				}
-				if (trump) {
+				if (Rules.wonByTrumping(CardComparator.toRules(playedCards), trumpSuit)) {
 					won = " trumped";
 				} else {
 					won = " won";
@@ -228,16 +215,12 @@ public class RoundKeeper {
 					// start time for displaying results of hand
 					timerStart = System.currentTimeMillis();
 					
-					// toggle dealer decreasing
-					if (cardsPerPlayer <= 1) {
-						dealerDecreasing = false;
-					}
 					players.getUser().playEndHandSound();
-					
-					if (dealerDecreasing) {
-						cardsPerPlayer -= 1;
-					} else {
-						cardsPerPlayer += 1;
+
+					// move on to the next hand's size
+					handIndex++;
+					if (handIndex < Rules.numberOfHands()) {
+						cardsPerPlayer = Rules.handSize(handIndex);
 					}
 					
 				// hand is not empty, get ready for next trick
@@ -251,7 +234,7 @@ public class RoundKeeper {
 			if ((System.currentTimeMillis() - timerStart) / 1000 > HAND_OVER_DISPLAY_TIME) {
 				displayingHandOver = false;
 				// if game complete
-				if (cardsPerPlayer >= 9 && !dealerDecreasing) {
+				if (handIndex >= Rules.numberOfHands()) {
 					timerStart = System.currentTimeMillis();
 					displayingGameOver = true;
 					players.updateScores();

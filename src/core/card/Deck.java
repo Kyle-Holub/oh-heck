@@ -6,9 +6,9 @@ import java.util.Random;
 
 import javax.imageio.ImageIO;
 
-import core.card.Card.FaceValue;
-import core.card.Card.Suit;
 import core.player.Player;
+import rules.Rank;
+import rules.Suit;
 
 /**
  * This class stores an ArrayList of 52 card objects.
@@ -55,8 +55,8 @@ public class Deck {
 		this.cards = new ArrayList<Card>(52);
 		for (Suit s : Suit.values()) {
 			int value = 0;
-			for (FaceValue v: FaceValue.values()) {
-				cards.add(new Card(s, v, getImage(suit, value)));
+			for (Rank v: Rank.values()) {
+				cards.add(new Card(rules.Card.of(v, s), getImage(suit, value)));
 				value++;
 			}
 			suit++;
