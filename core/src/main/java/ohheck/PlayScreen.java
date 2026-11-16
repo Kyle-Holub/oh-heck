@@ -667,13 +667,13 @@ public class PlayScreen extends BaseScreen {
 
 	// ---- the hand counter: tally marks, a gate of five then three
 
-	private static final float TALLY_H = 30f, TALLY_W = 4f, TALLY_STEP = 10f;
+	private static final float TALLY_H = 36f, TALLY_W = 5f, TALLY_STEP = 12f;
 	/** Small fixed leans so the strokes look hand drawn. */
 	private static final float[] TALLY_LEAN = { 3f, -2f, 4f, -1f, 0f, 2f, -3f, 1f };
 
 	private void drawInfo() {
 		int done = match.phase() == Match.Phase.GAME_OVER ? 8 : match.handIndex();
-		float left = 18, top = h - 12, pulse = 0.5f + 0.5f * MathUtils.sin(time * 3f);
+		float left = 22, top = h - 12, pulse = 0.5f + 0.5f * MathUtils.sin(time * 3f);
 		for (int i = 0; i < 8; i++) {
 			float cx, cy = top - TALLY_H / 2, len = TALLY_H, rot;
 			if (i == 4) { // the bar across the first four
@@ -682,16 +682,16 @@ public class PlayScreen extends BaseScreen {
 				rot = -52; // leaning up to the right
 			} else {
 				int col = i < 4 ? i : i - 1;
-				cx = left + col * TALLY_STEP + (i > 4 ? 14 : 0);
+				cx = left + col * TALLY_STEP + (i > 4 ? 16 : 0);
 				rot = TALLY_LEAN[i];
 			}
 			if (i == done) { // the hand being played glows
 				stroke(cx, cy, TALLY_W + 6, len + 6, rot, Palette.GOLD_LIGHT, 0.18f + 0.22f * pulse);
 				stroke(cx, cy, TALLY_W, len, rot, Palette.GOLD_LIGHT, 1f);
 			} else if (i < done) {
-				stroke(cx, cy, TALLY_W, len, rot, GOLD, 0.95f);
+				stroke(cx, cy, TALLY_W, len, rot, GOLD, 1f);
 			} else {
-				stroke(cx, cy, TALLY_W, len, rot, Palette.MUTED, 0.22f);
+				stroke(cx, cy, TALLY_W, len, rot, Palette.MUTED, 0.28f);
 			}
 		}
 	}
