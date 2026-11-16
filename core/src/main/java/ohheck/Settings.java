@@ -16,9 +16,19 @@ public final class Settings {
 		return prefs.getBoolean("sound", true);
 	}
 
-	/** Shorter pauses between moves. */
-	public boolean fast() {
-		return prefs.getBoolean("fast", false);
+	public static final String[] SPEEDS = { "Slow", "Medium", "Fast" };
+	private static final float[] SPEED_FACTORS = { 0.6f, 0.8f, 1.4f };
+
+	/** Animation and turn speed: 0 = slow, 1 = medium (the default), 2 = fast. */
+	public int speed() {
+		// earlier versions saved a fast on/off switch
+		int legacy = prefs.getBoolean("fast", false) ? 2 : 1;
+		return Math.max(0, Math.min(2, prefs.getInteger("speed", legacy)));
+	}
+
+	/** How much faster than the base timings everything runs. */
+	public float speedFactor() {
+		return SPEED_FACTORS[speed()];
 	}
 
 	/** The game in progress, as saved by rules.Match.save(), or null. */
@@ -53,7 +63,7 @@ public final class Settings {
 		prefs.putBoolean("sound", on).flush();
 	}
 
-	public void setFast(boolean on) {
-		prefs.putBoolean("fast", on).flush();
+	public void setSpeed(int speed) {
+		prefs.putInteger("speed", speed).flush();
 	}
 }

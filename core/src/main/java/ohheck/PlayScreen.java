@@ -48,7 +48,7 @@ public class PlayScreen extends BaseScreen {
 	private static final float TRICK_PAUSE = 1.7f, COLLECT_TIME = 0.45f, TRICK_WON_SHOW = 0.9f;
 	private static final float HAND_END_SHOW = 2.4f;
 	private static final float PLAY_FLIGHT = 0.25f;
-	private static final float DEAL_INTERVAL = 0.06f, DEAL_FLIGHT = 0.3f;
+	private static final float DEAL_INTERVAL = 0.09f, DEAL_FLIGHT = 0.4f;
 	private static final float HINT_TIME = 2.2f;
 	private static final float AUTOPLAY_DELAY = 1.2f, AUTOPLAY_CONFIRM = 0.7f, HAND_OVER_AUTO = 2.2f;
 
@@ -76,7 +76,7 @@ public class PlayScreen extends BaseScreen {
 	// dealing animation, and the trump card turning over once it's done
 	private int dealtHand = -1;
 	private float dealT, dealDuration, trumpFlip;
-	private static final float FLIP_TIME = 0.28f, TRUMP_FLIP_TIME = 0.45f;
+	private static final float FLIP_TIME = 0.32f, TRUMP_FLIP_TIME = 0.45f;
 
 	// gold sparks when you make your bid or win the game
 	private static final int SPARKS = 140;
@@ -186,7 +186,6 @@ public class PlayScreen extends BaseScreen {
 	@Override
 	public void hide() {
 		Gdx.input.setInputProcessor(null);
-		game.audio.stopMusic();
 	}
 
 	public boolean isGameOver() {
@@ -403,7 +402,7 @@ public class PlayScreen extends BaseScreen {
 
 	@Override
 	public void render(float delta) {
-		update(Math.min(delta, 0.1f) * options.speed * (game.settings.fast() ? 1.8f : 1f));
+		update(Math.min(delta, 0.1f) * options.speed * game.settings.speedFactor());
 		draw();
 	}
 
@@ -683,13 +682,30 @@ public class PlayScreen extends BaseScreen {
 
 	private void drawOpponent(int seat) {
 		drawPanel(seat);
-		int n = isDealing() ? dealtTo(seat) : match.hand(seat).size();
+		// while dealing, only the cards that have landed, each already in its final place
+		int total = match.hand(seat).size();
+		int n = isDealing() ? dealtTo(seat) : total;
 		float bw = Assets.CARD_W * BACK_SCALE, bh = Assets.CARD_H * BACK_SCALE;
-		Vector2 fan = fanOrigin(seat);
+		float y = fanOrigin(seat).y;
 		for (int i = 0; i < n; i++) {
-			float cx = seat == 3 ? fan.x - bw - (n - 1 - i) * 12 : fan.x + i * 12;
-			batch.draw(assets.back(), cx, fan.y, bw, bh);
+			batch.draw(assets.back(), fanCardX(seat, i, total), y, bw, bh);
 		}
+	}
+
+	/** Left edge of the i-th of n face-down cards in an opponent's fan. */
+	private float fanCardX(int seat, int i, int n) {
+		float bw = Assets.CARD_W * BACK_SCALE;
+		Vector2 fan = fanOrigin(seat);
+		return seat == 3 ? fan.x - bw - (n - 1 - i) * 12 : fan.x + i * 12;
+	}
+
+	/** Your hand's layout for n cards: left edge of the first card and the step between cards. */
+	private float[] handLayout(int n) {
+		float cw = Assets.CARD_W * HAND_SCALE;
+		// leave room for your panel on the left and the menu button on the right
+		float maxWidth = Math.max(330, w - 2 * (PANEL_W + 26));
+		float gap = n <= 1 ? 0 : Math.min(cw + 6, (maxWidth - cw) / (n - 1));
+		return new float[] { (w - (gap * (n - 1) + cw)) / 2, gap };
 	}
 
 	/** Where an opponent's face-down cards start: beside the top panel, under the side panels. */
@@ -737,10 +753,8 @@ public class PlayScreen extends BaseScreen {
 		}
 		int shown = isDealing() ? dealtTo(HUMAN) : n;
 		float cw = Assets.CARD_W * HAND_SCALE, ch = Assets.CARD_H * HAND_SCALE;
-		// leave room for your panel on the left and the menu button on the right
-		float maxWidth = Math.max(330, w - 2 * (PANEL_W + 26));
-		float gap = n == 1 ? 0 : Math.min(cw + 6, (maxWidth - cw) / (n - 1));
-		float start = (w - (gap * (n - 1) + cw)) / 2;
+		float[] layout = handLayout(n);
+		float start = layout[0], gap = layout[1];
 
 		boolean myTurn = humanCanPlay();
 		List<Card> legal = myTurn ? match.legalPlays(HUMAN) : Collections.<Card>emptyList();
@@ -930,18 +944,34 @@ public class PlayScreen extends BaseScreen {
 	private void drawDealing() {
 		int n = match.handSize();
 		Vector2 from = seatAnchor(match.dealer());
-		float bw = Assets.CARD_W * 0.7f, bh = Assets.CARD_H * 0.7f;
+		float fromW = Assets.CARD_W * BACK_SCALE, fromH = Assets.CARD_H * BACK_SCALE;
+		float[] hand = handLayout(n);
+		int[] dealtSoFar = new int[4];
 		for (int k = 0; k < 4 * n; k++) {
+			int seat = (match.dealer() + 1 + k) % 4;
+			int j = dealtSoFar[seat]++; // this is the j-th card to reach that seat
 			float start = k * DEAL_INTERVAL;
 			if (dealT < start || dealT >= start + DEAL_FLIGHT) {
 				continue;
 			}
-			int seat = (match.dealer() + 1 + k) % 4;
-			Vector2 to = seatAnchor(seat);
+			// fly straight to the place the card will stay, face down; yours flip once they land
+			float tx, ty, tw, th;
+			if (seat == HUMAN) {
+				tw = Assets.CARD_W * HAND_SCALE;
+				th = Assets.CARD_H * HAND_SCALE;
+				tx = hand[0] + j * hand[1];
+				ty = 8;
+			} else {
+				tw = Assets.CARD_W * BACK_SCALE;
+				th = Assets.CARD_H * BACK_SCALE;
+				tx = fanCardX(seat, j, n);
+				ty = fanOrigin(seat).y;
+			}
 			float p = Interpolation.pow2Out.apply((dealT - start) / DEAL_FLIGHT);
-			float x = MathUtils.lerp(from.x, to.x, p) - bw / 2, y = MathUtils.lerp(from.y, to.y, p) - bh / 2;
-			shadow(x, y, bw, bh, 26 * (1 - p) + 4);
-			batch.draw(assets.back(), x, y, bw, bh);
+			float cw = MathUtils.lerp(fromW, tw, p), ch = MathUtils.lerp(fromH, th, p);
+			float x = MathUtils.lerp(from.x - fromW / 2, tx, p), y = MathUtils.lerp(from.y - fromH / 2, ty, p);
+			shadow(x, y, cw, ch, 26 * (1 - p) + 4);
+			batch.draw(assets.back(), x, y, cw, ch);
 		}
 	}
 

@@ -38,6 +38,12 @@ public class TitleScreen extends BaseScreen {
 	}
 
 	@Override
+	public void show() {
+		super.show();
+		game.audio.startMusic();
+	}
+
+	@Override
 	public void render(float delta) {
 		float dt = Math.min(delta, 0.1f) * game.options.speed;
 		shownFor += dt;

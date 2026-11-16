@@ -36,7 +36,7 @@ public class OptionsScreen extends BaseScreen {
 		centred(t, "Options", w / 2, h - 40);
 
 		String[] labels = { "Music", "Sound effects", "Game speed", "Visual effects" };
-		String[] values = { s.music() ? "On" : "Off", s.sound() ? "On" : "Off", s.fast() ? "Fast" : "Normal",
+		String[] values = { s.music() ? "On" : "Off", s.sound() ? "On" : "Off", Settings.SPEEDS[s.speed()],
 				s.effects() ? "On" : "Off" };
 		boolean[] on = { s.music(), s.sound(), true, s.effects() };
 		rows.clear();
@@ -75,11 +75,12 @@ public class OptionsScreen extends BaseScreen {
 		}
 		if (rows.get(0).contains(x, y)) {
 			s.setMusic(!s.music());
+			game.audio.startMusic(); // starts or stops it to match
 		} else if (rows.get(1).contains(x, y)) {
 			s.setSound(!s.sound());
 			game.audio.play(Audio.Effect.PLAY_CARD);
 		} else if (rows.get(2).contains(x, y)) {
-			s.setFast(!s.fast());
+			s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
 		} else if (rows.get(3).contains(x, y)) {
 			s.setEffects(!s.effects());
 		}
