@@ -29,7 +29,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build APK
-        run: ./gdx/gradlew -p gdx :core:test :android:assembleDebug -PversionCode=${{ github.run_number }} --stacktrace
+        run: ./gradlew core:test android:assembleDebug lwjgl3:dist -PversionCode=${{ github.run_number }} --stacktrace
 
       - name: Screenshots of a scripted game
         continue-on-error: true
@@ -39,8 +39,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
-          xvfb-run -a -s "-screen 0 1600x800x24" ./gdx/gradlew -p gdx :lwjgl3:screenshots --stacktrace
-          ls -l gdx/build/screenshots
+          xvfb-run -a -s "-screen 0 1600x800x24" ./gradlew lwjgl3:screenshots --stacktrace
+          ls -l build/screenshots
 
       - name: Publish dev build
         env:
@@ -49,9 +49,10 @@ jobs:
           # zero-padded so alphabetical order is build order (Obtainium and GitHub sort by name)
           TAG="dev-$(printf '%04d' ${{ github.run_number }})"
           APK="oh-heck-${TAG}.apk"
-          cp gdx/android/build/outputs/apk/debug/android-debug.apk "$APK"
-          SHOTS=$(ls gdx/build/screenshots/*.png 2>/dev/null || true)
-          gh release create "$TAG" "$APK" $SHOTS \
+          cp android/build/outputs/apk/debug/android-debug.apk "$APK"
+          cp build/dist/oh-heck-desktop.jar oh-heck-desktop.jar
+          SHOTS=$(ls build/screenshots/*.png 2>/dev/null || true)
+          gh release create "$TAG" "$APK" oh-heck-desktop.jar $SHOTS \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Dev build ${{ github.run_number }}" \

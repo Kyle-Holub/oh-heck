@@ -17,9 +17,6 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Rules tests
+      - name: Rules tests and desktop build
         # no Android SDK needed: unset it so only core + desktop are configured
-        run: env -u ANDROID_HOME -u ANDROID_SDK_ROOT ./gdx/gradlew -p gdx :core:test --stacktrace
-
-      - name: Swing desktop game compiles
-        run: javac -d build/swing -cp "libraries/*" $(find src -name '*.java')
+        run: env -u ANDROID_HOME -u ANDROID_SDK_ROOT ./gradlew core:test lwjgl3:dist --stacktrace
