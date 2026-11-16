@@ -1,5 +1,6 @@
 package util;
 
+import java.io.BufferedInputStream;
 import java.util.HashMap;
 
 import javax.sound.sampled.AudioFormat;
@@ -22,8 +23,9 @@ public class JukeBox {
 		if(clips.get(n) != null) return;
 		Clip clip;
 		try {			
+			// Buffer the stream so mark/reset works when resources are read from a jar
 			AudioInputStream ais = AudioSystem.getAudioInputStream(
-					JukeBox.class.getResourceAsStream(s));
+					new BufferedInputStream(JukeBox.class.getResourceAsStream(s)));
 			AudioFormat baseFormat = ais.getFormat();
 			AudioFormat decodeFormat = new AudioFormat(
 				AudioFormat.Encoding.PCM_SIGNED,

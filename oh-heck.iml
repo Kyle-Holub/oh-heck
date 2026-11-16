@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
   <component name="EclipseModuleManager">
-    <libelement value="file://C:/Users/Owner/Desktop/Workspace2/OhHeck/libraries/jl1.0.1.jar" />
-    <libelement value="file://C:/Users/Owner/Desktop/Workspace2/OhHeck/libraries/mp3spi1.9.5.jar" />
-    <libelement value="file://C:/Users/Owner/Desktop/Workspace2/OhHeck/libraries/tritonus_share.jar" />
+    <libelement value="file://$MODULE_DIR$/libraries/jl1.0.1.jar" />
+    <libelement value="file://$MODULE_DIR$/libraries/mp3spi1.9.5.jar" />
+    <libelement value="file://$MODULE_DIR$/libraries/tritonus_share.jar" />
     <src_description expected_position="0">
       <src_folder value="file://$MODULE_DIR$/src" expected_position="0" />
       <src_folder value="file://$MODULE_DIR$/resources" expected_position="1" />
@@ -21,7 +21,7 @@
     <orderEntry type="module-library">
       <library name="jl1.0.1.jar">
         <CLASSES>
-          <root url="file://C:/Users/Owner/Desktop/Workspace2/OhHeck/libraries/jl1.0.1.jar" />
+          <root url="jar://$MODULE_DIR$/libraries/jl1.0.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -30,7 +30,7 @@
     <orderEntry type="module-library">
       <library name="mp3spi1.9.5.jar">
         <CLASSES>
-          <root url="file://C:/Users/Owner/Desktop/Workspace2/OhHeck/libraries/mp3spi1.9.5.jar" />
+          <root url="jar://$MODULE_DIR$/libraries/mp3spi1.9.5.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -39,7 +39,7 @@
     <orderEntry type="module-library">
       <library name="tritonus_share.jar">
         <CLASSES>
-          <root url="file://C:/Users/Owner/Desktop/Workspace2/OhHeck/libraries/tritonus_share.jar" />
+          <root url="jar://$MODULE_DIR$/libraries/tritonus_share.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
