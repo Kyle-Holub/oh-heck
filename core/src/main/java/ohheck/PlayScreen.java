@@ -78,6 +78,14 @@ public class PlayScreen extends BaseScreen {
 	private float dealT, dealDuration, trumpFlip;
 	private static final float FLIP_TIME = 0.32f, TRUMP_FLIP_TIME = 0.45f;
 
+	// shuffling before each deal: the deck comes to the middle, is split and riffled (twice for a
+	// new game, once between hands), then goes to the dealer
+	private float shuffleT, shuffleDuration;
+	private int shufflePasses, shuffleSounds;
+	private static final float SHUFFLE_GATHER = 0.4f, SHUFFLE_SPLIT = 0.3f, SHUFFLE_RIFFLE = 0.85f,
+			SHUFFLE_SETTLE = 0.3f, SHUFFLE_PASS = SHUFFLE_SPLIT + SHUFFLE_RIFFLE + SHUFFLE_SETTLE, SHUFFLE_HOME = 0.4f;
+	private static final int RIFFLE_CARDS = 24;
+
 	// gold sparks when you make your bid or win the game
 	private static final int SPARKS = 140;
 	private final float[] spX = new float[SPARKS], spY = new float[SPARKS], spVX = new float[SPARKS],
@@ -120,6 +128,7 @@ public class PlayScreen extends BaseScreen {
 			// don't replay the deal for a hand that was already under way
 			dealtHand = match.handIndex();
 			dealT = dealDuration = 0;
+			shuffleT = shuffleDuration = 0;
 			trumpFlip = TRUMP_FLIP_TIME;
 		}
 	}
@@ -283,7 +292,9 @@ public class PlayScreen extends BaseScreen {
 			return;
 		}
 		if (isDealing()) {
-			dealT = dealDuration; // tap skips the deal
+			shuffleT = shuffleDuration; // tap skips the shuffle and the deal
+			shuffleSounds = shufflePasses;
+			dealT = dealDuration;
 			return;
 		}
 		if (trickPause > 0) {
@@ -426,12 +437,25 @@ public class PlayScreen extends BaseScreen {
 			dealtHand = match.handIndex();
 			dealT = 0;
 			dealDuration = 4 * match.handSize() * DEAL_INTERVAL + DEAL_FLIGHT + FLIP_TIME + 0.1f;
+			shufflePasses = match.handIndex() == 0 ? 2 : 1;
+			shuffleDuration = SHUFFLE_GATHER + shufflePasses * SHUFFLE_PASS + SHUFFLE_HOME;
+			shuffleT = 0;
+			shuffleSounds = 0;
 			trumpFlip = 0;
 			flights.clear();
-			game.audio.play(Audio.Effect.SHUFFLE);
 		}
 		if (isDealing()) {
-			dealT += dt;
+			if (isShuffling()) {
+				shuffleT += dt;
+				// the shuffle sound starts with each riffle
+				if (shuffleSounds < shufflePasses
+						&& shuffleT >= SHUFFLE_GATHER + shuffleSounds * SHUFFLE_PASS + SHUFFLE_SPLIT) {
+					shuffleSounds++;
+					game.audio.play(Audio.Effect.SHUFFLE);
+				}
+			} else {
+				dealT += dt;
+			}
 			return;
 		}
 		trumpFlip += dt;
@@ -565,6 +589,11 @@ public class PlayScreen extends BaseScreen {
 		}
 	}
 
+	/** Shuffling comes first, as part of dealing. */
+	private boolean isShuffling() {
+		return isDealing() && shuffleT < shuffleDuration;
+	}
+
 	private boolean isDealing() {
 		return dealtHand == match.handIndex() && match.phase() == Match.Phase.BIDDING && dealT < dealDuration;
 	}
@@ -631,6 +660,9 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	private String statusText() {
+		if (isShuffling()) {
+			return NAMES[match.dealer()] + (match.dealer() == HUMAN ? " shuffle" : " shuffles") + "  (tap to skip)";
+		}
 		if (isDealing()) {
 			return NAMES[match.dealer()] + (match.dealer() == HUMAN ? " deal" : " deals") + "  (tap to skip)";
 		}
@@ -657,6 +689,9 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	private void drawTrump() {
+		if (isShuffling()) {
+			return; // the trump card is still in the deck
+		}
 		float cw = Assets.CARD_W * TRUMP_SCALE, ch = Assets.CARD_H * TRUMP_SCALE;
 		BitmapFont f = ui(1f);
 		f.setColor(Palette.CREAM);
@@ -843,6 +878,90 @@ public class PlayScreen extends BaseScreen {
 		}
 	}
 
+	// ---- the shuffle
+
+	private static final float DECK_SCALE = 0.85f, HALF_GAP = 52f;
+
+	/** A deck seen from above at an angle: count cards stacked with a slight offset, centred on (cx, cy). */
+	private void stack(float cx, float cy, int count, float cw, float ch, float rotation) {
+		int shown = Math.min(count, 14);
+		for (int i = 0; i < shown; i++) {
+			float x = cx - cw / 2 - i * 0.45f, y = cy - ch / 2 + i * 0.7f;
+			if (i == 0) {
+				shadow(x, y, cw, ch, 4 + shown * 0.4f);
+			}
+			batch.draw(assets.back(), x, y, cw / 2, ch / 2, cw, ch, 1f, 1f, rotation);
+		}
+	}
+
+	private void drawShuffle() {
+		float cw = Assets.CARD_W * DECK_SCALE, ch = Assets.CARD_H * DECK_SCALE;
+		float cx = w / 2, cy = h / 2 + 5;
+		Vector2 dealer = seatAnchor(match.dealer());
+		float t = shuffleT;
+
+		// gather: the deck comes from the dealer to the middle of the table
+		if (t < SHUFFLE_GATHER) {
+			float p = Interpolation.pow2Out.apply(t / SHUFFLE_GATHER);
+			stack(MathUtils.lerp(dealer.x, cx, p), MathUtils.lerp(dealer.y, cy, p), 52, cw, ch, 0);
+			return;
+		}
+		t -= SHUFFLE_GATHER;
+
+		// riffle passes: split into two halves, then cards fall alternately from each onto one pile
+		if (t < shufflePasses * SHUFFLE_PASS) {
+			t %= SHUFFLE_PASS;
+			if (t < SHUFFLE_SPLIT) {
+				float p = Interpolation.pow2Out.apply(t / SHUFFLE_SPLIT);
+				stack(cx - HALF_GAP * p, cy, 26, cw, ch, 8 * p);
+				stack(cx + HALF_GAP * p, cy, 26, cw, ch, -8 * p);
+				return;
+			}
+			t -= SHUFFLE_SPLIT;
+			if (t < SHUFFLE_RIFFLE) {
+				float step = (SHUFFLE_RIFFLE - 0.15f) / RIFFLE_CARDS;
+				int landed = 0, leftGone = 0, rightGone = 0;
+				for (int i = 0; i < RIFFLE_CARDS; i++) {
+					if (t >= i * step) {
+						if (i % 2 == 0) {
+							leftGone++;
+						} else {
+							rightGone++;
+						}
+					}
+					if (t >= i * step + 0.15f) {
+						landed++;
+					}
+				}
+				int perHalf = RIFFLE_CARDS / 2;
+				stack(cx - HALF_GAP, cy, 26 * (perHalf - leftGone) / perHalf + 1, cw, ch, 8);
+				stack(cx + HALF_GAP, cy, 26 * (perHalf - rightGone) / perHalf + 1, cw, ch, -8);
+				stack(cx, cy, landed * 52 / RIFFLE_CARDS, cw, ch, 0);
+				// cards in the air, arcing from their half to the pile
+				for (int i = 0; i < RIFFLE_CARDS; i++) {
+					float p = (t - i * step) / 0.15f;
+					if (p < 0 || p >= 1) {
+						continue;
+					}
+					float from = i % 2 == 0 ? cx - HALF_GAP : cx + HALF_GAP;
+					float x = MathUtils.lerp(from, cx, p), y = cy + 8 + MathUtils.sin(MathUtils.PI * p) * 16;
+					float rot = MathUtils.lerp(i % 2 == 0 ? 8 : -8, 0, p);
+					batch.draw(assets.back(), x - cw / 2, y - ch / 2, cw / 2, ch / 2, cw, ch, 1f, 1f, rot);
+				}
+				return;
+			}
+			// settle: the deck is squared up
+			stack(cx, cy, 52, cw, ch, 0);
+			return;
+		}
+		t -= shufflePasses * SHUFFLE_PASS;
+
+		// home: the deck goes back to the dealer, ready to deal
+		float p = Interpolation.pow2In.apply(MathUtils.clamp(t / SHUFFLE_HOME, 0, 1));
+		float s = MathUtils.lerp(1f, BACK_SCALE / DECK_SCALE, p);
+		stack(MathUtils.lerp(cx, dealer.x, p), MathUtils.lerp(cy, dealer.y, p), 52, cw * s, ch * s, 0);
+	}
+
 	/** When the n-th card dealt to a seat lands, in seconds from the start of the deal. */
 	private float arrivalTime(int seat, int n) {
 		int count = 0;
@@ -942,6 +1061,10 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	private void drawDealing() {
+		if (isShuffling()) {
+			drawShuffle();
+			return;
+		}
 		int n = match.handSize();
 		Vector2 from = seatAnchor(match.dealer());
 		float fromW = Assets.CARD_W * BACK_SCALE, fromH = Assets.CARD_H * BACK_SCALE;
@@ -1202,6 +1325,9 @@ public class PlayScreen extends BaseScreen {
 		int hand = match.handIndex() + 1;
 		if (menuOpen) {
 			return "menu:" + hand;
+		}
+		if (isShuffling()) {
+			return "shuffle:" + hand;
 		}
 		if (isDealing()) {
 			return "deal:" + hand;

@@ -19,10 +19,10 @@ public final class Settings {
 	public static final String[] SPEEDS = { "Slow", "Medium", "Fast" };
 	private static final float[] SPEED_FACTORS = { 0.6f, 0.8f, 1.4f };
 
-	/** Animation and turn speed: 0 = slow, 1 = medium (the default), 2 = fast. */
+	/** Animation and turn speed: 0 = slow (the default), 1 = medium, 2 = fast. */
 	public int speed() {
 		// earlier versions saved a fast on/off switch
-		int legacy = prefs.getBoolean("fast", false) ? 2 : 1;
+		int legacy = prefs.getBoolean("fast", false) ? 2 : 0;
 		return Math.max(0, Math.min(2, prefs.getInteger("speed", legacy)));
 	}
 

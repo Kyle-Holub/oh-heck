@@ -23,7 +23,7 @@ import ohheck.OhHeckGame;
 public class ScreenshotLauncher {
 
 	/** Prefixes of states to capture, as reported by PlayScreen.stateTag(). */
-	private static final String[] WANTED = { "title", "rules", "options", "deal:3", "deal:7", "bid:3", "bidconfirm:3", "selected:4:", "trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "menu:6", "play:8:", "gameover" };
+	private static final String[] WANTED = { "title", "rules", "options", "shuffle:1", "deal:3", "deal:7", "bid:3", "bidconfirm:3", "selected:4:", "trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "menu:6", "play:8:", "gameover" };
 
 	public static void main(String[] args) {
 		final String outDir = args.length > 0 ? args[0] : "screenshots";
@@ -52,7 +52,7 @@ public class ScreenshotLauncher {
 					done[0] = false;
 				}
 				// let each state settle before capturing it; the menus need a moment longer
-				float settle = state.equals("title") ? 1.2f : state.equals("rules") ? 0.75f : state.startsWith("deal") ? 0.9f : 0.12f;
+				float settle = state.equals("title") ? 1.2f : state.equals("rules") ? 0.75f : state.startsWith("deal") ? 0.9f : state.startsWith("shuffle") ? 1.0f : 0.12f;
 				if (!done[0] && (now - seenAt[0]) / 1e9f >= settle) {
 					done[0] = true;
 					for (String w : WANTED) {
