@@ -53,7 +53,7 @@ public final class Assets implements Disposable {
 	private final TextureRegion[][] blurred = new TextureRegion[4][13];
 
 	public Assets() {
-		table = linear(new Texture(Gdx.files.internal("images/table.png")));
+		table = linear(new Texture(Gdx.files.internal("images/table.jpg")));
 		cardSheet = mipmapped("images/cards_hd.png");
 		cardBack = mipmapped("images/back_hd.png");
 		cardSheetBlur = mipmapped("images/cards_blur.png");
@@ -74,10 +74,11 @@ public final class Assets implements Disposable {
 		dealerIcon = mipmapped("images/icon_dealer.png");
 		trickIcon = mipmapped("images/icon_trick.png");
 		overIcon = mipmapped("images/icon_over.png");
+		// the blurred sheet is stored at reduced size: take its cells from its own dimensions
+		int bw = cardSheetBlur.getWidth() / 13, bh = cardSheetBlur.getHeight() / 4;
 		for (int suit = 0; suit < 4; suit++) {
 			for (int rank = 0; rank < 13; rank++) {
 				faces[suit][rank] = new TextureRegion(cardSheet, rank * SHEET_W, suit * SHEET_H, SHEET_W, SHEET_H);
-				int bw = SHEET_W + 2 * BLUR_PAD, bh = SHEET_H + 2 * BLUR_PAD;
 				blurred[suit][rank] = new TextureRegion(cardSheetBlur, rank * bw, suit * bh, bw, bh);
 			}
 		}

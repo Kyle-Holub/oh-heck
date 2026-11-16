@@ -192,7 +192,9 @@ def card_sheet(out):
             seed = r * 13 + c
             card = face_card(rank, suit, seed, source) if rank in "JQK" else number_card(rank, suit, seed)
             sheet.paste(card, (c * CARD_W, r * CARD_H))
-    sheet.save(os.path.join(out, "cards_hd.png"), optimize=True)
+    # 256 colours with dithering: looks the same, a tenth of the file size
+    sheet.convert("RGBA").quantize(256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.FLOYDSTEINBERG).save(
+        os.path.join(out, "cards_hd.png"), optimize=True)
     return sheet
 
 
@@ -244,7 +246,7 @@ def table(out):
     fibre = np.clip(fibre * 40 + 128, 0, 255).astype(np.uint8)
     fibre = (np.asarray(Image.fromarray(fibre, "L").filter(ImageFilter.GaussianBlur(0.8))).astype(float) - 128) / 40
     img += fibre[..., None] * 6
-    Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, "table.png"), optimize=True)
+    Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, "table.jpg"), quality=90, optimize=True)
 
 
 def nine_patch(name, out, fill, border, width=2, radius=12, size=48, glow=None):
@@ -317,7 +319,13 @@ def blurred_sheet(sheet, out, pad=24, radius=7):
             cell = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
             cell.paste(card, (pad, pad))
             bl.paste(premultiplied_blur(cell, radius), (c * cw, r * ch))
-    bl.save(os.path.join(out, "cards_blur.png"), optimize=True)
+    # stored at half size (it's blurred anyway); the game reads cell sizes from the image
+    hw, hh = round(cw / 2), round(ch / 2)
+    half = Image.new("RGBA", (hw * 13, hh * 4), (0, 0, 0, 0))
+    for r in range(4):
+        for c in range(13):
+            half.paste(bl.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch)).resize((hw, hh), Image.LANCZOS), (c * hw, r * hh))
+    half.save(os.path.join(out, "cards_blur.png"), optimize=True)
     back = Image.open(os.path.join(out, "back_hd.png"))
     cell = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
     cell.paste(back, (pad, pad))
