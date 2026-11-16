@@ -1255,13 +1255,11 @@ public class PlayScreen extends BaseScreen {
 	private static final float LABEL_DROP = 0.6f;
 
 	/**
-	 * "Bid tricks!" / "Set!" for each player. At drop = 0 the opponents' sit by
-	 * their cards (yours is the big art in the middle); by drop = 1 every label
-	 * has shrunk into place beside its player's name, where it stays while the
-	 * scores are up.
+	 * "Bid tricks!" / "Set!" for each player. The opponents' sit by their cards;
+	 * yours starts as the big art in the middle and, as drop goes 0 to 1, glides
+	 * to the right of your panel, where it stays while the scores are up.
 	 */
 	private void drawHandLabels(float drop, float alpha) {
-		float p = Interpolation.pow2Out.apply(drop);
 		BitmapFont f = assets.serif;
 		for (int seat = 0; seat < 4; seat++) {
 			if (seat == HUMAN && drop <= 0) {
@@ -1269,42 +1267,32 @@ public class PlayScreen extends BaseScreen {
 			}
 			boolean made = match.madeBid(seat);
 			String s = made ? "Bid tricks!" : "Set!";
-			// where it starts
-			float startScale = seat == HUMAN ? 2.6f : 1.9f;
-			f.getData().setScale(startScale * Assets.SERIF_BASE);
-			glyphs.setText(f, s);
-			float sx, sy;
+			float scale, x, y, a = alpha;
 			if (seat == HUMAN) {
-				sx = w / 2 - glyphs.width / 2;
-				sy = h / 2 + 5 + glyphs.height / 2;
+				float p = Interpolation.pow2Out.apply(drop);
+				f.getData().setScale(2.6f * Assets.SERIF_BASE);
+				glyphs.setText(f, s);
+				float sx = w / 2 - glyphs.width / 2, sy = h / 2 + 5 + glyphs.height / 2;
+				f.getData().setScale(1.6f * Assets.SERIF_BASE);
+				glyphs.setText(f, s);
+				float ex = panelX(HUMAN) + PANEL_W + 16;
+				float ey = panelTop(HUMAN) - PANEL_H / 2 + glyphs.height / 2;
+				scale = MathUtils.lerp(2.6f, 1.6f, p);
+				x = MathUtils.lerp(sx, ex, p);
+				y = MathUtils.lerp(sy, ey, p);
+				a *= MathUtils.clamp(drop * 3f, 0, 1);
 			} else {
+				scale = 1.9f;
+				f.getData().setScale(scale * Assets.SERIF_BASE);
+				glyphs.setText(f, s);
 				Vector2 o = fanOrigin(seat);
 				float bh = Assets.CARD_H * BACK_SCALE;
-				sx = seat == 3 ? o.x - glyphs.width : o.x;
-				sy = o.y + bh / 2 + glyphs.height / 2;
+				x = seat == 3 ? o.x - glyphs.width : o.x;
+				y = o.y + bh / 2 + glyphs.height / 2;
 			}
-			// where it ends: after the name (and dealer icon), clear of the score
-			float px = panelX(seat), top = panelTop(seat);
-			BitmapFont nf = ui(1.3f);
-			glyphs.setText(nf, NAMES[seat]);
-			float ex = px + 10 + glyphs.width + (match.dealer() == seat ? 34 : 0) + 8;
-			glyphs.setText(nf, String.valueOf(match.score(seat)));
-			float room = px + PANEL_W - 10 - glyphs.width - 8 - ex;
-			float endScale = 0.95f;
-			f.getData().setScale(endScale * Assets.SERIF_BASE);
-			glyphs.setText(f, s);
-			if (glyphs.width > room) {
-				endScale *= Math.max(0.6f, room / glyphs.width);
-			}
-			float ey = top - 15;
-
-			float scale = MathUtils.lerp(startScale, endScale, p);
 			f.getData().setScale(scale * Assets.SERIF_BASE);
-			float x = MathUtils.lerp(sx, ex, p), y = MathUtils.lerp(sy, ey, p);
-			float a = seat == HUMAN ? alpha * MathUtils.clamp(drop * 3f, 0, 1) : alpha;
-			float off = MathUtils.lerp(2f, 1f, p);
 			f.setColor(0f, 0f, 0f, 0.8f * a);
-			f.draw(batch, s, x + off, y - off);
+			f.draw(batch, s, x + 2, y - 2);
 			Color c = made ? GOLD : Palette.RED;
 			f.setColor(c.r, c.g, c.b, a);
 			f.draw(batch, s, x, y);
