@@ -46,6 +46,15 @@ public final class Settings {
 		prefs.flush();
 	}
 
+	/** Your best finished games, as HighScores.encode() writes them. */
+	public String highScores() {
+		return prefs.getString("highScores", "");
+	}
+
+	public void setHighScores(String encoded) {
+		prefs.putString("highScores", encoded).flush();
+	}
+
 	/** Glow, vignette and grain over the whole screen. */
 	public boolean effects() {
 		return prefs.getBoolean("effects", true);

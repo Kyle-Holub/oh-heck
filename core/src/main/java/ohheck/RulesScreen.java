@@ -69,7 +69,7 @@ public class RulesScreen extends BaseScreen {
 		if (game.options.autoplayHuman) {
 			scroll = shownFor > 1.0f ? 230 : 0;
 			if (shownFor > 2.2f) {
-				game.showOptions();
+				game.newGame();
 				return;
 			}
 		}
@@ -117,7 +117,7 @@ public class RulesScreen extends BaseScreen {
 
 	@Override
 	protected void back() {
-		game.showTitle();
+		game.showOptions(); // opened from the options screen
 	}
 
 	@Override

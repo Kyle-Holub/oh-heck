@@ -8,7 +8,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-/** Music, sound effects, game speed and visual effects, saved on the device. */
+/** How to play, music, sound effects, game speed and visual effects, saved on the device. */
 public class OptionsScreen extends BaseScreen {
 
 
@@ -23,7 +23,7 @@ public class OptionsScreen extends BaseScreen {
 	public void render(float delta) {
 		shownFor += Math.min(delta, 0.1f) * game.options.speed;
 		if (game.options.autoplayHuman && shownFor > 1.5f) {
-			game.newGame();
+			game.showRules();
 			return;
 		}
 		Settings s = game.settings;
@@ -35,12 +35,12 @@ public class OptionsScreen extends BaseScreen {
 		t.setColor(GOLD);
 		centred(t, "Options", w / 2, h - 40);
 
-		String[] labels = { "Music", "Sound effects", "Game speed", "Visual effects" };
-		String[] values = { s.music() ? "On" : "Off", s.sound() ? "On" : "Off", Settings.SPEEDS[s.speed()],
+		String[] labels = { "How to play", "Music", "Sound effects", "Game speed", "Visual effects" };
+		String[] values = { "Read", s.music() ? "On" : "Off", s.sound() ? "On" : "Off", Settings.SPEEDS[s.speed()],
 				s.effects() ? "On" : "Off" };
-		boolean[] on = { s.music(), s.sound(), true, s.effects() };
+		boolean[] on = { true, s.music(), s.sound(), true, s.effects() };
 		rows.clear();
-		float rw = 460, rh = 58, x = (w - rw) / 2, y = h - 112 - rh;
+		float rw = 460, rh = 52, x = (w - rw) / 2, y = h - 106 - rh;
 		for (int i = 0; i < labels.length; i++) {
 			frame(assets.panel, x, y, rw, rh);
 			BitmapFont f = serif(1.6f);
@@ -54,7 +54,7 @@ public class OptionsScreen extends BaseScreen {
 			glyphs.setText(v, values[i]);
 			v.draw(batch, values[i], x + rw - 14 - vw / 2 - glyphs.width / 2, y + rh / 2 + glyphs.height / 2);
 			rows.add(new Rectangle(x, y, rw, rh));
-			y -= rh + 12;
+			y -= rh + 10;
 		}
 		BitmapFont hint = ui(1f);
 		hint.setColor(Palette.MUTED);
@@ -70,18 +70,20 @@ public class OptionsScreen extends BaseScreen {
 			return;
 		}
 		Settings s = game.settings;
-		if (rows.size() < 4) {
+		if (rows.size() < 5) {
 			return;
 		}
 		if (rows.get(0).contains(x, y)) {
+			game.showRules();
+		} else if (rows.get(1).contains(x, y)) {
 			s.setMusic(!s.music());
 			game.audio.startMusic(); // starts or stops it to match
-		} else if (rows.get(1).contains(x, y)) {
+		} else if (rows.get(2).contains(x, y)) {
 			s.setSound(!s.sound());
 			game.audio.play(Audio.Effect.PLAY_CARD);
-		} else if (rows.get(2).contains(x, y)) {
-			s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
 		} else if (rows.get(3).contains(x, y)) {
+			s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
+		} else if (rows.get(4).contains(x, y)) {
 			s.setEffects(!s.effects());
 		}
 	}

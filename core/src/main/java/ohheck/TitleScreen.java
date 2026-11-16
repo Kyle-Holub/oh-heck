@@ -38,7 +38,7 @@ public class TitleScreen extends BaseScreen {
 		} else {
 			items.add("Play");
 		}
-		items.add("How to play");
+		items.add("High scores");
 		items.add("Options");
 		items.add("Quit");
 	}
@@ -63,7 +63,7 @@ public class TitleScreen extends BaseScreen {
 			shownFor += dt;
 		}
 		if (game.options.autoplayHuman && shownFor > 3.5f) {
-			game.showRules();
+			game.showHighScores(-1);
 			return;
 		}
 
@@ -142,8 +142,8 @@ public class TitleScreen extends BaseScreen {
 			game.continueGame();
 		} else if (item.equals("Play") || item.equals("New game")) {
 			game.newGame();
-		} else if (item.equals("How to play")) {
-			game.showRules();
+		} else if (item.equals("High scores")) {
+			game.showHighScores(-1);
 		} else if (item.equals("Options")) {
 			game.showOptions();
 		} else if (item.equals("Quit")) {

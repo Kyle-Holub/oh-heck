@@ -27,6 +27,7 @@ public class OhHeckGame extends Game {
 	private TitleScreen title;
 	private RulesScreen rules;
 	private OptionsScreen optionsScreen;
+	private HighScoresScreen highScoresScreen;
 	private PlayScreen play;
 
 	public OhHeckGame() {
@@ -46,6 +47,7 @@ public class OhHeckGame extends Game {
 		title = new TitleScreen(this);
 		rules = new RulesScreen(this);
 		optionsScreen = new OptionsScreen(this);
+		highScoresScreen = new HighScoresScreen(this);
 		setScreen(title);
 	}
 
@@ -75,6 +77,33 @@ public class OhHeckGame extends Game {
 
 	void showOptions() {
 		setScreen(optionsScreen);
+	}
+
+	/** The high score table; newest is the position just added (-1 for none) to pick out. */
+	void showHighScores(int newest) {
+		highScoresScreen.highlight(newest);
+		setScreen(highScoresScreen);
+	}
+
+	/** High scores in memory; persisted only for real games. */
+	HighScores highScores() {
+		return HighScores.decode(options.persist ? settings.highScores() : "");
+	}
+
+	/** Records your finished game; returns its place in the table, or -1. */
+	int recordHighScore(int score, int place) {
+		if (!options.persist) {
+			return -1;
+		}
+		HighScores h = highScores();
+		java.util.Calendar c = java.util.Calendar.getInstance();
+		String date = String.format(java.util.Locale.US, "%04d-%02d-%02d", c.get(java.util.Calendar.YEAR),
+				c.get(java.util.Calendar.MONTH) + 1, c.get(java.util.Calendar.DAY_OF_MONTH));
+		int at = h.add(new HighScores.Entry(score, place, date));
+		if (at >= 0) {
+			settings.setHighScores(h.encode());
+		}
+		return at;
 	}
 
 	void newGame() {
@@ -125,6 +154,7 @@ public class OhHeckGame extends Game {
 		title.dispose();
 		rules.dispose();
 		optionsScreen.dispose();
+		highScoresScreen.dispose();
 		if (play != null) {
 			play.dispose();
 		}

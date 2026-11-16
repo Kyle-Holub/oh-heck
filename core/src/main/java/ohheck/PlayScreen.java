@@ -42,7 +42,7 @@ public class PlayScreen extends BaseScreen {
 	private static final String[] NAMES = { "You", "Tom", "Max", "Dan" };
 
 	private TextureRegion whiteRegion;
-	private static final float HAND_SCALE = 1.2f, BACK_SCALE = 0.55f, TRUMP_SCALE = 0.8f;
+	private static final float HAND_SCALE = 1.2f, BACK_SCALE = 0.55f, TRUMP_SCALE = 0.95f;
 
 	// timings, in seconds at normal speed
 	private static final float AI_DELAY = 0.8f;
@@ -113,6 +113,9 @@ public class PlayScreen extends BaseScreen {
 	private final List<Rectangle> handRects = new ArrayList<Rectangle>();
 	private final List<Card> handOrder = new ArrayList<Card>();
 	private final Rectangle menuButton = new Rectangle();
+	private Rectangle playAgainButton = new Rectangle(), highScoresButton = new Rectangle();
+	/** Where your just-finished game landed in the high score table, or -1. */
+	private int newHighScore = -1;
 	private final List<Rectangle> menuItems = new ArrayList<Rectangle>();
 	private static final String[] MENU = { "Resume", "New game", "Main menu" };
 
@@ -138,6 +141,7 @@ public class PlayScreen extends BaseScreen {
 		match = Match.random(4, rng);
 		save();
 		burstGameOver = false;
+		newHighScore = -1;
 		burstHand = -1;
 		timer = 0;
 		trickPause = 0;
@@ -316,12 +320,19 @@ public class PlayScreen extends BaseScreen {
 				handOverT = HAND_END_SHOW;
 			} else {
 				match.nextHand();
+				if (match.phase() == Match.Phase.GAME_OVER) {
+					newHighScore = game.recordHighScore(match.score(HUMAN), place(HUMAN));
+				}
 				save();
 				timer = 0;
 			}
 			break;
 		case GAME_OVER:
-			newGame();
+			if (highScoresButton.contains(x, y)) {
+				game.showHighScores(newHighScore);
+			} else {
+				newGame(); // the Play again button, or anywhere else
+			}
 			break;
 		}
 	}
@@ -646,6 +657,7 @@ public class PlayScreen extends BaseScreen {
 					drawHandEnd();
 				} else {
 					drawHandResults();
+					drawHandLabels(MathUtils.clamp((handOverT - HAND_END_SHOW) / LABEL_DROP, 0, 1), 1f);
 				}
 			} else if (match.phase() == Match.Phase.GAME_OVER) {
 				drawGameOver();
@@ -708,14 +720,63 @@ public class PlayScreen extends BaseScreen {
 			return; // the trump card is still in the deck
 		}
 		float cw = Assets.CARD_W * TRUMP_SCALE, ch = Assets.CARD_H * TRUMP_SCALE;
-		BitmapFont f = ui(1f);
-		f.setColor(Palette.CREAM);
-		text(f, "Trump", w - 12 - cw / 2, h - 10, true);
-		float x = w - 12 - cw, y = h - 30 - ch;
+		float x = w - 12 - cw, y = h - 12 - ch;
 		shadow(x, y, cw, ch, 4);
 		float p = isDealing() ? 0 : MathUtils.clamp(trumpFlip / TRUMP_FLIP_TIME, 0, 1);
 		flipCard(match.trumpCard(), x, y, cw, ch, p);
+		drawMotes(x, y, cw, ch, p >= 1f);
 	}
+
+	// ---- faint gold motes drifting up off the trump card
+
+	private static final int MOTES = 28;
+	private final float[] moX = new float[MOTES], moY = new float[MOTES], moVX = new float[MOTES],
+			moVY = new float[MOTES], moLife = new float[MOTES], moMax = new float[MOTES], moSize = new float[MOTES];
+	private float moteClock = -1, moteSpawn;
+
+	/** Rises from the card's edges; new motes only once the card is face up. */
+	private void drawMotes(float x, float y, float cw, float ch, boolean spawning) {
+		float dt = moteClock < 0 ? 0 : MathUtils.clamp(time - moteClock, 0, 0.1f);
+		moteClock = time;
+		if (spawning) {
+			moteSpawn += dt * 7f; // about seven a second
+		}
+		for (int i = 0; i < MOTES && moteSpawn >= 1; i++) {
+			if (moLife[i] > 0) {
+				continue;
+			}
+			moteSpawn -= 1;
+			// somewhere along the card's outline, mostly the top and sides
+			if (MathUtils.random() < 0.4f) {
+				moX[i] = x + MathUtils.random(cw);
+				moY[i] = y + ch - MathUtils.random(4f);
+			} else {
+				moX[i] = MathUtils.randomBoolean() ? x + MathUtils.random(3f) : x + cw - MathUtils.random(3f);
+				moY[i] = y + MathUtils.random(ch * 0.2f, ch);
+			}
+			moVX[i] = MathUtils.random(-5f, 5f);
+			moVY[i] = MathUtils.random(7f, 18f);
+			moMax[i] = moLife[i] = MathUtils.random(1.6f, 3.2f);
+			moSize[i] = MathUtils.random(3f, 7f);
+		}
+		moteSpawn = Math.min(moteSpawn, 1);
+		for (int i = 0; i < MOTES; i++) {
+			if (moLife[i] <= 0) {
+				continue;
+			}
+			moLife[i] -= dt;
+			moX[i] += (moVX[i] + MathUtils.sin(time * 1.7f + i) * 4f) * dt;
+			moY[i] += moVY[i] * dt;
+			float age = 1 - moLife[i] / moMax[i];
+			// fade in quickly, out slowly, and twinkle a little
+			float a = Math.min(age * 6f, 1f) * (1 - age) * (0.75f + 0.25f * MathUtils.sin(time * 6f + i * 2.3f));
+			float sz = moSize[i] * (1 - age * 0.4f);
+			batch.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, 0.45f * a);
+			batch.draw(assets.glow, moX[i] - sz / 2, moY[i] - sz / 2, sz, sz);
+		}
+		batch.setColor(Color.WHITE);
+	}
+
 
 	// ---- player panels: name, dealer icon, score, and a row of bid/trick icons as in the original game
 
@@ -1185,24 +1246,95 @@ public class PlayScreen extends BaseScreen {
 	private void drawHandEnd() {
 		float a = MathUtils.clamp(handOverT / 0.3f, 0, 1);
 		drawArt(match.madeBid(HUMAN) ? assets.bidTricksText : assets.setText, w / 2, h / 2 + 5, 0.95f, a);
-		BitmapFont f = assets.serif;
-		f.getData().setScale(1.9f * Assets.SERIF_BASE);
-		for (int seat = 1; seat <= 3; seat++) {
-			String s = match.madeBid(seat) ? "Bid tricks!" : "Set!";
-			glyphs.setText(f, s);
-			Vector2 o = fanOrigin(seat);
-			float bh = Assets.CARD_H * BACK_SCALE;
-			float x = seat == 3 ? o.x - glyphs.width : o.x;
-			float y = o.y + bh / 2 + glyphs.height / 2;
-			f.setColor(0f, 0f, 0f, 0.8f * a);
-			f.draw(batch, s, x + 2, y - 2);
-			Color c = match.madeBid(seat) ? GOLD : Palette.RED;
-			f.setColor(c.r, c.g, c.b, a);
-			f.draw(batch, s, x, y);
-		}
+		drawHandLabels(0f, a);
 		BitmapFont t = ui(1f);
 		t.setColor(Palette.MUTED);
 		text(t, "Tap for the scores", w / 2, h / 2 - 40, true);
+	}
+
+	private static final float LABEL_DROP = 0.6f;
+
+	/**
+	 * "Bid tricks!" / "Set!" for each player. At drop = 0 the opponents' sit by
+	 * their cards (yours is the big art in the middle); by drop = 1 every label
+	 * has shrunk into place beside its player's name, where it stays while the
+	 * scores are up.
+	 */
+	private void drawHandLabels(float drop, float alpha) {
+		float p = Interpolation.pow2Out.apply(drop);
+		BitmapFont f = assets.serif;
+		for (int seat = 0; seat < 4; seat++) {
+			if (seat == HUMAN && drop <= 0) {
+				continue;
+			}
+			boolean made = match.madeBid(seat);
+			String s = made ? "Bid tricks!" : "Set!";
+			// where it starts
+			float startScale = seat == HUMAN ? 2.6f : 1.9f;
+			f.getData().setScale(startScale * Assets.SERIF_BASE);
+			glyphs.setText(f, s);
+			float sx, sy;
+			if (seat == HUMAN) {
+				sx = w / 2 - glyphs.width / 2;
+				sy = h / 2 + 5 + glyphs.height / 2;
+			} else {
+				Vector2 o = fanOrigin(seat);
+				float bh = Assets.CARD_H * BACK_SCALE;
+				sx = seat == 3 ? o.x - glyphs.width : o.x;
+				sy = o.y + bh / 2 + glyphs.height / 2;
+			}
+			// where it ends: after the name (and dealer icon), clear of the score
+			float px = panelX(seat), top = panelTop(seat);
+			BitmapFont nf = ui(1.3f);
+			glyphs.setText(nf, NAMES[seat]);
+			float ex = px + 10 + glyphs.width + (match.dealer() == seat ? 34 : 0) + 8;
+			glyphs.setText(nf, String.valueOf(match.score(seat)));
+			float room = px + PANEL_W - 10 - glyphs.width - 8 - ex;
+			float endScale = 0.95f;
+			f.getData().setScale(endScale * Assets.SERIF_BASE);
+			glyphs.setText(f, s);
+			if (glyphs.width > room) {
+				endScale *= Math.max(0.6f, room / glyphs.width);
+			}
+			float ey = top - 15;
+
+			float scale = MathUtils.lerp(startScale, endScale, p);
+			f.getData().setScale(scale * Assets.SERIF_BASE);
+			float x = MathUtils.lerp(sx, ex, p), y = MathUtils.lerp(sy, ey, p);
+			float a = seat == HUMAN ? alpha * MathUtils.clamp(drop * 3f, 0, 1) : alpha;
+			float off = MathUtils.lerp(2f, 1f, p);
+			f.setColor(0f, 0f, 0f, 0.8f * a);
+			f.draw(batch, s, x + off, y - off);
+			Color c = made ? GOLD : Palette.RED;
+			f.setColor(c.r, c.g, c.b, a);
+			f.draw(batch, s, x, y);
+		}
+	}
+
+	/** Seats from highest score to lowest; ties keep seat order. */
+	private List<Integer> ranked() {
+		List<Integer> order = new ArrayList<Integer>();
+		for (int s = 0; s < 4; s++) {
+			order.add(s);
+		}
+		Collections.sort(order, new Comparator<Integer>() {
+			@Override
+			public int compare(Integer a, Integer b) {
+				return match.score(b) - match.score(a);
+			}
+		});
+		return order;
+	}
+
+	/** 1 for the lead; players on the same score share a place. */
+	private int place(int seat) {
+		int p = 1;
+		for (int s = 0; s < 4; s++) {
+			if (match.score(s) > match.score(seat)) {
+				p++;
+			}
+		}
+		return p;
 	}
 
 	private void drawHandResults() {
@@ -1214,22 +1346,26 @@ public class PlayScreen extends BaseScreen {
 		text(f, "Hand " + (match.handIndex() + 1) + " results", w / 2, py + ph - 14, true);
 
 		BitmapFont t = ui(1.1f);
-		float[] cols = { px + 24, px + 150, px + 215, px + 290, px + 380 };
-		String[] head = { "Player", "Bid", "Won", "Points", "Total" };
+		float[] cols = { px + 22, px + 62, px + 185, px + 245, px + 310, px + 395 };
+		String[] head = { "", "Player", "Bid", "Won", "Points", "Total" };
 		float y = py + ph - 52;
 		t.setColor(Palette.MUTED);
 		for (int c = 0; c < cols.length; c++) {
 			t.draw(batch, head[c], cols[c], y);
 		}
-		for (int seat = 0; seat < 4; seat++) {
+		for (int seat : ranked()) {
 			y -= 26;
-			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
 			int pts = match.lastHandPoints(seat);
+			t.setColor(Palette.MUTED);
+			t.draw(batch, HighScores.ordinal(place(seat)), cols[0], y);
+			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
 			String[] row = { NAMES[seat] + (match.madeBid(seat) ? "" : "  (set)"), String.valueOf(match.bid(seat)),
-					String.valueOf(match.tricksWon(seat)), (pts > 0 ? "+" : "") + pts, String.valueOf(match.score(seat)) };
-			for (int c = 0; c < cols.length; c++) {
-				t.draw(batch, row[c], cols[c], y);
+					String.valueOf(match.tricksWon(seat)), (pts > 0 ? "+" : "") + pts };
+			for (int c = 0; c < row.length; c++) {
+				t.draw(batch, row[c], cols[c + 1], y);
 			}
+			t.setColor(place(seat) == 1 ? GOLD : Palette.CREAM);
+			t.draw(batch, String.valueOf(match.score(seat)), cols[5], y);
 		}
 		BitmapFont s = ui(1f);
 		s.setColor(GOLD);
@@ -1259,27 +1395,25 @@ public class PlayScreen extends BaseScreen {
 		f.setColor(GOLD);
 		text(f, title.toString(), w / 2, py + ph - 80, true);
 
-		List<Integer> order = new ArrayList<Integer>();
-		for (int s = 0; s < 4; s++) {
-			order.add(s);
-		}
-		Collections.sort(order, new Comparator<Integer>() {
-			@Override
-			public int compare(Integer a, Integer b) {
-				return match.score(b) - match.score(a);
-			}
-		});
 		BitmapFont t = ui(1.2f);
-		float y = py + ph - 122;
-		for (int s : order) {
-			t.setColor(Palette.CREAM);
-			t.draw(batch, NAMES[s], px + 110, y);
-			text(t, String.valueOf(match.score(s)), px + pw - 120, y, false);
-			y -= 28;
+		float y = py + ph - 116;
+		for (int s : ranked()) {
+			Color c = place(s) == 1 ? GOLD : Palette.CREAM;
+			t.setColor(Palette.MUTED);
+			t.draw(batch, HighScores.ordinal(place(s)), px + 60, y);
+			t.setColor(c);
+			t.draw(batch, NAMES[s], px + 120, y);
+			text(t, String.valueOf(match.score(s)), px + pw - 140, y, false);
+			if (s == HUMAN && newHighScore >= 0) {
+				BitmapFont n = ui(0.95f);
+				n.setColor(Palette.GOLD_LIGHT);
+				n.draw(batch, newHighScore == 0 ? "New best!" : "High score!", px + pw - 128, y - 2);
+			}
+			y -= 27;
 		}
-		BitmapFont s = ui(1f);
-		s.setColor(GOLD);
-		text(s, "Tap to play again", w / 2, py + 26, true);
+		float bw = 170, bh = 42, by = py + 16;
+		playAgainButton = button("Play again", w / 2 - bw / 2 - 8, by, bw, bh, assets.button);
+		highScoresButton = button("High scores", w / 2 + bw / 2 + 8, by, bw, bh, assets.buttonAlt);
 	}
 
 	private void drawMenuButton() {
