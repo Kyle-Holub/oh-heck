@@ -15,6 +15,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -40,8 +41,8 @@ public class PlayScreen extends BaseScreen {
 	private static final int HUMAN = 0;
 	private static final String[] NAMES = { "You", "Tom", "Max", "Dan" };
 
+	private TextureRegion whiteRegion;
 	private static final float HAND_SCALE = 1.2f, BACK_SCALE = 0.55f, TRUMP_SCALE = 0.8f;
-	private static final float LINE = 20f;
 
 	// timings, in seconds at normal speed
 	private static final float AI_DELAY = 0.8f;
@@ -68,7 +69,6 @@ public class PlayScreen extends BaseScreen {
 	private float trickPause, trickTotal;
 	private boolean humanWonTrick;
 	private float handOverT; // time since the hand ended: first "Bid Tricks!"/"Set!", then the table
-	private String lastTrickText = "";
 	private String hint = "";
 	private float hintTime;
 	private boolean menuOpen;
@@ -120,6 +120,7 @@ public class PlayScreen extends BaseScreen {
 	public PlayScreen(OhHeckGame game, Match restored) {
 		super(game);
 		this.options = game.options;
+		this.whiteRegion = new TextureRegion(assets.white);
 		this.rng = options.seed == null ? new Random() : new Random(options.seed);
 		if (restored == null) {
 			newGame();
@@ -140,7 +141,6 @@ public class PlayScreen extends BaseScreen {
 		burstHand = -1;
 		timer = 0;
 		trickPause = 0;
-		lastTrickText = "";
 		dealtHand = -1;
 		flights.clear();
 		clearSelection();
@@ -558,10 +558,6 @@ public class PlayScreen extends BaseScreen {
 			game.audio.play(match.madeBid(HUMAN) ? Audio.Effect.WIN : Audio.Effect.LOSE);
 		}
 		if (winner >= 0) {
-			List<Card> trick = match.lastTrick();
-			Card best = trick.get(match.lastTrickSeats().indexOf(winner));
-			boolean trumped = best.suit() == match.trump() && trick.get(0).suit() != match.trump();
-			lastTrickText = NAMES[winner] + (trumped ? " trumped" : " won") + " with the " + pretty(best);
 			humanWonTrick = winner == HUMAN;
 			trickTotal = TRICK_PAUSE + (humanWonTrick ? TRICK_WON_SHOW : 0);
 			trickPause = trickTotal;
@@ -669,45 +665,42 @@ public class PlayScreen extends BaseScreen {
 		batch.end();
 	}
 
+	// ---- the hand counter: tally marks, a gate of five then three
+
+	private static final float TALLY_H = 30f, TALLY_W = 4f, TALLY_STEP = 10f;
+	/** Small fixed leans so the strokes look hand drawn. */
+	private static final float[] TALLY_LEAN = { 3f, -2f, 4f, -1f, 0f, 2f, -3f, 1f };
+
 	private void drawInfo() {
-		BitmapFont f = ui(1.1f);
-		f.setColor(Palette.CREAM);
-		float y = h - 10;
-		if (match.phase() != Match.Phase.GAME_OVER) {
-			f.draw(batch, "Hand " + (match.handIndex() + 1) + " of 8  -  " + match.handSize()
-					+ (match.handSize() == 1 ? " card" : " cards"), 12, y);
+		int done = match.phase() == Match.Phase.GAME_OVER ? 8 : match.handIndex();
+		float left = 18, top = h - 12, pulse = 0.5f + 0.5f * MathUtils.sin(time * 3f);
+		for (int i = 0; i < 8; i++) {
+			float cx, cy = top - TALLY_H / 2, len = TALLY_H, rot;
+			if (i == 4) { // the bar across the first four
+				cx = left + 1.5f * TALLY_STEP;
+				len = 4 * TALLY_STEP + 8;
+				rot = -52; // leaning up to the right
+			} else {
+				int col = i < 4 ? i : i - 1;
+				cx = left + col * TALLY_STEP + (i > 4 ? 14 : 0);
+				rot = TALLY_LEAN[i];
+			}
+			if (i == done) { // the hand being played glows
+				stroke(cx, cy, TALLY_W + 6, len + 6, rot, Palette.GOLD_LIGHT, 0.18f + 0.22f * pulse);
+				stroke(cx, cy, TALLY_W, len, rot, Palette.GOLD_LIGHT, 1f);
+			} else if (i < done) {
+				stroke(cx, cy, TALLY_W, len, rot, GOLD, 0.95f);
+			} else {
+				stroke(cx, cy, TALLY_W, len, rot, Palette.MUTED, 0.22f);
+			}
 		}
-		f.setColor(GOLD);
-		f.draw(batch, statusText(), 12, y - LINE);
 	}
 
-	private String statusText() {
-		if (isShuffling()) {
-			return NAMES[match.dealer()] + (match.dealer() == HUMAN ? " shuffle" : " shuffles") + "  (tap to skip)";
-		}
-		if (isDealing()) {
-			return NAMES[match.dealer()] + (match.dealer() == HUMAN ? " deal" : " deals") + "  (tap to skip)";
-		}
-		if (trickPause > 0) {
-			return lastTrickText;
-		}
-		int s = match.currentSeat();
-		switch (match.phase()) {
-		case BIDDING:
-			return s == HUMAN ? "Your bid" : NAMES[s] + " is bidding...";
-		case PLAYING:
-			if (s != HUMAN) {
-				return NAMES[s] + " is thinking...";
-			}
-			if (selected != null) {
-				return "Tap the card again to play it";
-			}
-			return match.currentTrick().isEmpty() ? "Your lead: tap a card" : "Your turn: tap a card";
-		case HAND_OVER:
-			return "Hand over";
-		default:
-			return "Game over";
-		}
+	/** A bar centred on (cx, cy), rotated by rot degrees. */
+	private void stroke(float cx, float cy, float sw, float sh, float rot, Color c, float alpha) {
+		batch.setColor(c.r, c.g, c.b, alpha);
+		batch.draw(whiteRegion, cx - sw / 2, cy - sh / 2, sw / 2, sh / 2, sw, sh, 1f, 1f, rot);
+		batch.setColor(Color.WHITE);
 	}
 
 	private void drawTrump() {
@@ -840,10 +833,21 @@ public class PlayScreen extends BaseScreen {
 
 	/** Where a seat's card sits in the middle of the table. */
 	private Vector2 trickSlot(int seat) {
-		float cx = w / 2, cy = h / 2 + 5;
-		float x = cx - Assets.CARD_W / 2f + (seat == 1 ? -95 : seat == 3 ? 95 : 0);
-		float y = cy - Assets.CARD_H / 2f + (seat == HUMAN ? -50 : seat == 2 ? 50 : 0);
+		float cx = w / 2, cy = h / 2 + 15;
+		float x = cx - Assets.CARD_W / 2f + (seat == 1 ? -108 : seat == 3 ? 108 : 0);
+		float y = cy - Assets.CARD_H / 2f + (seat == HUMAN ? -60 : seat == 2 ? 60 : 0);
 		return new Vector2(x, y);
+	}
+
+	private static final float MAX_TILT = 9f;
+
+	/** A card's resting tilt in the middle: random-looking, but steady for that card in that hand. */
+	private float tilt(Card c, int seat) {
+		long k = ((c.suit().ordinal() * 13L + c.rank().ordinal()) * 31 + match.handIndex()) * 8 + seat;
+		k = (k + 0x9E3779B97F4A7C15L) * 0xBF58476D1CE4E5B9L;
+		k ^= k >>> 31;
+		float r = (k & 0xFFFF) / 65535f;
+		return (r * 2 - 1) * MAX_TILT;
 	}
 
 	private void drawTrick() {
@@ -874,6 +878,7 @@ public class PlayScreen extends BaseScreen {
 			Card c = cards.get(i);
 			Vector2 slot = trickSlot(seats.get(i));
 			float x = slot.x, y = slot.y, scale = 1f, lift = 5f, turn = 1f;
+			float rot = tilt(c, seats.get(i));
 			float[] f = flights.get(c);
 			if (f != null) {
 				float raw = MathUtils.clamp((time - f[2]) / PLAY_FLIGHT, 0, 1);
@@ -881,6 +886,7 @@ public class PlayScreen extends BaseScreen {
 				x = MathUtils.lerp(f[0], slot.x, p);
 				y = MathUtils.lerp(f[1], slot.y, p);
 				lift += (1 - raw) * 30;
+				rot *= p; // settles into its tilt as it lands
 				if (seats.get(i) != HUMAN) {
 					turn = MathUtils.clamp(raw * 1.4f, 0, 1); // opponents' cards turn over on the way
 				}
@@ -891,12 +897,15 @@ public class PlayScreen extends BaseScreen {
 				y = MathUtils.lerp(y, sink.y - ch / 4, p);
 				scale = MathUtils.lerp(1f, 0.5f, p);
 				lift += p * 18;
+				rot *= 1 - p;
 			}
 			shadow(x, y, cw * scale, ch * scale, lift);
 			if (collect == 0 && seats.get(i) == winner) {
-				frame(assets.panelTurn, x - 7, y - 7, cw + 14, ch + 14);
+				batch.setColor(1f, 1f, 1f, fade);
+				assets.panelTurn.draw(batch, x - 7, y - 7, cw / 2 + 7, ch / 2 + 7, cw + 14, ch + 14, 1f, 1f, rot);
+				batch.setColor(Color.WHITE);
 			}
-			flipCard(c, x, y, cw * scale, ch * scale, turn);
+			flipCard(c, x, y, cw * scale, ch * scale, turn, rot);
 		}
 	}
 
@@ -1008,12 +1017,18 @@ public class PlayScreen extends BaseScreen {
 	 * 0.5 edge on, 1 face up. Uses the batch's current tint.
 	 */
 	private void flipCard(Card c, float x, float y, float cw, float ch, float p) {
-		if (p >= 1f) {
-			batch.draw(assets.face(c), x, y, cw, ch);
-			return;
+		flipCard(c, x, y, cw, ch, p, 0f);
+	}
+
+	/** As above, turned by rot degrees about the card's centre. */
+	private void flipCard(Card c, float x, float y, float cw, float ch, float p, float rot) {
+		float sx = p >= 1f ? 1f : Math.abs(MathUtils.cos(MathUtils.PI * p));
+		TextureRegion r = p < 0.5f ? assets.back() : assets.face(c);
+		if (rot == 0f) {
+			batch.draw(r, x + cw * (1 - sx) / 2, y, cw * sx, ch);
+		} else {
+			batch.draw(r, x + cw * (1 - sx) / 2, y, cw * sx / 2, ch / 2, cw * sx, ch, 1f, 1f, rot);
 		}
-		float sx = Math.abs(MathUtils.cos(MathUtils.PI * p));
-		batch.draw(p < 0.5f ? assets.back() : assets.face(c), x + cw * (1 - sx) / 2, y, cw * sx, ch);
 	}
 
 	// ---- celebration sparks
@@ -1306,19 +1321,10 @@ public class PlayScreen extends BaseScreen {
 
 	// --------------------------------------------------------------- helpers
 
-	/** "Ace of Spades" */
-	static String pretty(Card c) {
-		return cap(c.rank().name()) + " of " + cap(c.suit().name());
-	}
-
 	/** "heart", "spade"... */
 	private static String singular(Suit s) {
 		String n = s.name().toLowerCase();
 		return n.substring(0, n.length() - 1);
-	}
-
-	private static String cap(String s) {
-		return s.charAt(0) + s.substring(1).toLowerCase();
 	}
 
 	/** Your hand sorted by suit (alternating colours), then rank. */
