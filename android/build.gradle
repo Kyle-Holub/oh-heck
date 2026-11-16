@@ -17,7 +17,7 @@ android {
   }
 
   defaultConfig {
-    // Placeholder ID; dev builds add ".dev" so they install beside a real release
+    // Placeholder ID; dev builds add ".dev" (kept so updates install over the current app)
     applicationId 'io.github.kyleholub.ohheck'
     minSdkVersion 21
     targetSdkVersion 35
@@ -40,7 +40,7 @@ android {
   buildTypes {
     debug {
       applicationIdSuffix '.dev'
-      resValue 'string', 'app_name', 'Oh Heck! (dev)'
+      resValue 'string', 'app_name', 'Oh Heck!'
       signingConfig signingConfigs.dev
     }
     release {

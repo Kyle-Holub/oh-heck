@@ -14,6 +14,7 @@ public class AndroidLauncher extends AndroidApplication {
 		super.onCreate(savedInstanceState);
 		AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
 		config.useImmersiveMode = true;
+		config.useWakelock = true; // keep the screen on while the game is open
 		config.useAccelerometer = false;
 		config.useCompass = false;
 		initialize(new OhHeckGame(), config);

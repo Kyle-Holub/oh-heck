@@ -39,7 +39,7 @@ Every push to a `develop/*` branch builds the app and publishes it as a "Dev bui
 
 1. Install [Obtainium](https://github.com/ImranR98/Obtainium/releases).
 2. Add the app with this repository's URL and turn on **Include prereleases**.
-3. Install **Oh Heck! (dev)**. Obtainium offers each new build as an update.
+3. Install **Oh Heck!**. Obtainium offers each new build as an update.
 
 ## Controls
 
