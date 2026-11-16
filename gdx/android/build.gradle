@@ -23,7 +23,8 @@ android {
     minSdkVersion 21
     targetSdkVersion 35
     versionCode buildNumber
-    versionName "dev-$buildNumber"
+    // zero-padded so the build names sort in order (dev-0009 < dev-0010)
+    versionName String.format('dev-%04d', buildNumber)
   }
 
   signingConfigs {
