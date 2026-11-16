@@ -165,7 +165,7 @@ public class MenuState extends GameState {
 			// draw version info
 			g.setColor(Color.WHITE);
 			g.setFont(VERSION_FONT);
-			g.drawString("\u00a92017 Kyle Holub", MainCanvas.SCREEN_W - 120, MainCanvas.SCREEN_H - 10);
+			g.drawString("\u00a92026 Kyle Holub", MainCanvas.SCREEN_W - 120, MainCanvas.SCREEN_H - 10);
 			g.drawString(Main.VERSION, 5, MainCanvas.SCREEN_H - 10);
 
 			if (Main.DEBUG) {

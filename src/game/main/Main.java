@@ -28,7 +28,8 @@ import javax.swing.JFrame;
  * 
  * 
  * @author Kyle Holub
- * @version 1.0.5 Fixed a few bugs
+ * @version 1.0.6 11/16/2026 Animated title screen, quieter win sound, run scripts
+ * 			1.0.5 Fixed a few bugs
  * 			1.0.4 8/26/2017 Improved mouse support
  * 			1.0.3 8/24/2017 Added mouse support
  * 			1.0.2 08/23/2017 Made it possible to skip deal animation
@@ -38,7 +39,7 @@ import javax.swing.JFrame;
 public class Main extends JFrame {
 
 	public static final boolean DEBUG = false;
-	public static final String VERSION = "v1.0.5";
+	public static final String VERSION = "alpha-1.0.6";
 
 	public static void main(String[] args) {
 		final Main main = new Main();
