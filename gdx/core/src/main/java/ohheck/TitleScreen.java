@@ -14,7 +14,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 public class TitleScreen extends BaseScreen {
 
 	private static final Color SHADE = new Color(0f, 0f, 0f, 0.38f);
-	private static final Color ITEM = new Color(0f, 0f, 0f, 0.55f);
+	private static final Color ITEM = new Color(0f, 0f, 0f, 0.8f);
 
 	private final FallingCards cards;
 	private final List<String> items = new ArrayList<String>();
