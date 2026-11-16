@@ -8,13 +8,26 @@ java {
 sourceSets {
   main {
     java {
-      // the port's own code, plus the shared graphics-free rules from the desktop game
+      // the port's own code, plus the shared graphics-free rules (also used by the Swing game)
       srcDirs = ['src/main/java', '../../src']
       include 'ohheck/**', 'rules/**'
+    }
+  }
+  test {
+    java {
+      srcDirs = ['../../test']
     }
   }
 }
 
 dependencies {
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
+  testImplementation 'junit:junit:4.13.2'
+}
+
+test {
+  testLogging {
+    events 'failed'
+    exceptionFormat 'full'
+  }
 }

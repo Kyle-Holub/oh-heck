@@ -27,7 +27,7 @@ public class MatchTest {
 
 	/** Plays a 4-bot game, checking the rules at every step. */
 	private void playWholeGame(Random rng) {
-		Match m = new Match(4, rng);
+		Match m = Match.random(4, rng);
 		int[] expectedScores = new int[4];
 		int expectedDealer = m.dealer();
 
@@ -111,7 +111,7 @@ public class MatchTest {
 	}
 
 	private String transcript(Random rng) {
-		Match m = new Match(4, rng);
+		Match m = Match.random(4, rng);
 		StringBuilder sb = new StringBuilder();
 		while (m.phase() != Match.Phase.GAME_OVER) {
 			int s = m.currentSeat();

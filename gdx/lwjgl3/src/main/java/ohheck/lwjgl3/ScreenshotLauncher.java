@@ -39,6 +39,7 @@ public class ScreenshotLauncher {
 		GameOptions o = new GameOptions();
 		o.seed = 20261116L;
 		o.autoplayHuman = true;
+		o.persist = false;
 		o.speed = 2f;
 		o.frameListener = new GameOptions.FrameListener() {
 			@Override

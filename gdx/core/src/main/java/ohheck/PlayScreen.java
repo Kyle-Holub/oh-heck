@@ -11,18 +11,14 @@ import java.util.Random;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
-import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import rules.Bot;
 import rules.Card;
@@ -38,12 +34,11 @@ import rules.Suit;
  * Playing a card: tap it to lift it, then tap it again (or drag it up onto
  * the table). Bidding: tap a number, then tap it again to confirm.
  */
-public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
+public class PlayScreen extends BaseScreen {
 
 	private static final int HUMAN = 0;
 	private static final String[] NAMES = { "You", "Tom", "Max", "Dan" };
 
-	private static final float WORLD_W = 800, WORLD_H = 480;
 	private static final float HAND_SCALE = 1.2f, BACK_SCALE = 0.55f, TRUMP_SCALE = 0.8f;
 	private static final float LINE = 20f;
 
@@ -59,21 +54,14 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	// touch
 	private static final float DRAG_START = 12f, LIFT = 22f, SELECTED_LIFT = 44f;
 
-	private static final Color PANEL = new Color(0f, 0f, 0f, 0.72f);
-	private static final Color BUTTON = new Color(0.16f, 0.42f, 0.24f, 1f);
 	private static final Color BUTTON_OFF = new Color(0.3f, 0.3f, 0.3f, 1f);
-	private static final Color GOLD = new Color(1f, 0.82f, 0.25f, 1f);
 	private static final Color DIM = new Color(0.55f, 0.55f, 0.55f, 1f);
 	private static final Color MENU_BACKDROP = new Color(0f, 0f, 0f, 0.78f);
 	private static final Color MENU_BUTTON = new Color(0.2f, 0.2f, 0.2f, 1f);
 	private static final Color SET_RED = new Color(1f, 0.55f, 0.5f, 1f);
 
-	private final OhHeckGame game;
-	private final Assets assets;
 	private final GameOptions options;
-	private final ExtendViewport viewport = new ExtendViewport(WORLD_W, WORLD_H);
-	private final SpriteBatch batch = new SpriteBatch();
-	private final GlyphLayout glyphs = new GlyphLayout();
+	private final PlayerPanel panel = new PlayerPanel(this);
 	private final Vector2 tmp = new Vector2();
 	private final Bot bot = new Bot();
 	private final Random rng;
@@ -108,7 +96,6 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	private boolean menuDemoDone;
 
 	// layout, rebuilt every frame while drawing
-	private float w = WORLD_W, h = WORLD_H;
 	private final List<Rectangle> bidButtons = new ArrayList<Rectangle>();
 	private final List<Rectangle> handRects = new ArrayList<Rectangle>();
 	private final List<Card> handOrder = new ArrayList<Card>();
@@ -116,16 +103,24 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	private final List<Rectangle> menuItems = new ArrayList<Rectangle>();
 	private static final String[] MENU = { "Resume", "New game", "Main menu" };
 
-	public PlayScreen(OhHeckGame game) {
-		this.game = game;
-		this.assets = game.assets;
+	/** A new game, or the saved game {@code restored} if not null. */
+	public PlayScreen(OhHeckGame game, Match restored) {
+		super(game);
 		this.options = game.options;
 		this.rng = options.seed == null ? new Random() : new Random(options.seed);
-		newGame();
+		if (restored == null) {
+			newGame();
+		} else {
+			match = restored;
+			// don't replay the deal for a hand that was already under way
+			dealtHand = match.handIndex();
+			dealT = dealDuration = 0;
+		}
 	}
 
 	private void newGame() {
-		match = new Match(4, rng);
+		match = Match.random(4, rng);
+		save();
 		timer = 0;
 		trickPause = 0;
 		lastTrickText = "";
@@ -172,8 +167,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			@Override
 			public boolean keyDown(int keycode) {
 				if (keycode == Input.Keys.BACK || keycode == Input.Keys.ESCAPE) {
-					menuOpen = !menuOpen;
-					clearSelection();
+					back();
 					return true;
 				}
 				return false;
@@ -191,8 +185,16 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		return match.phase() == Match.Phase.GAME_OVER;
 	}
 
+	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */
+	private void save() {
+		if (options.persist) {
+			game.settings.saveGame(match.phase() == Match.Phase.GAME_OVER ? null : match.save());
+		}
+	}
+
 	@Override
 	public void pause() {
+		save();
 		// leaving the app (home button, a call): come back to the menu
 		if (!options.autoplayHuman) {
 			menuOpen = true;
@@ -257,7 +259,8 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	}
 
 	/** A tap at world position (x, y). Autoplay taps come through here too. */
-	private void tap(float x, float y) {
+	@Override
+	protected void tap(float x, float y) {
 		if (menuOpen) {
 			for (int i = 0; i < menuItems.size(); i++) {
 				if (menuItems.get(i).contains(x, y)) {
@@ -295,6 +298,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 				handOverT = HAND_END_SHOW;
 			} else {
 				match.nextHand();
+				save();
 				timer = 0;
 			}
 			break;
@@ -311,6 +315,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 					showHint("As dealer you can't bid " + b + ": the bids would add up to " + match.handSize());
 				} else if (pendingBid == b) {
 					match.placeBid(HUMAN, b);
+					save();
 					clearSelection();
 					timer = 0;
 				} else {
@@ -340,6 +345,12 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		} else {
 			selected = c;
 		}
+	}
+
+	@Override
+	protected void back() {
+		menuOpen = !menuOpen;
+		clearSelection();
 	}
 
 	private void menuChoice(int i) {
@@ -452,6 +463,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	private void botMove(int seat) {
 		if (match.phase() == Match.Phase.BIDDING) {
 			match.placeBid(seat, bot.chooseBid(match.hand(seat), match.trump(), match.bidsSoFar()));
+			save();
 		} else {
 			Card c = bot.choosePlay(match.hand(seat), match.currentTrick(), match.trump(), match.bid(seat),
 					match.tricksWon(seat));
@@ -473,6 +485,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 
 	private void play(int seat, Card c) {
 		int winner = match.playCard(seat, c);
+		save();
 		timer = 0;
 		game.audio.play(Audio.Effect.PLAY_CARD);
 		if (match.phase() == Match.Phase.HAND_OVER) {
@@ -540,13 +553,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 
 	private void draw() {
 		ScreenUtils.clear(Color.BLACK);
-		viewport.apply();
-		batch.setProjectionMatrix(viewport.getCamera().combined);
-		w = viewport.getWorldWidth();
-		h = viewport.getWorldHeight();
-
-		batch.begin();
-		batch.setColor(Color.WHITE);
+		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 
 		drawInfo();
@@ -591,7 +598,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	}
 
 	private void drawInfo() {
-		BitmapFont f = font(1.1f);
+		BitmapFont f = ui(1.1f);
 		f.setColor(Color.WHITE);
 		float y = h - 10;
 		if (match.phase() != Match.Phase.GAME_OVER) {
@@ -630,7 +637,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 
 	private void drawTrump() {
 		float cw = Assets.CARD_W * TRUMP_SCALE, ch = Assets.CARD_H * TRUMP_SCALE;
-		BitmapFont f = font(1f);
+		BitmapFont f = ui(1f);
 		f.setColor(Color.WHITE);
 		text(f, "Trump", w - 12 - cw / 2, h - 10, true);
 		if (isDealing()) {
@@ -642,12 +649,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 
 	// ---- player panels: name, dealer icon, score, and a row of bid/trick icons as in the original game
 
-	private static final float PANEL_W = 214, PANEL_H = 80;
-	private static final float ICON_MAX_W = 28, ICON_GAP = 3;
-	private static final Color PANEL_BG = new Color(0.04f, 0.06f, 0.2f, 0.78f);
-	private static final Color TURN_BG = new Color(0f, 0.5f, 0.3f, 0.85f);
-	private static final Color TURN_EDGE = new Color(0f, 0.96f, 0.5f, 1f);
-	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.38f);
+	private static final float PANEL_W = PlayerPanel.W, PANEL_H = PlayerPanel.H;
 
 	/** Top-left corner of a seat's panel. */
 	private float panelX(int seat) {
@@ -699,55 +701,8 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	}
 
 	private void drawPanel(int seat) {
-		float x = panelX(seat), top = panelTop(seat), y = top - PANEL_H;
-		boolean turn = isTurn(seat);
-		if (turn) {
-			rect(x - 2, y - 2, PANEL_W + 4, PANEL_H + 4, TURN_EDGE);
-		}
-		rect(x, y, PANEL_W, PANEL_H, turn ? TURN_BG : PANEL_BG);
-
-		// name, dealer icon and score
-		BitmapFont f = font(1.3f);
-		f.setColor(Color.WHITE);
-		glyphs.setText(f, NAMES[seat]);
-		f.draw(batch, NAMES[seat], x + 10, top - 9);
-		if (match.dealer() == seat) {
-			batch.draw(assets.dealerIcon, x + 16 + glyphs.width, top - 32, 24, 24);
-		}
-		f.setColor(GOLD);
-		text(f, String.valueOf(match.score(seat)), x + PANEL_W - 10, top - 9, false);
-
-		// one icon per trick bid or won: faded = bid but not won yet, solid = won, red = won over the bid
-		float iy = y + 6;
-		Integer bid = match.bid(seat);
-		int won = match.tricksWon(seat);
-		if (bid == null) {
-			BitmapFont s = font(1f);
-			s.setColor(Color.LIGHT_GRAY);
-			s.draw(batch, isDealing() ? "" : turn ? "bidding..." : "no bid yet", x + 10, iy + 20);
-			return;
-		}
-		int icons = Math.max(bid, won);
-		if (icons == 0) {
-			BitmapFont s = font(1f);
-			s.setColor(Color.LIGHT_GRAY);
-			s.draw(batch, "bid 0", x + 10, iy + 20);
-			return;
-		}
-		// as big as fits: 28 wide for a few tricks, shrinking to fit 8
-		float iw = Math.min(ICON_MAX_W, (PANEL_W - 20) / icons - ICON_GAP), ih = iw * 18f / 14f;
-		for (int i = 0; i < icons; i++) {
-			float ix = x + 10 + i * (iw + ICON_GAP);
-			if (i < Math.min(bid, won)) {
-				batch.draw(assets.trickIcon, ix, iy, iw, ih);
-			} else if (i < bid) {
-				batch.setColor(BID_FADE);
-				batch.draw(assets.trickIcon, ix, iy, iw, ih);
-				batch.setColor(Color.WHITE);
-			} else {
-				batch.draw(assets.overIcon, ix, iy, iw, ih);
-			}
-		}
+		panel.draw(NAMES[seat], panelX(seat), panelTop(seat), isTurn(seat), match.dealer() == seat, match.score(seat),
+				match.bid(seat), match.tricksWon(seat), isDealing());
 	}
 
 	private void drawHand() {
@@ -879,13 +834,13 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		rect(px, py, pw, ph, PANEL);
 
 		if (pendingBid >= 0) {
-			BitmapFont f = font(1.3f);
+			BitmapFont f = ui(1.3f);
 			f.setColor(GOLD);
 			text(f, "Tap " + pendingBid + " again to bid " + pendingBid, w / 2, py + ph - 14, true);
 		} else {
 			drawArt(assets.makeBidText, w / 2, py + ph - 26, 0.52f, 1f);
 		}
-		BitmapFont s = font(1f);
+		BitmapFont s = ui(1f);
 		s.setColor(Color.LIGHT_GRAY);
 		int forbidden = match.forbiddenBid();
 		String note = "Bids so far: " + match.bidsSoFar() + " of " + n
@@ -894,7 +849,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 
 		bidButtons.clear();
 		float bx = (w - rowW) / 2, by = py + 20;
-		BitmapFont bf = font(1.7f);
+		BitmapFont bf = ui(1.7f);
 		for (int b = 0; b <= n; b++) {
 			Rectangle r = new Rectangle(bx + b * (bs + gap), by, bs, bs);
 			bidButtons.add(r);
@@ -935,7 +890,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			f.setColor(c.r, c.g, c.b, a);
 			f.draw(batch, s, x, y);
 		}
-		BitmapFont t = font(1f);
+		BitmapFont t = ui(1f);
 		t.setColor(Color.LIGHT_GRAY);
 		text(t, "Tap for the scores", w / 2, h / 2 - 40, true);
 	}
@@ -944,11 +899,11 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		float pw = 470, ph = 220;
 		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
 		rect(px, py, pw, ph, PANEL);
-		BitmapFont f = font(1.3f);
+		BitmapFont f = ui(1.3f);
 		f.setColor(Color.WHITE);
 		text(f, "Hand " + (match.handIndex() + 1) + " results", w / 2, py + ph - 14, true);
 
-		BitmapFont t = font(1.1f);
+		BitmapFont t = ui(1.1f);
 		float[] cols = { px + 24, px + 150, px + 215, px + 290, px + 380 };
 		String[] head = { "Player", "Bid", "Won", "Points", "Total" };
 		float y = py + ph - 52;
@@ -966,7 +921,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 				t.draw(batch, row[c], cols[c], y);
 			}
 		}
-		BitmapFont s = font(1f);
+		BitmapFont s = ui(1f);
 		s.setColor(GOLD);
 		text(s, "Tap to continue", w / 2, py + 26, true);
 	}
@@ -989,7 +944,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		} else {
 			title.append(leaders.get(0) == HUMAN ? " win the game!" : " wins the game!");
 		}
-		BitmapFont f = font(1.5f);
+		BitmapFont f = ui(1.5f);
 		f.setColor(GOLD);
 		text(f, title.toString(), w / 2, py + ph - 16, true);
 
@@ -1003,7 +958,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 				return match.score(b) - match.score(a);
 			}
 		});
-		BitmapFont t = font(1.2f);
+		BitmapFont t = ui(1.2f);
 		float y = py + ph - 66;
 		for (int s : order) {
 			t.setColor(Color.WHITE);
@@ -1011,7 +966,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 			text(t, String.valueOf(match.score(s)), px + pw - 120, y, false);
 			y -= 28;
 		}
-		BitmapFont s = font(1f);
+		BitmapFont s = ui(1f);
 		s.setColor(GOLD);
 		text(s, "Tap to play again", w / 2, py + 26, true);
 	}
@@ -1019,7 +974,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	private void drawMenuButton() {
 		menuButton.set(w - 92, 10, 80, 38);
 		rect(menuButton.x, menuButton.y, menuButton.width, menuButton.height, PANEL);
-		BitmapFont f = font(1.2f);
+		BitmapFont f = ui(1.2f);
 		f.setColor(Color.WHITE);
 		text(f, "Menu", menuButton.x + menuButton.width / 2, menuButton.y + 27, true);
 	}
@@ -1029,11 +984,11 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		float bw = 260, bh = 56, gap = 14;
 		float total = MENU.length * bh + (MENU.length - 1) * gap;
 		float top = h / 2 + total / 2 + 20;
-		BitmapFont title = font(1.5f);
+		BitmapFont title = ui(1.5f);
 		title.setColor(GOLD);
 		text(title, "Paused", w / 2, top + 36, true);
 		menuItems.clear();
-		BitmapFont f = font(1.4f);
+		BitmapFont f = ui(1.4f);
 		for (int i = 0; i < MENU.length; i++) {
 			Rectangle r = new Rectangle((w - bw) / 2, top - (i + 1) * bh - i * gap, bw, bh);
 			menuItems.add(r);
@@ -1044,7 +999,7 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	}
 
 	private void drawHint() {
-		BitmapFont f = font(1.15f);
+		BitmapFont f = ui(1.15f);
 		glyphs.setText(f, hint);
 		float pw = glyphs.width + 32, ph = 40;
 		float px = (w - pw) / 2, py = 8 + Assets.CARD_H * HAND_SCALE + SELECTED_LIFT + 6;
@@ -1054,23 +1009,6 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	}
 
 	// --------------------------------------------------------------- helpers
-
-	private BitmapFont font(float scale) {
-		assets.font.getData().setScale(scale * Assets.UI_BASE);
-		return assets.font;
-	}
-
-	/** Draws text centred on x, or right-aligned to x when centre is false. */
-	private void text(BitmapFont f, String s, float x, float y, boolean centre) {
-		glyphs.setText(f, s);
-		f.draw(batch, s, centre ? x - glyphs.width / 2 : x - glyphs.width, y);
-	}
-
-	private void rect(float x, float y, float rw, float rh, Color c) {
-		batch.setColor(c);
-		batch.draw(assets.white, x, y, rw, rh);
-		batch.setColor(Color.WHITE);
-	}
 
 	/** "Ace of Spades" */
 	static String pretty(Card c) {
@@ -1137,15 +1075,5 @@ public class PlayScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		default:
 			return "gameover";
 		}
-	}
-
-	@Override
-	public void resize(int width, int height) {
-		viewport.update(width, height, true);
-	}
-
-	@Override
-	public void dispose() {
-		batch.dispose();
 	}
 }

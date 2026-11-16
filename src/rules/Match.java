@@ -50,17 +50,23 @@ public final class Match {
 	private int lastTrickWinner = -1;
 
 	/** A game with a random first dealer. */
-	public Match(int players, Random rng) {
-		this(players, rng, rng.nextInt(players));
+	public static Match random(int players, Random rng) {
+		return new Match(players, rng, rng.nextInt(players));
 	}
 
 	public Match(int players, Random rng, int firstDealer) {
+		this(players, rng);
+		this.dealer = firstDealer;
+		startHand();
+	}
+
+	/** Allocates an empty game, for the constructors above and {@link #load}. */
+	private Match(int players, Random rng) {
 		if (players < 2 || players * Rules.handSize(Rules.numberOfHands() - 1) >= 52) {
 			throw new IllegalArgumentException("Unsupported number of players: " + players);
 		}
 		this.players = players;
 		this.rng = rng;
-		this.dealer = firstDealer;
 		this.bids = new Integer[players];
 		this.tricks = new int[players];
 		this.scores = new int[players];
@@ -68,7 +74,6 @@ public final class Match {
 		for (int i = 0; i < players; i++) {
 			hands.add(new ArrayList<Card>());
 		}
-		startHand();
 	}
 
 	// ---- Actions ----
@@ -271,6 +276,184 @@ public final class Match {
 			}
 		}
 		return seats;
+	}
+
+	// ---- Saving ----
+
+	private static final String FORMAT = "oh-heck-match-1";
+
+	/**
+	 * The whole game state as a short text, for saving to storage. The random
+	 * number generator is not saved: a restored game deals future hands from
+	 * the Random given to {@link #load}.
+	 */
+	public String save() {
+		StringBuilder sb = new StringBuilder(FORMAT).append('\n');
+		line(sb, "players", String.valueOf(players));
+		line(sb, "phase", phase.name());
+		line(sb, "hand", String.valueOf(handIndex));
+		line(sb, "dealer", String.valueOf(dealer));
+		line(sb, "current", String.valueOf(current));
+		line(sb, "trump", String.valueOf(code(trumpCard)));
+		for (int s = 0; s < players; s++) {
+			line(sb, "hand" + s, cards(hands.get(s)));
+		}
+		StringBuilder b = new StringBuilder();
+		for (int s = 0; s < players; s++) {
+			b.append(s > 0 ? "," : "").append(bids[s] == null ? "-" : bids[s].toString());
+		}
+		line(sb, "bids", b.toString());
+		line(sb, "tricks", ints(tricks));
+		line(sb, "scores", ints(scores));
+		line(sb, "points", ints(lastHandPoints));
+		line(sb, "trick", cards(trick));
+		line(sb, "trickSeats", seats(trickSeats));
+		line(sb, "last", cards(lastTrick));
+		line(sb, "lastSeats", seats(lastTrickSeats));
+		line(sb, "lastWinner", String.valueOf(lastTrickWinner));
+		return sb.toString();
+	}
+
+	/**
+	 * Rebuilds a game saved with {@link #save}.
+	 *
+	 * @throws IllegalArgumentException if the text is not a valid saved game
+	 */
+	public static Match load(String saved, Random rng) {
+		try {
+			java.util.Map<String, String> v = new java.util.HashMap<String, String>();
+			String[] lines = saved.split("\n");
+			if (!lines[0].trim().equals(FORMAT)) {
+				throw new IllegalArgumentException("Not a saved game");
+			}
+			for (int i = 1; i < lines.length; i++) {
+				int eq = lines[i].indexOf('=');
+				if (eq > 0) {
+					v.put(lines[i].substring(0, eq), lines[i].substring(eq + 1).trim());
+				}
+			}
+			Match m = new Match(Integer.parseInt(req(v, "players")), rng);
+			m.phase = Phase.valueOf(req(v, "phase"));
+			m.handIndex = Integer.parseInt(req(v, "hand"));
+			m.dealer = Integer.parseInt(req(v, "dealer"));
+			m.current = Integer.parseInt(req(v, "current"));
+			m.trumpCard = card(Integer.parseInt(req(v, "trump")));
+			for (int s = 0; s < m.players; s++) {
+				m.hands.set(s, parseCards(req(v, "hand" + s)));
+			}
+			String[] b = req(v, "bids").split(",");
+			int[] t = parseInts(req(v, "tricks"), m.players), sc = parseInts(req(v, "scores"), m.players),
+					pt = parseInts(req(v, "points"), m.players);
+			for (int s = 0; s < m.players; s++) {
+				m.bids[s] = b[s].equals("-") ? null : Integer.valueOf(b[s]);
+				m.tricks[s] = t[s];
+				m.scores[s] = sc[s];
+				m.lastHandPoints[s] = pt[s];
+			}
+			m.trick.addAll(parseCards(req(v, "trick")));
+			m.trickSeats.addAll(parseSeats(req(v, "trickSeats")));
+			m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last")));
+			m.lastTrickSeats = Collections.unmodifiableList(parseSeats(req(v, "lastSeats")));
+			m.lastTrickWinner = Integer.parseInt(req(v, "lastWinner"));
+			m.check();
+			return m;
+		} catch (RuntimeException e) {
+			throw new IllegalArgumentException("Corrupt saved game: " + e.getMessage(), e);
+		}
+	}
+
+	/** Sanity checks after loading, so a damaged save is rejected rather than played. */
+	private void check() {
+		if (handIndex < 0 || handIndex >= Rules.numberOfHands() || dealer < 0 || dealer >= players || current < 0
+				|| current >= players || trick.size() != trickSeats.size() || trick.size() >= players) {
+			throw new IllegalArgumentException("Inconsistent game state");
+		}
+		java.util.Set<Card> seen = new java.util.HashSet<Card>();
+		seen.add(trumpCard);
+		for (List<Card> h : hands) {
+			for (Card c : h) {
+				if (!seen.add(c)) {
+					throw new IllegalArgumentException("Card appears twice: " + c);
+				}
+			}
+		}
+		for (Card c : trick) {
+			if (!seen.add(c)) {
+				throw new IllegalArgumentException("Card appears twice: " + c);
+			}
+		}
+	}
+
+	private static void line(StringBuilder sb, String key, String value) {
+		sb.append(key).append('=').append(value).append('\n');
+	}
+
+	private static String req(java.util.Map<String, String> v, String key) {
+		String s = v.get(key);
+		if (s == null) {
+			throw new IllegalArgumentException("Missing " + key);
+		}
+		return s;
+	}
+
+	private static int code(Card c) {
+		return c.suit().ordinal() * 13 + c.rank().ordinal();
+	}
+
+	private static Card card(int code) {
+		return Card.of(Rank.values()[code % 13], Suit.values()[code / 13]);
+	}
+
+	private static String cards(List<Card> cs) {
+		StringBuilder sb = new StringBuilder();
+		for (Card c : cs) {
+			sb.append(sb.length() > 0 ? "," : "").append(code(c));
+		}
+		return sb.toString();
+	}
+
+	private static List<Card> parseCards(String s) {
+		List<Card> list = new ArrayList<Card>();
+		for (String p : s.isEmpty() ? new String[0] : s.split(",")) {
+			list.add(card(Integer.parseInt(p)));
+		}
+		return list;
+	}
+
+	private static String seats(List<Integer> seats) {
+		StringBuilder sb = new StringBuilder();
+		for (Integer i : seats) {
+			sb.append(sb.length() > 0 ? "," : "").append(i);
+		}
+		return sb.toString();
+	}
+
+	private static List<Integer> parseSeats(String s) {
+		List<Integer> list = new ArrayList<Integer>();
+		for (String p : s.isEmpty() ? new String[0] : s.split(",")) {
+			list.add(Integer.valueOf(p));
+		}
+		return list;
+	}
+
+	private static String ints(int[] a) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < a.length; i++) {
+			sb.append(i > 0 ? "," : "").append(a[i]);
+		}
+		return sb.toString();
+	}
+
+	private static int[] parseInts(String s, int n) {
+		String[] p = s.split(",");
+		if (p.length != n) {
+			throw new IllegalArgumentException("Expected " + n + " values");
+		}
+		int[] a = new int[n];
+		for (int i = 0; i < n; i++) {
+			a[i] = Integer.parseInt(p[i]);
+		}
+		return a;
 	}
 
 	// ---- Internals ----

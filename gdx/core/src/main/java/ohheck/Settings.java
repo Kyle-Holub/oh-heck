@@ -21,6 +21,21 @@ public final class Settings {
 		return prefs.getBoolean("fast", false);
 	}
 
+	/** The game in progress, as saved by rules.Match.save(), or null. */
+	public String savedGame() {
+		String s = prefs.getString("savedGame", "");
+		return s.isEmpty() ? null : s;
+	}
+
+	public void saveGame(String saved) {
+		if (saved == null) {
+			prefs.remove("savedGame");
+		} else {
+			prefs.putString("savedGame", saved);
+		}
+		prefs.flush();
+	}
+
 	public void setMusic(boolean on) {
 		prefs.putBoolean("music", on).flush();
 	}

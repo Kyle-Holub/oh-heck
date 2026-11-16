@@ -123,6 +123,12 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		f.draw(batch, s, x - glyphs.width / 2, y);
 	}
 
+	/** Draws text centred on x, or right-aligned to x when centre is false. */
+	protected void text(BitmapFont f, String s, float x, float y, boolean centre) {
+		glyphs.setText(f, s);
+		f.draw(batch, s, centre ? x - glyphs.width / 2 : x - glyphs.width, y);
+	}
+
 	protected void rect(float x, float y, float rw, float rh, Color c) {
 		batch.setColor(c);
 		batch.draw(assets.white, x, y, rw, rh);

@@ -1,52 +1,57 @@
 # Oh Heck!
 
-A desktop version of the trick-taking card game *Oh Heck* (also known as *Oh Hell*), written in Java Swing. You play against three computer opponents.
+A trick-taking card game (also known as *Oh Hell*): bid the exact number of tricks you'll take, then take exactly that many. You play against three computer opponents over 8 hands of 1 to 8 cards.
 
-## Requirements
+The game exists in two versions that share the same rules code:
 
-- A Java Development Kit (JDK), version 11 or newer, e.g. [Eclipse Temurin](https://adoptium.net/).
-  Check with `java -version` and `javac -version`.
+- **Phone and desktop (libGDX)**, in `gdx/`: the current version. Android test builds are published automatically on every push.
+- **Original desktop (Java Swing, 2017)**, in `src/`: the original game, still runnable. The untouched 2017 version is kept on the `release/alpha-1.0.6` branch.
 
-## Running
+## Playing on Android
 
-macOS / Linux:
+Every push to a `develop/*` branch builds the app and publishes it as a "Dev build" pre-release on GitHub. To install and get updates automatically:
+
+1. Install [Obtainium](https://github.com/ImranR98/Obtainium/releases).
+2. Add the app with this repository's URL and turn on **Include prereleases**.
+3. Install **Oh Heck! (dev)**. Obtainium offers each new build as an update.
+
+Games in progress are saved on the phone, so you can pick up where you left off.
+
+## Running on a computer
+
+Both versions need a Java Development Kit, version 17 or newer, e.g. [Eclipse Temurin](https://adoptium.net/).
+
+**libGDX version** (no other installs needed; the Gradle wrapper downloads what it needs the first time):
 
 ```sh
-./run.sh
+gdx/gradlew -p gdx lwjgl3:run        # macOS / Linux
+gdx\gradlew.bat -p gdx lwjgl3:run    # Windows
 ```
 
-Windows: double-click `run.bat`, or run it from a terminal.
+**Original Swing version:** run `./run.sh` (macOS / Linux) or `run.bat` (Windows).
 
-The script compiles `src/` into `bin/` and launches `game.main.Main`.
+## Tests
 
-### Running by hand
+The rules, scoring, computer players, game engine and saved games are covered by JUnit tests in `test/rules`, including thousands of simulated games:
 
 ```sh
-javac -d bin -cp "libraries/*" $(find src -name '*.java')
-java -cp "bin:resources:libraries/*" game.main.Main      # use ; instead of : on Windows
+gdx/gradlew -p gdx core:test
 ```
 
-## Opening in an IDE
-
-No IDE project files are checked in. If you use one, mark `src` and `resources` as source folders, add the jars in `libraries/` to the classpath, and run `game.main.Main`.
+GitHub runs them on every push, along with a scripted game whose screenshots are attached to each dev build.
 
 ## Project layout
 
 | Path | Contents |
 | --- | --- |
-| `src/game` | Window, game loop and screens (menu, play, rules, options, game over) |
-| `src/rules` | Game rules, scoring, computer player decisions and a headless game engine (no graphics) |
-| `src/core` | On-screen cards, players and round flow for the desktop game |
-| `src/util` | Input handling, audio (`JukeBox`) and helpers |
-| `resources` | Images, music, sound effects and the rules text, loaded from the classpath |
-| `libraries` | MP3 playback libraries (JLayer, MP3SPI, Tritonus) |
+| `src/rules` | Game rules, scoring, computer player decisions, the game engine and saving. No graphics; shared by both versions |
+| `gdx/core` | The libGDX game: title screen with 3D falling cards, card table, rules, options, sound |
+| `gdx/android` | Android launcher, icon and manifest |
+| `gdx/lwjgl3` | Desktop launcher, plus the scripted screenshot run used on GitHub |
+| `gdx/tools` | Script that bakes the fonts in `resources/fonts` |
+| `src/core`, `src/game`, `src/util` | The original Swing game's screens, players and input |
+| `resources` | Images, music, sound effects, fonts and rules text, used by both versions |
+| `libraries` | MP3 playback libraries for the Swing version |
+| `test/rules` | Tests for `src/rules` |
 
-## Tests
-
-The game rules, scoring and computer players live in `src/rules` with no graphics code, and are covered by JUnit 4 tests in `test/rules`, including thousands of simulated computer-only games.
-
-```sh
-javac -d build/rules src/rules/*.java
-javac -d build/test -cp build/rules:junit-4.13.2.jar:hamcrest-core-1.3.jar test/rules/*.java
-java -cp build/rules:build/test:junit-4.13.2.jar:hamcrest-core-1.3.jar org.junit.runner.JUnitCore rules.RulesTest rules.BotTest rules.MatchTest
-```
+All artwork, music and sound effects are by Kyle Holub. Fonts: DejaVu Sans and Serif (see `resources/fonts/DejaVu-LICENSE.txt`).
