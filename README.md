@@ -43,8 +43,8 @@ Every push to a `develop/*` branch builds the app and publishes it as a "Dev bui
 
 ## Controls
 
-- **Bidding:** tap or click a number, then again to confirm.
-- **Playing:** the cards you may play are raised. Tap or click one to lift it, then again to play it, or drag it onto the table.
+- **Bidding:** tap or click a number.
+- **Playing:** the cards you may play are raised. Tap or click one to play it, or drag it onto the table.
 - **Menu:** the Menu button, Android's back button or Esc pauses the game. Games in progress are saved, so you can continue later.
 
 ## Development

@@ -33,8 +33,7 @@ import rules.Suit;
  * animates it, runs the computer players on timers and turns touches into
  * moves.
  * <p>
- * Playing a card: tap it to lift it, then tap it again (or drag it up onto
- * the table). Bidding: tap a number, then tap it again to confirm.
+ * Playing a card: tap it, or drag it up onto the table. Bidding: tap a number.
  */
 public class PlayScreen extends BaseScreen {
 
@@ -51,7 +50,7 @@ public class PlayScreen extends BaseScreen {
 	private static final float PLAY_FLIGHT = 0.25f;
 	private static final float DEAL_INTERVAL = 0.09f, DEAL_FLIGHT = 0.4f;
 	private static final float HINT_TIME = 2.2f;
-	private static final float AUTOPLAY_DELAY = 1.2f, AUTOPLAY_CONFIRM = 0.7f, HAND_OVER_AUTO = 2.2f;
+	private static final float AUTOPLAY_DELAY = 1.2f, HAND_OVER_AUTO = 2.2f;
 
 	// touch
 	private static final float DRAG_START = 12f, LIFT = 22f, SELECTED_LIFT = 44f;
@@ -99,13 +98,11 @@ public class PlayScreen extends BaseScreen {
 
 	// human selection and dragging
 	private Card selected;
-	private int pendingBid = -1;
 	private Card pressed;
 	private float downX, downY, dragX, dragY;
 	private boolean dragging;
 
-	// autoplay (screenshots): the move chosen and whether it's been selected yet
-	private boolean autoSelected;
+	// autoplay (screenshots)
 	private boolean menuDemoDone;
 
 	// layout, rebuilt every frame while drawing
@@ -262,6 +259,7 @@ public class PlayScreen extends BaseScreen {
 			Card c = pressed;
 			dragging = false;
 			pressed = null;
+			selected = null; // played below, or dropped back into the hand
 			Rectangle r = handRects.isEmpty() ? null : handRects.get(0);
 			float handTop = r == null ? 150 : r.y + r.height;
 			if (y > handTop + 10 && humanCanPlay()) {
@@ -342,18 +340,15 @@ public class PlayScreen extends BaseScreen {
 			if (bidButtons.get(b).contains(x, y)) {
 				if (!match.isLegalBid(b)) {
 					showHint("As dealer you can't bid " + b + ": the bids would add up to " + match.handSize());
-				} else if (pendingBid == b) {
+				} else {
 					match.placeBid(HUMAN, b);
 					save();
 					clearSelection();
 					timer = 0;
-				} else {
-					pendingBid = b;
 				}
 				return;
 			}
 		}
-		pendingBid = -1;
 	}
 
 	private void tapCard(float x, float y) {
@@ -368,12 +363,8 @@ public class PlayScreen extends BaseScreen {
 			showHint("You must follow suit: play a " + singular(lead));
 			return;
 		}
-		if (c == selected) {
-			Rectangle r = handRects.get(i);
-			humanPlay(c, r.x, r.y);
-		} else {
-			selected = c;
-		}
+		Rectangle r = handRects.get(i);
+		humanPlay(c, r.x, r.y);
 	}
 
 	@Override
@@ -409,10 +400,8 @@ public class PlayScreen extends BaseScreen {
 
 	private void clearSelection() {
 		selected = null;
-		pendingBid = -1;
 		pressed = null;
 		dragging = false;
-		autoSelected = false;
 	}
 
 	private void showHint(String s) {
@@ -578,7 +567,7 @@ public class PlayScreen extends BaseScreen {
 
 	/**
 	 * Plays the human seat for automated screenshots, through the same taps a
-	 * person would make: select the bot's choice, wait, then tap it again.
+	 * person would make: wait a moment, then tap the bot's choice.
 	 */
 	private void autoplayHuman(float dt) {
 		timer += dt;
@@ -589,14 +578,9 @@ public class PlayScreen extends BaseScreen {
 			tapCentre(menuButton);
 			return;
 		}
-		if (!autoSelected && timer >= AUTOPLAY_DELAY) {
-			autoSelected = true;
+		if (timer >= AUTOPLAY_DELAY) {
 			timer = 0;
 			autoTap();
-		} else if (autoSelected && timer >= AUTOPLAY_CONFIRM) {
-			timer = 0;
-			autoTap();
-			autoSelected = false;
 		}
 	}
 
@@ -1204,13 +1188,7 @@ public class PlayScreen extends BaseScreen {
 		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
 		frame(assets.panel, px, py, pw, ph);
 
-		if (pendingBid >= 0) {
-			BitmapFont f = ui(1.3f);
-			f.setColor(GOLD);
-			text(f, "Tap " + pendingBid + " again to bid " + pendingBid, w / 2, py + ph - 22, true);
-		} else {
-			drawArt(assets.makeBidText, w / 2, py + ph - 36, 0.52f, 1f);
-		}
+		drawArt(assets.makeBidText, w / 2, py + ph - 36, 0.52f, 1f);
 		BitmapFont s = ui(1f);
 		s.setColor(Palette.MUTED);
 		int forbidden = match.forbiddenBid();
@@ -1225,9 +1203,6 @@ public class PlayScreen extends BaseScreen {
 			Rectangle r = new Rectangle(bx + b * (bs + gap), by, bs, bs);
 			bidButtons.add(r);
 			boolean ok = match.isLegalBid(b);
-			if (b == pendingBid) {
-				frame(assets.panelTurn, r.x - 6, r.y - 6, r.width + 12, r.height + 12);
-			}
 			frame(ok ? assets.button : assets.buttonOff, r.x, r.y, r.width, r.height);
 			bf.setColor(ok ? Palette.CREAM : Palette.MUTED);
 			text(bf, String.valueOf(b), r.x + bs / 2, r.y + bs / 2 + 12, true);
@@ -1361,10 +1336,10 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	private void drawGameOver() {
-		float pw = 420, ph = 290;
+		float pw = 420, ph = 306;
 		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
 		frame(assets.panel, px, py, pw, ph);
-		drawArt(assets.gameOverText, w / 2, py + ph - 38, 0.66f, 1f);
+		drawArt(assets.gameOverText, w / 2, py + ph - 50, 0.66f, 1f);
 
 		List<Integer> leaders = match.leaders();
 		StringBuilder title = new StringBuilder();
@@ -1381,10 +1356,10 @@ public class PlayScreen extends BaseScreen {
 		}
 		BitmapFont f = ui(1.5f);
 		f.setColor(GOLD);
-		text(f, title.toString(), w / 2, py + ph - 80, true);
+		text(f, title.toString(), w / 2, py + ph - 94, true);
 
 		BitmapFont t = ui(1.2f);
-		float y = py + ph - 116;
+		float y = py + ph - 130;
 		for (int s : ranked()) {
 			Color c = place(s) == 1 ? GOLD : Palette.CREAM;
 			t.setColor(Palette.MUTED);
@@ -1489,12 +1464,12 @@ public class PlayScreen extends BaseScreen {
 		switch (match.phase()) {
 		case BIDDING:
 			if (match.currentSeat() == HUMAN) {
-				return (pendingBid >= 0 ? "bidconfirm:" : "bid:") + hand;
+				return "bid:" + hand;
 			}
 			return "bidding:" + hand;
 		case PLAYING:
 			if (match.currentSeat() == HUMAN) {
-				return (selected != null ? "selected:" : "play:") + hand + ":" + match.currentTrick().size();
+				return (dragging ? "drag:" : "play:") + hand + ":" + match.currentTrick().size();
 			}
 			return "playing:" + hand;
 		case HAND_OVER:

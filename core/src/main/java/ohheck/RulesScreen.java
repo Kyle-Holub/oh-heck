@@ -18,11 +18,11 @@ public class RulesScreen extends BaseScreen {
 	private static final String[] HEADINGS = { "How to Play Oh Heck", "Cards", "Hands", "Objective", "Dealing",
 			"Trump Suit", "Bidding", "Play", "Scoring" };
 
-	private static final String CONTROLS = "Bidding: tap a number to choose your bid, then tap it again to confirm. "
+	private static final String CONTROLS = "Bidding: tap a number to make your bid. "
 			+ "As dealer you can't make the bid that would make everyone's bids add up to the number of tricks; "
 			+ "that number is greyed out.\n\n"
-			+ "Playing: the cards you may play are raised and the rest are dimmed. Tap a card to lift it, then tap it "
-			+ "again to play it, or drag it up onto the table.\n\n"
+			+ "Playing: the cards you may play are raised and the rest are dimmed. Tap a card to play it, "
+			+ "or drag it up onto the table.\n\n"
 			+ "Tap anywhere to skip the deal or to move on after a hand. The Menu button or your phone's back button "
 			+ "pauses the game.";
 
