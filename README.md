@@ -28,10 +28,7 @@ java -cp "bin:resources:libraries/*" game.main.Main      # use ; instead of : on
 
 ## Opening in an IDE
 
-- **IntelliJ IDEA:** open the folder; `oh-heck.iml` already marks `src` and `resources` as source roots and adds the jars in `libraries/`.
-- **Eclipse:** *File → Import → Existing Projects into Workspace*, then choose this folder.
-
-Run `game.main.Main`.
+No IDE project files are checked in. If you use one, mark `src` and `resources` as source folders, add the jars in `libraries/` to the classpath, and run `game.main.Main`.
 
 ## Project layout
 
