@@ -27,7 +27,7 @@ public final class Assets implements Disposable {
 	public final Texture cardBack;
 	public final Texture titleText;
 	/** Title art from the original game. */
-	public final Texture bidTricksText, setText, trickWonText, makeBidText;
+	public final Texture bidTricksText, setText, trickWonText, makeBidText, gameOverText;
 	/** Player bar icons from the original game: dealer, trick, trick over the bid. */
 	public final Texture dealerIcon, trickIcon, overIcon;
 	/** A 1x1 white texture, tinted to draw panels and buttons. */
@@ -49,6 +49,7 @@ public final class Assets implements Disposable {
 		setText = mipmapped("images/setText.png");
 		trickWonText = mipmapped("images/trickWonText.png");
 		makeBidText = mipmapped("images/makeBidText.png");
+		gameOverText = mipmapped("images/gameOver.png");
 		dealerIcon = pixelArt("images/dealerIcon.png");
 		trickIcon = pixelArt("images/trickIcon.png");
 		overIcon = pixelArt("images/underBidIcon.png");
@@ -106,7 +107,7 @@ public final class Assets implements Disposable {
 		cardSheet.dispose();
 		cardBack.dispose();
 		titleText.dispose();
-		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, dealerIcon, trickIcon, overIcon }) {
+		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, gameOverText, dealerIcon, trickIcon, overIcon }) {
 			t.dispose();
 		}
 		white.dispose();

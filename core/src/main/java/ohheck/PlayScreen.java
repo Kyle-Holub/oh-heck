@@ -927,9 +927,10 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	private void drawGameOver() {
-		float pw = 420, ph = 230;
+		float pw = 420, ph = 290;
 		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
 		rect(px, py, pw, ph, PANEL);
+		drawArt(assets.gameOverText, w / 2, py + ph - 38, 0.66f, 1f);
 
 		List<Integer> leaders = match.leaders();
 		StringBuilder title = new StringBuilder();
@@ -946,7 +947,7 @@ public class PlayScreen extends BaseScreen {
 		}
 		BitmapFont f = ui(1.5f);
 		f.setColor(GOLD);
-		text(f, title.toString(), w / 2, py + ph - 16, true);
+		text(f, title.toString(), w / 2, py + ph - 80, true);
 
 		List<Integer> order = new ArrayList<Integer>();
 		for (int s = 0; s < 4; s++) {
@@ -959,7 +960,7 @@ public class PlayScreen extends BaseScreen {
 			}
 		});
 		BitmapFont t = ui(1.2f);
-		float y = py + ph - 66;
+		float y = py + ph - 122;
 		for (int s : order) {
 			t.setColor(Color.WHITE);
 			t.draw(batch, NAMES[s], px + 110, y);
