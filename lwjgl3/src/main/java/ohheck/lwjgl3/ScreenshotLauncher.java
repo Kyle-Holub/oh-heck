@@ -40,7 +40,7 @@ public class ScreenshotLauncher {
 		o.seed = 20261116L;
 		o.autoplayHuman = true;
 		o.persist = false;
-		o.speed = 2f;
+		o.speed = 3f; // the game defaults to Slow; keep the scripted run short
 		o.frameListener = new GameOptions.FrameListener() {
 			@Override
 			public void onFrame(String state) {
@@ -52,7 +52,7 @@ public class ScreenshotLauncher {
 					done[0] = false;
 				}
 				// let each state settle before capturing it; the menus need a moment longer
-				float settle = state.equals("title") ? 1.2f : state.equals("rules") ? 0.75f : state.startsWith("deal") ? 0.9f : state.startsWith("shuffle") ? 1.0f : 0.12f;
+				float settle = state.equals("title") ? 1.2f : state.equals("rules") ? 0.75f : state.startsWith("deal") ? 0.7f : state.startsWith("shuffle") ? 0.7f : 0.12f;
 				if (!done[0] && (now - seenAt[0]) / 1e9f >= settle) {
 					done[0] = true;
 					for (String w : WANTED) {
