@@ -1337,7 +1337,7 @@ public class PlayScreen extends BaseScreen {
 
 	private void drawGameOver() {
 		float pw = 420, ph = 306;
-		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
+		float px = (w - pw) / 2, py = h / 2 - 6 - ph / 2; // clear of Max's panel above
 		frame(assets.panel, px, py, pw, ph);
 		drawArt(assets.gameOverText, w / 2, py + ph - 50, 0.66f, 1f);
 
