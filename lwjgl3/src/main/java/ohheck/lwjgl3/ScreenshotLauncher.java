@@ -25,7 +25,7 @@ import ohheck.OhHeckGame;
 public class ScreenshotLauncher {
 
 	/** Prefixes of states to capture, as reported by the screens' stateTag(). */
-	private static final String[] WANTED = { "title", "rules", "options", "shuffle:1", "deal:3", "bid:3", "bidconfirm:3",
+	private static final String[] WANTED = { "intro", "title", "rules", "options", "shuffle:1", "deal:3", "bid:3", "bidconfirm:3",
 			"selected:4:", "trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:7", "menu:7", "play:8:",
 			"gameover" };
 
@@ -37,6 +37,9 @@ public class ScreenshotLauncher {
 
 	/** Frames to wait in a state before capturing it, so animations are under way. */
 	private static int settleFrames(String state) {
+		if (state.equals("intro")) {
+			return 20; // 4 s in: cards falling, title half faded in, no menu yet
+		}
 		if (state.equals("title")) {
 			return 10; // cards falling, before the scripted run moves on at ~17 frames
 		}

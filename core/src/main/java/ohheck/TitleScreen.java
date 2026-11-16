@@ -15,13 +15,19 @@ public class TitleScreen extends BaseScreen {
 
 
 	private final FallingCards cards;
+
+	// The opening sequence, once per launch: music over black, then cards begin to fall,
+	// the title slowly fades in on its own, and after a pause the menu appears.
+	private static final float CARDS_START = 1.0f, CARDS_FADE = 1.4f, TITLE_START = 2.2f, TITLE_FADE = 2.6f,
+			MENU_START = 7.0f, MENU_FADE = 0.9f, INTRO_END = MENU_START + MENU_FADE;
+	private float introT;
 	private final List<String> items = new ArrayList<String>();
 	private final List<Rectangle> hits = new ArrayList<Rectangle>();
 
 	public TitleScreen(OhHeckGame game) {
 		super(game);
 		Long seed = game.options.seed;
-		cards = new FallingCards(assets, seed == null ? new Random() : new Random(seed));
+		cards = new FallingCards(assets, seed == null ? new Random() : new Random(seed), true);
 	}
 
 	private void buildItems() {
@@ -40,53 +46,89 @@ public class TitleScreen extends BaseScreen {
 	@Override
 	public void show() {
 		super.show();
+		if (introT > 0) {
+			introT = Math.max(introT, INTRO_END); // the opening plays once per launch
+		}
 		game.audio.startMusic();
 	}
 
 	@Override
 	public void render(float delta) {
 		float dt = Math.min(delta, 0.1f) * game.options.speed;
-		shownFor += dt;
-		cards.update(dt, w, h);
+		introT += dt;
+		if (introT >= CARDS_START) {
+			cards.update(dt, w, h);
+		}
+		if (introT >= INTRO_END) {
+			shownFor += dt;
+		}
 		if (game.options.autoplayHuman && shownFor > 3.5f) {
 			game.showRules();
 			return;
 		}
 
-		ScreenUtils.clear(Palette.BG);
+		ScreenUtils.clear(Color.BLACK);
 		begin();
-		// a dim spotlit backdrop behind the shower
-		batch.setColor(0.5f, 0.5f, 0.5f, 1f);
-		batch.draw(assets.table, 0, 0, w, h);
-		batch.setColor(Color.WHITE);
-		cards.draw(batch, w / 2, h / 2);
-		rect(0, 0, w, h, Palette.SHADE);
-
-		// title, as in the original game
-		float tw = assets.titleText.getWidth() * 0.85f, th = assets.titleText.getHeight() * 0.85f;
-		float titleY = h - 30 - th;
-		batch.draw(assets.titleText, (w - tw) / 2, titleY, tw, th);
-
-		buildItems();
-		hits.clear();
-		float bw = 270, bh = 46, gap = 10;
-		float y = titleY - 18 - bh;
-		for (String s : items) {
-			hits.add(button(s, w / 2, y, bw, bh, s.equals(items.get(0)) ? assets.button : assets.buttonAlt));
-			y -= bh + gap;
+		if (introT >= CARDS_START) {
+			// a dim spotlit backdrop behind the shower
+			batch.setColor(0.5f, 0.5f, 0.5f, 1f);
+			batch.draw(assets.table, 0, 0, w, h);
+			batch.setColor(Color.WHITE);
+			cards.draw(batch, w / 2, h / 2);
+			rect(0, 0, w, h, Palette.SHADE);
+			// the scene rises out of black
+			float dark = 1f - ramp(introT, CARDS_START, CARDS_FADE);
+			if (dark > 0) {
+				rect(0, 0, w, h, new Color(0, 0, 0, dark));
+			}
 		}
 
-		BitmapFont f = ui(0.9f);
-		f.setColor(Palette.MUTED);
-		f.draw(batch, OhHeckGame.VERSION, 10, 22);
-		String c = "©2026 Kyle Holub";
-		glyphs.setText(f, c);
-		f.draw(batch, c, w - 10 - glyphs.width, 22);
+		// title, as in the original game, fading in slowly on its own
+		float tw = assets.titleText.getWidth() * 0.85f, th = assets.titleText.getHeight() * 0.85f;
+		float titleY = h - 30 - th;
+		float titleA = smooth(ramp(introT, TITLE_START, TITLE_FADE));
+		batch.setColor(1f, 1f, 1f, titleA);
+		batch.draw(assets.titleText, (w - tw) / 2, titleY, tw, th);
+		batch.setColor(Color.WHITE);
+
+		// then the menu
+		fade = smooth(ramp(introT, MENU_START, MENU_FADE));
+		buildItems();
+		hits.clear();
+		if (fade > 0) {
+			float bw = 270, bh = 46, gap = 10;
+			float y = titleY - 18 - bh + (1 - fade) * -12;
+			for (String s : items) {
+				hits.add(button(s, w / 2, y, bw, bh, s.equals(items.get(0)) ? assets.button : assets.buttonAlt));
+				y -= bh + gap;
+			}
+			BitmapFont f = ui(0.9f);
+			f.setColor(Palette.MUTED.r, Palette.MUTED.g, Palette.MUTED.b, fade);
+			f.draw(batch, OhHeckGame.VERSION, 10, 22);
+			String c = "©2026 Kyle Holub";
+			glyphs.setText(f, c);
+			f.draw(batch, c, w - 10 - glyphs.width, 22);
+		}
+		fade = 1f;
 		batch.end();
+	}
+
+	/** 0 before start, rising to 1 over length. */
+	private static float ramp(float t, float start, float length) {
+		return Math.max(0f, Math.min(1f, (t - start) / length));
+	}
+
+	private static float smooth(float x) {
+		return x * x * (3 - 2 * x);
 	}
 
 	@Override
 	protected void tap(float x, float y) {
+		if (introT < INTRO_END) {
+			// a tap during the opening skips to the menu
+			introT = Math.max(introT, INTRO_END);
+			return;
+		}
 		for (int i = 0; i < hits.size(); i++) {
 			if (hits.get(i).contains(x, y)) {
 				choose(items.get(i));
@@ -116,6 +158,6 @@ public class TitleScreen extends BaseScreen {
 
 	@Override
 	public String stateTag() {
-		return "title";
+		return introT < INTRO_END ? "intro" : "title";
 	}
 }

@@ -1124,23 +1124,23 @@ public class PlayScreen extends BaseScreen {
 		int n = match.handSize();
 		float bs = 58, gap = 8;
 		float rowW = (n + 1) * bs + n * gap;
-		float pw = Math.max(rowW + 40, 440), ph = 160;
+		float pw = Math.max(rowW + 40, 440), ph = 176;
 		float px = (w - pw) / 2, py = h / 2 + 5 - ph / 2;
 		frame(assets.panel, px, py, pw, ph);
 
 		if (pendingBid >= 0) {
 			BitmapFont f = ui(1.3f);
 			f.setColor(GOLD);
-			text(f, "Tap " + pendingBid + " again to bid " + pendingBid, w / 2, py + ph - 14, true);
+			text(f, "Tap " + pendingBid + " again to bid " + pendingBid, w / 2, py + ph - 22, true);
 		} else {
-			drawArt(assets.makeBidText, w / 2, py + ph - 26, 0.52f, 1f);
+			drawArt(assets.makeBidText, w / 2, py + ph - 36, 0.52f, 1f);
 		}
 		BitmapFont s = ui(1f);
 		s.setColor(Palette.MUTED);
 		int forbidden = match.forbiddenBid();
 		String note = "Bids so far: " + match.bidsSoFar() + " of " + n
 				+ (forbidden >= 0 ? "   -   as dealer you can't bid " + forbidden : "");
-		text(s, note, w / 2, py + ph - 44, true);
+		text(s, note, w / 2, py + ph - 60, true);
 
 		bidButtons.clear();
 		float bx = (w - rowW) / 2, by = py + 20;

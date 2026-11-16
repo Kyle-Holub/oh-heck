@@ -11,7 +11,7 @@ public final class Audio implements Disposable {
 	public enum Effect {
 		SHUFFLE("sfx/shuffle.mp3", 1f),
 		PLAY_CARD("sfx/playCard.mp3", 1f),
-		WIN("sfx/win.mp3", 0.5f), // half volume, as on desktop
+		WIN("sfx/win.mp3", 0.25f), // a quarter of full volume: it was too loud even at half
 		LOSE("sfx/lose.mp3", 1f);
 
 		final String path;

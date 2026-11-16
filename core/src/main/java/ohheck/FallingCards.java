@@ -55,6 +55,7 @@ public final class FallingCards {
 	private final Random rng;
 	private final List<Flake> flakes = new ArrayList<Flake>();
 	private float time, spawnDebt;
+	private final boolean fromEmpty;
 	private final float period, phase;
 
 	// scratch space, reused every frame
@@ -65,6 +66,15 @@ public final class FallingCards {
 	private final float[] quad = new float[20];
 
 	public FallingCards(Assets assets, Random rng) {
+		this(assets, rng, false);
+	}
+
+	/**
+	 * @param fromEmpty start with no cards on screen and a heavy shower, so the
+	 *                  first cards visibly fall in from the top (the opening sequence)
+	 */
+	public FallingCards(Assets assets, Random rng, boolean fromEmpty) {
+		this.fromEmpty = fromEmpty;
 		this.assets = assets;
 		this.rng = rng;
 		this.period = 9f + rng.nextFloat() * 8f;
@@ -74,11 +84,12 @@ public final class FallingCards {
 	/** Cards falling right now; showers ebb and swell over time. */
 	private float spawnRate() {
 		float e = 0.5f + 0.5f * MathUtils.sin(MathUtils.PI2 * time / period + phase);
-		return 1.5f + 13f * e * e * e;
+		float opening = fromEmpty ? 14f * (float) Math.exp(-time / 2.5f) : 0f;
+		return 1.5f + 13f * e * e * e + opening;
 	}
 
 	public void update(float dt, float viewW, float viewH) {
-		if (flakes.isEmpty() && time == 0) {
+		if (flakes.isEmpty() && time == 0 && !fromEmpty) {
 			for (int i = 0; i < 22; i++) {
 				spawn(viewW, viewH, false);
 			}

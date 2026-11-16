@@ -136,15 +136,20 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 
 	/** Draws a rounded frame (panel or button) at full opacity. */
 	protected void frame(NinePatch p, float x, float y, float fw, float fh) {
-		batch.setColor(Color.WHITE);
+		batch.setColor(1f, 1f, 1f, fade);
 		p.draw(batch, x, y, fw, fh);
+		batch.setColor(Color.WHITE);
 	}
+
+	/** Opacity for frames and button labels, for fading UI in; normally 1. */
+	protected float fade = 1f;
 
 	/** A labelled button; returns its tap area. */
 	protected Rectangle button(String label, float cx, float y, float bw, float bh, NinePatch style) {
 		frame(style, cx - bw / 2, y, bw, bh);
 		BitmapFont f = serif(1.5f);
-		f.setColor(style == assets.buttonOff ? Palette.MUTED : Palette.CREAM);
+		Color c = style == assets.buttonOff ? Palette.MUTED : Palette.CREAM;
+		f.setColor(c.r, c.g, c.b, fade);
 		glyphs.setText(f, label);
 		f.draw(batch, label, cx - glyphs.width / 2, y + bh / 2 + glyphs.height / 2);
 		return new Rectangle(cx - bw / 2, y, bw, bh);
