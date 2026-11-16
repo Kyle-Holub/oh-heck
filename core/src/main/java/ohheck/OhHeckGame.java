@@ -22,6 +22,7 @@ public class OhHeckGame extends Game {
 	Assets assets;
 	Settings settings;
 	Audio audio;
+	private PostProcessor post;
 
 	private TitleScreen title;
 	private RulesScreen rules;
@@ -41,6 +42,7 @@ public class OhHeckGame extends Game {
 		assets = new Assets();
 		settings = new Settings();
 		audio = new Audio(settings);
+		post = new PostProcessor();
 		title = new TitleScreen(this);
 		rules = new RulesScreen(this);
 		optionsScreen = new OptionsScreen(this);
@@ -49,7 +51,11 @@ public class OhHeckGame extends Game {
 
 	@Override
 	public void render() {
+		boolean effects = settings.effects() && post.begin();
 		super.render();
+		if (effects) {
+			post.end(Gdx.graphics.getDeltaTime());
+		}
 		Screen s = getScreen();
 		if (options.frameListener != null && s instanceof Tagged) {
 			options.frameListener.onFrame(((Tagged) s).stateTag());
@@ -120,6 +126,7 @@ public class OhHeckGame extends Game {
 			play.dispose();
 		}
 		audio.dispose();
+		post.dispose();
 		assets.dispose();
 	}
 }

@@ -36,6 +36,15 @@ public final class Settings {
 		prefs.flush();
 	}
 
+	/** Glow, vignette and grain over the whole screen. */
+	public boolean effects() {
+		return prefs.getBoolean("effects", true);
+	}
+
+	public void setEffects(boolean on) {
+		prefs.putBoolean("effects", on).flush();
+	}
+
 	public void setMusic(boolean on) {
 		prefs.putBoolean("music", on).flush();
 	}

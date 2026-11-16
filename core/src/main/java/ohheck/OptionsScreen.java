@@ -8,7 +8,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-/** Music, sound effects and game speed, saved on the device. */
+/** Music, sound effects, game speed and visual effects, saved on the device. */
 public class OptionsScreen extends BaseScreen {
 
 
@@ -35,11 +35,12 @@ public class OptionsScreen extends BaseScreen {
 		t.setColor(GOLD);
 		centred(t, "Options", w / 2, h - 40);
 
-		String[] labels = { "Music", "Sound effects", "Game speed" };
-		String[] values = { s.music() ? "On" : "Off", s.sound() ? "On" : "Off", s.fast() ? "Fast" : "Normal" };
-		boolean[] on = { s.music(), s.sound(), true };
+		String[] labels = { "Music", "Sound effects", "Game speed", "Visual effects" };
+		String[] values = { s.music() ? "On" : "Off", s.sound() ? "On" : "Off", s.fast() ? "Fast" : "Normal",
+				s.effects() ? "On" : "Off" };
+		boolean[] on = { s.music(), s.sound(), true, s.effects() };
 		rows.clear();
-		float rw = 460, rh = 62, x = (w - rw) / 2, y = h - 130 - rh;
+		float rw = 460, rh = 58, x = (w - rw) / 2, y = h - 112 - rh;
 		for (int i = 0; i < labels.length; i++) {
 			frame(assets.panel, x, y, rw, rh);
 			BitmapFont f = serif(1.6f);
@@ -53,7 +54,7 @@ public class OptionsScreen extends BaseScreen {
 			glyphs.setText(v, values[i]);
 			v.draw(batch, values[i], x + rw - 14 - vw / 2 - glyphs.width / 2, y + rh / 2 + glyphs.height / 2);
 			rows.add(new Rectangle(x, y, rw, rh));
-			y -= rh + 14;
+			y -= rh + 12;
 		}
 		BitmapFont hint = ui(1f);
 		hint.setColor(Palette.MUTED);
@@ -69,7 +70,7 @@ public class OptionsScreen extends BaseScreen {
 			return;
 		}
 		Settings s = game.settings;
-		if (rows.size() < 3) {
+		if (rows.size() < 4) {
 			return;
 		}
 		if (rows.get(0).contains(x, y)) {
@@ -79,6 +80,8 @@ public class OptionsScreen extends BaseScreen {
 			game.audio.play(Audio.Effect.PLAY_CARD);
 		} else if (rows.get(2).contains(x, y)) {
 			s.setFast(!s.fast());
+		} else if (rows.get(3).contains(x, y)) {
+			s.setEffects(!s.effects());
 		}
 	}
 

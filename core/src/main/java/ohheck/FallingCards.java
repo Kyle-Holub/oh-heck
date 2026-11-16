@@ -249,7 +249,7 @@ public final class FallingCards {
 
 	// ---- gold sparkles: glowing specks drifting in the same 3D space as the cards
 
-	private static final int SPARKLES = 170;
+	private static final int SPARKLES = 230;
 	private final float[] sx = new float[SPARKLES], sy = new float[SPARKLES], sz = new float[SPARKLES];
 	private final float[] sDrift = new float[SPARKLES], sPhase = new float[SPARKLES], sRate = new float[SPARKLES],
 			sSize = new float[SPARKLES], sHue = new float[SPARKLES];
@@ -271,7 +271,7 @@ public final class FallingCards {
 		sDrift[i] = 6f + rng.nextFloat() * 22f;
 		sPhase[i] = rng.nextFloat() * MathUtils.PI2;
 		sRate[i] = 0.6f + rng.nextFloat() * 2.2f;
-		sSize[i] = 3f + rng.nextFloat() * 6f;
+		sSize[i] = 4f + rng.nextFloat() * 8f;
 		sHue[i] = rng.nextFloat();
 	}
 
@@ -299,7 +299,7 @@ public final class FallingCards {
 			// out-of-focus sparkles spread into large, faint discs of light (bokeh)
 			float size = sSize[i] * scale * (1f + d * 5f);
 			float twinkle = 0.55f + 0.45f * MathUtils.sin(time * sRate[i] * 2f + sPhase[i]);
-			float a = twinkle * MathUtils.lerp(0.95f, 0.22f, d) * MathUtils.clamp(scale * 1.4f, 0.25f, 1f);
+			float a = Math.min(1f, twinkle * MathUtils.lerp(1.2f, 0.3f, d) * MathUtils.clamp(scale * 1.6f, 0.35f, 1f));
 			float g = MathUtils.lerp(0.62f, 0.86f, sHue[i]);
 			batch.setColor(1f, g, MathUtils.lerp(0.25f, 0.55f, sHue[i]), a);
 			batch.draw(assets.glow, cx + sx[i] * scale - size / 2, cy + sy[i] * scale - size / 2, size, size);

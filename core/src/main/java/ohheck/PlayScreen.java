@@ -12,6 +12,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Interpolation;
@@ -72,9 +73,18 @@ public class PlayScreen extends BaseScreen {
 	private float hintTime;
 	private boolean menuOpen;
 
-	// dealing animation
+	// dealing animation, and the trump card turning over once it's done
 	private int dealtHand = -1;
-	private float dealT, dealDuration;
+	private float dealT, dealDuration, trumpFlip;
+	private static final float FLIP_TIME = 0.28f, TRUMP_FLIP_TIME = 0.45f;
+
+	// gold sparks when you make your bid or win the game
+	private static final int SPARKS = 140;
+	private final float[] spX = new float[SPARKS], spY = new float[SPARKS], spVX = new float[SPARKS],
+			spVY = new float[SPARKS], spLife = new float[SPARKS], spMax = new float[SPARKS], spSize = new float[SPARKS],
+			spHue = new float[SPARKS];
+	private int burstHand = -1;
+	private boolean burstGameOver;
 
 	// card flights into the trick: start position and start time per card
 	private final Map<Card, float[]> flights = new HashMap<Card, float[]>();
@@ -110,12 +120,15 @@ public class PlayScreen extends BaseScreen {
 			// don't replay the deal for a hand that was already under way
 			dealtHand = match.handIndex();
 			dealT = dealDuration = 0;
+			trumpFlip = TRUMP_FLIP_TIME;
 		}
 	}
 
 	private void newGame() {
 		match = Match.random(4, rng);
 		save();
+		burstGameOver = false;
+		burstHand = -1;
 		timer = 0;
 		trickPause = 0;
 		lastTrickText = "";
@@ -407,12 +420,14 @@ public class PlayScreen extends BaseScreen {
 		}
 		time += dt;
 		hintTime -= dt;
+		updateSparks(dt);
 
 		// a new hand starts with the deal
 		if (match.phase() == Match.Phase.BIDDING && match.handIndex() != dealtHand) {
 			dealtHand = match.handIndex();
 			dealT = 0;
-			dealDuration = 4 * match.handSize() * DEAL_INTERVAL + DEAL_FLIGHT + 0.15f;
+			dealDuration = 4 * match.handSize() * DEAL_INTERVAL + DEAL_FLIGHT + FLIP_TIME + 0.1f;
+			trumpFlip = 0;
 			flights.clear();
 			game.audio.play(Audio.Effect.SHUFFLE);
 		}
@@ -420,6 +435,7 @@ public class PlayScreen extends BaseScreen {
 			dealT += dt;
 			return;
 		}
+		trumpFlip += dt;
 
 		if (trickPause > 0) {
 			trickPause -= dt;
@@ -445,9 +461,19 @@ public class PlayScreen extends BaseScreen {
 			}
 			break;
 		case HAND_OVER:
+			if (burstHand != match.handIndex() && match.madeBid(HUMAN)) {
+				burstHand = match.handIndex();
+				burst(w / 2, h / 2 + 5, 110);
+			}
 			handOverT += dt;
 			if (options.autoplayHuman && handOverT >= HAND_END_SHOW + HAND_OVER_AUTO) {
 				tap(w / 2, h / 2);
+			}
+			break;
+		case GAME_OVER:
+			if (!burstGameOver && match.leaders().contains(HUMAN)) {
+				burstGameOver = true;
+				burst(w / 2, h / 2 + 100, 160);
 			}
 			break;
 		default:
@@ -583,6 +609,7 @@ public class PlayScreen extends BaseScreen {
 			float cw = Assets.CARD_W * HAND_SCALE, ch = Assets.CARD_H * HAND_SCALE;
 			batch.draw(assets.face(selected), dragX - cw / 2, dragY - ch / 2, cw, ch);
 		}
+		drawSparks();
 		if (hintTime > 0 && !menuOpen) {
 			drawHint();
 		}
@@ -635,11 +662,10 @@ public class PlayScreen extends BaseScreen {
 		BitmapFont f = ui(1f);
 		f.setColor(Palette.CREAM);
 		text(f, "Trump", w - 12 - cw / 2, h - 10, true);
-		if (isDealing()) {
-			batch.draw(assets.back(), w - 12 - cw, h - 30 - ch, cw, ch);
-		} else {
-			batch.draw(assets.face(match.trumpCard()), w - 12 - cw, h - 30 - ch, cw, ch);
-		}
+		float x = w - 12 - cw, y = h - 30 - ch;
+		shadow(x, y, cw, ch, 4);
+		float p = isDealing() ? 0 : MathUtils.clamp(trumpFlip / TRUMP_FLIP_TIME, 0, 1);
+		flipCard(match.trumpCard(), x, y, cw, ch, p);
 	}
 
 	// ---- player panels: name, dealer icon, score, and a row of bid/trick icons as in the original game
@@ -727,11 +753,16 @@ public class PlayScreen extends BaseScreen {
 			if (i >= shown || (dragging && c == selected)) {
 				continue;
 			}
+			shadow(x, y, cw, ch, y - 8 + 5);
 			if (c == selected) {
 				frame(assets.panelTurn, x - 7, y - 7, cw + 14, ch + 14);
 			}
 			batch.setColor(myTurn && !canPlay ? Palette.CARD_DIM : Color.WHITE);
-			batch.draw(assets.face(c), x, y, cw, ch);
+			if (isDealing()) {
+				flipCard(c, x, y, cw, ch, MathUtils.clamp((dealT - arrivalTime(HUMAN, i)) / FLIP_TIME, 0, 1));
+			} else {
+				batch.draw(assets.face(c), x, y, cw, ch);
+			}
 		}
 		batch.setColor(Color.WHITE);
 	}
@@ -771,23 +802,116 @@ public class PlayScreen extends BaseScreen {
 		for (int i = 0; i < cards.size(); i++) {
 			Card c = cards.get(i);
 			Vector2 slot = trickSlot(seats.get(i));
-			float x = slot.x, y = slot.y, scale = 1f;
+			float x = slot.x, y = slot.y, scale = 1f, lift = 5f, turn = 1f;
 			float[] f = flights.get(c);
 			if (f != null) {
-				float p = Interpolation.pow2Out.apply(MathUtils.clamp((time - f[2]) / PLAY_FLIGHT, 0, 1));
+				float raw = MathUtils.clamp((time - f[2]) / PLAY_FLIGHT, 0, 1);
+				float p = Interpolation.pow2Out.apply(raw);
 				x = MathUtils.lerp(f[0], slot.x, p);
 				y = MathUtils.lerp(f[1], slot.y, p);
+				lift += (1 - raw) * 30;
+				if (seats.get(i) != HUMAN) {
+					turn = MathUtils.clamp(raw * 1.4f, 0, 1); // opponents' cards turn over on the way
+				}
 			}
 			if (collect > 0) {
 				float p = Interpolation.pow2In.apply(collect);
 				x = MathUtils.lerp(x, sink.x - cw / 4, p);
 				y = MathUtils.lerp(y, sink.y - ch / 4, p);
 				scale = MathUtils.lerp(1f, 0.5f, p);
-			} else if (seats.get(i) == winner) {
+				lift += p * 18;
+			}
+			shadow(x, y, cw * scale, ch * scale, lift);
+			if (collect == 0 && seats.get(i) == winner) {
 				frame(assets.panelTurn, x - 7, y - 7, cw + 14, ch + 14);
 			}
-			batch.draw(assets.face(c), x, y, cw * scale, ch * scale);
+			flipCard(c, x, y, cw * scale, ch * scale, turn);
 		}
+	}
+
+	/** When the n-th card dealt to a seat lands, in seconds from the start of the deal. */
+	private float arrivalTime(int seat, int n) {
+		int count = 0;
+		for (int k = 0; k < 4 * match.handSize(); k++) {
+			if ((match.dealer() + 1 + k) % 4 == seat && count++ == n) {
+				return k * DEAL_INTERVAL + DEAL_FLIGHT;
+			}
+		}
+		return 0;
+	}
+
+	/** A soft shadow under a card; the higher the card is lifted, the further and fainter it falls. */
+	private void shadow(float x, float y, float cw, float ch, float lift) {
+		float sw = cw * 160f / 120f, sh = ch * 200f / 160f;
+		batch.setColor(1f, 1f, 1f, MathUtils.clamp(0.6f - lift * 0.008f, 0.28f, 0.6f));
+		batch.draw(assets.shadow, x + cw / 2 - sw / 2 + lift * 0.2f, y + ch / 2 - sh / 2 - 2 - lift * 0.4f, sw, sh);
+		batch.setColor(Color.WHITE);
+	}
+
+	/**
+	 * Draws a card turning over about its upright centre line: p = 0 face down,
+	 * 0.5 edge on, 1 face up. Uses the batch's current tint.
+	 */
+	private void flipCard(Card c, float x, float y, float cw, float ch, float p) {
+		if (p >= 1f) {
+			batch.draw(assets.face(c), x, y, cw, ch);
+			return;
+		}
+		float sx = Math.abs(MathUtils.cos(MathUtils.PI * p));
+		batch.draw(p < 0.5f ? assets.back() : assets.face(c), x + cw * (1 - sx) / 2, y, cw * sx, ch);
+	}
+
+	// ---- celebration sparks
+
+	private void burst(float x, float y, int count) {
+		for (int n = 0, i = 0; i < SPARKS && n < count; i++) {
+			if (spLife[i] > 0) {
+				continue;
+			}
+			float angle = MathUtils.random(0.15f, MathUtils.PI - 0.15f);
+			float speed = MathUtils.random(140f, 420f);
+			spX[i] = x + MathUtils.random(-60f, 60f);
+			spY[i] = y + MathUtils.random(-20f, 20f);
+			spVX[i] = MathUtils.cos(angle) * speed;
+			spVY[i] = MathUtils.sin(angle) * speed;
+			spMax[i] = spLife[i] = MathUtils.random(0.9f, 1.8f);
+			spSize[i] = MathUtils.random(5f, 14f);
+			spHue[i] = MathUtils.random();
+			n++;
+		}
+	}
+
+	private void updateSparks(float dt) {
+		for (int i = 0; i < SPARKS; i++) {
+			if (spLife[i] <= 0) {
+				continue;
+			}
+			spLife[i] -= dt;
+			spVY[i] -= 380f * dt;
+			spVX[i] *= 1f - 0.8f * dt;
+			spX[i] += spVX[i] * dt;
+			spY[i] += spVY[i] * dt;
+		}
+	}
+
+	private void drawSparks() {
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		for (int i = 0; i < SPARKS; i++) {
+			if (spLife[i] <= 0) {
+				continue;
+			}
+			float a = spLife[i] / spMax[i];
+			float twinkle = 0.7f + 0.3f * MathUtils.sin(time * 30f + i);
+			float g = MathUtils.lerp(0.65f, 0.9f, spHue[i]);
+			batch.setColor(1f, g, 0.35f, a * 0.55f);
+			float big = spSize[i] * 2.4f;
+			batch.draw(assets.glow, spX[i] - big / 2, spY[i] - big / 2, big, big);
+			batch.setColor(1f, 0.95f, 0.8f, a * twinkle);
+			float core = spSize[i] * 0.7f;
+			batch.draw(assets.glow, spX[i] - core / 2, spY[i] - core / 2, core, core);
+		}
+		batch.setColor(Color.WHITE);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	/** Cards already arrived at a seat during the deal animation. */
@@ -815,8 +939,9 @@ public class PlayScreen extends BaseScreen {
 			int seat = (match.dealer() + 1 + k) % 4;
 			Vector2 to = seatAnchor(seat);
 			float p = Interpolation.pow2Out.apply((dealT - start) / DEAL_FLIGHT);
-			batch.draw(assets.back(), MathUtils.lerp(from.x, to.x, p) - bw / 2, MathUtils.lerp(from.y, to.y, p) - bh / 2,
-					bw, bh);
+			float x = MathUtils.lerp(from.x, to.x, p) - bw / 2, y = MathUtils.lerp(from.y, to.y, p) - bh / 2;
+			shadow(x, y, bw, bh, 26 * (1 - p) + 4);
+			batch.draw(assets.back(), x, y, bw, bh);
 		}
 	}
 
