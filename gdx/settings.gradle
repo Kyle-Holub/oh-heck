@@ -1,0 +1,2 @@
+rootProject.name = 'oh-heck'
+include 'core', 'android'

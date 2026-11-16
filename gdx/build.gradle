@@ -1,0 +1,16 @@
+buildscript {
+  repositories {
+    mavenCentral()
+    google()
+  }
+  dependencies {
+    classpath "com.android.tools.build:gradle:$androidPluginVersion"
+  }
+}
+
+subprojects {
+  repositories {
+    mavenCentral()
+    google()
+  }
+}

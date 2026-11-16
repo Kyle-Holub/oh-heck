@@ -1,0 +1,51 @@
+name: Android dev build
+
+# Builds the libGDX Android app on every push to a develop branch and publishes
+# the APK as a "dev-N" pre-release, which Obtainium picks up on the phone.
+
+on:
+  push:
+    branches: ['develop/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-dev-build
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Build APK
+        run: gradle -p gdx :android:assembleDebug -PversionCode=${{ github.run_number }} --stacktrace
+
+      - name: Publish dev build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="dev-${{ github.run_number }}"
+          APK="oh-heck-${TAG}.apk"
+          cp gdx/android/build/outputs/apk/debug/android-debug.apk "$APK"
+          gh release create "$TAG" "$APK" \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Dev build ${{ github.run_number }}" \
+            --notes "Automatic test build from ${GITHUB_REF_NAME} (${GITHUB_SHA::7}): $(git log -1 --pretty=%s)"
+          # keep only the three newest dev builds
+          gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | grep '^dev-' | sort -t- -k2 -n -r | tail -n +4 \
+            | while read -r old; do gh release delete "$old" --yes --cleanup-tag; done

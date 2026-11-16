@@ -1,0 +1,20 @@
+apply plugin: 'java-library'
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_1_8
+  targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+sourceSets {
+  main {
+    java {
+      // the port's own code, plus the shared graphics-free rules from the desktop game
+      srcDirs = ['src/main/java', '../../src']
+      include 'ohheck/**', 'rules/**'
+    }
+  }
+}
+
+dependencies {
+  api "com.badlogicgames.gdx:gdx:$gdxVersion"
+}
