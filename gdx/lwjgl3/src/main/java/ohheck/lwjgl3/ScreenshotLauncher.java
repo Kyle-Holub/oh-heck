@@ -22,7 +22,7 @@ import ohheck.OhHeckGame;
 public class ScreenshotLauncher {
 
 	/** Prefixes of states to capture, as reported by PlayScreen.stateTag(). */
-	private static final String[] WANTED = { "bid:3", "play:4:", "trick:4", "handover:4", "bid:8", "play:8:", "gameover" };
+	private static final String[] WANTED = { "deal:3", "bid:3", "bidconfirm:3", "selected:4:", "trick:4", "collect:4", "handover:4", "menu:6", "play:8:", "gameover" };
 
 	public static void main(String[] args) {
 		final String outDir = args.length > 0 ? args[0] : "screenshots";
@@ -37,7 +37,7 @@ public class ScreenshotLauncher {
 		GameOptions o = new GameOptions();
 		o.seed = 20261116L;
 		o.autoplayHuman = true;
-		o.speed = 3f;
+		o.speed = 2f;
 		o.frameListener = new GameOptions.FrameListener() {
 			@Override
 			public void onFrame(String state) {
@@ -48,7 +48,7 @@ public class ScreenshotLauncher {
 				}
 				seenFrames[0]++;
 				// let a state settle for a few frames before capturing it
-				if (seenFrames[0] == 4) {
+				if (seenFrames[0] == 2) {
 					for (String w : WANTED) {
 						if (state.startsWith(w) && wanted.remove(w)) {
 							save(outDir + "/" + String.format("%02d-", WANTED.length - wanted.size()) + state.replace(':', '-') + ".png");
@@ -56,7 +56,7 @@ public class ScreenshotLauncher {
 						}
 					}
 				}
-				if (wanted.isEmpty() || (state.equals("gameover") && seenFrames[0] > 4) || frames[0] > 60 * 60 * 5) {
+				if (wanted.isEmpty() || (state.equals("gameover") && seenFrames[0] > 2) || frames[0] > 60 * 60 * 5) {
 					Gdx.app.exit();
 				}
 			}
