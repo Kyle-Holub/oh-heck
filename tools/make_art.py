@@ -278,6 +278,15 @@ def icons(out):
     d.rectangle([W / 2 - t, H / 2 - 28 * SS, W / 2 + t, H / 2 + 28 * SS], fill=CREAM)
     d.rectangle([W / 2 - 28 * SS, H / 2 - t, W / 2 + 28 * SS, H / 2 + t], fill=CREAM)
     downsample(img, 84, 108).save(os.path.join(out, "icon_over.png"))
+    # a bid of zero: a dark card with a cream circle struck through
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([3 * SS, 3 * SS, W - 3 * SS, H - 3 * SS], 12 * SS, fill=(44, 30, 20), outline=GOLD, width=5 * SS)
+    r, t = 25 * SS, 7 * SS
+    d.ellipse([W / 2 - r, H / 2 - r, W / 2 + r, H / 2 + r], outline=CREAM, width=t)
+    k = r * 0.72
+    d.line([(W / 2 - k, H / 2 + k), (W / 2 + k, H / 2 - k)], fill=CREAM, width=t)
+    downsample(img, 84, 108).save(os.path.join(out, "icon_zero.png"))
     # the dealer button: a gold chip with a D
     S = 108 * SS
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))

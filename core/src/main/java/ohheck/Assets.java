@@ -39,8 +39,8 @@ public final class Assets implements Disposable {
 	public final Texture titleText;
 	/** Title art from the original game. */
 	public final Texture bidTricksText, setText, trickWonText, makeBidText, gameOverText;
-	/** Player bar icons: dealer button, trick, trick over the bid. */
-	public final Texture dealerIcon, trickIcon, overIcon;
+	/** Player bar icons: dealer button, trick, trick over the bid, a bid of zero. */
+	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon;
 	/** A 1x1 white texture, tinted to draw panels and buttons. */
 	public final Texture white;
 	/** A soft-edged rounded bar, for strokes that stay smooth when rotated (the tally marks). */
@@ -76,6 +76,7 @@ public final class Assets implements Disposable {
 		dealerIcon = mipmapped("images/icon_dealer.png");
 		trickIcon = mipmapped("images/icon_trick.png");
 		overIcon = mipmapped("images/icon_over.png");
+		zeroIcon = mipmapped("images/icon_zero.png");
 		// the blurred sheet is stored at reduced size: take its cells from its own dimensions
 		int bw = cardSheetBlur.getWidth() / 13, bh = cardSheetBlur.getHeight() / 4;
 		for (int suit = 0; suit < 4; suit++) {
@@ -180,7 +181,7 @@ public final class Assets implements Disposable {
 			p.getTexture().dispose();
 		}
 		titleText.dispose();
-		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, gameOverText, dealerIcon, trickIcon, overIcon }) {
+		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, gameOverText, dealerIcon, trickIcon, overIcon, zeroIcon }) {
 			t.dispose();
 		}
 		white.dispose();
