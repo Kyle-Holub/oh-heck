@@ -535,9 +535,9 @@ public class PlayScreen extends BaseScreen {
 		}
 	}
 
-	// ---- the bid tracker, right of the tally: one card per trick in the hand
+	// ---- the bid tracker, under the tally: one card per trick in the hand
 
-	private static final float TRACKER_GAP = 3, TRACKER_MAX_W = 16;
+	private static final float TRACKER_GAP = 4, TRACKER_MAX_W = 21, TRACKER_BELOW_TALLY = 10;
 
 	/**
 	 * How the table has bid: one card per trick in this hand, filled in as the bids add
@@ -547,10 +547,10 @@ public class PlayScreen extends BaseScreen {
 		Match m = match();
 		int n = m.handSize(), total = m.bidsSoFar();
 		int filled = Math.min(total, n), count = Math.max(total, n);
-		float x0 = 22 + 6 * TALLY_STEP + 16 + 22; // just past the tally's last mark
+		float x0 = 22 - TALLY_W / 2; // lined up with the tally's first mark
 		float avail = table.panelX(2) - 14 - x0; // and clear of the top player's panel
 		float iw = Math.min(TRACKER_MAX_W, avail / count - TRACKER_GAP), ih = iw * 18f / 14f;
-		float y = h - 12 - TALLY_H / 2 - ih / 2; // level with the tally marks
+		float y = h - 12 - TALLY_H - TRACKER_BELOW_TALLY - ih;
 		for (int i = 0; i < count; i++) {
 			Texture t = i < filled ? assets.bidTaken : i < n ? assets.bidOpen : assets.bidOver;
 			batch.draw(t, x0 + i * (iw + TRACKER_GAP), y, iw, ih);

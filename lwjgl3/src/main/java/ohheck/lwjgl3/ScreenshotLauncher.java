@@ -38,7 +38,7 @@ public class ScreenshotLauncher {
 	/** Frames to wait in a state before capturing it, so animations are under way. */
 	private static int settleFrames(String state) {
 		if (state.equals("intro")) {
-			return 20; // 4 s in: cards falling, title half faded in, no menu yet
+			return 10; // 2 s in: sparkles, title fading in, no cards or menu yet
 		}
 		if (state.equals("title")) {
 			return 10; // cards falling, before the scripted run moves on at ~17 frames

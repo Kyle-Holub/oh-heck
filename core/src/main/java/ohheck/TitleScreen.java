@@ -22,8 +22,8 @@ public class TitleScreen extends BaseScreen {
 	 * The opening: black with the music, then the gold sparkles rise out of the dark, the
 	 * title fades in among them, and once it's there the cards start to fall; then the menu.
 	 */
-	private static final float SCENE_START = 1.0f, SCENE_FADE = 1.4f, TITLE_START = 2.2f, TITLE_FADE = 2.6f,
-			CARDS_START = TITLE_START + TITLE_FADE, MENU_START = 7.6f, MENU_FADE = 0.9f,
+	private static final float SCENE_START = 0.4f, SCENE_FADE = 0.9f, TITLE_START = 1.0f, TITLE_FADE = 1.6f,
+			CARDS_START = TITLE_START + TITLE_FADE, MENU_START = 5.0f, MENU_FADE = 0.8f,
 			INTRO_END = MENU_START + MENU_FADE;
 	private float introT;
 	private final List<String> items = new ArrayList<String>();

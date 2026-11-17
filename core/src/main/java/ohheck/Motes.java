@@ -1,19 +1,20 @@
 package ohheck;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 
-/** Faint gold motes drifting up off the edges of a card (the trump). */
+/** Gold motes drifting up off the edges of a card (the trump), glowing softly as they rise and fade. */
 final class Motes extends ParticlePool {
 
 	/** New motes per second. */
-	private static final float RATE = 7f;
+	private static final float RATE = 16f;
 	private float toSpawn;
 
 	Motes() {
-		super(28);
+		super(70);
 	}
 
 	/** Moves the motes on; while spawning, new ones rise from the card at (cx, cy) sized cw x ch. */
@@ -36,8 +37,8 @@ final class Motes extends ParticlePool {
 				px = MathUtils.randomBoolean() ? cx + MathUtils.random(3f) : cx + cw - MathUtils.random(3f);
 				py = cy + MathUtils.random(ch * 0.2f, ch);
 			}
-			born(i, px, py, MathUtils.random(-5f, 5f), MathUtils.random(7f, 18f), MathUtils.random(1.6f, 3.2f),
-					MathUtils.random(3f, 7f));
+			born(i, px, py, MathUtils.random(-6f, 6f), MathUtils.random(12f, 28f), MathUtils.random(1.8f, 3.4f),
+					MathUtils.random(4f, 9f));
 		}
 		toSpawn = Math.min(toSpawn, 1);
 		step(dt);
@@ -54,19 +55,24 @@ final class Motes extends ParticlePool {
 		}
 	}
 
+	/** Drawn additively: a soft gold halo round a bright core, twinkling. */
 	void draw(SpriteBatch batch, Texture glow) {
 		Color c = Palette.GOLD_LIGHT;
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		for (int i = 0; i < max; i++) {
 			if (!alive(i)) {
 				continue;
 			}
 			float age = age(i);
-			// fade in quickly, out slowly, and twinkle a little
-			float a = Math.min(age * 6f, 1f) * (1 - age) * (0.75f + 0.25f * MathUtils.sin(clock * 6f + i * 2.3f));
+			// fade in quickly, out slowly, and twinkle
+			float a = Math.min(age * 6f, 1f) * (1 - age) * (0.6f + 0.4f * MathUtils.sin(clock * 7f + i * 2.3f));
 			float sz = size[i] * (1 - age * 0.4f);
-			batch.setColor(c.r, c.g, c.b, 0.45f * a);
-			batch.draw(glow, x[i] - sz / 2, y[i] - sz / 2, sz, sz);
+			batch.setColor(c.r, c.g * 0.9f, c.b * 0.6f, 0.55f * a);
+			batch.draw(glow, x[i] - sz, y[i] - sz, sz * 2, sz * 2);
+			batch.setColor(1f, 0.95f, 0.8f, 0.9f * a);
+			batch.draw(glow, x[i] - sz * 0.3f, y[i] - sz * 0.3f, sz * 0.6f, sz * 0.6f);
 		}
 		batch.setColor(Color.WHITE);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
 }
