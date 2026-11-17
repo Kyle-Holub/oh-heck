@@ -22,6 +22,9 @@ public final class TableView {
 	/** The trick in progress, lead first, and who played each card. */
 	public final List<Card> trick = new ArrayList<Card>();
 	public final List<Integer> trickSeats = new ArrayList<Integer>();
+	/** Every card played so far this hand, in order, and who played it. */
+	public final List<Card> history = new ArrayList<Card>();
+	public final List<Integer> historySeats = new ArrayList<Integer>();
 	/** Cards played so far this hand (including the trick in progress), by {@link #index}. */
 	public final boolean[] played = new boolean[52];
 	/** voids[seat][suit]: that player failed to follow that suit this hand, so holds none of it. */

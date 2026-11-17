@@ -7,9 +7,12 @@ import java.util.Random;
 
 /**
  * Looks ahead. For each bid or card it could make, it deals out the cards it
- * can't see many times over (only in ways that fit what it has seen, such as
- * who is out of which suit), plays each deal out with everyone playing like
+ * can't see many times over, plays each deal out with everyone playing like
  * {@link NormalBot}, and picks the choice that does best on average.
+ * <p>
+ * The imagined deals fit what it has seen: who is out of which suit, and the
+ * bids. A deal where a player who bid 3 holds nothing worth a trick is
+ * unlikely, so deals are weighted by how well they explain each bid.
  * <p>
  * "Best" is its own points minus half the points of whoever it is racing: the
  * leader if it is behind, or the player in second if it is ahead, so it
@@ -22,6 +25,13 @@ final class HardBot implements Bot {
 	static int samples = 40;
 	/** How much spoiling the rival's hand is worth, against scoring its own. */
 	static final double SPOIL = 0.5;
+	/** Candidate deals drawn per deal kept, when weighting deals by the bids. */
+	static final int CANDIDATES = 4;
+	/**
+	 * How sharply a deal is discounted per trick of difference between a player's bid and the
+	 * bid that deal suggests (tuned in the arena: 0.7 and 3 both did worse).
+	 */
+	static final double BID_SHARPNESS = 1.5;
 
 	private final Random rng;
 	private final NormalBot policy = new NormalBot();
@@ -101,7 +111,11 @@ final class HardBot implements Bot {
 
 	// ---- imagining the unseen cards
 
-	/** {@link #samples} deals of the unseen cards to the other players. The same deals are used for every choice. */
+	/**
+	 * {@link #samples} deals of the unseen cards to the other players, the same deals used
+	 * for every choice. When reading the bids, draws several times as many and keeps them in
+	 * proportion to how well each explains the bids made.
+	 */
 	private List<List<Card>[]> deals(TableView v) {
 		List<Card> unseen = new ArrayList<Card>();
 		for (Suit s : Suit.values()) {
@@ -113,10 +127,83 @@ final class HardBot implements Bot {
 			}
 		}
 		List<List<Card>[]> deals = new ArrayList<List<Card>[]>();
-		for (int i = 0; i < samples; i++) {
-			deals.add(deal(v, unseen));
+		if (!anyoneElseBid(v)) {
+			for (int i = 0; i < samples; i++) {
+				deals.add(deal(v, unseen));
+			}
+			return deals;
+		}
+		int n = samples * CANDIDATES;
+		List<List<Card>[]> candidates = new ArrayList<List<Card>[]>(n);
+		double[] weight = new double[n];
+		double total = 0;
+		for (int i = 0; i < n; i++) {
+			List<Card>[] d = deal(v, unseen);
+			candidates.add(d);
+			weight[i] = likelihood(v, d);
+			total += weight[i];
+		}
+		// keep samples of them, in proportion to their weights (evenly spaced picks)
+		double step = total / samples, at = rng.nextDouble() * step, run = 0;
+		for (int i = 0; i < n && deals.size() < samples; i++) {
+			run += weight[i];
+			while (run > at && deals.size() < samples) {
+				deals.add(candidates.get(i));
+				at += step;
+			}
+		}
+		while (deals.size() < samples) {
+			deals.add(candidates.get(rng.nextInt(n)));
 		}
 		return deals;
+	}
+
+	private static boolean anyoneElseBid(TableView v) {
+		for (int s = 0; s < v.players; s++) {
+			if (s != v.seat && v.bids[s] != null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** How well this deal explains everyone's bids: Normal's bid with that hand against the bid made. */
+	private double likelihood(TableView v, List<Card>[] deal) {
+		double w = 1;
+		for (int s = 0; s < v.players; s++) {
+			if (s == v.seat || v.bids[s] == null) {
+				continue;
+			}
+			TableView then = bidTimeView(v, deal, s);
+			int expected = policy.chooseBid(then);
+			w *= Math.exp(-BID_SHARPNESS * Math.abs(expected - v.bids[s]));
+		}
+		return w;
+	}
+
+	/** What player s saw when bidding, if this deal is the truth: their cards then, and the bids before theirs. */
+	private static TableView bidTimeView(TableView v, List<Card>[] deal, int s) {
+		TableView t = new TableView(v.players);
+		t.seat = s;
+		t.dealer = v.dealer;
+		t.handSize = v.handSize;
+		t.handIndex = v.handIndex;
+		t.numberOfHands = v.numberOfHands;
+		t.trumpCard = v.trumpCard;
+		t.hand.addAll(deal[s]);
+		for (int i = 0; i < v.history.size(); i++) {
+			if (v.historySeats.get(i) == s) {
+				t.hand.add(v.history.get(i));
+			}
+		}
+		for (int k = (v.dealer + 1) % v.players; k != s; k = (k + 1) % v.players) {
+			t.bids[k] = v.bids[k];
+		}
+		for (int k = 0; k < v.players; k++) {
+			t.cardsLeft[k] = v.handSize;
+			t.scores[k] = v.scores[k];
+		}
+		return t;
 	}
 
 	/** One random deal that fits the known voids (or ignores them if none can be found). */

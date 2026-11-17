@@ -301,6 +301,8 @@ public final class Match {
 		}
 		v.trick.addAll(trick);
 		v.trickSeats.addAll(trickSeats);
+		v.history.addAll(history);
+		v.historySeats.addAll(historySeats);
 		Suit lead = null;
 		for (int i = 0; i < history.size(); i++) {
 			Card c = history.get(i);

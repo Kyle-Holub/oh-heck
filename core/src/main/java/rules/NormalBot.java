@@ -25,6 +25,7 @@ final class NormalBot implements Bot {
 		for (int i = 0; i < p.length; i++) {
 			p[i] = BidTable.chance(v, v.hand.get(i));
 		}
+		adjustForTheTable(v, p);
 		double[] dist = trickDistribution(p);
 		int best = -1;
 		double bestScore = Double.NEGATIVE_INFINITY;
@@ -42,6 +43,39 @@ final class NormalBot implements Bot {
 			}
 		}
 		return best;
+	}
+
+	/** How strongly the earlier bids move our estimate (tuned in the arena: 0.5 to 0.7 did best). */
+	static final double TABLE_PULL = 0.6;
+
+	/**
+	 * Reads the earlier bids: if the players before us bid more than their fair share of the
+	 * tricks, they'll fight for them and we'll take fewer than our cards suggest; if they bid
+	 * fewer, more tricks come our way. Shifts the chances to match, by an amount measured in
+	 * simulated games.
+	 */
+	static void adjustForTheTable(TableView v, double[] p) {
+		int before = ((v.seat - v.dealer - 1) % v.players + v.players) % v.players;
+		if (before == 0 || p.length == 0) {
+			return;
+		}
+		double over = v.bidsSoFar() - before * (double) v.handSize / v.players;
+		double shift = Math.max(-0.5, Math.min(0.6, -TABLE_PULL * over / v.handSize));
+		double expected = 0;
+		for (double x : p) {
+			expected += x;
+		}
+		if (shift < 0 && expected > 0) {
+			double f = Math.max(0, (expected + shift) / expected);
+			for (int i = 0; i < p.length; i++) {
+				p[i] *= f;
+			}
+		} else if (shift > 0 && expected < p.length) {
+			double f = Math.max(0, (p.length - expected - shift) / (p.length - expected));
+			for (int i = 0; i < p.length; i++) {
+				p[i] = 1 - (1 - p[i]) * f;
+			}
+		}
 	}
 
 	/** Chance of taking exactly k tricks, k = 0..n, if each card wins independently with chance p[i]. */
