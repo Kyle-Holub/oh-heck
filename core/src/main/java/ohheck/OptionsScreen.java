@@ -76,7 +76,12 @@ public class OptionsScreen extends BaseScreen {
 
 	// ---- difficulty: a slider with three stops, its knob the level's badge
 
-	private static final float ROW_H = 48, ROW_GAP = 8, DIFFICULTY_H = 72, KNOB = 34;
+	private static final float ROW_H = 46, ROW_GAP = 7, DIFFICULTY_H = 94, KNOB = 34;
+	/** What to expect at each level, shown under the slider. */
+	private static final String[] LEVEL_NOTES = {
+			"Forgiving: they misjudge bids and slip up. Luck still counts!",
+			"Solid: they count cards, trump in and duck unwanted tricks.",
+			"Ruthless: they think ahead and gang up on the leader." };
 	private static final Color TRACK = new Color(0.36f, 0.29f, 0.21f, 1f);
 	private final Rectangle slider = new Rectangle();
 	private float stop0, stopStep;
@@ -89,10 +94,10 @@ public class OptionsScreen extends BaseScreen {
 		f.setColor(Palette.CREAM);
 		f.draw(batch, "Difficulty", x + 24, y + DIFFICULTY_H - 18);
 		// the track, gold up to the chosen stop
-		float x0 = x + 214, x1 = x + rw - 36, ty = y + 44;
+		float x0 = x + 214, x1 = x + rw - 36, ty = y + 66;
 		stop0 = x0;
 		stopStep = (x1 - x0) / 2;
-		slider.set(x0 - 30, y, x1 - x0 + 60, DIFFICULTY_H);
+		slider.set(x0 - 30, y + 30, x1 - x0 + 60, DIFFICULTY_H - 30);
 		int level = s.difficulty();
 		float knobX = x0 + level * stopStep;
 		rect(x0, ty - 2, x1 - x0, 4, TRACK);
@@ -102,8 +107,15 @@ public class OptionsScreen extends BaseScreen {
 			float sx = x0 + i * stopStep;
 			rect(sx - 1.5f, ty - 7, 3, 14, i <= level ? GOLD : TRACK);
 			l.setColor(i == level ? Palette.GOLD_LIGHT : Palette.MUTED);
-			text(l, Difficulty.values()[i].label, sx, y + 20, true);
+			text(l, Difficulty.values()[i].label, sx, y + 42, true);
 		}
+		BitmapFont n = ui(0.85f);
+		glyphs.setText(n, LEVEL_NOTES[level]);
+		if (glyphs.width > rw - 48) { // keep it on one line inside the row
+			n = ui(0.85f * (rw - 48) / glyphs.width);
+		}
+		n.setColor(Palette.MUTED);
+		n.draw(batch, LEVEL_NOTES[level], x + 24, y + 20);
 		batch.draw(assets.levelBadge[level], knobX - KNOB / 2, ty - KNOB / 2, KNOB, KNOB);
 	}
 
