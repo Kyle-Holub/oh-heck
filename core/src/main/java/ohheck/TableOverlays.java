@@ -273,10 +273,10 @@ final class TableOverlays {
 			t.setColor(place(s) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(screen.batch, PlayScreen.NAMES[s], px + 120, y);
 			screen.text(t, String.valueOf(match.score(s)), px + pw - 140, y, false);
-			if (s == TableLayout.HUMAN && newHighScore >= 0) {
+			if (s == TableLayout.HUMAN && newHighScore == 0) { // only a score that tops the table
 				BitmapFont n = screen.ui(0.95f);
 				n.setColor(Palette.GOLD_LIGHT);
-				n.draw(screen.batch, newHighScore == 0 ? "New best!" : "High score!", px + pw - 128, y - 2);
+				n.draw(screen.batch, "New best!", px + pw - 128, y - 2);
 			}
 			y -= GAME_OVER_ROW;
 		}

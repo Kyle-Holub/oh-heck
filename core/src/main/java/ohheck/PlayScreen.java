@@ -51,6 +51,7 @@ public class PlayScreen extends BaseScreen {
 	private final PlayerPanel panel = new PlayerPanel(this);
 	private final TrickView trick = new TrickView();
 	private final Sparks sparks = new Sparks();
+	private final Fireworks fireworks = new Fireworks();
 	private final Motes motes = new Motes();
 	/** Drives your seat in scripted screenshot runs; null in normal play. */
 	private final Autoplay autoplay;
@@ -128,8 +129,9 @@ public class PlayScreen extends BaseScreen {
 						flow.difficulty());
 				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
 				overlays.highScoresButton.set(0, 0, 0, 0);
-				if (m.leaders().contains(HUMAN)) {
+				if (m.leaders().contains(HUMAN)) { // you won (or tied for the win)
 					sparks.burst(table.w / 2, table.h / 2 + 100, 160);
+					fireworks.show(table.w, table.h);
 				}
 			}
 		}, difficulty, rng);
@@ -201,6 +203,7 @@ public class PlayScreen extends BaseScreen {
 		}
 		overlays.update(dt);
 		sparks.step(dt);
+		fireworks.update(dt);
 		motes.update(dt, flow.trumpFaceUp(), table.trumpX(), table.trumpY(), table.trumpW(), table.trumpH());
 		if (autoplay != null) {
 			if (flow.yourTurnToBid() || flow.yourTurnToPlay()) {
@@ -235,7 +238,7 @@ public class PlayScreen extends BaseScreen {
 		default:
 			break;
 		}
-		return dragging || sparks.active() || trick.anyInFlight(time);
+		return dragging || sparks.active() || fireworks.active() || trick.anyInFlight(time);
 	}
 
 	// ------------------------------------------------------------ input
@@ -447,6 +450,7 @@ public class PlayScreen extends BaseScreen {
 		if (flow.isDealing()) {
 			flow.deal.draw(batch, assets, art, table);
 		}
+		fireworks.draw(batch, assets.glow); // behind the panels, so the scores stay readable
 		if (!menuOpen) {
 			overlays.drawMenuButton();
 			switch (flow.state()) {

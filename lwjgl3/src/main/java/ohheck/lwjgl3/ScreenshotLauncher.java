@@ -46,6 +46,9 @@ public class ScreenshotLauncher {
 		if (state.equals("rules")) {
 			return 8; // scrolled down a little
 		}
+		if (state.equals("gameover")) {
+			return 14; // the winner's fireworks bursting
+		}
 		if (state.startsWith("handover")) {
 			return 12; // the made/set labels have dropped beside the names
 		}
@@ -67,7 +70,7 @@ public class ScreenshotLauncher {
 		final long start = System.nanoTime();
 
 		GameOptions o = new GameOptions();
-		o.seed = 20261116L;
+		o.seed = 20261118L; // a game the scripted player wins, to show the fireworks
 		o.autoplayHuman = true;
 		o.persist = false;
 		o.speed = 2f;
