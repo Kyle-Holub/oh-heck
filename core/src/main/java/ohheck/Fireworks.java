@@ -14,13 +14,13 @@ import com.badlogic.gdx.math.MathUtils;
 final class Fireworks {
 
 	/** Burst colours: oxblood, crimson, scarlet, amber, gold, pale gold, warm cream. */
-	private static final float[][] PALETTE = { { 0.72f, 0.10f, 0.10f }, { 0.92f, 0.18f, 0.16f },
+	private static final float[][] PALETTE = { { 0.95f, 0.16f, 0.14f }, { 1f, 0.24f, 0.2f },
 			{ 1f, 0.32f, 0.14f }, { 1f, 0.55f, 0.12f }, { 1f, 0.76f, 0.25f }, { 1f, 0.88f, 0.52f },
 			{ 1f, 0.95f, 0.82f } };
 	/** How often each colour is picked: mostly reds and golds, a little cream. */
 	private static final int[] WEIGHTS = { 3, 3, 2, 2, 3, 2, 1 };
 
-	private static final int ROCKETS = 18;
+	private static final int ROCKETS = 30;
 	private static final float SHOW_LENGTH = 5f, GRAVITY = 90f, ROCKET_GRAVITY = 300f;
 
 	// rockets: waiting (launch time in the future), rising, or spent
@@ -30,7 +30,7 @@ final class Fireworks {
 	private final boolean[] rising = new boolean[ROCKETS], waiting = new boolean[ROCKETS];
 
 	/** Sparks from bursts and rocket trails, coloured individually. */
-	private final Sparkles sparks = new Sparkles(1400);
+	private final Sparkles sparks = new Sparkles(2600);
 	private float clock;
 
 	/** Starts a show over a screen w x h. */
@@ -40,13 +40,16 @@ final class Fireworks {
 			waiting[i] = true;
 			rising[i] = false;
 			// a quick opening volley, then a steady stream, then a finale
-			float t = i < 3 ? i * 0.15f : i < ROCKETS - 4 ? MathUtils.random(0.5f, SHOW_LENGTH - 1.2f)
-					: SHOW_LENGTH - 1.1f + MathUtils.random(0.3f);
+			float t = i < 4 ? i * 0.12f : i < ROCKETS - 7 ? MathUtils.random(0.4f, SHOW_LENGTH - 1.2f)
+					: SHOW_LENGTH - 1.1f + MathUtils.random(0.4f);
 			launchAt[i] = t;
-			rx[i] = MathUtils.random(0.12f, 0.88f) * w;
+			// mostly either side of the score panel, sometimes over it
+			float side = MathUtils.random(0.06f, 0.32f);
+			rx[i] = (MathUtils.randomBoolean(0.8f) ? (MathUtils.randomBoolean() ? side : 1 - side)
+					: MathUtils.random(0.35f, 0.65f)) * w;
 			ry[i] = -10;
 			// rise to between half and nine-tenths of the screen height
-			float peak = MathUtils.random(0.5f, 0.9f) * h;
+			float peak = MathUtils.random(0.45f, 0.92f) * h;
 			rvy[i] = (float) Math.sqrt(2 * ROCKET_GRAVITY * (peak - ry[i]));
 			rvx[i] = MathUtils.random(-30f, 30f);
 			colour[i] = pick();
@@ -88,14 +91,18 @@ final class Fireworks {
 
 	/** A ring of sparks; some bursts mix two colours. */
 	private void burst(int i) {
-		int n = MathUtils.random(55, 80);
-		float speed = MathUtils.random(110f, 190f);
+		int n = MathUtils.random(80, 110);
+		float speed = MathUtils.random(150f, 260f);
 		for (int k = 0; k < n; k++) {
 			float a = MathUtils.PI2 * k / n + MathUtils.random(-0.05f, 0.05f);
 			float s = speed * MathUtils.random(0.75f, 1.05f);
 			float[] c = PALETTE[k % 2 == 0 ? colour[i] : colour2[i]];
-			sparks.spawn(rx[i], ry[i], MathUtils.cos(a) * s, MathUtils.sin(a) * s, MathUtils.random(1.1f, 1.9f),
-					MathUtils.random(6f, 10f), c, 1f);
+			sparks.spawn(rx[i], ry[i], MathUtils.cos(a) * s, MathUtils.sin(a) * s, MathUtils.random(1.3f, 2.2f),
+					MathUtils.random(8f, 13f), c, 1f);
+		}
+		// a bright flash at the centre of each burst
+		for (int k = 0; k < 6; k++) {
+			sparks.spawn(rx[i], ry[i], MathUtils.random(-20f, 20f), MathUtils.random(-20f, 20f), 0.35f, 26f, PALETTE[6], 1f);
 		}
 	}
 
@@ -171,7 +178,7 @@ final class Fireworks {
 					a *= 0.6f + 0.4f * MathUtils.sin(clock * 40f + i * 1.7f); // crackle as they fade
 				}
 				float big = size[i] * 2.2f;
-				batch.setColor(r[i], g[i], b[i], a * 0.5f);
+				batch.setColor(r[i], g[i], b[i], Math.min(1, a * 0.75f));
 				batch.draw(glow, x[i] - big / 2, y[i] - big / 2, big, big);
 				float core = size[i] * 0.6f;
 				batch.setColor(Math.min(1, r[i] + 0.3f), Math.min(1, g[i] + 0.3f), Math.min(1, b[i] + 0.3f), a);
