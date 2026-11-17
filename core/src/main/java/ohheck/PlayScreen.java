@@ -197,7 +197,7 @@ public class PlayScreen extends BaseScreen {
 
 	/** Whether the trump card has been thrown off the table (so it's no longer drawn in its place). */
 	private boolean trumpGone() {
-		return tumble != null && tumble.anyThrown();
+		return tumble != null && (tumble.anyThrown() || !tumble.active()); // (once all have fallen, none is left)
 	}
 
 	private void newGame() {
