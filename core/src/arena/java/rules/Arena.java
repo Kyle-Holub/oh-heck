@@ -222,7 +222,7 @@ public final class Arena {
 			+ "\t\t\t}\n"
 			+ "\t\t}\n"
 			+ "\t\tint place = ((v.seat - v.dealer - 1) % v.players + v.players) % v.players;\n"
-			+ "\t\treturn (Math.min(length, 3) - 1) * 4 + Math.min(place, 3);\n"
+			+ "\t\treturn (Math.max(1, Math.min(length, 3)) - 1) * 4 + Math.min(place, 3);\n"
 			+ "\t}\n\n"
 			+ "\t/** Rows: hand 1 side-suit 2s, 3s... aces, then hand 1 trumps, hand 2... Columns: see context(). */\n"
 			+ "\tprivate static final double[][] CHANCE = {\n"

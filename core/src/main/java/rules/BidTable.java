@@ -31,7 +31,7 @@ final class BidTable {
 			}
 		}
 		int place = ((v.seat - v.dealer - 1) % v.players + v.players) % v.players;
-		return (Math.min(length, 3) - 1) * 4 + Math.min(place, 3);
+		return (Math.max(1, Math.min(length, 3)) - 1) * 4 + Math.min(place, 3);
 	}
 
 	/** Rows: hand 1 side-suit 2s, 3s... aces, then hand 1 trumps, hand 2... Columns: see context(). */
