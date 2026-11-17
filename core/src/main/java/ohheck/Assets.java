@@ -18,7 +18,11 @@ public final class Assets implements Disposable {
 	public static final int CARD_W = 73, CARD_H = 98;
 	/** A card's size in the high-resolution sheet drawn by tools/make_art.py (3x). */
 	private static final int SHEET_W = 219, SHEET_H = 294;
-	/** Transparent margin around each card in the blurred sheet. */
+	/**
+	 * Transparent margin around each card in the blurred sheet, in full-size
+	 * sheet pixels (the blurred sheet is stored at half size; only the ratio
+	 * to the card matters).
+	 */
 	public static final int BLUR_PAD = 24;
 
 	/**
@@ -125,7 +129,7 @@ public final class Assets implements Disposable {
 		return back;
 	}
 
-	/** Blurred versions, with {@link #BLUR_PAD} of margin (in sheet pixels) around the card. */
+	/** Blurred versions, with a margin around the card (see {@link #blurMarginX()}). */
 	public TextureRegion blurredFace(Card c) {
 		return blurred[c.suit().ordinal()][c.rank().ordinal()];
 	}

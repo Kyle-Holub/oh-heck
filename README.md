@@ -50,22 +50,23 @@ Every push to a `develop/*` branch builds the app and publishes it as a "Dev bui
 ## Development
 
 ```sh
-./gradlew core:test        # rules, computer players, game engine and saved games (thousands of simulated games)
+./gradlew core:test        # rules, computer players, saved games, the table's flow (thousands of simulated games)
 ./gradlew lwjgl3:run       # run on desktop
 ./gradlew lwjgl3:dist      # build/dist/oh-heck-desktop.jar
 ./gradlew android:assembleDebug   # needs the Android SDK; skipped automatically without one
 ```
 
-GitHub runs the tests on every push. Pushes to `develop/*` also build the APK and desktop jar, and play a scripted game whose screenshots are attached to the dev build.
+GitHub runs the tests on every push. Pushes to `develop/*` also build the APK (signed with the key in the repository's secrets) and the desktop jar, publish them as a dev build for Obtainium, and play a scripted game whose screenshots are attached to it. Pushes to `refactor/*` or `feature/*` only play the scripted game, attaching the screenshots to a private draft release, to check a change before it ships.
 
 | Path | Contents |
 | --- | --- |
 | `core/src/main/java/rules` | Game rules, scoring, computer player decisions, the game engine and saving. No graphics |
-| `core/src/main/java/ohheck` | Screens: title with 3D falling cards, card table, rules, options; sound and settings |
-| `core/src/test/java/rules` | Tests for the rules package |
+| `core/src/main/java/ohheck` | Screens (title with 3D falling cards, card table, how to play, options, high scores), sound, settings and effects |
+| `.../ohheck/PlayScreen.java` | The card table: touch, and drawing the seats and your hand. With `TableFlow` (its states and timing, no drawing), `TableLayout` (where things go), `DealAnimation`, `TrickView`, `TableOverlays` (panels, scores, menus) and `Autoplay` (the scripted screenshot run) |
+| `core/src/test/java` | Tests for the rules, saved games, high scores, the rules text and the table's flow |
 | `android` | Android launcher, icon and manifest |
 | `lwjgl3` | Desktop launcher, plus the scripted screenshot run used on GitHub |
 | `assets` | Images, music, sound effects, fonts and the rules text |
-| `tools/make_fonts.py` | Bakes the fonts in `assets/fonts` |
+| `tools/` | Scripts that draw the cards, icons and frames (`make_art.py`), the app icon (`make_icon.py`) and bake the fonts (`make_fonts.py`) |
 
 All artwork, music and sound effects are by Kyle Holub. Fonts: DejaVu Sans and Serif (see `assets/fonts/DejaVu-LICENSE.txt`).
