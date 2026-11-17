@@ -10,7 +10,7 @@ import com.badlogic.gdx.math.MathUtils;
 final class Motes extends ParticlePool {
 
 	/** New motes per second. */
-	private static final float RATE = 16f;
+	private static final float RATE = 6f;
 	private float toSpawn;
 
 	Motes() {
@@ -67,9 +67,9 @@ final class Motes extends ParticlePool {
 			// fade in quickly, out slowly, and twinkle
 			float a = Math.min(age * 6f, 1f) * (1 - age) * (0.6f + 0.4f * MathUtils.sin(clock * 7f + i * 2.3f));
 			float sz = size[i] * (1 - age * 0.4f);
-			batch.setColor(c.r, c.g * 0.9f, c.b * 0.6f, 0.55f * a);
+			batch.setColor(c.r, c.g * 0.9f, c.b * 0.6f, 0.45f * a);
 			batch.draw(glow, x[i] - sz, y[i] - sz, sz * 2, sz * 2);
-			batch.setColor(1f, 0.95f, 0.8f, 0.9f * a);
+			batch.setColor(1f, 0.95f, 0.8f, 0.75f * a);
 			batch.draw(glow, x[i] - sz * 0.3f, y[i] - sz * 0.3f, sz * 0.6f, sz * 0.6f);
 		}
 		batch.setColor(Color.WHITE);

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Random;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
@@ -571,7 +572,24 @@ public class PlayScreen extends BaseScreen {
 		float x = table.trumpX(), y = table.trumpY(), cw = table.trumpW(), ch = table.trumpH();
 		art.shadow(x, y, cw, ch, 4);
 		float p = flow.isDealing() ? 0 : MathUtils.clamp(flow.trumpTime() / TableFlow.TRUMP_FLIP_TIME, 0, 1);
+		// face up, the trump is lit: a warm glow behind it, and the card itself brightened
+		float lit = MathUtils.clamp((flow.trumpTime() - TableFlow.TRUMP_FLIP_TIME) / 0.6f, 0, 1);
+		if (p >= 1 && lit > 0) {
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+			float gw = cw * 1.9f, gh = ch * 1.6f;
+			batch.setColor(1f, 0.78f, 0.4f, 0.22f * lit);
+			batch.draw(assets.glow, x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh);
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			batch.setColor(Color.WHITE);
+		}
 		art.flip(match().trumpCard(), x, y, cw, ch, p);
+		if (p >= 1 && lit > 0) {
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+			batch.setColor(1f, 0.97f, 0.88f, 0.16f * lit);
+			batch.draw(assets.face(match().trumpCard()), x, y, cw, ch);
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			batch.setColor(Color.WHITE);
+		}
 		motes.draw(batch, assets.glow);
 	}
 
