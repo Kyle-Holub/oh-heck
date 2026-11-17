@@ -161,18 +161,9 @@ def number_card(rank, suit, seed):
 
 
 def face_card(rank, suit, seed):
-    """A court card: our own figure (see court_art.py), mirrored top to bottom, in a gold-and-oxblood frame."""
-    aw, ah = court_art.W, court_art.H * 2  # clear of the corner indices
-    half = court_art.court_half(rank, suit, SS, suit_shape)
-    art = Image.new("RGBA", (aw * SS, ah * SS), (236, 222, 194, 255))  # a shade darker than the paper
-    lattice = ImageDraw.Draw(art)  # and a faint diamond lattice behind the figure
-    for i in range(-ah, aw + ah, 12):
-        lattice.line([(i * SS, 0), ((i + ah) * SS, ah * SS)], fill=(226, 208, 176, 255), width=SS)
-        lattice.line([(i * SS, 0), ((i - ah) * SS, ah * SS)], fill=(226, 208, 176, 255), width=SS)
-    art.alpha_composite(half, (0, 0))
-    art.alpha_composite(half.rotate(180), (0, court_art.H * SS))
-    d = ImageDraw.Draw(art)
-    d.line([(0, court_art.H * SS), (aw * SS, court_art.H * SS)], fill=GOLD_DARK, width=2 * SS)
+    """A court card: our own traditional-style figure (see court_art.py) in a gold-and-oxblood frame."""
+    aw, ah = court_art.W, court_art.H  # clear of the corner indices
+    art = court_art.court_art(rank, suit, SS, suit_shape)
 
     img = card_base(seed)
     W, H = img.size
