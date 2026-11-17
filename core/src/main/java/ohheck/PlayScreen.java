@@ -54,6 +54,10 @@ public class PlayScreen extends BaseScreen {
 	private final TrickView trick = new TrickView();
 	private final Sparks sparks = new Sparks();
 	private final Fireworks fireworks = new Fireworks();
+	/** At the game's end, the final hand's cards and the trump thrown off the table; null until then. */
+	private FallingCards tumble;
+	/** When the trump goes, then each card of the final hand in the order played. */
+	private static final float TOSS_TRUMP = 0.15f, TOSS_FIRST = 0.35f, TOSS_STEP = 0.04f;
 	private final Motes motes = new Motes();
 	/** Drives your seat in scripted screenshot runs; null in normal play. */
 	private final Autoplay autoplay;
@@ -132,6 +136,7 @@ public class PlayScreen extends BaseScreen {
 				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN), lowest);
 				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
 				overlays.highScoresButton.set(0, 0, 0, 0);
+				tossTheTable(m);
 				if (m.leaders().contains(HUMAN)) { // you won (or tied for the win)
 					sparks.burst(table.w / 2, table.h / 2 + 100, 160);
 					fireworks.show(table.w, table.h);
@@ -173,7 +178,30 @@ public class PlayScreen extends BaseScreen {
 		return flow.match().phase() == Match.Phase.GAME_OVER;
 	}
 
+	/** Throws the trump and every card of the final hand (from where each was played) off the table. */
+	private void tossTheTable(Match m) {
+		// (its own seed, so the throw never changes the game's random numbers)
+		tumble = FallingCards.forTable(assets, new Random(m.score(HUMAN) * 31L + m.score(0)));
+		float cx = table.w / 2, cy = table.h / 2;
+		tumble.toss(m.trumpCard(), table.trumpX() + table.trumpW() / 2 - cx, table.trumpY() + table.trumpH() / 2 - cy,
+				table.trumpW(), 0, TOSS_TRUMP);
+		List<Card> played = m.playedThisHand();
+		List<Integer> seats = m.playedThisHandSeats();
+		for (int i = 0; i < played.size(); i++) {
+			int seat = seats.get(i);
+			Vector2 slot = table.trickSlot(seat);
+			tumble.toss(played.get(i), slot.x + Assets.CARD_W / 2f - cx, slot.y + Assets.CARD_H / 2f - cy, Assets.CARD_W,
+					TrickView.tilt(played.get(i), seat, m.handIndex()), TOSS_FIRST + i * TOSS_STEP);
+		}
+	}
+
+	/** Whether the trump card has been thrown off the table (so it's no longer drawn in its place). */
+	private boolean trumpGone() {
+		return tumble != null && tumble.anyThrown();
+	}
+
 	private void newGame() {
+		tumble = null;
 		Match m = Match.random(4, rng);
 		overlays.setMatch(m);
 		newHighScore = -1;
@@ -208,7 +236,10 @@ public class PlayScreen extends BaseScreen {
 		overlays.update(dt);
 		sparks.step(dt);
 		fireworks.update(dt);
-		motes.update(dt, flow.trumpFaceUp(), table.trumpX(), table.trumpY(), table.trumpW(), table.trumpH());
+		if (tumble != null) {
+			tumble.update(dt, table.w, table.h);
+		}
+		motes.update(dt, flow.trumpFaceUp() && !trumpGone(), table.trumpX(), table.trumpY(), table.trumpW(), table.trumpH());
 		if (autoplay != null) {
 			if (flow.yourTurnToBid() || flow.yourTurnToPlay()) {
 				autoplay.yourTurn(dt);
@@ -242,7 +273,8 @@ public class PlayScreen extends BaseScreen {
 		default:
 			break;
 		}
-		return dragging || sparks.active() || fireworks.active() || trick.anyInFlight(time);
+		return dragging || sparks.active() || fireworks.active() || trick.anyInFlight(time)
+				|| (tumble != null && tumble.active());
 	}
 
 	// ------------------------------------------------------------ input
@@ -499,6 +531,9 @@ public class PlayScreen extends BaseScreen {
 				Glints.draw(batch, assets.glow, pressed, dragX - cw / 2, dragY - ch / 2, cw, ch, cw, 0, time, 1f);
 			}
 		}
+		if (tumble != null) {
+			tumble.draw(batch, table.w / 2, table.h / 2); // over the scores, briefly, as they fall away
+		}
 		sparks.draw(batch, assets.glow);
 		if (menuOpen) {
 			overlays.drawMenu();
@@ -569,8 +604,11 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	private void drawTrump() {
-		if (flow.state() == TableState.SHUFFLE) {
-			return; // the trump card is still in the deck
+		if (flow.state() == TableState.SHUFFLE || trumpGone()) {
+			if (trumpGone()) {
+				motes.draw(batch, assets.glow); // the last few still rising
+			}
+			return; // the trump card is still in the deck, or thrown off the table
 		}
 		float x = table.trumpX(), y = table.trumpY(), cw = table.trumpW(), ch = table.trumpH();
 		art.shadow(x, y, cw, ch, 4);

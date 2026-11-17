@@ -49,6 +49,10 @@ public final class FallingCards {
 		final Vector3 axis = new Vector3();
 		float fall, spin, swayAmp, swayFreq, swayPhase, age;
 		Card card;
+		/** A card tossed off the table: thrown with this velocity, falling under gravity after its delay. */
+		boolean tossed;
+		final Vector3 vel = new Vector3();
+		float delay;
 	}
 
 	private final Assets assets;
@@ -56,6 +60,8 @@ public final class FallingCards {
 	private final List<Flake> flakes = new ArrayList<Flake>();
 	private float time, spawnDebt;
 	private final boolean fromEmpty;
+	/** Only tossed cards, all in focus and evenly lit, with no sparkles: the table at the game's end. */
+	private boolean tableMode;
 	private final float period, phase;
 
 	// scratch space, reused every frame
@@ -81,6 +87,53 @@ public final class FallingCards {
 		this.phase = rng.nextFloat() * MathUtils.PI2;
 	}
 
+	/** For the table at the game's end: nothing falls until cards are {@link #toss tossed}. */
+	public static FallingCards forTable(Assets assets, Random rng) {
+		FallingCards f = new FallingCards(assets, rng, true);
+		f.tableMode = true;
+		f.falling = false;
+		return f;
+	}
+
+	/** Upward pop, sideways scatter, depth drift and gravity for tossed cards, in screen units. */
+	private static final float TOSS_UP_MIN = 260f, TOSS_UP_MAX = 460f, TOSS_SIDE = 160f, GRAVITY = 1500f,
+			TOSS_SPIN_MIN = 160f, TOSS_SPIN_MAX = 480f, SPIN_UP_TIME = 0.35f;
+
+	/**
+	 * Throws a card off the table: it starts exactly where it lies (centre (x, y) relative to
+	 * the screen centre, w wide, turned rot degrees), and after delay seconds pops up, starts
+	 * tumbling and falls off the bottom of the screen.
+	 */
+	public void toss(Card c, float x, float y, float w, float rot, float delay) {
+		Flake f = new Flake();
+		float z = CARD_W * FOCAL / w, k = z / FOCAL;
+		f.pos.set(x * k, y * k, z);
+		f.rot.set(Vector3.Z, rot);
+		f.vel.set((x / 400f * TOSS_SIDE + (rng.nextFloat() * 2 - 1) * TOSS_SIDE) * k,
+				MathUtils.lerp(TOSS_UP_MIN, TOSS_UP_MAX, rng.nextFloat()) * k, (rng.nextFloat() * 2 - 0.6f) * 260f);
+		f.axis.set(rng.nextFloat() * 2 - 1, rng.nextFloat() * 2 - 1, (rng.nextFloat() * 2 - 1) * 0.4f).nor();
+		f.spin = MathUtils.lerp(TOSS_SPIN_MIN, TOSS_SPIN_MAX, rng.nextFloat()) * (rng.nextBoolean() ? 1 : -1);
+		f.card = c;
+		f.tossed = true;
+		f.delay = delay;
+		flakes.add(f);
+	}
+
+	/** Whether any card is still on its way off the screen (or waiting to be thrown). */
+	public boolean active() {
+		return !flakes.isEmpty();
+	}
+
+	/** Whether a card has been thrown yet (false while every tossed card is still waiting). */
+	public boolean anyThrown() {
+		for (Flake f : flakes) {
+			if (f.tossed && f.age >= f.delay) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Cards falling right now; showers ebb and swell over time. */
 	private float spawnRate() {
 		float e = 0.5f + 0.5f * MathUtils.sin(MathUtils.PI2 * time / period + phase);
@@ -104,24 +157,36 @@ public final class FallingCards {
 			}
 		}
 		time += dt;
-		updateSparkles(dt, viewW, viewH);
-		if (!falling) {
-			return;
+		if (!tableMode) {
+			updateSparkles(dt, viewW, viewH);
 		}
-		fallingFor += dt;
-		spawnDebt += spawnRate() * dt;
-		while (spawnDebt >= 1f) {
-			spawnDebt -= 1f;
-			if (flakes.size() < MAX_CARDS) {
-				spawn(viewW, viewH, true);
+		if (falling) {
+			fallingFor += dt;
+			spawnDebt += spawnRate() * dt;
+			while (spawnDebt >= 1f) {
+				spawnDebt -= 1f;
+				if (flakes.size() < MAX_CARDS) {
+					spawn(viewW, viewH, true);
+				}
 			}
 		}
 		for (Iterator<Flake> it = flakes.iterator(); it.hasNext();) {
 			Flake f = it.next();
 			f.age += dt;
-			f.pos.y -= f.fall * dt;
-			f.pos.x += f.swayAmp * MathUtils.cos(f.swayFreq * f.age + f.swayPhase) * dt;
-			dq.set(f.axis, f.spin * dt);
+			if (f.tossed) {
+				float t = f.age - f.delay;
+				if (t <= 0) {
+					continue; // still lying on the table
+				}
+				float k = f.pos.z / FOCAL;
+				f.vel.y -= GRAVITY * k * dt;
+				f.pos.mulAdd(f.vel, dt);
+				dq.set(f.axis, f.spin * Math.min(1f, t / SPIN_UP_TIME) * dt);
+			} else {
+				f.pos.y -= f.fall * dt;
+				f.pos.x += f.swayAmp * MathUtils.cos(f.swayFreq * f.age + f.swayPhase) * dt;
+				dq.set(f.axis, f.spin * dt);
+			}
 			f.rot.set(dq.mul(f.rot)).nor();
 			if (f.pos.y < -(halfH(f.pos.z, viewH) + CARD_H * 1.5f)) {
 				it.remove();
@@ -167,12 +232,18 @@ public final class FallingCards {
 	/** Draws sparkles and cards with the screen centre at (cx, cy). */
 	public void draw(SpriteBatch batch, float cx, float cy) {
 		Collections.sort(flakes, FAR_FIRST);
-		drawSparkles(batch, cx, cy, true);
+		if (!tableMode) {
+			drawSparkles(batch, cx, cy, true);
+		}
 		glinting.clear();
 		for (Flake f : flakes) {
-			drawFlake(batch, f, cx, cy);
+			if (!f.tossed || f.age >= f.delay) {
+				drawFlake(batch, f, cx, cy);
+			}
 		}
-		drawSparkles(batch, cx, cy, false);
+		if (!tableMode) {
+			drawSparkles(batch, cx, cy, false);
+		}
 		drawGlints(batch, cx, cy);
 	}
 
@@ -191,8 +262,11 @@ public final class FallingCards {
 		// further away is darker, so the shower has depth
 		float depth = (f.pos.z - NEAR) / (FAR - NEAR);
 		// (capped at 1: packed vertex colours overflow into the next channel above that)
-		float b = Math.min(0.94f, lit * MathUtils.lerp(1.05f, 0.42f, depth));
-		float d = defocus(f.pos.z);
+		// (on the table: no depth falloff, and flat cards keep their full brightness)
+		float b = Math.min(0.94f, tableMode ? 0.5f + 0.6f * lit : lit * MathUtils.lerp(1.05f, 0.42f, depth));
+		float d = tableMode ? 0f : defocus(f.pos.z);
+		// the title's warm light; on the table, the cards' own colours (so they don't change as they leave)
+		float warmR = tableMode ? 1f : WARM_R, warmG = tableMode ? 1f : WARM_G, warmB = tableMode ? 1f : WARM_B;
 
 		// a glint when the card turns its face towards the light
 		VIEW_LIGHT.set(LIGHT).add(toCam).nor();
@@ -206,11 +280,11 @@ public final class FallingCards {
 			TextureRegion blur = front ? assets.blurredFace(f.card) : assets.blurredBack();
 			float grow = 1f / (1f - 2f * Assets.blurMarginX()), growY = 1f / (1f - 2f * Assets.blurMarginY());
 			float a = Math.min(1f, d * 3f);
-			drawQuad(batch, f, cx, cy, blur, CARD_W * grow, CARD_H * growY, Color.toFloatBits(b * WARM_R, b * WARM_G, b * WARM_B, a));
+			drawQuad(batch, f, cx, cy, blur, CARD_W * grow, CARD_H * growY, Color.toFloatBits(b * warmR, b * warmG, b * warmB, a));
 		}
 		if (d < 0.98f) {
 			TextureRegion r = front ? assets.face(f.card) : assets.back();
-			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(b * WARM_R, b * WARM_G, b * WARM_B, 1f - d));
+			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(b * warmR, b * warmG, b * warmB, 1f - d));
 		}
 	}
 

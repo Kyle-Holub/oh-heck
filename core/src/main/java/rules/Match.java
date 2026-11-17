@@ -255,6 +255,16 @@ public final class Match {
 		return Rules.legalPlays(hands.get(seat), seat == current ? leadSuit() : null);
 	}
 
+	/** Every card played so far this hand (the whole hand once it's over), in order. */
+	public List<Card> playedThisHand() {
+		return Collections.unmodifiableList(history);
+	}
+
+	/** Who played each card in {@link #playedThisHand()}. */
+	public List<Integer> playedThisHandSeats() {
+		return Collections.unmodifiableList(historySeats);
+	}
+
 	public List<Card> lastTrick() {
 		return lastTrick;
 	}

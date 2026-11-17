@@ -8,7 +8,7 @@ import com.badlogic.gdx.math.MathUtils;
  * A player's bar, after the original game's: name, dealer icon and score, and
  * one card icon per trick: faded = bid but not won yet, solid = won, red =
  * won over the bid; a bid of zero shows a struck-through circle until a trick is taken. Glows
- * gold while it's that player's turn; until they've bid, it sits sunk into the table, dimmed,
+ * gold while it's that player's turn; until they've bid, it sits sunk into the table (same size), dimmed,
  * with an hourglass.
  */
 final class PlayerPanel {
@@ -17,8 +17,7 @@ final class PlayerPanel {
 
 	private static final float ICON_MAX_W = 28, ICON_GAP = 3;
 	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.32f);
-	/** Not bid yet: the panel sits a little inside its usual edge, its text dimmed. */
-	private static final float WAIT_INSET = 3;
+	/** Not bid yet: the panel's text dimmed. */
 	private static final Color WAIT_TEXT = new Color(0.72f, 0.66f, 0.58f, 1f), WAIT_SCORE = new Color(0.62f, 0.5f, 0.3f, 1f);
 
 	private final BaseScreen screen;
@@ -39,7 +38,7 @@ final class PlayerPanel {
 		if (turn) {
 			screen.frame(assets.panelTurn, x - 4, y - 4, W + 8, H + 8);
 		} else if (waiting) {
-			screen.frame(assets.panelWait, x + WAIT_INSET, y + WAIT_INSET, W - 2 * WAIT_INSET, H - 2 * WAIT_INSET);
+			screen.frame(assets.panelWait, x, y, W, H);
 		} else {
 			screen.frame(assets.panel, x, y, W, H);
 		}
