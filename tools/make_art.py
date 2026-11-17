@@ -3,12 +3,11 @@
 Draws the game's card deck, card back, table, icons and UI frames in one warm
 palette (espresso, cream, oxblood, gold), at high resolution.
 
-The number cards are drawn entirely from vector shapes. The jacks, queens and
-kings reuse the face illustrations from the original card sheet
-(tools/source/cards.png), enlarged and set into a new frame.
+Everything is drawn from vector shapes: the number cards here, the jacks, queens
+and kings in court_art.py.
 
 Usage: python3 tools/make_art.py [output dir, default assets/images]
-Needs Pillow, NumPy and the DejaVu fonts.
+Needs Pillow, NumPy, the DejaVu fonts and TeX Gyre Pagella (the bid numerals).
 """
 import math
 import os
@@ -16,6 +15,8 @@ import sys
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+import court_art
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SS = 4  # supersampling for smooth edges
@@ -159,19 +160,19 @@ def number_card(rank, suit, seed):
     return downsample(img, CARD_W, CARD_H)
 
 
-def face_card(rank, suit, seed, source):
-    """The original face illustration, enlarged and set into a gold-and-oxblood frame."""
-    col = RANKS.index(rank)
-    row = SUITS.index(suit)
-    cell = source.crop((col * 73, row * 98, col * 73 + 73, row * 98 + 98)).convert("RGBA")
-    art = cell.crop((14, 12, 59, 86))  # inside the original black frame
-    aw, ah = 116, 191  # clear of the corner indices
-    art = art.resize((aw * SS, ah * SS), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=6, percent=60, threshold=2))
-    # warm the colours slightly towards the cream paper so they sit in the palette
-    a = np.asarray(art).astype(float)
-    warm = np.array([255, 238, 205], float)
-    a[..., :3] = a[..., :3] * 0.85 + (a[..., :3] * warm / 255.0) * 0.15
-    art = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), "RGBA")
+def face_card(rank, suit, seed):
+    """A court card: our own figure (see court_art.py), mirrored top to bottom, in a gold-and-oxblood frame."""
+    aw, ah = court_art.W, court_art.H * 2  # clear of the corner indices
+    half = court_art.court_half(rank, suit, SS, suit_shape)
+    art = Image.new("RGBA", (aw * SS, ah * SS), (236, 222, 194, 255))  # a shade darker than the paper
+    lattice = ImageDraw.Draw(art)  # and a faint diamond lattice behind the figure
+    for i in range(-ah, aw + ah, 12):
+        lattice.line([(i * SS, 0), ((i + ah) * SS, ah * SS)], fill=(226, 208, 176, 255), width=SS)
+        lattice.line([(i * SS, 0), ((i - ah) * SS, ah * SS)], fill=(226, 208, 176, 255), width=SS)
+    art.alpha_composite(half, (0, 0))
+    art.alpha_composite(half.rotate(180), (0, court_art.H * SS))
+    d = ImageDraw.Draw(art)
+    d.line([(0, court_art.H * SS), (aw * SS, court_art.H * SS)], fill=GOLD_DARK, width=2 * SS)
 
     img = card_base(seed)
     W, H = img.size
@@ -185,12 +186,11 @@ def face_card(rank, suit, seed, source):
 
 
 def card_sheet(out):
-    source = Image.open(os.path.join(HERE, "source", "cards.png")).convert("RGBA")
     sheet = Image.new("RGBA", (CARD_W * 13, CARD_H * 4), (0, 0, 0, 0))
     for r, suit in enumerate(SUITS):
         for c, rank in enumerate(RANKS):
             seed = r * 13 + c
-            card = face_card(rank, suit, seed, source) if rank in "JQK" else number_card(rank, suit, seed)
+            card = face_card(rank, suit, seed) if rank in "JQK" else number_card(rank, suit, seed)
             sheet.paste(card, (c * CARD_W, r * CARD_H))
     # 256 colours with dithering: looks the same, a tenth of the file size
     sheet.convert("RGBA").quantize(256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.FLOYDSTEINBERG).save(
