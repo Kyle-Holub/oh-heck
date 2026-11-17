@@ -288,7 +288,10 @@ public final class FallingCards {
 		}
 	}
 
-	/** Adds the glints on top, with additive blending so they brighten what is there. */
+	/**
+	 * Adds the glints on top, with additive blending so they brighten what is there (softer on
+	 * the table, where the cards are already bright enough to trip the bloom).
+	 */
 	private void drawGlints(SpriteBatch batch, float cx, float cy) {
 		if (glinting.isEmpty()) {
 			return;
@@ -300,7 +303,7 @@ public final class FallingCards {
 			f.rot.transform(n);
 			toCam.set(f.pos).scl(-1);
 			TextureRegion r = n.dot(toCam) > 0 ? assets.face(f.card) : assets.back();
-			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(1f, 0.88f, 0.62f, Math.min(0.7f, glintStrength[i])));
+			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(1f, 0.88f, 0.62f, Math.min(tableMode ? 0.25f : 0.7f, glintStrength[i])));
 		}
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
