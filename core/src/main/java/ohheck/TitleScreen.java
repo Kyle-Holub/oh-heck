@@ -19,8 +19,9 @@ public class TitleScreen extends BaseScreen {
 	// The opening sequence, once per launch: music over black, then cards begin to fall,
 	// the title slowly fades in on its own, and after a pause the menu appears.
 	/**
-	 * The opening: black with the music, then the gold sparkles rise out of the dark, the
-	 * title fades in among them, and once it's there the cards start to fall; then the menu.
+	 * The opening: from black the gold sparkles rise out of the dark, the title fades in
+	 * among them, and once it's there the cards start to fall; then the menu, and once
+	 * it's fully shown, the music.
 	 */
 	private static final float SCENE_START = 0.4f, SCENE_FADE = 0.9f, TITLE_START = 1.0f, TITLE_FADE = 1.6f,
 			CARDS_START = TITLE_START + TITLE_FADE, MENU_START = 5.0f, MENU_FADE = 0.8f,
@@ -56,7 +57,9 @@ public class TitleScreen extends BaseScreen {
 			introT = Math.max(introT, INTRO_END); // the opening plays once per launch
 		}
 		buildItems(); // Continue appears only with a game to continue; that can't change while shown
-		game.audio.startMusic();
+		if (introT >= INTRO_END) {
+			game.audio.startMusic(); // (during the opening it starts with the menu)
+		}
 	}
 
 	@Override
@@ -71,6 +74,9 @@ public class TitleScreen extends BaseScreen {
 		if (introT >= SCENE_START) {
 			cards.setFalling(introT >= CARDS_START);
 			cards.update(dt, w, h);
+		}
+		if (introT >= INTRO_END && introT - dt < INTRO_END) {
+			game.audio.startMusic(); // the menu is fully shown: in comes the music
 		}
 		if (introT >= INTRO_END) {
 			shownFor += dt;
@@ -137,8 +143,9 @@ public class TitleScreen extends BaseScreen {
 	@Override
 	protected void tap(float x, float y) {
 		if (introT < INTRO_END) {
-			// a tap during the opening skips to the menu
+			// a tap during the opening skips to the menu, and the music
 			introT = Math.max(introT, INTRO_END);
+			game.audio.startMusic();
 			return;
 		}
 		for (int i = 0; i < hits.size(); i++) {
