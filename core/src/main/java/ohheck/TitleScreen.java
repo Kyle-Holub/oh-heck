@@ -110,7 +110,7 @@ public class TitleScreen extends BaseScreen {
 			}
 			BitmapFont f = ui(0.9f);
 			f.setColor(Palette.MUTED.r, Palette.MUTED.g, Palette.MUTED.b, fade);
-			f.draw(batch, OhHeckGame.VERSION, 10, 22);
+			f.draw(batch, game.build.isEmpty() ? OhHeckGame.VERSION : OhHeckGame.VERSION + "  (" + game.build + ")", 10, 22);
 			String c = "©2026 Kyle Holub";
 			glyphs.setText(f, c);
 			f.draw(batch, c, w - 10 - glyphs.width, 22);
@@ -151,7 +151,7 @@ public class TitleScreen extends BaseScreen {
 		} else if (item.equals("High scores")) {
 			game.showHighScores(-1);
 		} else if (item.equals("Options")) {
-			game.showOptions(false);
+			game.showOptions();
 		} else if (item.equals("Quit")) {
 			Gdx.app.exit();
 		}

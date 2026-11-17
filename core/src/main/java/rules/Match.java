@@ -280,7 +280,10 @@ public final class Match {
 
 	// ---- Saving ----
 
-	private static final String FORMAT = "oh-heck-match-1";
+	/** Cards written as text ("AS", "10H"). */
+	private static final String FORMAT = "oh-heck-match-2";
+	/** The first format, which wrote cards as numbers from the enums' declaration order; still read. */
+	private static final String FORMAT_1 = "oh-heck-match-1";
 
 	/**
 	 * The whole game state as a short text, for saving to storage. The random
@@ -294,7 +297,7 @@ public final class Match {
 		line(sb, "hand", String.valueOf(handIndex));
 		line(sb, "dealer", String.valueOf(dealer));
 		line(sb, "current", String.valueOf(current));
-		line(sb, "trump", String.valueOf(code(trumpCard)));
+		line(sb, "trump", code(trumpCard));
 		for (int s = 0; s < players; s++) {
 			line(sb, "hand" + s, cards(hands.get(s)));
 		}
@@ -323,9 +326,11 @@ public final class Match {
 		try {
 			java.util.Map<String, String> v = new java.util.HashMap<String, String>();
 			String[] lines = saved.split("\n");
-			if (!lines[0].trim().equals(FORMAT)) {
+			String format = lines[0].trim();
+			if (!format.equals(FORMAT) && !format.equals(FORMAT_1)) {
 				throw new IllegalArgumentException("Not a saved game");
 			}
+			boolean legacy = format.equals(FORMAT_1);
 			for (int i = 1; i < lines.length; i++) {
 				int eq = lines[i].indexOf('=');
 				if (eq > 0) {
@@ -337,9 +342,9 @@ public final class Match {
 			m.handIndex = Integer.parseInt(req(v, "hand"));
 			m.dealer = Integer.parseInt(req(v, "dealer"));
 			m.current = Integer.parseInt(req(v, "current"));
-			m.trumpCard = card(Integer.parseInt(req(v, "trump")));
+			m.trumpCard = card(req(v, "trump"), legacy);
 			for (int s = 0; s < m.players; s++) {
-				m.hands.set(s, parseCards(req(v, "hand" + s)));
+				m.hands.set(s, parseCards(req(v, "hand" + s), legacy));
 			}
 			String[] b = req(v, "bids").split(",");
 			int[] t = parseInts(req(v, "tricks"), m.players), sc = parseInts(req(v, "scores"), m.players),
@@ -350,9 +355,9 @@ public final class Match {
 				m.scores[s] = sc[s];
 				m.lastHandPoints[s] = pt[s];
 			}
-			m.trick.addAll(parseCards(req(v, "trick")));
+			m.trick.addAll(parseCards(req(v, "trick"), legacy));
 			m.trickSeats.addAll(parseSeats(req(v, "trickSeats")));
-			m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last")));
+			m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last"), legacy));
 			m.lastTrickSeats = Collections.unmodifiableList(parseSeats(req(v, "lastSeats")));
 			m.lastTrickWinner = Integer.parseInt(req(v, "lastWinner"));
 			m.check();
@@ -396,12 +401,32 @@ public final class Match {
 		return s;
 	}
 
-	private static int code(Card c) {
-		return c.suit().ordinal() * 13 + c.rank().ordinal();
+	// Card codes: rank then suit letter, e.g. "AS", "10H", "QD". Independent of the enums' order.
+	private static final String[] RANK_CODES = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
+	private static final String SUIT_CODES = "CDHS";
+	private static final Suit[] SUITS_BY_CODE = { Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES };
+	// The first format's numbering: suit * 13 + rank, in these orders
+	private static final Rank[] LEGACY_RANKS = { Rank.ACE, Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX,
+			Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING };
+	private static final Suit[] LEGACY_SUITS = { Suit.CLUBS, Suit.SPADES, Suit.HEARTS, Suit.DIAMONDS };
+
+	private static String code(Card c) {
+		return RANK_CODES[c.rank().strength()] + SUIT_CODES.charAt(java.util.Arrays.asList(SUITS_BY_CODE).indexOf(c.suit()));
 	}
 
-	private static Card card(int code) {
-		return Card.of(Rank.values()[code % 13], Suit.values()[code / 13]);
+	private static Card card(String code, boolean legacy) {
+		if (legacy) {
+			int n = Integer.parseInt(code);
+			return Card.of(LEGACY_RANKS[n % 13], LEGACY_SUITS[n / 13]);
+		}
+		int suit = SUIT_CODES.indexOf(code.charAt(code.length() - 1));
+		String rank = code.substring(0, code.length() - 1);
+		for (Rank r : Rank.values()) {
+			if (RANK_CODES[r.strength()].equals(rank) && suit >= 0) {
+				return Card.of(r, SUITS_BY_CODE[suit]);
+			}
+		}
+		throw new IllegalArgumentException("Not a card: " + code);
 	}
 
 	private static String cards(List<Card> cs) {
@@ -412,10 +437,10 @@ public final class Match {
 		return sb.toString();
 	}
 
-	private static List<Card> parseCards(String s) {
+	private static List<Card> parseCards(String s, boolean legacy) {
 		List<Card> list = new ArrayList<Card>();
 		for (String p : s.isEmpty() ? new String[0] : s.split(",")) {
-			list.add(card(Integer.parseInt(p)));
+			list.add(card(p.trim(), legacy));
 		}
 		return list;
 	}

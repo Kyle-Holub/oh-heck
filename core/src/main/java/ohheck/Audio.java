@@ -66,12 +66,6 @@ public final class Audio implements Disposable {
 		}
 	}
 
-	public void stopMusic() {
-		if (music != null) {
-			music.pause();
-		}
-	}
-
 	@Override
 	public void dispose() {
 		for (Sound s : sounds) {

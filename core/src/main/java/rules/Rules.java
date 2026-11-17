@@ -51,12 +51,6 @@ public final class Rules {
 		return winner;
 	}
 
-	/** Was the winning card a trump played on a non-trump lead? */
-	public static boolean wonByTrumping(List<Card> plays, Suit trump) {
-		Card winner = plays.get(trickWinner(plays, trump));
-		return winner.suit() == trump && plays.get(0).suit() != trump;
-	}
-
 	// ---- Following suit ----
 
 	/**

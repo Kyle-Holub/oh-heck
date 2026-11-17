@@ -1,6 +1,5 @@
 package ohheck;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.Gdx;
@@ -14,25 +13,18 @@ import com.badlogic.gdx.utils.ScreenUtils;
 /** The rules, from assets/files/rules.txt. */
 public class RulesScreen extends BaseScreen {
 
-	/** Headings for the first nine paragraphs of rules.txt (the tenth describes the desktop screen). */
-	private static final String[] HEADINGS = { "How to Play Oh Heck", "Cards", "Hands", "Objective", "Dealing",
-			"Trump Suit", "Bidding", "Play", "Scoring" };
-
 	private static final Color HEADER = new Color(0.06f, 0.04f, 0.03f, 0.97f);
 	private static final float HEADER_H = 56;
 
-	private final List<String> titles = new ArrayList<String>();
-	private final List<String> bodies = new ArrayList<String>();
+	private final List<String> titles, bodies;
 	private float scroll, velocity, contentHeight;
 	private final Rectangle backButton = new Rectangle();
 
 	public RulesScreen(OhHeckGame game) {
 		super(game);
-		String[] lines = Gdx.files.internal("files/rules.txt").readString("UTF-8").split("\\r?\\n");
-		for (int i = 0; i < HEADINGS.length && i < lines.length; i++) {
-			titles.add(HEADINGS[i]);
-			bodies.add(lines[i].trim());
-		}
+		RulesText text = RulesText.parse(Gdx.files.internal("files/rules.txt").readString("UTF-8"));
+		titles = text.headings;
+		bodies = text.bodies;
 	}
 
 	@Override
@@ -107,7 +99,7 @@ public class RulesScreen extends BaseScreen {
 
 	@Override
 	protected void back() {
-		game.showOptions(); // opened from the options screen
+		game.back();
 	}
 
 	@Override

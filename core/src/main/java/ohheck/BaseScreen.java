@@ -22,7 +22,7 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	protected final OhHeckGame game;
 	protected final Assets assets;
 	protected final ExtendViewport viewport = new ExtendViewport(WORLD_W, WORLD_H);
-	protected final SpriteBatch batch = new SpriteBatch();
+	protected final SpriteBatch batch;
 	protected final GlyphLayout glyphs = new GlyphLayout();
 	protected float w = WORLD_W, h = WORLD_H;
 	/** Time since the screen was shown, at game speed. */
@@ -34,6 +34,7 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	BaseScreen(OhHeckGame game) {
 		this.game = game;
 		this.assets = game.assets;
+		this.batch = game.batch; // shared: not disposed by the screen
 	}
 
 	/** A tap at world position (x, y). */
@@ -46,33 +47,71 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	protected void drag(float dy) {
 	}
 
+	/** How far a finger may move between down and up for it to still count as a tap. */
+	static final float TAP_SLOP = 24f;
+
+	/** Finger down at world (x, y). The default starts tracking a tap or drag. */
+	protected void touchDown(float x, float y) {
+		downX = x;
+		downY = lastY = y;
+	}
+
+	/** Finger moved to world (x, y). The default reports vertical drags (scrolling). */
+	protected void touchDragged(float x, float y) {
+		drag(y - lastY);
+		lastY = y;
+	}
+
+	/** Finger up at world (x, y). The default reports a tap if it didn't move far. */
+	protected void touchUp(float x, float y) {
+		if (isTap(x, y)) {
+			tap(x, y);
+		}
+	}
+
+	/** Did the finger stay close to where it went down? */
+	protected boolean isTap(float x, float y) {
+		return Vector2.dst(x, y, downX, downY) <= TAP_SLOP;
+	}
+
+	/** Distance from where the finger went down. */
+	protected float movedFrom(float x, float y) {
+		return Vector2.dst(x, y, downX, downY);
+	}
+
 	@Override
 	public void show() {
 		shownFor = 0;
 		Gdx.input.setCatchKey(Input.Keys.BACK, true);
 		Gdx.input.setInputProcessor(new InputAdapter() {
+			// first finger only: a second finger on the screen is ignored
 			@Override
 			public boolean touchDown(int x, int y, int pointer, int button) {
+				if (pointer > 0) {
+					return false;
+				}
 				toWorld(x, y);
-				downX = tmp.x;
-				downY = lastY = tmp.y;
+				BaseScreen.this.touchDown(tmp.x, tmp.y);
 				return true;
 			}
 
 			@Override
 			public boolean touchDragged(int x, int y, int pointer) {
+				if (pointer > 0) {
+					return false;
+				}
 				toWorld(x, y);
-				drag(tmp.y - lastY);
-				lastY = tmp.y;
+				BaseScreen.this.touchDragged(tmp.x, tmp.y);
 				return true;
 			}
 
 			@Override
 			public boolean touchUp(int x, int y, int pointer, int button) {
-				toWorld(x, y);
-				if (Vector2.dst(tmp.x, tmp.y, downX, downY) < 20) {
-					tap(tmp.x, tmp.y);
+				if (pointer > 0) {
+					return false;
 				}
+				toWorld(x, y);
+				BaseScreen.this.touchUp(tmp.x, tmp.y);
 				return true;
 			}
 
@@ -108,19 +147,36 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		batch.setColor(Color.WHITE);
 	}
 
+	/*
+	 * The two fonts are shared by every screen, so their size and colour are
+	 * whatever the last caller set. Always get a font through ui() or serif(),
+	 * which set the size and reset the colour, then set the colour you want:
+	 * never rely on a size or colour left over from earlier drawing.
+	 */
+
+	/** The sans-serif font at a size factor (1 = about 16 world units), coloured white. */
 	protected BitmapFont ui(float size) {
 		assets.font.getData().setScale(size * Assets.UI_BASE);
+		assets.font.setColor(Color.WHITE);
 		return assets.font;
 	}
 
+	/** The serif font at a size factor, coloured white. */
 	protected BitmapFont serif(float size) {
 		assets.serif.getData().setScale(size * Assets.SERIF_BASE);
+		assets.serif.setColor(Color.WHITE);
 		return assets.serif;
 	}
 
 	protected void centred(BitmapFont f, String s, float x, float y) {
 		glyphs.setText(f, s);
 		f.draw(batch, s, x - glyphs.width / 2, y);
+	}
+
+	/** Draws text centred in the box (x, y, bw, bh), horizontally and vertically. */
+	protected void textIn(BitmapFont f, String s, float x, float y, float bw, float bh) {
+		glyphs.setText(f, s);
+		f.draw(batch, s, x + (bw - glyphs.width) / 2, y + (bh + glyphs.height) / 2);
 	}
 
 	/** Draws text centred on x, or right-aligned to x when centre is false. */
@@ -179,8 +235,5 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		viewport.update(width, height, true);
 	}
 
-	@Override
-	public void dispose() {
-		batch.dispose();
-	}
+
 }

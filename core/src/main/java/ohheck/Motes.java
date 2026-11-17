@@ -6,57 +6,61 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 
 /** Faint gold motes drifting up off the edges of a card (the trump). */
-final class Motes {
+final class Motes extends ParticlePool {
 
-	private static final int MAX = 28;
 	/** New motes per second. */
 	private static final float RATE = 7f;
-	private final float[] x = new float[MAX], y = new float[MAX], vx = new float[MAX], vy = new float[MAX],
-			life = new float[MAX], maxLife = new float[MAX], size = new float[MAX];
-	private float clock, toSpawn;
+	private float toSpawn;
+
+	Motes() {
+		super(28);
+	}
 
 	/** Moves the motes on; while spawning, new ones rise from the card at (cx, cy) sized cw x ch. */
 	void update(float dt, boolean spawning, float cx, float cy, float cw, float ch) {
-		clock += dt;
 		if (spawning) {
 			toSpawn = Math.min(toSpawn + dt * RATE, 1 + dt * RATE);
 		}
-		for (int i = 0; i < MAX && toSpawn >= 1; i++) {
-			if (life[i] > 0) {
-				continue;
+		while (toSpawn >= 1) {
+			int i = free();
+			if (i < 0) {
+				break;
 			}
 			toSpawn -= 1;
 			// somewhere along the card's outline, mostly the top and sides
+			float px, py;
 			if (MathUtils.random() < 0.4f) {
-				x[i] = cx + MathUtils.random(cw);
-				y[i] = cy + ch - MathUtils.random(4f);
+				px = cx + MathUtils.random(cw);
+				py = cy + ch - MathUtils.random(4f);
 			} else {
-				x[i] = MathUtils.randomBoolean() ? cx + MathUtils.random(3f) : cx + cw - MathUtils.random(3f);
-				y[i] = cy + MathUtils.random(ch * 0.2f, ch);
+				px = MathUtils.randomBoolean() ? cx + MathUtils.random(3f) : cx + cw - MathUtils.random(3f);
+				py = cy + MathUtils.random(ch * 0.2f, ch);
 			}
-			vx[i] = MathUtils.random(-5f, 5f);
-			vy[i] = MathUtils.random(7f, 18f);
-			maxLife[i] = life[i] = MathUtils.random(1.6f, 3.2f);
-			size[i] = MathUtils.random(3f, 7f);
+			born(i, px, py, MathUtils.random(-5f, 5f), MathUtils.random(7f, 18f), MathUtils.random(1.6f, 3.2f),
+					MathUtils.random(3f, 7f));
 		}
 		toSpawn = Math.min(toSpawn, 1);
-		for (int i = 0; i < MAX; i++) {
-			if (life[i] <= 0) {
-				continue;
+		step(dt);
+	}
+
+	@Override
+	void step(float dt) {
+		super.step(dt);
+		// a gentle sideways sway on top of each mote's drift
+		for (int i = 0; i < max; i++) {
+			if (alive(i)) {
+				x[i] += MathUtils.sin(clock * 1.7f + i) * 4f * dt;
 			}
-			life[i] -= dt;
-			x[i] += (vx[i] + MathUtils.sin(clock * 1.7f + i) * 4f) * dt;
-			y[i] += vy[i] * dt;
 		}
 	}
 
 	void draw(SpriteBatch batch, Texture glow) {
 		Color c = Palette.GOLD_LIGHT;
-		for (int i = 0; i < MAX; i++) {
-			if (life[i] <= 0) {
+		for (int i = 0; i < max; i++) {
+			if (!alive(i)) {
 				continue;
 			}
-			float age = 1 - life[i] / maxLife[i];
+			float age = age(i);
 			// fade in quickly, out slowly, and twinkle a little
 			float a = Math.min(age * 6f, 1f) * (1 - age) * (0.75f + 0.25f * MathUtils.sin(clock * 6f + i * 2.3f));
 			float sz = size[i] * (1 - age * 0.4f);

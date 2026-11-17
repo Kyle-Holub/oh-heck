@@ -36,7 +36,7 @@ public class HighScoresScreen extends BaseScreen {
 		float dt = Math.min(delta, 0.1f);
 		shownFor += dt * game.options.speed;
 		if (game.options.autoplayHuman && shownFor > 1.5f) {
-			game.showOptions(false);
+			game.showOptions();
 			return;
 		}
 		ScreenUtils.clear(Palette.BG);
@@ -95,7 +95,7 @@ public class HighScoresScreen extends BaseScreen {
 	@Override
 	protected void back() {
 		newest = -1;
-		game.showTitle();
+		game.back();
 	}
 
 	@Override

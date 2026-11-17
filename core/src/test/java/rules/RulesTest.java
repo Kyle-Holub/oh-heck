@@ -86,8 +86,6 @@ public class RulesTest {
 	@Test
 	public void trumpLeadIsJustTheLeadSuit() {
 		assertEquals(1, Rules.trickWinner(cards("5C 7C AH"), Suit.CLUBS));
-		assertFalse(Rules.wonByTrumping(cards("5C 7C AH"), Suit.CLUBS));
-		assertTrue(Rules.wonByTrumping(cards("AH 2C"), Suit.CLUBS));
 	}
 
 	// ---- Following suit ----

@@ -25,6 +25,15 @@ final class TableOverlays {
 	static final String[] MENU = { "Resume", "Options", "New game", "Main menu" };
 	private static final float HINT_TIME = 2.2f;
 
+	// sizes of the panels and buttons drawn over the table
+	private static final float MENU_BUTTON_W = 80, MENU_BUTTON_H = 38;
+	private static final float PAUSE_BUTTON_W = 260, PAUSE_BUTTON_H = 56, PAUSE_GAP = 14;
+	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 176;
+	private static final float RESULTS_W = 470, RESULTS_H = 220, RESULTS_ROW = 26;
+	private static final float GAME_OVER_W = 420, GAME_OVER_H = 306, GAME_OVER_ROW = 27;
+	private static final float END_BUTTON_W = 170, END_BUTTON_H = 42;
+	private static final float HINT_H = 40, HINT_PAD = 16;
+
 	final Rectangle menuButton = new Rectangle();
 	final List<Rectangle> bidButtons = new ArrayList<Rectangle>();
 	final List<Rectangle> menuItems = new ArrayList<Rectangle>();
@@ -73,27 +82,27 @@ final class TableOverlays {
 		}
 		BitmapFont f = screen.ui(1.15f);
 		screen.glyphs.setText(f, hint);
-		float pw = screen.glyphs.width + 32, ph = 40;
+		float pw = screen.glyphs.width + 2 * HINT_PAD, ph = HINT_H;
 		float px = (table.w - pw) / 2, py = table.hintY();
 		screen.frame(screen.assets.panel, px, py, pw, ph);
 		f.setColor(Palette.GOLD);
-		f.draw(screen.batch, hint, px + 16, py + ph / 2 + 8);
+		screen.textIn(f, hint, px, py, pw, ph);
 	}
 
 	// ---- the pause menu and its button
 
 	void drawMenuButton() {
-		menuButton.set(table.w - 92, 10, 80, 38);
+		menuButton.set(table.w - TableLayout.EDGE - MENU_BUTTON_W, 10, MENU_BUTTON_W, MENU_BUTTON_H);
 		screen.frame(screen.assets.buttonAlt, menuButton.x, menuButton.y, menuButton.width, menuButton.height);
 		BitmapFont f = screen.ui(1.2f);
 		f.setColor(Palette.CREAM);
-		screen.text(f, "Menu", menuButton.x + menuButton.width / 2, menuButton.y + 27, true);
+		screen.textIn(f, "Menu", menuButton.x, menuButton.y, menuButton.width, menuButton.height);
 	}
 
 	void drawMenu() {
 		float w = table.w, h = table.h;
 		screen.rect(0, 0, w, h, Palette.BACKDROP);
-		float bw = 260, bh = 56, gap = 14;
+		float bw = PAUSE_BUTTON_W, bh = PAUSE_BUTTON_H, gap = PAUSE_GAP;
 		float total = MENU.length * bh + (MENU.length - 1) * gap;
 		float top = h / 2 + total / 2 + 20;
 		BitmapFont title = screen.ui(1.5f);
@@ -105,7 +114,7 @@ final class TableOverlays {
 			Rectangle r = menuItems.get(i).set((w - bw) / 2, top - (i + 1) * bh - i * gap, bw, bh);
 			screen.frame(i == 0 ? screen.assets.button : screen.assets.buttonAlt, r.x, r.y, r.width, r.height);
 			f.setColor(Palette.CREAM);
-			screen.text(f, MENU[i], w / 2, r.y + bh / 2 + 10, true);
+			screen.textIn(f, MENU[i], r.x, r.y, r.width, r.height);
 		}
 	}
 
@@ -113,9 +122,9 @@ final class TableOverlays {
 
 	void drawBidPanel() {
 		int n = match.handSize();
-		float bs = 58, gap = 8;
+		float bs = BID_BUTTON, gap = BID_GAP;
 		float rowW = (n + 1) * bs + n * gap;
-		float pw = Math.max(rowW + 40, 440), ph = 176;
+		float pw = Math.max(rowW + 40, BID_PANEL_MIN_W), ph = BID_PANEL_H;
 		float px = (table.w - pw) / 2, py = table.centreY() - ph / 2;
 		screen.frame(screen.assets.panel, px, py, pw, ph);
 
@@ -135,7 +144,7 @@ final class TableOverlays {
 			boolean ok = match.isLegalBid(b);
 			screen.frame(ok ? screen.assets.button : screen.assets.buttonOff, r.x, r.y, r.width, r.height);
 			bf.setColor(ok ? Palette.CREAM : Palette.MUTED);
-			screen.text(bf, String.valueOf(b), r.x + bs / 2, r.y + bs / 2 + 12, true);
+			screen.textIn(bf, String.valueOf(b), r.x, r.y, r.width, r.height);
 		}
 	}
 
@@ -158,7 +167,6 @@ final class TableOverlays {
 	 * to the right of your panel, where it stays while the scores are up.
 	 */
 	void drawHandLabels(float drop, float alpha) {
-		BitmapFont f = screen.assets.serif;
 		for (int seat = 0; seat < 4; seat++) {
 			if (seat == TableLayout.HUMAN && drop <= 0) {
 				continue;
@@ -168,10 +176,10 @@ final class TableOverlays {
 			float scale, x, y, a = alpha;
 			if (seat == TableLayout.HUMAN) {
 				float p = Interpolation.pow2Out.apply(drop);
-				f.getData().setScale(2.6f * Assets.SERIF_BASE);
+				BitmapFont f = screen.serif(2.6f);
 				screen.glyphs.setText(f, s);
 				float sx = table.w / 2 - screen.glyphs.width / 2, sy = table.centreY() + screen.glyphs.height / 2;
-				f.getData().setScale(1.6f * Assets.SERIF_BASE);
+				f = screen.serif(1.6f);
 				screen.glyphs.setText(f, s);
 				float ex = table.panelX(TableLayout.HUMAN) + TableLayout.PANEL_W + 16;
 				float ey = table.panelTop(TableLayout.HUMAN) - TableLayout.PANEL_H / 2 + screen.glyphs.height / 2;
@@ -181,13 +189,12 @@ final class TableOverlays {
 				a *= MathUtils.clamp(drop * 3f, 0, 1);
 			} else {
 				scale = 1.9f;
-				f.getData().setScale(scale * Assets.SERIF_BASE);
-				screen.glyphs.setText(f, s);
+				screen.glyphs.setText(screen.serif(scale), s);
 				Vector2 o = table.fanOrigin(seat);
 				x = seat == 3 ? o.x - screen.glyphs.width : o.x;
 				y = o.y + TableLayout.backH() / 2 + screen.glyphs.height / 2;
 			}
-			f.getData().setScale(scale * Assets.SERIF_BASE);
+			BitmapFont f = screen.serif(scale);
 			f.setColor(0f, 0f, 0f, 0.8f * a);
 			f.draw(screen.batch, s, x + 2, y - 2);
 			Color c = made ? Palette.GOLD : Palette.RED;
@@ -197,7 +204,7 @@ final class TableOverlays {
 	}
 
 	void drawHandResults() {
-		float pw = 470, ph = 220;
+		float pw = RESULTS_W, ph = RESULTS_H;
 		float px = (table.w - pw) / 2, py = table.centreY() - ph / 2;
 		screen.frame(screen.assets.panel, px, py, pw, ph);
 		BitmapFont f = screen.ui(1.3f);
@@ -212,7 +219,7 @@ final class TableOverlays {
 			t.draw(screen.batch, RESULT_HEAD[c], px + cols[c], y);
 		}
 		for (int seat : ranked()) {
-			y -= 26;
+			y -= RESULTS_ROW;
 			int pts = match.lastHandPoints(seat);
 			t.setColor(Palette.MUTED);
 			t.draw(screen.batch, HighScores.ordinal(place(seat)), px + cols[0], y);
@@ -236,7 +243,7 @@ final class TableOverlays {
 
 	/** Final scores; newHighScore is where your game landed in the high score table, or -1. */
 	void drawGameOver(int newHighScore) {
-		float pw = 420, ph = 306;
+		float pw = GAME_OVER_W, ph = GAME_OVER_H;
 		float px = (table.w - pw) / 2, py = table.h / 2 - 6 - ph / 2; // clear of the top panel
 		screen.frame(screen.assets.panel, px, py, pw, ph);
 		art.art(screen.assets.gameOverText, table.w / 2, py + ph - 50, 0.66f, 1f);
@@ -271,9 +278,9 @@ final class TableOverlays {
 				n.setColor(Palette.GOLD_LIGHT);
 				n.draw(screen.batch, newHighScore == 0 ? "New best!" : "High score!", px + pw - 128, y - 2);
 			}
-			y -= 27;
+			y -= GAME_OVER_ROW;
 		}
-		float bw = 170, bh = 42, by = py + 16;
+		float bw = END_BUTTON_W, bh = END_BUTTON_H, by = py + 16;
 		screen.button(playAgainButton, "Play again", table.w / 2 - bw / 2 - 8, by, bw, bh, screen.assets.button);
 		screen.button(highScoresButton, "High scores", table.w / 2 + bw / 2 + 8, by, bw, bh, screen.assets.buttonAlt);
 	}

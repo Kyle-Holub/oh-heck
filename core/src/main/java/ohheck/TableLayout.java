@@ -21,6 +21,20 @@ final class TableLayout {
 	static final float HAND_Y = 8, LIFT = 22;
 	/** Gap between the cards of an opponent's face-down fan. */
 	static final float FAN_STEP = 12;
+	/** The side players' panels sit this far above the middle; the top one this far below the top edge. */
+	static final float SIDE_PANEL_RAISE = 78, TOP_PANEL_INSET = 6;
+	/** Space between a panel and its player's fan of cards. */
+	static final float FAN_GAP = 10, FAN_DROP = 6;
+	/** Your hand keeps clear of your panel and the menu button, but is never squeezed narrower than MIN_HAND_W. */
+	static final float HAND_SIDE_GAP = 26, MIN_HAND_W = 330;
+	/** Where your played cards come from: the middle of your hand. */
+	static final float HAND_ANCHOR_Y = 70;
+	/** The trick: the side cards sit TRICK_DX either side of the centre, top and bottom ones TRICK_DY above and below. */
+	static final float TRICK_DX = 108, TRICK_DY = 60, TRICK_RAISE = 15;
+	/** The hint box sits this far above your cards (clear of a raised card). */
+	static final float HINT_ABOVE_HAND = 50;
+	/** The centre line for the trick, the deck and big messages sits a little above the middle. */
+	static final float CENTRE_RAISE = 5;
 
 	float w = BaseScreen.WORLD_W, h = BaseScreen.WORLD_H;
 
@@ -59,7 +73,7 @@ final class TableLayout {
 
 	/** Top edge of a seat's panel: yours at the bottom, the top one at the top, the side ones above the middle. */
 	float panelTop(int seat) {
-		return seat == HUMAN ? EDGE + PANEL_H : seat == 2 ? h - 6 : h / 2 + 78;
+		return seat == HUMAN ? EDGE + PANEL_H : seat == 2 ? h - TOP_PANEL_INSET : h / 2 + SIDE_PANEL_RAISE;
 	}
 
 	// ---- cards
@@ -68,9 +82,9 @@ final class TableLayout {
 	Vector2 fanOrigin(int seat) {
 		float x = panelX(seat), top = panelTop(seat);
 		if (seat == 2) {
-			return fan.set(x + PANEL_W + 10, top - PANEL_H / 2 - backH() / 2);
+			return fan.set(x + PANEL_W + FAN_GAP, top - PANEL_H / 2 - backH() / 2);
 		}
-		return fan.set(seat == 3 ? x + PANEL_W : x, top - PANEL_H - 6 - backH());
+		return fan.set(seat == 3 ? x + PANEL_W : x, top - PANEL_H - FAN_DROP - backH());
 	}
 
 	/** Left edge of the i-th of n face-down cards in an opponent's fan (the right player's fans leftwards). */
@@ -82,7 +96,7 @@ final class TableLayout {
 	/** Lays out your hand of n cards between your panel and the menu button. */
 	void layoutHand(int n) {
 		float cw = handCardW();
-		float maxWidth = Math.max(330, w - 2 * (PANEL_W + 26));
+		float maxWidth = Math.max(MIN_HAND_W, w - 2 * (PANEL_W + HAND_SIDE_GAP));
 		handGap = n <= 1 ? 0 : Math.min(cw + 6, (maxWidth - cw) / (n - 1));
 		handStart = (w - (handGap * (n - 1) + cw)) / 2;
 	}
@@ -90,7 +104,7 @@ final class TableLayout {
 	/** Centre of where a seat's cards are, for cards flying to and from it. */
 	Vector2 seatAnchor(int seat) {
 		if (seat == HUMAN) {
-			return anchor.set(w / 2, 70);
+			return anchor.set(w / 2, HAND_ANCHOR_Y);
 		}
 		Vector2 f = fanOrigin(seat);
 		return anchor.set(seat == 3 ? f.x - backW() : f.x + backW(), f.y + backH() / 2);
@@ -102,14 +116,14 @@ final class TableLayout {
 	}
 
 	float centreY() {
-		return h / 2 + 5;
+		return h / 2 + CENTRE_RAISE;
 	}
 
 	/** Bottom-left of a seat's card in the middle of the table. */
 	Vector2 trickSlot(int seat) {
-		float cx = w / 2, cy = h / 2 + 15;
-		float x = cx - Assets.CARD_W / 2f + (seat == 1 ? -108 : seat == 3 ? 108 : 0);
-		float y = cy - Assets.CARD_H / 2f + (seat == HUMAN ? -60 : seat == 2 ? 60 : 0);
+		float cx = w / 2, cy = h / 2 + TRICK_RAISE;
+		float x = cx - Assets.CARD_W / 2f + (seat == 1 ? -TRICK_DX : seat == 3 ? TRICK_DX : 0);
+		float y = cy - Assets.CARD_H / 2f + (seat == HUMAN ? -TRICK_DY : seat == 2 ? TRICK_DY : 0);
 		return slot.set(x, y);
 	}
 
@@ -132,6 +146,6 @@ final class TableLayout {
 
 	/** Bottom of the hint box: just above a raised card in your hand. */
 	float hintY() {
-		return HAND_Y + handCardH() + 50;
+		return HAND_Y + handCardH() + HINT_ABOVE_HAND;
 	}
 }

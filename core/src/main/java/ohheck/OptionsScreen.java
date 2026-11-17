@@ -14,8 +14,6 @@ public class OptionsScreen extends BaseScreen {
 
 	private final List<Rectangle> rows = new ArrayList<Rectangle>();
 	private final Rectangle backButton = new Rectangle(), rulesButton = new Rectangle();
-	/** Opened from the pause menu: Back returns to the game. */
-	boolean fromGame;
 
 	public OptionsScreen(OhHeckGame game) {
 		super(game);
@@ -100,12 +98,7 @@ public class OptionsScreen extends BaseScreen {
 
 	@Override
 	protected void back() {
-		if (fromGame) {
-			fromGame = false;
-			game.continueGame();
-		} else {
-			game.showTitle();
-		}
+		game.back(); // to the title screen or the paused game, whichever opened it
 	}
 
 	@Override

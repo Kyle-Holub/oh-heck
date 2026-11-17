@@ -5,6 +5,7 @@ import java.util.Random;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import rules.Match;
 
@@ -12,6 +13,8 @@ import rules.Match;
 public class OhHeckGame extends Game {
 
 	public static final String VERSION = "alpha-1.0.8";
+	/** The CI build ("dev-0042") from assets/build.txt, or "" for a local build. */
+	String build = "";
 
 	/** A screen that can describe itself for automated screenshots. */
 	public interface Tagged {
@@ -19,6 +22,8 @@ public class OhHeckGame extends Game {
 	}
 
 	final GameOptions options;
+	/** The one sprite batch all screens draw with. */
+	SpriteBatch batch;
 	Assets assets;
 	Settings settings;
 	Audio audio;
@@ -38,8 +43,15 @@ public class OhHeckGame extends Game {
 		this.options = options;
 	}
 
+	/** Screens to return to with Back: Options, How to play and High scores open over where you were. */
+	private final java.util.ArrayDeque<Screen> backStack = new java.util.ArrayDeque<Screen>();
+
 	@Override
 	public void create() {
+		batch = new SpriteBatch();
+		if (Gdx.files.internal("build.txt").exists()) {
+			build = Gdx.files.internal("build.txt").readString("UTF-8").trim();
+		}
 		assets = new Assets();
 		settings = new Settings();
 		audio = new Audio(settings);
@@ -95,29 +107,36 @@ public class OhHeckGame extends Game {
 		}
 	}
 
+	/** Opens a screen over the current one; {@link #back()} returns to it. */
+	private void open(Screen s) {
+		if (getScreen() != null) {
+			backStack.push(getScreen());
+		}
+		setScreen(s);
+	}
+
+	/** Back to the screen that opened this one, or the title screen. */
+	void back() {
+		setScreen(backStack.isEmpty() ? title : backStack.pop());
+	}
+
 	void showTitle() {
+		backStack.clear();
 		setScreen(title);
 	}
 
 	void showRules() {
-		setScreen(rules);
+		open(rules);
 	}
 
-	/** Options from the main menu. */
 	void showOptions() {
-		setScreen(optionsScreen);
-	}
-
-	/** Options from the pause menu, or the title screen; Back returns there. */
-	void showOptions(boolean fromGame) {
-		optionsScreen.fromGame = fromGame;
-		setScreen(optionsScreen);
+		open(optionsScreen);
 	}
 
 	/** The high score table; newest is the position just added (-1 for none) to pick out. */
 	void showHighScores(int newest) {
 		highScoresScreen.highlight(newest);
-		setScreen(highScoresScreen);
+		open(highScoresScreen);
 	}
 
 	/** High scores in memory; persisted only for real games. */
@@ -146,6 +165,7 @@ public class OhHeckGame extends Game {
 			play.dispose();
 		}
 		play = new PlayScreen(this, null);
+		backStack.clear();
 		setScreen(play);
 	}
 
@@ -159,6 +179,7 @@ public class OhHeckGame extends Game {
 			}
 			play = new PlayScreen(this, saved);
 		}
+		backStack.clear();
 		setScreen(play);
 	}
 
@@ -196,5 +217,6 @@ public class OhHeckGame extends Game {
 		audio.dispose();
 		post.dispose();
 		assets.dispose();
+		batch.dispose();
 	}
 }

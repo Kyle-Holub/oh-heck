@@ -12,3 +12,4 @@ android/libs/
 /.settings/
 /.vscode/
 __pycache__/
+assets/build.txt
