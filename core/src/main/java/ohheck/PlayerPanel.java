@@ -2,12 +2,14 @@ package ohheck;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.math.MathUtils;
 
 /**
  * A player's bar, after the original game's: name, dealer icon and score, and
  * one card icon per trick: faded = bid but not won yet, solid = won, red =
  * won over the bid; a bid of zero shows a struck-through circle until a trick is taken. Glows
- * gold while it's that player's turn.
+ * gold while it's that player's turn; until they've bid, it sits sunk into the table, dimmed,
+ * with an hourglass.
  */
 final class PlayerPanel {
 
@@ -15,6 +17,9 @@ final class PlayerPanel {
 
 	private static final float ICON_MAX_W = 28, ICON_GAP = 3;
 	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.32f);
+	/** Not bid yet: the panel sits a little inside its usual edge, its text dimmed. */
+	private static final float WAIT_INSET = 3;
+	private static final Color WAIT_TEXT = new Color(0.72f, 0.66f, 0.58f, 1f), WAIT_SCORE = new Color(0.62f, 0.5f, 0.3f, 1f);
 
 	private final BaseScreen screen;
 
@@ -27,18 +32,21 @@ final class PlayerPanel {
 	 * @param won  tricks taken this hand
 	 */
 	void draw(String name, float x, float top, boolean turn, boolean dealer, int score, Integer bid, int won,
-			boolean dealing) {
+			boolean dealing, float time) {
 		Assets assets = screen.assets;
 		float y = top - H;
+		boolean waiting = bid == null && !dealing;
 		if (turn) {
 			screen.frame(assets.panelTurn, x - 4, y - 4, W + 8, H + 8);
+		} else if (waiting) {
+			screen.frame(assets.panelWait, x + WAIT_INSET, y + WAIT_INSET, W - 2 * WAIT_INSET, H - 2 * WAIT_INSET);
 		} else {
 			screen.frame(assets.panel, x, y, W, H);
 		}
 
 		// name, dealer icon and score
 		BitmapFont f = screen.ui(1.3f);
-		f.setColor(turn ? Palette.GOLD_LIGHT : Palette.CREAM);
+		f.setColor(turn ? Palette.GOLD_LIGHT : waiting ? WAIT_TEXT : Palette.CREAM);
 		screen.glyphs.setText(f, name);
 		float nameW = screen.glyphs.width, nameH = screen.glyphs.height;
 		f.draw(screen.batch, name, x + 10, top - 9);
@@ -47,14 +55,19 @@ final class PlayerPanel {
 			float chip = 26, mid = top - 9 - nameH / 2;
 			screen.batch.draw(assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
 		}
-		f.setColor(BaseScreen.GOLD);
+		f.setColor(waiting && !turn ? WAIT_SCORE : BaseScreen.GOLD);
 		screen.text(f, String.valueOf(score), x + W - 10, top - 9, false);
 
 		float iy = y + 6;
 		if (bid == null) {
-			BitmapFont s = screen.ui(1f);
-			s.setColor(Palette.MUTED);
-			s.draw(screen.batch, dealing ? "" : turn ? "bidding..." : "no bid yet", x + 10, iy + 20);
+			if (waiting) {
+				// an hourglass: dim while waiting their turn, pulsing while they decide
+				float a = turn ? 0.75f + 0.25f * MathUtils.sin(time * 4f) : 0.55f;
+				float iw = ICON_MAX_W, ih = iw * 18f / 14f;
+				screen.batch.setColor(1f, 1f, 1f, a);
+				screen.batch.draw(assets.waitingIcon, x + 10, iy, iw, ih);
+				screen.batch.setColor(Color.WHITE);
+			}
 			return;
 		}
 

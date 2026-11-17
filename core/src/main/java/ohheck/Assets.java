@@ -38,8 +38,8 @@ public final class Assets implements Disposable {
 	public final Texture shadow;
 	/** A round white glow, tinted when drawn (sparkles). */
 	public final Texture glow;
-	/** Rounded frames: panels, the current player's panel, and buttons. */
-	public final NinePatch panel, panelTurn, button, buttonAlt, buttonOff;
+	/** Rounded frames: panels, the current player's panel, a panel still waiting to bid, and buttons. */
+	public final NinePatch panel, panelTurn, panelWait, button, buttonAlt, buttonOff;
 	public final Texture titleText;
 	/** Title art from the original game. */
 	public final Texture bidTricksText, setText, trickWonText, makeBidText, gameOverText;
@@ -47,8 +47,11 @@ public final class Assets implements Disposable {
 	public final Texture bidOpen, bidTaken, bidOver;
 	/** Difficulty badges, indexed by Difficulty.ordinal(): one, two or three spades on a chip. */
 	public final Texture[] levelBadge = new Texture[3];
-	/** Player bar icons: dealer button, trick, trick over the bid, a bid of zero. */
-	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon;
+	/** Player bar icons: dealer button, trick, trick over the bid, a bid of zero, no bid yet. */
+	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon, waitingIcon;
+	/** Gold bid numerals 0-9 (the 0 struck through), one strip; see {@link #digit(int)}. */
+	public final Texture bidDigits;
+	private final TextureRegion[] digits = new TextureRegion[10];
 	/** A 1x1 white texture, tinted to draw panels and buttons. */
 	public final Texture white;
 	/** A soft-edged rounded bar, for strokes that stay smooth when rotated (the tally marks). */
@@ -72,6 +75,7 @@ public final class Assets implements Disposable {
 		glow = mipmapped("images/glow.png");
 		panel = ninePatch("panel");
 		panelTurn = ninePatch("panel_turn");
+		panelWait = ninePatch("panel_wait");
 		button = ninePatch("button");
 		buttonAlt = ninePatch("button_alt");
 		buttonOff = ninePatch("button_off");
@@ -85,6 +89,11 @@ public final class Assets implements Disposable {
 		trickIcon = mipmapped("images/icon_trick.png");
 		overIcon = mipmapped("images/icon_over.png");
 		zeroIcon = mipmapped("images/icon_zero.png");
+		waitingIcon = mipmapped("images/icon_waiting.png");
+		bidDigits = mipmapped("images/bid_digits.png");
+		for (int i = 0; i < 10; i++) {
+			digits[i] = new TextureRegion(bidDigits, i * DIGIT_W, 0, DIGIT_W, DIGIT_H);
+		}
 		bidOpen = mipmapped("images/bid_open.png");
 		bidTaken = mipmapped("images/bid_taken.png");
 		bidOver = mipmapped("images/bid_over.png");
@@ -172,6 +181,14 @@ public final class Assets implements Disposable {
 		return f;
 	}
 
+	/** One cell of the bid numerals, in pixels; a numeral is drawn at this aspect. */
+	public static final int DIGIT_W = 64, DIGIT_H = 88;
+
+	/** The bid numeral for 0-9. */
+	public TextureRegion digit(int n) {
+		return digits[n];
+	}
+
 	private static Texture mipmapped(String path) {
 		Texture t = new Texture(Gdx.files.internal(path), true);
 		t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
@@ -192,11 +209,11 @@ public final class Assets implements Disposable {
 		cardBackBlur.dispose();
 		shadow.dispose();
 		glow.dispose();
-		for (NinePatch p : new NinePatch[] { panel, panelTurn, button, buttonAlt, buttonOff }) {
+		for (NinePatch p : new NinePatch[] { panel, panelTurn, panelWait, button, buttonAlt, buttonOff }) {
 			p.getTexture().dispose();
 		}
 		titleText.dispose();
-		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, gameOverText, dealerIcon, trickIcon, overIcon, zeroIcon, bidOpen, bidTaken, bidOver }) {
+		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, gameOverText, dealerIcon, trickIcon, overIcon, zeroIcon, waitingIcon, bidDigits, bidOpen, bidTaken, bidOver }) {
 			t.dispose();
 		}
 		white.dispose();

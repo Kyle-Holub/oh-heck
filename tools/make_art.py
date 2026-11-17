@@ -262,6 +262,31 @@ def nine_patch(name, out, fill, border, width=2, radius=12, size=48, glow=None):
     downsample(img, size, size).save(os.path.join(out, name + ".png"))
 
 
+def sunken_panel(name, out, fill, border, radius=12, size=48):
+    """The reverse of the turn highlight: a darker panel pressed into the table, its dim edge
+    shaded on the inside (heaviest along the top), and no glow."""
+    S = size * SS
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    inset = 2 * SS
+    box = [inset, inset, S - inset, S - inset]
+    d.rounded_rectangle(box, radius * SS, fill=fill)
+    # an inner shadow: a dark ring blurred inward, kept inside the panel
+    ring = Image.new("L", (S, S), 0)
+    rd = ImageDraw.Draw(ring)
+    rd.rounded_rectangle(box, radius * SS, outline=255, width=7 * SS)
+    rd.rectangle([inset, inset, S - inset, inset + 5 * SS], fill=255)
+    ring = ring.filter(ImageFilter.GaussianBlur(3 * SS))
+    inside = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(inside).rounded_rectangle(box, radius * SS, fill=255)
+    shade = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    shade.putalpha(Image.fromarray((np.asarray(ring, np.float32) * np.asarray(inside, np.float32) / 255 * 0.7).astype(np.uint8)))
+    img.alpha_composite(shade)
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle(box, radius * SS, outline=border, width=2 * SS)
+    downsample(img, size, size).save(os.path.join(out, name + ".png"))
+
+
 def icon_card(fill, inner=None):
     """A small card-shaped icon: gold edge, optional inner border like the card back."""
     W, H = 84 * SS, 108 * SS
@@ -279,6 +304,21 @@ def struck_zero(d, W, H, colour, shadow):
     for dx, c in ((2 * SS, shadow), (0, colour)):
         d.ellipse([W / 2 - r + dx, H / 2 - r + dx, W / 2 + r + dx, H / 2 + r + dx], outline=c, width=t)
         d.line([(W / 2 - k + dx, H / 2 + k + dx), (W / 2 + k + dx, H / 2 - k + dx)], fill=c, width=t)
+
+
+def hourglass(d, W, H, colour, shadow):
+    """An hourglass: a bar top and bottom, two glass bulbs meeting at the waist, sand settled below."""
+    cx, cy, hw, hh, bar = W / 2, H / 2, 20 * SS, 30 * SS, 5 * SS
+    for dx, c in ((2 * SS, shadow), (0, colour)):
+        x, y = cx + dx, cy + dx
+        d.rounded_rectangle([x - hw - 5 * SS, y - hh - bar, x + hw + 5 * SS, y - hh], 2 * SS, fill=c)
+        d.rounded_rectangle([x - hw - 5 * SS, y + hh, x + hw + 5 * SS, y + hh + bar], 2 * SS, fill=c)
+        glass = [(x - hw, y - hh), (x + hw, y - hh), (x + 3 * SS, y), (x + hw, y + hh), (x - hw, y + hh), (x - 3 * SS, y)]
+        d.line(glass + [glass[0]], fill=c, width=4 * SS, joint="curve")
+        if c == colour:
+            # a little sand left above, a heap below
+            d.polygon([(x - 9 * SS, y - 11 * SS), (x + 9 * SS, y - 11 * SS), (x, y - 1 * SS)], fill=c)
+            d.polygon([(x - hw + 4 * SS, y + hh - 2 * SS), (x + hw - 4 * SS, y + hh - 2 * SS), (x, y + 13 * SS)], fill=c)
 
 
 def brushed_x(d, W, H, colour, shadow):
@@ -309,6 +349,10 @@ def icons(out):
     img, d = icon_card((44, 30, 20), inner=GOLD_DARK)
     struck_zero(d, W, H, GOLD_LIGHT, shadow=(10, 6, 4))
     downsample(img, 84, 108).save(os.path.join(out, "icon_zero.png"))
+    # no bid yet: an espresso card, inner gold border, a gold hourglass with an engraved shadow
+    img, d = icon_card((44, 30, 20), inner=GOLD_DARK)
+    hourglass(d, W, H, GOLD_LIGHT, shadow=(10, 6, 4))
+    downsample(img, 84, 108).save(os.path.join(out, "icon_waiting.png"))
     # the dealer button: a gold chip with a D
     S = 108 * SS
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
@@ -356,6 +400,41 @@ def bid_icons(out):
     img, d = icon_card((178, 46, 36), inner=GOLD_LIGHT)
     d.polygon([(c[0], c[1] - r * 1.3), (c[0] + r, c[1]), (c[0], c[1] + r * 1.3), (c[0] - r, c[1])], fill=GOLD_LIGHT)
     downsample(img, 84, 108).save(os.path.join(out, "bid_over.png"))
+
+
+NUMERAL_FONT = "/usr/share/texmf/fonts/opentype/public/tex-gyre/texgyrepagella-bold.otf"
+
+
+def bid_digits(out):
+    """Bid numerals 0-9 in one strip: gold, shaded darker toward the foot, with a dark
+    edge and an engraved shadow; the 0 is struck through like the zero-bid icon."""
+    CW, CH = 64, 88
+    W, H = CW * SS, CH * SS
+    font = ImageFont.truetype(NUMERAL_FONT if os.path.exists(NUMERAL_FONT) else SERIF_BOLD, 80 * SS)
+    strip = Image.new("RGBA", (CW * 10, CH), (0, 0, 0, 0))
+    for n in range(10):
+        mask = Image.new("L", (W, H), 0)
+        md = ImageDraw.Draw(mask)
+        cx, cy = W / 2, H / 2 + 2 * SS
+        md.text((cx, cy), str(n), font=font, fill=255, anchor="mm")
+        if n == 0:
+            k = 15 * SS
+            md.line([(cx - k, cy + k * 1.5), (cx + k, cy - k * 1.5)], fill=255, width=7 * SS)
+        edge = mask.filter(ImageFilter.MaxFilter(2 * (2 * SS) + 1))
+        img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        # engraved shadow, then a dark edge, then the gold
+        shadow = Image.new("RGBA", (W, H), (10, 6, 4, 200))
+        img.paste(shadow, (3 * SS, 3 * SS), edge)
+        img.paste(Image.new("RGBA", (W, H), ESPRESSO + (255,)), (0, 0), edge)
+        grad = Image.new("RGBA", (W, H))
+        gd = ImageDraw.Draw(grad)
+        for yy in range(H):
+            t = min(max((yy - H * 0.22) / (H * 0.56), 0), 1)
+            c = tuple(int(a + (b - a) * t) for a, b in zip((255, 232, 170), GOLD_DARK))
+            gd.line([(0, yy), (W, yy)], fill=c + (255,))
+        img.paste(grad, (0, 0), mask)
+        strip.paste(downsample(img, CW, CH), (n * CW, 0))
+    strip.save(os.path.join(out, "bid_digits.png"))
 
 
 def sprites(out):
@@ -424,9 +503,11 @@ if __name__ == "__main__":
     icons(out)
     level_badges(out)
     bid_icons(out)
+    bid_digits(out)
     sprites(out)
     nine_patch("panel", out, fill=(18, 12, 8, 222), border=(176, 136, 66, 255))
     nine_patch("panel_turn", out, fill=(52, 36, 14, 236), border=GOLD_LIGHT + (255,), width=3, glow=GOLD_LIGHT + (200,))
+    sunken_panel("panel_wait", out, fill=(10, 7, 5, 214), border=(98, 76, 46, 255))
     nine_patch("button", out, fill=(116, 22, 24, 245), border=GOLD + (255,))
     nine_patch("button_alt", out, fill=(30, 20, 14, 232), border=(150, 116, 60, 255))
     nine_patch("button_off", out, fill=(52, 46, 42, 220), border=(96, 88, 78, 255))

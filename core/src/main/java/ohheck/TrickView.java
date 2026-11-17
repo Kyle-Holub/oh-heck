@@ -119,6 +119,9 @@ final class TrickView {
 				batch.setColor(Color.WHITE);
 			}
 			art.flip(c, x, y, cw * scale, ch * scale, turn, rot);
+			if (turn >= 1 && c.suit() == match.trump()) {
+				Glints.draw(batch, assets.glow, c, x, y, cw * scale, ch * scale, cw * scale, rot, now, fade);
+			}
 		}
 	}
 

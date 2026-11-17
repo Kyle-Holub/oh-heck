@@ -185,6 +185,21 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		f.draw(batch, s, centre ? x - glyphs.width / 2 : x - glyphs.width, y);
 	}
 
+	/**
+	 * Draws a bid in the gold bid numerals, h tall, centred on (cx, cy), tinted c (white for
+	 * plain gold). A lone 0 is struck through, like the zero-bid icon.
+	 */
+	protected void numeral(int n, float cx, float cy, float h, Color c) {
+		String s = String.valueOf(n);
+		float w = h * Assets.DIGIT_W / Assets.DIGIT_H, step = w * 0.74f;
+		float x = cx - (w + step * (s.length() - 1)) / 2;
+		batch.setColor(c.r, c.g, c.b, c.a * fade);
+		for (int i = 0; i < s.length(); i++) {
+			batch.draw(assets.digit(s.charAt(i) - '0'), x + i * step, cy - h / 2, w, h);
+		}
+		batch.setColor(Color.WHITE);
+	}
+
 	protected void rect(float x, float y, float rw, float rh, Color c) {
 		batch.setColor(c);
 		batch.draw(assets.white, x, y, rw, rh);

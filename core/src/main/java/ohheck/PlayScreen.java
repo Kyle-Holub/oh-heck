@@ -493,8 +493,11 @@ public class PlayScreen extends BaseScreen {
 			}
 		}
 		if (dragging) {
-			batch.draw(assets.face(pressed), dragX - TableLayout.handCardW() / 2, dragY - TableLayout.handCardH() / 2,
-					TableLayout.handCardW(), TableLayout.handCardH());
+			float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
+			batch.draw(assets.face(pressed), dragX - cw / 2, dragY - ch / 2, cw, ch);
+			if (pressed.suit() == match().trump()) {
+				Glints.draw(batch, assets.glow, pressed, dragX - cw / 2, dragY - ch / 2, cw, ch, cw, 0, time, 1f);
+			}
 		}
 		sparks.draw(batch, assets.glow);
 		if (menuOpen) {
@@ -583,6 +586,9 @@ public class PlayScreen extends BaseScreen {
 			batch.setColor(Color.WHITE);
 		}
 		art.flip(match().trumpCard(), x, y, cw, ch, p);
+		if (p >= 1) {
+			Glints.draw(batch, assets.glow, match().trumpCard(), x, y, cw, ch, cw, 0, time, lit);
+		}
 		if (p >= 1 && lit > 0) {
 			// and a light on it in the screen effects, lifting the corner's vignette (after the bloom,
 			// so the card brightens without glaring)
@@ -595,7 +601,7 @@ public class PlayScreen extends BaseScreen {
 	private void drawSeat(int seat) {
 		boolean turn = flow.state() == TableState.TURN && match().currentSeat() == seat;
 		panel.draw(NAMES[seat], table.panelX(seat), table.panelTop(seat), turn, match().dealer() == seat,
-				match().score(seat), match().bid(seat), match().tricksWon(seat), flow.isDealing());
+				match().score(seat), match().bid(seat), match().tricksWon(seat), flow.isDealing(), time);
 		if (seat == HUMAN) {
 			return;
 		}
@@ -632,7 +638,12 @@ public class PlayScreen extends BaseScreen {
 			}
 			art.shadow(x, y, cw, ch, y - TableLayout.HAND_Y + 5);
 			batch.setColor(myTurn && !canPlay ? Palette.CARD_DIM : Color.WHITE);
-			art.flip(c, x, y, cw, ch, flow.isDealing() ? flow.deal.flipOfYourCard(i) : 1f);
+			float flip = flow.isDealing() ? flow.deal.flipOfYourCard(i) : 1f;
+			art.flip(c, x, y, cw, ch, flip);
+			if (flip >= 1 && c.suit() == match().trump()) {
+				Glints.draw(batch, assets.glow, c, x, y, cw, ch, i == n - 1 ? cw : table.handGap, 0, time,
+						myTurn && !canPlay ? 0.5f : 1f);
+			}
 		}
 		batch.setColor(Color.WHITE);
 	}
