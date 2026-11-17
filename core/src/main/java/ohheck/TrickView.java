@@ -126,7 +126,7 @@ final class TrickView {
 	}
 
 	/** A card's resting tilt: random-looking, but steady for that card in that hand. */
-	private static float tilt(Card c, int seat, int hand) {
+	static float tilt(Card c, int seat, int hand) {
 		long k = ((c.suit().ordinal() * 13L + c.rank().ordinal()) * 31 + hand) * 8 + seat;
 		k = (k + 0x9E3779B97F4A7C15L) * 0xBF58476D1CE4E5B9L;
 		k ^= k >>> 31;

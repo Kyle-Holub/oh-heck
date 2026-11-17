@@ -27,7 +27,7 @@ public class ScreenshotLauncher {
 	/** Prefixes of states to capture, as reported by the screens' stateTag(). */
 	private static final String[] WANTED = { "intro", "title", "highscores", "options", "rules", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:7", "bidding:7", "menu:7", "play:8:",
-			"gameover" };
+			"tossing", "gameover" };
 
 	/** Hands played instantly: nothing on the list happens in them. */
 	private static final Integer[] SKIP = { 2, 5, 6 };
@@ -46,8 +46,11 @@ public class ScreenshotLauncher {
 		if (state.equals("rules")) {
 			return 8; // scrolled down a little
 		}
+		if (state.equals("tossing")) {
+			return 8; // the final hand's cards in the air
+		}
 		if (state.equals("gameover")) {
-			return 26; // the winner's fireworks bursting
+			return 14; // (after 1.2 s of tossing) the winner's fireworks bursting
 		}
 		if (state.startsWith("handover")) {
 			return 12; // the made/set labels have dropped beside the names
