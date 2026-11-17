@@ -33,6 +33,8 @@ public final class Match {
 
 	private Phase phase;
 	private int handIndex;
+	/** Which way the hands run (set once, when the game starts or loads). */
+	private HandOrder order = HandOrder.UP;
 	private int dealer;
 	private int current;
 	private Card trumpCard;
@@ -52,20 +54,30 @@ public final class Match {
 	private List<Integer> lastTrickSeats = Collections.emptyList();
 	private int lastTrickWinner = -1;
 
-	/** A game with a random first dealer. */
+	/** A game with a random first dealer, its hands running one card up to eight. */
 	public static Match random(int players, Random rng) {
-		return new Match(players, rng, rng.nextInt(players));
+		return random(players, rng, HandOrder.UP);
+	}
+
+	/** A game with a random first dealer, its hands running the given way. */
+	public static Match random(int players, Random rng, HandOrder order) {
+		return new Match(players, rng, rng.nextInt(players), order);
 	}
 
 	public Match(int players, Random rng, int firstDealer) {
+		this(players, rng, firstDealer, HandOrder.UP);
+	}
+
+	public Match(int players, Random rng, int firstDealer, HandOrder order) {
 		this(players, rng);
+		this.order = order;
 		this.dealer = firstDealer;
 		startHand();
 	}
 
 	/** Allocates an empty game, for the constructors above and {@link #load}. */
 	private Match(int players, Random rng) {
-		if (players < 2 || players * Rules.handSize(Rules.numberOfHands() - 1) >= 52) {
+		if (players < 2 || players * HandOrder.HANDS >= 52) {
 			throw new IllegalArgumentException("Unsupported number of players: " + players);
 		}
 		this.players = players;
@@ -169,12 +181,16 @@ public final class Match {
 	}
 
 	/** 0-based index of the current hand. */
+	public HandOrder handOrder() {
+		return order;
+	}
+
 	public int handIndex() {
 		return handIndex;
 	}
 
 	public int handSize() {
-		return Rules.handSize(handIndex);
+		return order.handSize(handIndex);
 	}
 
 	public Card trumpCard() {
@@ -343,6 +359,7 @@ public final class Match {
 		line(sb, "players", String.valueOf(players));
 		line(sb, "phase", phase.name());
 		line(sb, "hand", String.valueOf(handIndex));
+		line(sb, "order", order.name());
 		line(sb, "dealer", String.valueOf(dealer));
 		line(sb, "current", String.valueOf(current));
 		line(sb, "trump", code(trumpCard));
@@ -390,6 +407,8 @@ public final class Match {
 			Match m = new Match(Integer.parseInt(req(v, "players")), rng);
 			m.phase = Phase.valueOf(req(v, "phase"));
 			m.handIndex = Integer.parseInt(req(v, "hand"));
+			// (games saved before the hands could run downwards always ran up)
+			m.order = v.containsKey("order") ? HandOrder.valueOf(v.get("order")) : HandOrder.UP;
 			m.dealer = Integer.parseInt(req(v, "dealer"));
 			m.current = Integer.parseInt(req(v, "current"));
 			m.trumpCard = card(req(v, "trump"), legacy);

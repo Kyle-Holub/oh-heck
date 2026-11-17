@@ -8,19 +8,12 @@ import java.util.List;
  */
 public final class Rules {
 
-	/** Cards dealt to each player in each hand of a game, in order. */
-	private static final int[] HAND_SIZES = { 1, 2, 3, 4, 5, 6, 7, 8 };
-
 	private Rules() {
 	}
 
+	/** Hands in a game; how many cards each holds depends on the game's {@link HandOrder}. */
 	public static int numberOfHands() {
-		return HAND_SIZES.length;
-	}
-
-	/** Cards per player in the given hand (0-based). */
-	public static int handSize(int handIndex) {
-		return HAND_SIZES[handIndex];
+		return HandOrder.HANDS;
 	}
 
 	// ---- Tricks ----

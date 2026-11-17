@@ -10,12 +10,106 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import rules.Difficulty;
 
-/** How to play, music, sound effects, game speed and visual effects, saved on the device. */
+/** How to play, then the settings, saved on the device: difficulty, hand sizes, music, sound, speed, effects. */
 public class OptionsScreen extends BaseScreen {
 
-
-	private final List<Rectangle> rows = new ArrayList<Rectangle>();
 	private final Rectangle backButton = new Rectangle(), rulesButton = new Rectangle();
+
+	/** One setting below the difficulty: its name, its value on a button, and what a tap on the row does. */
+	private abstract class Row {
+		final String label;
+		final Rectangle bounds = new Rectangle();
+
+		Row(String label) {
+			this.label = label;
+		}
+
+		abstract String value();
+
+		/** Whether the value is shown lit (on) or greyed (off). */
+		boolean on() {
+			return true;
+		}
+
+		abstract void tap();
+	}
+
+	private final List<Row> settingRows = new ArrayList<Row>();
+	{
+		final Settings s = game.settings;
+		settingRows.add(new Row("Hand sizes") { // (from the next new game)
+			@Override
+			String value() {
+				return s.handOrder().label;
+			}
+
+			@Override
+			void tap() {
+				s.setHandOrder(s.handOrder().flipped());
+			}
+		});
+		settingRows.add(new Row("Music") {
+			@Override
+			String value() {
+				return s.music() ? "On" : "Off";
+			}
+
+			@Override
+			boolean on() {
+				return s.music();
+			}
+
+			@Override
+			void tap() {
+				s.setMusic(!s.music());
+				game.audio.startMusic(); // starts or stops it to match
+			}
+		});
+		settingRows.add(new Row("Sound effects") {
+			@Override
+			String value() {
+				return s.sound() ? "On" : "Off";
+			}
+
+			@Override
+			boolean on() {
+				return s.sound();
+			}
+
+			@Override
+			void tap() {
+				s.setSound(!s.sound());
+				game.audio.play(Audio.Effect.PLAY_CARD);
+			}
+		});
+		settingRows.add(new Row("Game speed") {
+			@Override
+			String value() {
+				return Settings.SPEEDS[s.speed()];
+			}
+
+			@Override
+			void tap() {
+				s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
+			}
+		});
+		settingRows.add(new Row("Visual effects") {
+			@Override
+			String value() {
+				return s.effects() ? "On" : "Off";
+			}
+
+			@Override
+			boolean on() {
+				return s.effects();
+			}
+
+			@Override
+			void tap() {
+				s.setEffects(!s.effects());
+			}
+		});
+	}
 
 	public OptionsScreen(OhHeckGame game) {
 		super(game);
@@ -28,7 +122,6 @@ public class OptionsScreen extends BaseScreen {
 			game.showRules();
 			return;
 		}
-		Settings s = game.settings;
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
@@ -37,11 +130,6 @@ public class OptionsScreen extends BaseScreen {
 		t.setColor(GOLD);
 		centred(t, "Options", w / 2, h - 40);
 
-		String[] labels = { "Music", "Sound effects", "Game speed", "Visual effects" };
-		String[] values = { s.music() ? "On" : "Off", s.sound() ? "On" : "Off", Settings.SPEEDS[s.speed()],
-				s.effects() ? "On" : "Off" };
-		boolean[] on = { s.music(), s.sound(), true, s.effects() };
-		sizeTo(rows, labels.length);
 		float rw = 460, rh = ROW_H, x = (w - rw) / 2;
 
 		// How to play: its own button, gold lettering, set apart from the settings below
@@ -55,23 +143,27 @@ public class OptionsScreen extends BaseScreen {
 		float y = rulesButton.y - 14 - DIFFICULTY_H;
 		drawDifficulty(x, y, rw);
 		y -= ROW_GAP + rh;
-		for (int i = 0; i < labels.length; i++) {
-			frame(assets.panel, x, y, rw, rh);
-			BitmapFont f = serif(1.6f);
-			f.setColor(Palette.CREAM);
-			glyphs.setText(f, labels[i]);
-			f.draw(batch, labels[i], x + 24, y + rh / 2 + glyphs.height / 2);
-			float vw = 120;
-			frame(on[i] ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 9, vw, rh - 18);
-			BitmapFont v = ui(1.4f);
-			v.setColor(on[i] ? Palette.CREAM : Palette.MUTED);
-			glyphs.setText(v, values[i]);
-			v.draw(batch, values[i], x + rw - 14 - vw / 2 - glyphs.width / 2, y + rh / 2 + glyphs.height / 2);
-			rows.get(i).set(x, y, rw, rh);
+		for (Row row : settingRows) {
+			drawRow(row, x, y, rw, rh);
 			y -= rh + ROW_GAP;
 		}
 		button(backButton, "Back", 70, h - 52, 110, 40, assets.buttonAlt);
 		batch.end();
+	}
+
+	private void drawRow(Row row, float x, float y, float rw, float rh) {
+		frame(assets.panel, x, y, rw, rh);
+		BitmapFont f = serif(1.6f);
+		f.setColor(Palette.CREAM);
+		glyphs.setText(f, row.label);
+		f.draw(batch, row.label, x + 24, y + rh / 2 + glyphs.height / 2);
+		float vw = 120;
+		boolean on = row.on();
+		frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 9, vw, rh - 18);
+		BitmapFont v = ui(1.4f);
+		v.setColor(on ? Palette.CREAM : Palette.MUTED);
+		textIn(v, row.value(), x + rw - vw - 14, y, vw, rh);
+		row.bounds.set(x, y, rw, rh);
 	}
 
 	// ---- difficulty: a slider with three stops, its knob the level's badge
@@ -160,24 +252,15 @@ public class OptionsScreen extends BaseScreen {
 			back();
 			return;
 		}
-		Settings s = game.settings;
 		if (rulesButton.contains(x, y)) {
 			game.showRules();
 			return;
 		}
-		if (rows.size() < 4) {
-			return;
-		}
-		if (rows.get(0).contains(x, y)) {
-			s.setMusic(!s.music());
-			game.audio.startMusic(); // starts or stops it to match
-		} else if (rows.get(1).contains(x, y)) {
-			s.setSound(!s.sound());
-			game.audio.play(Audio.Effect.PLAY_CARD);
-		} else if (rows.get(2).contains(x, y)) {
-			s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
-		} else if (rows.get(3).contains(x, y)) {
-			s.setEffects(!s.effects());
+		for (Row row : settingRows) {
+			if (row.bounds.contains(x, y)) { // (empty until drawn)
+				row.tap();
+				return;
+			}
 		}
 	}
 

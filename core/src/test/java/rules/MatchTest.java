@@ -212,6 +212,34 @@ public class MatchTest {
 		assertEquals(0, m.currentSeat());
 	}
 
+	@Test
+	public void handsCanCountDownFromEight() {
+		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN);
+		assertEquals(8, m.handSize());
+		for (int s = 0; s < 4; s++) {
+			assertEquals(8, m.hand(s).size());
+		}
+		bidAll(m);
+		while (m.phase() == Match.Phase.PLAYING) {
+			int s = m.currentSeat();
+			m.playCard(s, m.legalPlays(s).get(0));
+		}
+		m.nextHand();
+		assertEquals(7, m.handSize());
+		assertEquals(7, m.hand(0).size());
+	}
+
+	@Test
+	public void theHandOrderIsSaved() {
+		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN);
+		Match back = Match.load(m.save(), new Random(1));
+		assertEquals(HandOrder.DOWN, back.handOrder());
+		assertEquals(8, back.handSize());
+		// a game saved before the option existed ran upwards
+		String old = new Match(4, new Random(3), 2).save().replaceAll("order=UP\n", "");
+		assertEquals(HandOrder.UP, Match.load(old, new Random(1)).handOrder());
+	}
+
 	private void bidAll(Match m) {
 		while (m.phase() == Match.Phase.BIDDING) {
 			int s = m.currentSeat();

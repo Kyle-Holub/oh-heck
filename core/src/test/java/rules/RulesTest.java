@@ -48,10 +48,11 @@ public class RulesTest {
 	// ---- Hands ----
 
 	@Test
-	public void eightHandsOfOneToEightCards() {
+	public void eightHandsOfOneToEightCardsEitherWay() {
 		assertEquals(8, Rules.numberOfHands());
 		for (int i = 0; i < 8; i++) {
-			assertEquals(i + 1, Rules.handSize(i));
+			assertEquals(i + 1, HandOrder.UP.handSize(i));
+			assertEquals(8 - i, HandOrder.DOWN.handSize(i));
 		}
 	}
 

@@ -3,6 +3,8 @@ package ohheck;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
+import rules.HandOrder;
+
 /** Player options, saved on the device between sessions. */
 public final class Settings {
 
@@ -38,6 +40,15 @@ public final class Settings {
 
 	public void setDifficulty(int d) {
 		prefs.putInteger("difficulty", d).flush();
+	}
+
+	/** Which way new games' hands run: one card up to eight (the default), or eight down to one. */
+	public HandOrder handOrder() {
+		return prefs.getString("handOrder", "").equals(HandOrder.DOWN.name()) ? HandOrder.DOWN : HandOrder.UP;
+	}
+
+	public void setHandOrder(HandOrder order) {
+		prefs.putString("handOrder", order.name()).flush();
 	}
 
 	/** The easiest difficulty the saved game has been played at (its high score badge). */

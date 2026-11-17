@@ -5,7 +5,7 @@ Oh Heck is played with a standard deck of 52 cards where players attempt to pred
 Cards in each suit rank from high to low as follows: Ace, King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, and 2. Aces are the highest rank, followed by the face cards, and twos are the lowest rank.
 
 # Hands
-The game consists of a series of 8 hands. In the first hand of the game, each player is dealt a single card, and each successive hand is played with one more card until 8 cards are dealt to every player in the final hand. The progression of the number of cards per hand for an entire game is 1, 2, 3, 4, 5, 6, 7, 8.
+The game consists of a series of 8 hands. In the first hand of the game, each player is dealt a single card, and each successive hand is played with one more card until 8 cards are dealt to every player in the final hand. The progression of the number of cards per hand for an entire game is 1, 2, 3, 4, 5, 6, 7, 8. (In Options you can set Hand sizes to 8 to 1, to start with 8 cards each and count down to a single card.)
 
 # Objective
 The goal is for each player to bet the number of tricks they think they will win, and then to win exactly that amount. A trick is a collection of one card from each player. To win a trick, one must play the highest ranking card. A hand of 8 cards will have a total of 8 tricks, 7 cards 7 tricks, and so on.
