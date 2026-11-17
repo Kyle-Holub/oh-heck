@@ -88,11 +88,6 @@ public class OptionsScreen extends BaseScreen {
 		BitmapFont f = serif(1.6f);
 		f.setColor(Palette.CREAM);
 		f.draw(batch, "Difficulty", x + 24, y + DIFFICULTY_H - 18);
-		if (game.hasGameInProgress()) {
-			BitmapFont n = ui(0.85f);
-			n.setColor(Palette.MUTED);
-			n.draw(batch, "Applies from your next game", x + 24, y + 22);
-		}
 		// the track, gold up to the chosen stop
 		float x0 = x + 214, x1 = x + rw - 36, ty = y + 44;
 		stop0 = x0;

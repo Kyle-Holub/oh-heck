@@ -178,7 +178,8 @@ public class OhHeckGame extends Game {
 				newGame();
 				return;
 			}
-			play = new PlayScreen(this, saved, Difficulty.values()[settings.savedGameDifficulty()]);
+			play = new PlayScreen(this, saved, Difficulty.values()[settings.difficulty()]);
+			play.playedAt(Difficulty.values()[settings.savedGameLowestDifficulty()]);
 		}
 		backStack.clear();
 		setScreen(play);

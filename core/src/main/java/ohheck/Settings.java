@@ -40,8 +40,8 @@ public final class Settings {
 		prefs.putInteger("difficulty", d).flush();
 	}
 
-	/** The difficulty the saved game was started at. */
-	public int savedGameDifficulty() {
+	/** The easiest difficulty the saved game has been played at (its high score badge). */
+	public int savedGameLowestDifficulty() {
 		return Math.max(0, Math.min(2, prefs.getInteger("savedGameDifficulty", 1)));
 	}
 
@@ -51,12 +51,12 @@ public final class Settings {
 		return s.isEmpty() ? null : s;
 	}
 
-	public void saveGame(String saved, int difficulty) {
+	public void saveGame(String saved, int lowestDifficulty) {
 		if (saved == null) {
 			prefs.remove("savedGame");
 		} else {
 			prefs.putString("savedGame", saved);
-			prefs.putInteger("savedGameDifficulty", difficulty);
+			prefs.putInteger("savedGameDifficulty", lowestDifficulty);
 		}
 		prefs.flush();
 	}

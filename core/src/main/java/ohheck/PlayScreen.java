@@ -62,6 +62,8 @@ public class PlayScreen extends BaseScreen {
 	private boolean menuOpen;
 	/** Where your just-finished game landed in the high score table, or -1. */
 	private int newHighScore = -1;
+	/** The easiest level this game has been played at: its high score badge. */
+	private Difficulty lowest;
 
 	// touch: the card under your finger, and whether it's being dragged
 	private Card pressed;
@@ -125,8 +127,7 @@ public class PlayScreen extends BaseScreen {
 			@Override
 			public void gameEnded() {
 				Match m = flow.match();
-				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN),
-						flow.difficulty());
+				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN), lowest);
 				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
 				overlays.highScoresButton.set(0, 0, 0, 0);
 				if (m.leaders().contains(HUMAN)) { // you won (or tied for the win)
@@ -135,6 +136,7 @@ public class PlayScreen extends BaseScreen {
 				}
 			}
 		}, difficulty, rng);
+		lowest = difficulty;
 		if (restored == null) {
 			newGame();
 		} else {
@@ -243,16 +245,30 @@ public class PlayScreen extends BaseScreen {
 
 	// ------------------------------------------------------------ input
 
+	/** Notes that this game has also been played at level d (only an easier level changes its badge). */
+	void playedAt(Difficulty d) {
+		if (d.ordinal() < lowest.ordinal()) {
+			lowest = d;
+		}
+	}
+
 	@Override
 	public void show() {
 		super.show();
+		// a difficulty changed in Options applies straight away
+		Difficulty chosen = Difficulty.values()[game.settings.difficulty()];
+		if (chosen != flow.difficulty()) {
+			flow.setDifficulty(chosen, rng);
+			playedAt(chosen);
+			save();
+		}
 		game.audio.startMusic();
 	}
 
 	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */
 	private void save() {
 		if (options.persist) {
-			game.settings.saveGame(isGameOver() ? null : match().save(), flow.difficulty().ordinal());
+			game.settings.saveGame(isGameOver() ? null : match().save(), lowest.ordinal());
 		}
 	}
 

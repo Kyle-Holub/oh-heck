@@ -55,9 +55,17 @@ final class TableFlow {
 
 	TableFlow(Listener listener, Difficulty difficulty, Random rng) {
 		this.listener = listener;
-		this.difficulty = difficulty;
+		setDifficulty(difficulty, rng);
+	}
+
+	/**
+	 * Swaps the computer players for ones of another level, straight away. Safe at any
+	 * moment: they keep nothing between moves, deciding each time from what's on the table.
+	 */
+	void setDifficulty(Difficulty d, Random rng) {
+		difficulty = d;
 		for (int s = 1; s < bots.length; s++) {
-			bots[s] = Bot.of(difficulty, new Random(rng.nextLong()));
+			bots[s] = Bot.of(d, new Random(rng.nextLong()));
 		}
 	}
 
