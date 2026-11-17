@@ -13,7 +13,7 @@ public class OptionsScreen extends BaseScreen {
 
 
 	private final List<Rectangle> rows = new ArrayList<Rectangle>();
-	private Rectangle backButton = new Rectangle(), rulesButton = new Rectangle();
+	private final Rectangle backButton = new Rectangle(), rulesButton = new Rectangle();
 	/** Opened from the pause menu: Back returns to the game. */
 	boolean fromGame;
 
@@ -41,7 +41,7 @@ public class OptionsScreen extends BaseScreen {
 		String[] values = { s.music() ? "On" : "Off", s.sound() ? "On" : "Off", Settings.SPEEDS[s.speed()],
 				s.effects() ? "On" : "Off" };
 		boolean[] on = { s.music(), s.sound(), true, s.effects() };
-		rows.clear();
+		sizeTo(rows, labels.length);
 		float rw = 460, rh = 52, x = (w - rw) / 2, y = h - 100 - rh;
 
 		// How to play: its own button, gold lettering, set apart from the settings below
@@ -64,10 +64,10 @@ public class OptionsScreen extends BaseScreen {
 			v.setColor(on[i] ? Palette.CREAM : Palette.MUTED);
 			glyphs.setText(v, values[i]);
 			v.draw(batch, values[i], x + rw - 14 - vw / 2 - glyphs.width / 2, y + rh / 2 + glyphs.height / 2);
-			rows.add(new Rectangle(x, y, rw, rh));
+			rows.get(i).set(x, y, rw, rh);
 			y -= rh + 10;
 		}
-		backButton = button("Back", 70, h - 52, 110, 40, assets.buttonAlt);
+		button(backButton, "Back", 70, h - 52, 110, 40, assets.buttonAlt);
 		batch.end();
 	}
 

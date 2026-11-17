@@ -23,6 +23,7 @@ public class TitleScreen extends BaseScreen {
 	private float introT;
 	private final List<String> items = new ArrayList<String>();
 	private final List<Rectangle> hits = new ArrayList<Rectangle>();
+	private final Color black = new Color();
 
 	public TitleScreen(OhHeckGame game) {
 		super(game);
@@ -49,7 +50,13 @@ public class TitleScreen extends BaseScreen {
 		if (introT > 0) {
 			introT = Math.max(introT, INTRO_END); // the opening plays once per launch
 		}
+		buildItems(); // Continue appears only with a game to continue; that can't change while shown
 		game.audio.startMusic();
+	}
+
+	@Override
+	boolean animating() {
+		return true; // the falling cards
 	}
 
 	@Override
@@ -79,7 +86,7 @@ public class TitleScreen extends BaseScreen {
 			// the scene rises out of black
 			float dark = 1f - ramp(introT, CARDS_START, CARDS_FADE);
 			if (dark > 0) {
-				rect(0, 0, w, h, new Color(0, 0, 0, dark));
+				rect(0, 0, w, h, black.set(0, 0, 0, dark));
 			}
 		}
 
@@ -93,13 +100,12 @@ public class TitleScreen extends BaseScreen {
 
 		// then the menu
 		fade = smooth(ramp(introT, MENU_START, MENU_FADE));
-		buildItems();
-		hits.clear();
+		sizeTo(hits, items.size());
 		if (fade > 0) {
 			float bw = 270, bh = 46, gap = 10;
 			float y = titleY - 18 - bh + (1 - fade) * -12;
-			for (String s : items) {
-				hits.add(button(s, w / 2, y, bw, bh, s.equals(items.get(0)) ? assets.button : assets.buttonAlt));
+			for (int i = 0; i < items.size(); i++) {
+				button(hits.get(i), items.get(i), w / 2, y, bw, bh, i == 0 ? assets.button : assets.buttonAlt);
 				y -= bh + gap;
 			}
 			BitmapFont f = ui(0.9f);

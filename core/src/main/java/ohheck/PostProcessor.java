@@ -8,15 +8,18 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Disposable;
 
 /**
  * A finishing pass over the whole screen: a soft bloom on bright highlights,
  * warm colour grading, a dark vignette and fine film grain.
  * <p>
- * The frame is drawn into an off-screen buffer; its bright parts are copied
- * to a quarter-size buffer and blurred, then everything is combined onto the
- * screen. If the device can't compile the shaders, frames are drawn directly.
+ * The frame is drawn into an off-screen buffer, at most {@link #MAX_SCENE_H}
+ * pixels tall to keep the cost down on high-resolution phones; its bright
+ * parts are copied to a quarter-size buffer and blurred, then everything is
+ * combined onto the screen. If the device can't compile the shaders, frames
+ * are drawn directly.
  */
 final class PostProcessor implements Disposable {
 
@@ -58,8 +61,9 @@ final class PostProcessor implements Disposable {
 	/** Scene + bloom, warm grade, vignette and grain. */
 	private static final String COMBINE = HEADER
 			+ "uniform sampler2D u_bloom;\n"
-			+ "uniform float u_time;\n"
-			+ "uniform vec2 u_size;\n"
+			+ "uniform sampler2D u_noise;\n"
+			+ "uniform vec2 u_noiseScale;\n"
+			+ "uniform vec2 u_noiseOffset;\n"
 			+ "void main() {\n"
 			+ "  vec3 c = texture2D(u_texture, v_uv).rgb;\n"
 			+ "  c += texture2D(u_bloom, v_uv).rgb * 0.55;\n"
@@ -69,17 +73,23 @@ final class PostProcessor implements Disposable {
 			// vignette, slightly oval to suit a wide screen
 			+ "  vec2 p = (v_uv - 0.5) * vec2(1.0, 0.8);\n"
 			+ "  c *= mix(0.5, 1.0, smoothstep(0.75, 0.2, length(p)));\n"
-			// fine moving grain
-			+ "  float n = fract(sin(dot(floor(v_uv * u_size) + u_time * 7.0, vec2(12.9898, 78.233))) * 43758.5453);\n"
+			// fine moving grain, from a tiled noise texture shifted every frame (a maths hash
+			// breaks up into blocky patterns at the medium precision many phone GPUs use)
+			+ "  float n = texture2D(u_noise, v_uv * u_noiseScale + u_noiseOffset).r;\n"
 			+ "  c += (n - 0.5) * 0.03;\n"
 			+ "  gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);\n"
 			+ "}\n";
 
+	/** Tallest the captured scene gets; taller screens are drawn smaller and scaled up. */
+	private static final int MAX_SCENE_H = 900;
+	private static final int NOISE_SIZE = 128;
+
 	private final SpriteBatch batch = new SpriteBatch(4);
+	private final TextureRegion region = new TextureRegion();
+	private final Texture noise;
 	private ShaderProgram bright, blur, combine;
 	private FrameBuffer scene, bloomA, bloomB;
-	private int width, height;
-	private float time;
+	private int width, height, sceneW, sceneH;
 	private boolean ok;
 
 	PostProcessor() {
@@ -92,10 +102,27 @@ final class PostProcessor implements Disposable {
 			Gdx.app.error("PostProcessor", "Effects disabled: " + bright.getLog() + blur.getLog() + combine.getLog());
 		}
 		batch.getProjectionMatrix().setToOrtho2D(0, 0, 1, 1);
+		Pixmap p = new Pixmap(NOISE_SIZE, NOISE_SIZE, Pixmap.Format.RGBA8888);
+		java.util.Random r = new java.util.Random(7);
+		for (int y = 0; y < NOISE_SIZE; y++) {
+			for (int x = 0; x < NOISE_SIZE; x++) {
+				float v = r.nextFloat();
+				p.drawPixel(x, y, com.badlogic.gdx.graphics.Color.rgba8888(v, v, v, 1f));
+			}
+		}
+		noise = new Texture(p);
+		noise.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+		noise.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+		p.dispose();
 	}
 
-	boolean isAvailable() {
-		return ok;
+	/** Size of the buffer the scene is drawn into while capturing. */
+	int sceneWidth() {
+		return sceneW;
+	}
+
+	int sceneHeight() {
+		return sceneH;
 	}
 
 	/** Starts capturing a frame. Returns false if effects can't run, in which case draw normally. */
@@ -123,7 +150,6 @@ final class PostProcessor implements Disposable {
 	/** Finishes the frame: applies the effects and draws it to the screen. */
 	void end(float delta) {
 		scene.end();
-		time = (time + delta) % 1000f;
 
 		pass(bloomA, bright, scene.getColorBufferTexture());
 		for (int i = 0; i < 2; i++) {
@@ -135,10 +161,13 @@ final class PostProcessor implements Disposable {
 		batch.setShader(combine);
 		batch.begin();
 		bloomA.getColorBufferTexture().bind(1);
+		noise.bind(2);
 		Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
 		combine.setUniformi("u_bloom", 1);
-		combine.setUniformf("u_time", time);
-		combine.setUniformf("u_size", width, height);
+		combine.setUniformi("u_noise", 2);
+		// one noise texel per screen pixel, at a new random offset each frame
+		combine.setUniformf("u_noiseScale", width / (float) NOISE_SIZE, height / (float) NOISE_SIZE);
+		combine.setUniformf("u_noiseOffset", MathUtils.random(), MathUtils.random());
 		draw(scene.getColorBufferTexture());
 		batch.end();
 	}
@@ -164,17 +193,20 @@ final class PostProcessor implements Disposable {
 
 	/** Draws a frame-buffer texture over the whole target (they are stored upside down). */
 	private void draw(Texture t) {
-		TextureRegion r = new TextureRegion(t);
-		r.flip(false, true);
-		batch.draw(r, 0, 0, 1, 1);
+		region.setRegion(t);
+		region.flip(false, true);
+		batch.draw(region, 0, 0, 1, 1);
 	}
 
 	private void allocate(int w, int h) {
 		disposeBuffers();
 		width = w;
 		height = h;
-		scene = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
-		int bw = Math.max(1, w / 4), bh = Math.max(1, h / 4);
+		float scale = Math.min(1f, MAX_SCENE_H / (float) h);
+		sceneW = Math.max(1, Math.round(w * scale));
+		sceneH = Math.max(1, Math.round(h * scale));
+		scene = new FrameBuffer(Pixmap.Format.RGBA8888, sceneW, sceneH, false);
+		int bw = Math.max(1, sceneW / 4), bh = Math.max(1, sceneH / 4);
 		bloomA = new FrameBuffer(Pixmap.Format.RGBA8888, bw, bh, false);
 		bloomB = new FrameBuffer(Pixmap.Format.RGBA8888, bw, bh, false);
 		for (FrameBuffer f : new FrameBuffer[] { scene, bloomA, bloomB }) {
@@ -198,5 +230,6 @@ final class PostProcessor implements Disposable {
 		blur.dispose();
 		combine.dispose();
 		batch.dispose();
+		noise.dispose();
 	}
 }

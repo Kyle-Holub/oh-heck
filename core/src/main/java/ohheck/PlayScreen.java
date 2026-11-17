@@ -110,7 +110,16 @@ public class PlayScreen extends BaseScreen {
 	private final List<Rectangle> handRects = new ArrayList<Rectangle>();
 	private final List<Card> handOrder = new ArrayList<Card>();
 	private final Rectangle menuButton = new Rectangle();
-	private Rectangle playAgainButton = new Rectangle(), highScoresButton = new Rectangle();
+	private final Rectangle playAgainButton = new Rectangle(), highScoresButton = new Rectangle();
+	/** True while the game-over panel (and its buttons) is on screen. */
+	private boolean gameOverShown;
+
+	// scratch objects reused every frame, so drawing doesn't create garbage
+	private final Vector2 fanTmp = new Vector2(), anchorTmp = new Vector2(), slotTmp = new Vector2();
+	private float handStart, handGap; // set by layoutHand()
+	private final int[] dealtSoFar = new int[4];
+	private final List<Integer> rankedSeats = new ArrayList<Integer>();
+	private final StringBuilder sb = new StringBuilder();
 	/** Where your just-finished game landed in the high score table, or -1. */
 	private int newHighScore = -1;
 	private final List<Rectangle> menuItems = new ArrayList<Rectangle>();
@@ -326,10 +335,13 @@ public class PlayScreen extends BaseScreen {
 			}
 			break;
 		case GAME_OVER:
-			if (highScoresButton.contains(x, y)) {
+			// only the buttons: a stray tap mustn't throw away the final scores
+			if (!gameOverShown) {
+				break;
+			} else if (highScoresButton.contains(x, y)) {
 				game.showHighScores(newHighScore);
-			} else {
-				newGame(); // the Play again button, or anywhere else
+			} else if (playAgainButton.contains(x, y)) {
+				newGame();
 			}
 			break;
 		}
@@ -618,6 +630,7 @@ public class PlayScreen extends BaseScreen {
 	// ------------------------------------------------------------------ draw
 
 	private void draw() {
+		gameOverShown = false;
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
@@ -798,33 +811,33 @@ public class PlayScreen extends BaseScreen {
 		return seat == 3 ? fan.x - bw - (n - 1 - i) * 12 : fan.x + i * 12;
 	}
 
-	/** Your hand's layout for n cards: left edge of the first card and the step between cards. */
-	private float[] handLayout(int n) {
+	/** Lays out your hand of n cards: sets handStart (left edge of the first card) and handGap (step between cards). */
+	private void layoutHand(int n) {
 		float cw = Assets.CARD_W * HAND_SCALE;
 		// leave room for your panel on the left and the menu button on the right
 		float maxWidth = Math.max(330, w - 2 * (PANEL_W + 26));
-		float gap = n <= 1 ? 0 : Math.min(cw + 6, (maxWidth - cw) / (n - 1));
-		return new float[] { (w - (gap * (n - 1) + cw)) / 2, gap };
+		handGap = n <= 1 ? 0 : Math.min(cw + 6, (maxWidth - cw) / (n - 1));
+		handStart = (w - (handGap * (n - 1) + cw)) / 2;
 	}
 
-	/** Where an opponent's face-down cards start: beside the top panel, under the side panels. */
+	/** Where an opponent's face-down cards start: beside the top panel, under the side panels. (Reused object.) */
 	private Vector2 fanOrigin(int seat) {
 		float bh = Assets.CARD_H * BACK_SCALE;
 		float x = panelX(seat), top = panelTop(seat);
 		if (seat == 2) {
-			return new Vector2(x + PANEL_W + 10, top - PANEL_H / 2 - bh / 2);
+			return fanTmp.set(x + PANEL_W + 10, top - PANEL_H / 2 - bh / 2);
 		}
-		return new Vector2(seat == 3 ? x + PANEL_W : x, top - PANEL_H - 6 - bh);
+		return fanTmp.set(seat == 3 ? x + PANEL_W : x, top - PANEL_H - 6 - bh);
 	}
 
-	/** Centre of where a seat's cards are, for cards flying to and from it. */
+	/** Centre of where a seat's cards are, for cards flying to and from it. (Reused object.) */
 	private Vector2 seatAnchor(int seat) {
 		if (seat == HUMAN) {
-			return new Vector2(w / 2, 70);
+			return anchorTmp.set(w / 2, 70);
 		}
 		Vector2 f = fanOrigin(seat);
 		float bw = Assets.CARD_W * BACK_SCALE, bh = Assets.CARD_H * BACK_SCALE;
-		return new Vector2(seat == 3 ? f.x - bw : f.x + bw, f.y + bh / 2);
+		return anchorTmp.set(seat == 3 ? f.x - bw : f.x + bw, f.y + bh / 2);
 	}
 
 	private boolean isTurn(int seat) {
@@ -845,15 +858,15 @@ public class PlayScreen extends BaseScreen {
 		handOrder.clear();
 		handOrder.addAll(match.hand(HUMAN));
 		Collections.sort(handOrder, DISPLAY_ORDER);
-		handRects.clear();
 		int n = handOrder.size();
+		sizeTo(handRects, n);
 		if (n == 0) {
 			return;
 		}
 		int shown = isDealing() ? dealtTo(HUMAN) : n;
 		float cw = Assets.CARD_W * HAND_SCALE, ch = Assets.CARD_H * HAND_SCALE;
-		float[] layout = handLayout(n);
-		float start = layout[0], gap = layout[1];
+		layoutHand(n);
+		float start = handStart, gap = handGap;
 
 		boolean myTurn = humanCanPlay();
 		List<Card> legal = myTurn ? match.legalPlays(HUMAN) : Collections.<Card>emptyList();
@@ -862,7 +875,7 @@ public class PlayScreen extends BaseScreen {
 			boolean canPlay = legal.contains(c);
 			float x = start + i * gap;
 			float y = 8 + (c == selected ? SELECTED_LIFT : canPlay ? LIFT : 0);
-			handRects.add(new Rectangle(x, y, i == n - 1 ? cw : gap, ch));
+			handRects.get(i).set(x, y, i == n - 1 ? cw : gap, ch);
 			if (i >= shown || (dragging && c == selected)) {
 				continue;
 			}
@@ -880,12 +893,12 @@ public class PlayScreen extends BaseScreen {
 		batch.setColor(Color.WHITE);
 	}
 
-	/** Where a seat's card sits in the middle of the table. */
+	/** Where a seat's card sits in the middle of the table. (Reused object.) */
 	private Vector2 trickSlot(int seat) {
 		float cx = w / 2, cy = h / 2 + 15;
 		float x = cx - Assets.CARD_W / 2f + (seat == 1 ? -108 : seat == 3 ? 108 : 0);
 		float y = cy - Assets.CARD_H / 2f + (seat == HUMAN ? -60 : seat == 2 ? 60 : 0);
-		return new Vector2(x, y);
+		return slotTmp.set(x, y);
 	}
 
 	private static final float MAX_TILT = 9f;
@@ -1154,8 +1167,8 @@ public class PlayScreen extends BaseScreen {
 		int n = match.handSize();
 		Vector2 from = seatAnchor(match.dealer());
 		float fromW = Assets.CARD_W * BACK_SCALE, fromH = Assets.CARD_H * BACK_SCALE;
-		float[] hand = handLayout(n);
-		int[] dealtSoFar = new int[4];
+		layoutHand(n);
+		java.util.Arrays.fill(dealtSoFar, 0);
 		for (int k = 0; k < 4 * n; k++) {
 			int seat = (match.dealer() + 1 + k) % 4;
 			int j = dealtSoFar[seat]++; // this is the j-th card to reach that seat
@@ -1168,7 +1181,7 @@ public class PlayScreen extends BaseScreen {
 			if (seat == HUMAN) {
 				tw = Assets.CARD_W * HAND_SCALE;
 				th = Assets.CARD_H * HAND_SCALE;
-				tx = hand[0] + j * hand[1];
+				tx = handStart + j * handGap;
 				ty = 8;
 			} else {
 				tw = Assets.CARD_W * BACK_SCALE;
@@ -1200,12 +1213,11 @@ public class PlayScreen extends BaseScreen {
 				+ (forbidden >= 0 ? "   -   as dealer you can't bid " + forbidden : "");
 		text(s, note, w / 2, py + ph - 60, true);
 
-		bidButtons.clear();
+		sizeTo(bidButtons, n + 1);
 		float bx = (w - rowW) / 2, by = py + 20;
 		BitmapFont bf = ui(1.7f);
 		for (int b = 0; b <= n; b++) {
-			Rectangle r = new Rectangle(bx + b * (bs + gap), by, bs, bs);
-			bidButtons.add(r);
+			Rectangle r = bidButtons.get(b).set(bx + b * (bs + gap), by, bs, bs);
 			boolean ok = match.isLegalBid(b);
 			frame(ok ? assets.button : assets.buttonOff, r.x, r.y, r.width, r.height);
 			bf.setColor(ok ? Palette.CREAM : Palette.MUTED);
@@ -1278,19 +1290,21 @@ public class PlayScreen extends BaseScreen {
 		}
 	}
 
-	/** Seats from highest score to lowest; ties keep seat order. */
-	private List<Integer> ranked() {
-		List<Integer> order = new ArrayList<Integer>();
-		for (int s = 0; s < 4; s++) {
-			order.add(s);
+	private final Comparator<Integer> byScore = new Comparator<Integer>() {
+		@Override
+		public int compare(Integer a, Integer b) {
+			return match.score(b) - match.score(a);
 		}
-		Collections.sort(order, new Comparator<Integer>() {
-			@Override
-			public int compare(Integer a, Integer b) {
-				return match.score(b) - match.score(a);
-			}
-		});
-		return order;
+	};
+
+	/** Seats from highest score to lowest; ties keep seat order. (Reused list.) */
+	private List<Integer> ranked() {
+		rankedSeats.clear();
+		for (int s = 0; s < 4; s++) {
+			rankedSeats.add(s); // small Integers are cached: no garbage
+		}
+		Collections.sort(rankedSeats, byScore);
+		return rankedSeats;
 	}
 
 	/** 1 for the lead; players on the same score share a place. */
@@ -1346,7 +1360,8 @@ public class PlayScreen extends BaseScreen {
 		drawArt(assets.gameOverText, w / 2, py + ph - 50, 0.66f, 1f);
 
 		List<Integer> leaders = match.leaders();
-		StringBuilder title = new StringBuilder();
+		StringBuilder title = sb;
+		title.setLength(0);
 		for (int i = 0; i < leaders.size(); i++) {
 			if (i > 0) {
 				title.append(i == leaders.size() - 1 ? " and " : ", ");
@@ -1379,8 +1394,9 @@ public class PlayScreen extends BaseScreen {
 			y -= 27;
 		}
 		float bw = 170, bh = 42, by = py + 16;
-		playAgainButton = button("Play again", w / 2 - bw / 2 - 8, by, bw, bh, assets.button);
-		highScoresButton = button("High scores", w / 2 + bw / 2 + 8, by, bw, bh, assets.buttonAlt);
+		button(playAgainButton, "Play again", w / 2 - bw / 2 - 8, by, bw, bh, assets.button);
+		button(highScoresButton, "High scores", w / 2 + bw / 2 + 8, by, bw, bh, assets.buttonAlt);
+		gameOverShown = true;
 	}
 
 	private void drawMenuButton() {
@@ -1399,11 +1415,10 @@ public class PlayScreen extends BaseScreen {
 		BitmapFont title = ui(1.5f);
 		title.setColor(GOLD);
 		text(title, "Paused", w / 2, top + 36, true);
-		menuItems.clear();
+		sizeTo(menuItems, MENU.length);
 		BitmapFont f = ui(1.4f);
 		for (int i = 0; i < MENU.length; i++) {
-			Rectangle r = new Rectangle((w - bw) / 2, top - (i + 1) * bh - i * gap, bw, bh);
-			menuItems.add(r);
+			Rectangle r = menuItems.get(i).set((w - bw) / 2, top - (i + 1) * bh - i * gap, bw, bh);
 			frame(i == 0 ? assets.button : assets.buttonAlt, r.x, r.y, r.width, r.height);
 			f.setColor(Palette.CREAM);
 			text(f, MENU[i], w / 2, r.y + bh / 2 + 10, true);
@@ -1447,6 +1462,28 @@ public class PlayScreen extends BaseScreen {
 			return d != 0 ? d : a.rank().strength() - b.rank().strength();
 		}
 	};
+
+	@Override
+	boolean animating() {
+		if (menuOpen) {
+			return false;
+		}
+		if (isDealing() || trickPause > 0 || dragging || trumpFlip < TRUMP_FLIP_TIME
+				|| (match.phase() == Match.Phase.HAND_OVER && handOverT < HAND_END_SHOW + LABEL_DROP)) {
+			return true;
+		}
+		for (int i = 0; i < SPARKS; i++) {
+			if (spLife[i] > 0) {
+				return true;
+			}
+		}
+		for (float[] f : flights.values()) {
+			if (time - f[2] < PLAY_FLIGHT) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	/** A short description of what is on screen, for automated screenshots. */
 	@Override

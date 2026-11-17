@@ -11,7 +11,9 @@ import com.badlogic.gdx.utils.ScreenUtils;
 /** Your ten best finished games. */
 public class HighScoresScreen extends BaseScreen {
 
-	private Rectangle backButton = new Rectangle();
+	private final Rectangle backButton = new Rectangle();
+	private final Color highlight = new Color();
+	private List<HighScores.Entry> list;
 	private int newest = -1;
 
 	public HighScoresScreen(OhHeckGame game) {
@@ -21,6 +23,12 @@ public class HighScoresScreen extends BaseScreen {
 	/** Picks out the entry at this position (just set), or -1 for none. */
 	void highlight(int position) {
 		newest = position;
+	}
+
+	@Override
+	public void show() {
+		super.show();
+		list = game.highScores().entries(); // read once, not every frame
 	}
 
 	@Override
@@ -39,7 +47,6 @@ public class HighScoresScreen extends BaseScreen {
 		t.setColor(GOLD);
 		centred(t, "High scores", w / 2, h - 40);
 
-		List<HighScores.Entry> list = game.highScores().entries();
 		float pw = 480, rowH = 30, ph = 66 + Math.max(1, list.size()) * rowH;
 		float px = (w - pw) / 2, top = h - 100;
 		frame(assets.panel, px, top - ph, pw, ph);
@@ -61,7 +68,7 @@ public class HighScoresScreen extends BaseScreen {
 			for (int i = 0; i < list.size(); i++) {
 				HighScores.Entry e = list.get(i);
 				if (i == newest) {
-					rect(px + 12, y - rowH + 8, pw - 24, rowH, new Color(0.97f, 0.85f, 0.56f, 0.10f + 0.08f * pulse));
+					rect(px + 12, y - rowH + 8, pw - 24, rowH, highlight.set(0.97f, 0.85f, 0.56f, 0.10f + 0.08f * pulse));
 				}
 				Color c = i == newest ? Palette.GOLD_LIGHT : i == 0 ? GOLD : Palette.CREAM;
 				f.setColor(c);
@@ -74,7 +81,7 @@ public class HighScoresScreen extends BaseScreen {
 				y -= rowH;
 			}
 		}
-		backButton = button("Back", 70, h - 52, 110, 40, assets.buttonAlt);
+		button(backButton, "Back", 70, h - 52, 110, 40, assets.buttonAlt);
 		batch.end();
 	}
 

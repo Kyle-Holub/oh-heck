@@ -100,6 +100,7 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	/** Prepares the batch for a frame; call batch.end() when done. */
 	protected void begin() {
 		viewport.apply();
+		game.fitViewportToTarget(); // the effects pass may draw the scene at a lower resolution
 		w = viewport.getWorldWidth();
 		h = viewport.getWorldHeight();
 		batch.setProjectionMatrix(viewport.getCamera().combined);
@@ -134,7 +135,7 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		batch.setColor(Color.WHITE);
 	}
 
-	/** Draws a rounded frame (panel or button) at full opacity. */
+	/** Draws a rounded frame (panel or button), at the current {@link #fade}. */
 	protected void frame(NinePatch p, float x, float y, float fw, float fh) {
 		batch.setColor(1f, 1f, 1f, fade);
 		p.draw(batch, x, y, fw, fh);
@@ -144,15 +145,33 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	/** Opacity for frames and button labels, for fading UI in; normally 1. */
 	protected float fade = 1f;
 
-	/** A labelled button; returns its tap area. */
-	protected Rectangle button(String label, float cx, float y, float bw, float bh, NinePatch style) {
+	/** A labelled button; sets {@code area} to its tap area and returns it. */
+	protected Rectangle button(Rectangle area, String label, float cx, float y, float bw, float bh, NinePatch style) {
 		frame(style, cx - bw / 2, y, bw, bh);
 		BitmapFont f = serif(1.5f);
 		Color c = style == assets.buttonOff ? Palette.MUTED : Palette.CREAM;
 		f.setColor(c.r, c.g, c.b, fade);
 		glyphs.setText(f, label);
 		f.draw(batch, label, cx - glyphs.width / 2, y + bh / 2 + glyphs.height / 2);
-		return new Rectangle(cx - bw / 2, y, bw, bh);
+		return area.set(cx - bw / 2, y, bw, bh);
+	}
+
+	/** Grows or shrinks a list of reusable tap areas to n, keeping the existing objects. */
+	static void sizeTo(java.util.List<Rectangle> list, int n) {
+		while (list.size() > n) {
+			list.remove(list.size() - 1);
+		}
+		while (list.size() < n) {
+			list.add(new Rectangle());
+		}
+	}
+
+	/**
+	 * Is something moving that needs full frame rate? When false the game
+	 * draws at a lower rate to save battery (see OhHeckGame.render).
+	 */
+	boolean animating() {
+		return false;
 	}
 
 	@Override

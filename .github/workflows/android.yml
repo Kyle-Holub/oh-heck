@@ -31,8 +31,22 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Test and build APK and desktop jar
-        run: ./gradlew core:test android:assembleDebug lwjgl3:dist -PversionCode=${{ github.run_number }} --stacktrace
+      - name: Unpack the signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.OHHECK_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Add the OHHECK_KEYSTORE_B64 and OHHECK_KEYSTORE_PASSWORD repository secrets (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/ohheck.keystore"
+          echo "OHHECK_KEYSTORE=$RUNNER_TEMP/ohheck.keystore" >> "$GITHUB_ENV"
+
+      # (the rules tests run in tests.yml on every push, so they aren't repeated here)
+      - name: Build APK and desktop jar
+        env:
+          OHHECK_KEYSTORE_PASSWORD: ${{ secrets.OHHECK_KEYSTORE_PASSWORD }}
+        run: ./gradlew android:assembleRelease lwjgl3:dist -PversionCode=${{ github.run_number }} --stacktrace
 
       - name: Publish dev build
         id: publish
@@ -43,7 +57,7 @@ jobs:
           TAG="dev-$(printf '%04d' ${{ github.run_number }})"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           APK="oh-heck-${TAG}.apk"
-          cp android/build/outputs/apk/debug/android-debug.apk "$APK"
+          cp android/build/outputs/apk/release/android-release.apk "$APK"
           cp build/dist/oh-heck-desktop.jar oh-heck-desktop.jar
           gh release create "$TAG" "$APK" oh-heck-desktop.jar \
             --prerelease \

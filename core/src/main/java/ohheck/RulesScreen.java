@@ -24,7 +24,7 @@ public class RulesScreen extends BaseScreen {
 	private final List<String> titles = new ArrayList<String>();
 	private final List<String> bodies = new ArrayList<String>();
 	private float scroll, velocity, contentHeight;
-	private Rectangle backButton = new Rectangle();
+	private final Rectangle backButton = new Rectangle();
 
 	public RulesScreen(OhHeckGame game) {
 		super(game);
@@ -94,7 +94,7 @@ public class RulesScreen extends BaseScreen {
 		BitmapFont hf = serif(1.6f);
 		hf.setColor(Palette.GOLD);
 		centred(hf, "How to Play", w / 2, h - 16);
-		backButton = button("Back", 70, h - HEADER_H + 8, 110, HEADER_H - 16, assets.buttonAlt);
+		button(backButton, "Back", 70, h - HEADER_H + 8, 110, HEADER_H - 16, assets.buttonAlt);
 		batch.end();
 	}
 

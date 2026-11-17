@@ -27,28 +27,33 @@ android {
   }
 
   signingConfigs {
-    // A throwaway key committed to the repo so every dev build installs over the last.
-    // Real releases must use a private key kept out of the repo.
-    dev {
-      storeFile file('dev.keystore')
-      storePassword 'ohheckdev'
-      keyAlias 'dev'
-      keyPassword 'ohheckdev'
+    // The key that signs the builds published for Obtainium. It is not in the repo:
+    // CI writes it from the OHHECK_KEYSTORE_B64 secret and points OHHECK_KEYSTORE at it.
+    published {
+      def ks = System.getenv('OHHECK_KEYSTORE')
+      if (ks) {
+        storeFile file(ks)
+        storePassword System.getenv('OHHECK_KEYSTORE_PASSWORD')
+        keyAlias 'ohheck'
+        keyPassword System.getenv('OHHECK_KEYSTORE_PASSWORD')
+      }
     }
   }
 
   buildTypes {
     debug {
-      applicationIdSuffix '.dev'
-      resValue 'string', 'app_name', 'Oh Heck!'
-      signingConfig signingConfigs.dev
-      // strip unused library code (most of the app's size otherwise); names kept for readable crash logs
-      minifyEnabled true
-      shrinkResources true
-      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+      // local builds only, signed with the machine's own debug key
+      applicationIdSuffix '.dev.debug'
+      resValue 'string', 'app_name', 'Oh Heck! (debug)'
     }
     release {
+      // the build CI publishes: optimised, not debuggable
+      applicationIdSuffix '.dev'
       resValue 'string', 'app_name', 'Oh Heck!'
+      if (System.getenv('OHHECK_KEYSTORE')) {
+        signingConfig signingConfigs.published
+      }
+      // strip unused library code (most of the app's size otherwise); names kept for readable crash logs
       minifyEnabled true
       shrinkResources true
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

@@ -51,9 +51,28 @@ public class OhHeckGame extends Game {
 		setScreen(title);
 	}
 
+	/** Frame length when nothing is moving: 30 fps, to save battery. */
+	private static final long IDLE_FRAME_NS = 1000000000L / 30;
+	private long frameStart;
+	private boolean idle, capturing;
+
 	@Override
 	public void render() {
+		long now = System.nanoTime();
+		if (idle) {
+			long wait = frameStart + IDLE_FRAME_NS - now;
+			if (wait > 0) {
+				try {
+					Thread.sleep(wait / 1000000, (int) (wait % 1000000));
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				now = System.nanoTime();
+			}
+		}
+		frameStart = now;
 		boolean effects = settings.effects() && post.begin();
+		capturing = effects;
 		float delta = options.fixedStep > 0 ? options.fixedStep : Gdx.graphics.getDeltaTime();
 		if (getScreen() != null) {
 			getScreen().render(delta);
@@ -61,9 +80,18 @@ public class OhHeckGame extends Game {
 		if (effects) {
 			post.end(delta);
 		}
+		capturing = false;
 		Screen s = getScreen();
+		idle = options.fixedStep <= 0 && s instanceof BaseScreen && !((BaseScreen) s).animating();
 		if (options.frameListener != null && s instanceof Tagged) {
 			options.frameListener.onFrame(((Tagged) s).stateTag());
+		}
+	}
+
+	/** While the effects pass is capturing a frame, draw into its (smaller) buffer rather than the screen. */
+	void fitViewportToTarget() {
+		if (capturing) {
+			Gdx.gl.glViewport(0, 0, post.sceneWidth(), post.sceneHeight());
 		}
 	}
 
