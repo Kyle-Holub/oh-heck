@@ -134,13 +134,13 @@ public class OptionsScreen extends BaseScreen {
 
 		// How to play: its own button, gold lettering, set apart from the settings below
 		float bw = 260, bh = 44;
-		rulesButton.set((w - bw) / 2, h - 84 - bh, bw, bh);
+		rulesButton.set((w - bw) / 2, h - 78 - bh, bw, bh);
 		frame(assets.buttonAlt, rulesButton.x, rulesButton.y, bw, bh);
 		BitmapFont rb = serif(1.6f);
 		rb.setColor(GOLD);
 		textIn(rb, "How to play", rulesButton.x, rulesButton.y, bw, bh);
 
-		float y = rulesButton.y - 14 - DIFFICULTY_H;
+		float y = rulesButton.y - 10 - DIFFICULTY_H;
 		drawDifficulty(x, y, rw);
 		y -= ROW_GAP + rh;
 		for (Row row : settingRows) {
@@ -159,7 +159,7 @@ public class OptionsScreen extends BaseScreen {
 		f.draw(batch, row.label, x + 24, y + rh / 2 + glyphs.height / 2);
 		float vw = 120;
 		boolean on = row.on();
-		frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 9, vw, rh - 18);
+		frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 7, vw, rh - 14);
 		BitmapFont v = ui(1.4f);
 		v.setColor(on ? Palette.CREAM : Palette.MUTED);
 		textIn(v, row.value(), x + rw - vw - 14, y, vw, rh);
@@ -168,7 +168,7 @@ public class OptionsScreen extends BaseScreen {
 
 	// ---- difficulty: a slider with three stops, its knob the level's badge
 
-	private static final float ROW_H = 46, ROW_GAP = 7, DIFFICULTY_H = 94, KNOB = 34;
+	private static final float ROW_H = 40, ROW_GAP = 6, DIFFICULTY_H = 94, KNOB = 34;
 	/** What to expect at each level, shown under the slider. */
 	private static final String[] LEVEL_NOTES = {
 			"Forgiving: they misjudge bids and slip up. Luck still counts!",
