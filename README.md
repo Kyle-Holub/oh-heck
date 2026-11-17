@@ -63,7 +63,7 @@ When changing how the computer players bid or play, measure it in the arena: it 
 ```
 ./gradlew core:arena                         # each level at a table of its own, by round
 ./gradlew core:arena -Parena="vs 400"        # each level against the one below
-./gradlew core:arena -Parena="samples 100"   # Hard's strength and speed by imagined deals per decision
+./gradlew core:arena -Parena="effort 100"    # Hard's strength and speed at half, normal and double thinking
 ./gradlew core:arena -Parena="learn 4000"    # regenerate core/src/main/java/rules/BidTable.java
 ```
 

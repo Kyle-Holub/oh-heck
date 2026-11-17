@@ -246,17 +246,16 @@ public final class Arena {
 			report("Hard vs 3 Easy", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.EASY)));
 		} else if (what.equals("learn")) {
 			learn(n);
-		} else if (what.equals("samples")) {
-			int keep = HardBot.samples;
-			for (int k : new int[] { 10, 20, 40, 80 }) {
-				HardBot.samples = k;
+		} else if (what.equals("effort")) {
+			for (double k : new double[] { 0.5, 1, 2 }) {
+				HardBot.effort = k;
 				long t = System.currentTimeMillis();
-				report("Hard (" + k + " deals) vs 3 Normal", run(n, level(Difficulty.HARD), level(Difficulty.NORMAL)));
+				report("Hard (effort " + k + ") vs 3 Normal", run(n, level(Difficulty.HARD), level(Difficulty.NORMAL)));
 				System.out.printf("   %.1f s%n", (System.currentTimeMillis() - t) / 1000.0);
 			}
-			HardBot.samples = keep;
+			HardBot.effort = 1;
 		} else {
-			System.out.println("Experiments: levels N | vs N | learn N | samples N");
+			System.out.println("Experiments: levels N | vs N | learn N | effort N");
 		}
 		System.out.printf("(%.1f s)%n", (System.currentTimeMillis() - start) / 1000.0);
 	}

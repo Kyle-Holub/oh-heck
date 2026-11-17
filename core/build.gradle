@@ -22,7 +22,7 @@ test {
 //   ./gradlew core:arena                          levels: each difficulty at a table of its own
 //   ./gradlew core:arena -Parena="vs 400"         each level against the one below
 //   ./gradlew core:arena -Parena="learn 4000"     regenerate rules/BidTable.java from simulated play
-//   ./gradlew core:arena -Parena="samples 100"    Hard's strength and speed by imagined deals per decision
+//   ./gradlew core:arena -Parena="effort 100"     Hard's strength and speed at half, normal and double thinking
 sourceSets {
   arena {
     java.srcDir 'src/arena/java'
