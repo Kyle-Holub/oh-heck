@@ -13,7 +13,9 @@ public class OptionsScreen extends BaseScreen {
 
 
 	private final List<Rectangle> rows = new ArrayList<Rectangle>();
-	private Rectangle backButton = new Rectangle();
+	private Rectangle backButton = new Rectangle(), rulesButton = new Rectangle();
+	/** Opened from the pause menu: Back returns to the game. */
+	boolean fromGame;
 
 	public OptionsScreen(OhHeckGame game) {
 		super(game);
@@ -35,12 +37,21 @@ public class OptionsScreen extends BaseScreen {
 		t.setColor(GOLD);
 		centred(t, "Options", w / 2, h - 40);
 
-		String[] labels = { "How to play", "Music", "Sound effects", "Game speed", "Visual effects" };
-		String[] values = { "Read", s.music() ? "On" : "Off", s.sound() ? "On" : "Off", Settings.SPEEDS[s.speed()],
+		String[] labels = { "Music", "Sound effects", "Game speed", "Visual effects" };
+		String[] values = { s.music() ? "On" : "Off", s.sound() ? "On" : "Off", Settings.SPEEDS[s.speed()],
 				s.effects() ? "On" : "Off" };
-		boolean[] on = { true, s.music(), s.sound(), true, s.effects() };
+		boolean[] on = { s.music(), s.sound(), true, s.effects() };
 		rows.clear();
-		float rw = 460, rh = 52, x = (w - rw) / 2, y = h - 106 - rh;
+		float rw = 460, rh = 52, x = (w - rw) / 2, y = h - 100 - rh;
+
+		// How to play: its own button, gold lettering, set apart from the settings below
+		float bw = 260, bh = 46;
+		rulesButton.set((w - bw) / 2, y + rh - bh, bw, bh);
+		frame(assets.buttonAlt, rulesButton.x, rulesButton.y, bw, bh);
+		BitmapFont rb = serif(1.6f);
+		rb.setColor(GOLD);
+		centred(rb, "How to play", w / 2, rulesButton.y + bh / 2 + 11);
+		y -= bh + 22;
 		for (int i = 0; i < labels.length; i++) {
 			frame(assets.panel, x, y, rw, rh);
 			BitmapFont f = serif(1.6f);
@@ -56,9 +67,6 @@ public class OptionsScreen extends BaseScreen {
 			rows.add(new Rectangle(x, y, rw, rh));
 			y -= rh + 10;
 		}
-		BitmapFont hint = ui(1f);
-		hint.setColor(Palette.MUTED);
-		centred(hint, "Tap a row to change it", w / 2, y + rh - 6);
 		backButton = button("Back", 70, h - 52, 110, 40, assets.buttonAlt);
 		batch.end();
 	}
@@ -70,27 +78,34 @@ public class OptionsScreen extends BaseScreen {
 			return;
 		}
 		Settings s = game.settings;
-		if (rows.size() < 5) {
+		if (rulesButton.contains(x, y)) {
+			game.showRules();
+			return;
+		}
+		if (rows.size() < 4) {
 			return;
 		}
 		if (rows.get(0).contains(x, y)) {
-			game.showRules();
-		} else if (rows.get(1).contains(x, y)) {
 			s.setMusic(!s.music());
 			game.audio.startMusic(); // starts or stops it to match
-		} else if (rows.get(2).contains(x, y)) {
+		} else if (rows.get(1).contains(x, y)) {
 			s.setSound(!s.sound());
 			game.audio.play(Audio.Effect.PLAY_CARD);
-		} else if (rows.get(3).contains(x, y)) {
+		} else if (rows.get(2).contains(x, y)) {
 			s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
-		} else if (rows.get(4).contains(x, y)) {
+		} else if (rows.get(3).contains(x, y)) {
 			s.setEffects(!s.effects());
 		}
 	}
 
 	@Override
 	protected void back() {
-		game.showTitle();
+		if (fromGame) {
+			fromGame = false;
+			game.continueGame();
+		} else {
+			game.showTitle();
+		}
 	}
 
 	@Override

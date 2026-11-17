@@ -11,20 +11,12 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-/** The rules, from assets/files/rules.txt, plus the touch controls. */
+/** The rules, from assets/files/rules.txt. */
 public class RulesScreen extends BaseScreen {
 
 	/** Headings for the first nine paragraphs of rules.txt (the tenth describes the desktop screen). */
 	private static final String[] HEADINGS = { "How to Play Oh Heck", "Cards", "Hands", "Objective", "Dealing",
 			"Trump Suit", "Bidding", "Play", "Scoring" };
-
-	private static final String CONTROLS = "Bidding: tap a number to make your bid. "
-			+ "As dealer you can't make the bid that would make everyone's bids add up to the number of tricks; "
-			+ "that number is greyed out.\n\n"
-			+ "Playing: the cards you may play are raised and the rest are dimmed. Tap a card to play it, "
-			+ "or drag it up onto the table.\n\n"
-			+ "Tap anywhere to skip the deal or to move on after a hand. The Menu button or your phone's back button "
-			+ "pauses the game.";
 
 	private static final Color HEADER = new Color(0.06f, 0.04f, 0.03f, 0.97f);
 	private static final float HEADER_H = 56;
@@ -41,8 +33,6 @@ public class RulesScreen extends BaseScreen {
 			titles.add(HEADINGS[i]);
 			bodies.add(lines[i].trim());
 		}
-		titles.add("Controls");
-		bodies.add(CONTROLS);
 	}
 
 	@Override

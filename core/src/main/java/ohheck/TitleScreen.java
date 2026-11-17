@@ -145,7 +145,7 @@ public class TitleScreen extends BaseScreen {
 		} else if (item.equals("High scores")) {
 			game.showHighScores(-1);
 		} else if (item.equals("Options")) {
-			game.showOptions();
+			game.showOptions(false);
 		} else if (item.equals("Quit")) {
 			Gdx.app.exit();
 		}

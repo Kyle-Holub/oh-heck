@@ -114,13 +114,13 @@ public class PlayScreen extends BaseScreen {
 	/** Where your just-finished game landed in the high score table, or -1. */
 	private int newHighScore = -1;
 	private final List<Rectangle> menuItems = new ArrayList<Rectangle>();
-	private static final String[] MENU = { "Resume", "New game", "Main menu" };
+	private static final String[] MENU = { "Resume", "Options", "New game", "Main menu" };
 
 	/** A new game, or the saved game {@code restored} if not null. */
 	public PlayScreen(OhHeckGame game, Match restored) {
 		super(game);
 		this.options = game.options;
-		this.whiteRegion = new TextureRegion(assets.white);
+		this.whiteRegion = new TextureRegion(assets.stroke);
 		this.rng = options.seed == null ? new Random() : new Random(options.seed);
 		if (restored == null) {
 			newGame();
@@ -374,10 +374,14 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	private void menuChoice(int i) {
-		menuOpen = false;
 		if (i == 1) {
+			game.showOptions(true); // the menu is still open when you come back
+			return;
+		}
+		menuOpen = false;
+		if (i == 2) {
 			newGame();
-		} else if (i == 2) {
+		} else if (i == 3) {
 			game.showTitle();
 		}
 	}
@@ -663,7 +667,7 @@ public class PlayScreen extends BaseScreen {
 
 	// ---- the hand counter: tally marks, a gate of five then three
 
-	private static final float TALLY_H = 36f, TALLY_W = 5f, TALLY_STEP = 12f;
+	private static final float TALLY_H = 36f, TALLY_W = 6f, TALLY_STEP = 12f;
 	/** Small fixed leans so the strokes look hand drawn. */
 	private static final float[] TALLY_LEAN = { 3f, -2f, 4f, -1f, 0f, 2f, -3f, 1f };
 

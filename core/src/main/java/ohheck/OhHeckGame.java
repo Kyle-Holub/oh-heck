@@ -11,7 +11,7 @@ import rules.Match;
 /** The libGDX entry point shared by Android and desktop; switches between screens. */
 public class OhHeckGame extends Game {
 
-	public static final String VERSION = "alpha-1.0.7";
+	public static final String VERSION = "alpha-1.0.8";
 
 	/** A screen that can describe itself for automated screenshots. */
 	public interface Tagged {
@@ -75,7 +75,14 @@ public class OhHeckGame extends Game {
 		setScreen(rules);
 	}
 
+	/** Options from the main menu. */
 	void showOptions() {
+		setScreen(optionsScreen);
+	}
+
+	/** Options from the pause menu, or the title screen; Back returns there. */
+	void showOptions(boolean fromGame) {
+		optionsScreen.fromGame = fromGame;
 		setScreen(optionsScreen);
 	}
 

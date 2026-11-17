@@ -43,6 +43,8 @@ public final class Assets implements Disposable {
 	public final Texture dealerIcon, trickIcon, overIcon;
 	/** A 1x1 white texture, tinted to draw panels and buttons. */
 	public final Texture white;
+	/** A soft-edged rounded bar, for strokes that stay smooth when rotated (the tally marks). */
+	public final Texture stroke;
 	/** Sans-serif text for the table and panels. */
 	public final BitmapFont font;
 	/** Serif text for titles and menus, like the original game. */
@@ -89,8 +91,29 @@ public final class Assets implements Disposable {
 		p.fill();
 		white = new Texture(p);
 		p.dispose();
+		stroke = strokeTexture(32, 160);
 		font = bitmapFont("ui");
 		serif = bitmapFont("serif");
+	}
+
+	/** A capsule w wide and h tall with anti-aliased edges and a little transparent margin. */
+	private static Texture strokeTexture(int w, int h) {
+		Pixmap p = new Pixmap(w, h, Pixmap.Format.RGBA8888);
+		p.setBlending(Pixmap.Blending.None);
+		float r = w / 2f - 2f; // radius, leaving a 2px clear border so filtering softens the edge
+		for (int y = 0; y < h; y++) {
+			for (int x = 0; x < w; x++) {
+				float px = x + 0.5f - w / 2f, py = y + 0.5f;
+				float cy = Math.max(r + 2f, Math.min(h - r - 2f, py)); // nearest point on the centre line
+				float d = (float) Math.sqrt(px * px + (py - cy) * (py - cy));
+				float a = Math.max(0f, Math.min(1f, r - d + 0.5f));
+				p.drawPixel(x, y, Color.rgba8888(1f, 1f, 1f, a));
+			}
+		}
+		Texture t = new Texture(p, true);
+		t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+		p.dispose();
+		return t;
 	}
 
 	public TextureRegion face(Card c) {
@@ -161,6 +184,7 @@ public final class Assets implements Disposable {
 			t.dispose();
 		}
 		white.dispose();
+		stroke.dispose();
 		font.getRegion().getTexture().dispose();
 		serif.getRegion().getTexture().dispose();
 		font.dispose();

@@ -28,7 +28,7 @@ public class HighScoresScreen extends BaseScreen {
 		float dt = Math.min(delta, 0.1f);
 		shownFor += dt * game.options.speed;
 		if (game.options.autoplayHuman && shownFor > 1.5f) {
-			game.showOptions();
+			game.showOptions(false);
 			return;
 		}
 		ScreenUtils.clear(Palette.BG);
