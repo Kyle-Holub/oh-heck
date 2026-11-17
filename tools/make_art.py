@@ -320,6 +320,24 @@ def icons(out):
     downsample(img, 108, 108).save(os.path.join(out, "icon_dealer.png"))
 
 
+def level_badges(out):
+    """Difficulty badges: gold-rimmed chips like the dealer button, with one, two or three spades (Hard in oxblood)."""
+    for level, name, fill in ((1, "easy", (44, 30, 20)), (2, "normal", (44, 30, 20)), (3, "hard", OXBLOOD)):
+        S = 108 * SS
+        img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        d.ellipse([4 * SS, 4 * SS, S - 4 * SS, S - 4 * SS], fill=fill, outline=GOLD, width=5 * SS)
+        d.ellipse([14 * SS, 14 * SS, S - 14 * SS, S - 14 * SS], outline=GOLD_DARK, width=2 * SS)
+        c = S / 2
+        pips = {1: [(c, c)], 2: [(c - 17 * SS, c), (c + 17 * SS, c)],
+                3: [(c, c - 15 * SS), (c - 18 * SS, c + 14 * SS), (c + 18 * SS, c + 14 * SS)]}[level]
+        size = {1: 40, 2: 30, 3: 28}[level] * SS
+        for (x, y) in pips:
+            suit_shape(d, "spades", x + 1.5 * SS, y + 1.5 * SS, size, (10, 6, 4))
+            suit_shape(d, "spades", x, y, size, GOLD_LIGHT)
+        downsample(img, 108, 108).save(os.path.join(out, "level_" + name + ".png"))
+
+
 def sprites(out):
     # soft shadow for cards: a blurred rounded rectangle with margin all round (card area 120x160 of 160x200)
     S = 4
@@ -384,6 +402,7 @@ if __name__ == "__main__":
     blurred_sheet(sheet, out)
     table(out)
     icons(out)
+    level_badges(out)
     sprites(out)
     nine_patch("panel", out, fill=(18, 12, 8, 222), border=(176, 136, 66, 255))
     nine_patch("panel_turn", out, fill=(52, 36, 14, 236), border=GOLD_LIGHT + (255,), width=3, glow=GOLD_LIGHT + (200,))

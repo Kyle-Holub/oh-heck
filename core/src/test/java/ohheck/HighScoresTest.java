@@ -11,32 +11,36 @@ public class HighScoresTest {
 	public void keepsTheBestTenInOrder() {
 		HighScores h = new HighScores();
 		for (int i = 0; i < 15; i++) {
-			h.add(new HighScores.Entry(i * 10, 1, "2026-11-16"));
+			h.add(new HighScores.Entry(i * 10, 1, "2026-11-16", 1));
 		}
 		assertEquals(10, h.entries().size());
 		assertEquals(140, h.entries().get(0).score);
 		assertEquals(50, h.entries().get(9).score);
-		assertEquals(-1, h.add(new HighScores.Entry(20, 3, "2026-11-17")));
-		assertEquals(0, h.add(new HighScores.Entry(200, 1, "2026-11-17")));
+		assertEquals(-1, h.add(new HighScores.Entry(20, 3, "2026-11-17", 1)));
+		assertEquals(0, h.add(new HighScores.Entry(200, 1, "2026-11-17", 1)));
 	}
 
 	@Test
 	public void earlierGameStaysAheadOnATie() {
 		HighScores h = new HighScores();
-		h.add(new HighScores.Entry(50, 1, "first"));
-		assertEquals(1, h.add(new HighScores.Entry(50, 2, "second")));
+		h.add(new HighScores.Entry(50, 1, "first", 1));
+		assertEquals(1, h.add(new HighScores.Entry(50, 2, "second", 1)));
 		assertEquals("first", h.entries().get(0).date);
 	}
 
 	@Test
 	public void roundTripsAndSkipsJunk() {
 		HighScores h = new HighScores();
-		h.add(new HighScores.Entry(72, 1, "2026-11-16"));
-		h.add(new HighScores.Entry(-15, 4, "2026-11-15"));
+		h.add(new HighScores.Entry(72, 1, "2026-11-16", 1));
+		h.add(new HighScores.Entry(-15, 4, "2026-11-15", 1));
 		HighScores back = HighScores.decode(h.encode() + ";garbage;1,2");
 		assertEquals(h.encode(), back.encode());
 		assertTrue(HighScores.decode("").entries().isEmpty());
 		assertTrue(HighScores.decode(null).entries().isEmpty());
+		// entries saved before difficulty levels existed still load, with no level
+		HighScores old = HighScores.decode("40,1,2026-11-01");
+		assertEquals(40, old.entries().get(0).score);
+		assertEquals(-1, old.entries().get(0).level);
 	}
 
 	@Test

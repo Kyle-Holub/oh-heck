@@ -18,11 +18,14 @@ final class HighScores {
 		final int place;
 		/** yyyy-mm-dd */
 		final String date;
+		/** The computer players' difficulty (a Difficulty ordinal), or -1 for games from before there was a choice. */
+		final int level;
 
-		Entry(int score, int place, String date) {
+		Entry(int score, int place, String date, int level) {
 			this.score = score;
 			this.place = place;
 			this.date = date;
+			this.level = level;
 		}
 	}
 
@@ -52,14 +55,14 @@ final class HighScores {
 		return at;
 	}
 
-	/** "score,place,date;score,place,date..." */
+	/** "score,place,date,level;..." (older entries have no level) */
 	String encode() {
 		StringBuilder b = new StringBuilder();
 		for (Entry e : entries) {
 			if (b.length() > 0) {
 				b.append(';');
 			}
-			b.append(e.score).append(',').append(e.place).append(',').append(e.date);
+			b.append(e.score).append(',').append(e.place).append(',').append(e.date).append(',').append(e.level);
 		}
 		return b.toString();
 	}
@@ -72,11 +75,12 @@ final class HighScores {
 		}
 		for (String part : s.split(";")) {
 			String[] f = part.split(",");
-			if (f.length != 3) {
+			if (f.length != 3 && f.length != 4) {
 				continue;
 			}
 			try {
-				h.add(new Entry(Integer.parseInt(f[0].trim()), Integer.parseInt(f[1].trim()), f[2].trim()));
+				int level = f.length == 4 ? Integer.parseInt(f[3].trim()) : -1;
+				h.add(new Entry(Integer.parseInt(f[0].trim()), Integer.parseInt(f[1].trim()), f[2].trim(), level));
 			} catch (NumberFormatException ignored) {
 				// skip a damaged entry
 			}

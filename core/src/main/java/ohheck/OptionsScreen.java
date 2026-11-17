@@ -8,6 +8,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import rules.Difficulty;
+
 /** How to play, music, sound effects, game speed and visual effects, saved on the device. */
 public class OptionsScreen extends BaseScreen {
 
@@ -40,16 +42,19 @@ public class OptionsScreen extends BaseScreen {
 				s.effects() ? "On" : "Off" };
 		boolean[] on = { s.music(), s.sound(), true, s.effects() };
 		sizeTo(rows, labels.length);
-		float rw = 460, rh = 52, x = (w - rw) / 2, y = h - 100 - rh;
+		float rw = 460, rh = ROW_H, x = (w - rw) / 2;
 
 		// How to play: its own button, gold lettering, set apart from the settings below
-		float bw = 260, bh = 46;
-		rulesButton.set((w - bw) / 2, y + rh - bh, bw, bh);
+		float bw = 260, bh = 44;
+		rulesButton.set((w - bw) / 2, h - 74 - bh, bw, bh);
 		frame(assets.buttonAlt, rulesButton.x, rulesButton.y, bw, bh);
 		BitmapFont rb = serif(1.6f);
 		rb.setColor(GOLD);
-		centred(rb, "How to play", w / 2, rulesButton.y + bh / 2 + 11);
-		y -= bh + 22;
+		textIn(rb, "How to play", rulesButton.x, rulesButton.y, bw, bh);
+
+		float y = rulesButton.y - 14 - DIFFICULTY_H;
+		drawDifficulty(x, y, rw);
+		y -= ROW_GAP + rh;
 		for (int i = 0; i < labels.length; i++) {
 			frame(assets.panel, x, y, rw, rh);
 			BitmapFont f = serif(1.6f);
@@ -63,10 +68,83 @@ public class OptionsScreen extends BaseScreen {
 			glyphs.setText(v, values[i]);
 			v.draw(batch, values[i], x + rw - 14 - vw / 2 - glyphs.width / 2, y + rh / 2 + glyphs.height / 2);
 			rows.get(i).set(x, y, rw, rh);
-			y -= rh + 10;
+			y -= rh + ROW_GAP;
 		}
 		button(backButton, "Back", 70, h - 52, 110, 40, assets.buttonAlt);
 		batch.end();
+	}
+
+	// ---- difficulty: a slider with three stops, its knob the level's badge
+
+	private static final float ROW_H = 48, ROW_GAP = 8, DIFFICULTY_H = 72, KNOB = 34;
+	private static final Color TRACK = new Color(0.36f, 0.29f, 0.21f, 1f);
+	private final Rectangle slider = new Rectangle();
+	private float stop0, stopStep;
+	private boolean sliding;
+
+	private void drawDifficulty(float x, float y, float rw) {
+		Settings s = game.settings;
+		frame(assets.panel, x, y, rw, DIFFICULTY_H);
+		BitmapFont f = serif(1.6f);
+		f.setColor(Palette.CREAM);
+		f.draw(batch, "Difficulty", x + 24, y + DIFFICULTY_H - 18);
+		if (game.hasGameInProgress()) {
+			BitmapFont n = ui(0.85f);
+			n.setColor(Palette.MUTED);
+			n.draw(batch, "Applies from your next game", x + 24, y + 22);
+		}
+		// the track, gold up to the chosen stop
+		float x0 = x + 214, x1 = x + rw - 36, ty = y + 44;
+		stop0 = x0;
+		stopStep = (x1 - x0) / 2;
+		slider.set(x0 - 30, y, x1 - x0 + 60, DIFFICULTY_H);
+		int level = s.difficulty();
+		float knobX = x0 + level * stopStep;
+		rect(x0, ty - 2, x1 - x0, 4, TRACK);
+		rect(x0, ty - 2, knobX - x0, 4, GOLD);
+		BitmapFont l = ui(0.9f);
+		for (int i = 0; i < 3; i++) {
+			float sx = x0 + i * stopStep;
+			rect(sx - 1.5f, ty - 7, 3, 14, i <= level ? GOLD : TRACK);
+			l.setColor(i == level ? Palette.GOLD_LIGHT : Palette.MUTED);
+			text(l, Difficulty.values()[i].label, sx, y + 20, true);
+		}
+		batch.draw(assets.levelBadge[level], knobX - KNOB / 2, ty - KNOB / 2, KNOB, KNOB);
+	}
+
+	/** Moves the slider to the stop nearest x. */
+	private void slideTo(float x) {
+		int level = Math.max(0, Math.min(2, Math.round((x - stop0) / stopStep)));
+		if (level != game.settings.difficulty()) {
+			game.settings.setDifficulty(level);
+		}
+	}
+
+	@Override
+	protected void touchDown(float x, float y) {
+		super.touchDown(x, y);
+		sliding = slider.contains(x, y);
+		if (sliding) {
+			slideTo(x);
+		}
+	}
+
+	@Override
+	protected void touchDragged(float x, float y) {
+		if (sliding) {
+			slideTo(x);
+		} else {
+			super.touchDragged(x, y);
+		}
+	}
+
+	@Override
+	protected void touchUp(float x, float y) {
+		if (sliding) {
+			sliding = false;
+			return;
+		}
+		super.touchUp(x, y);
 	}
 
 	@Override

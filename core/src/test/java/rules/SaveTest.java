@@ -10,7 +10,7 @@ import org.junit.Test;
 
 public class SaveTest {
 
-	private final Bot bot = new Bot();
+	private final Bot bot = Bot.of(Difficulty.NORMAL, new Random(1));
 
 	/**
 	 * At every step of many games: saving and loading gives back the same state,
@@ -41,9 +41,9 @@ public class SaveTest {
 	private void move(Match m) {
 		int s = m.currentSeat();
 		if (m.phase() == Match.Phase.BIDDING) {
-			m.placeBid(s, bot.chooseBid(m.hand(s), m.trump(), m.bidsSoFar()));
+			m.placeBid(s, bot.chooseBid(m.view(s)));
 		} else {
-			m.playCard(s, bot.choosePlay(m.hand(s), m.currentTrick(), m.trump(), m.bid(s), m.tricksWon(s)));
+			m.playCard(s, bot.choosePlay(m.view(s)));
 		}
 	}
 

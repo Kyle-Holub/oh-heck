@@ -31,17 +31,32 @@ public final class Settings {
 		return SPEED_FACTORS[speed()];
 	}
 
+	/** Computer players' difficulty for new games (a rules.Difficulty ordinal); Normal unless chosen. */
+	public int difficulty() {
+		return Math.max(0, Math.min(2, prefs.getInteger("difficulty", 1)));
+	}
+
+	public void setDifficulty(int d) {
+		prefs.putInteger("difficulty", d).flush();
+	}
+
+	/** The difficulty the saved game was started at. */
+	public int savedGameDifficulty() {
+		return Math.max(0, Math.min(2, prefs.getInteger("savedGameDifficulty", 1)));
+	}
+
 	/** The game in progress, as saved by rules.Match.save(), or null. */
 	public String savedGame() {
 		String s = prefs.getString("savedGame", "");
 		return s.isEmpty() ? null : s;
 	}
 
-	public void saveGame(String saved) {
+	public void saveGame(String saved, int difficulty) {
 		if (saved == null) {
 			prefs.remove("savedGame");
 		} else {
 			prefs.putString("savedGame", saved);
+			prefs.putInteger("savedGameDifficulty", difficulty);
 		}
 		prefs.flush();
 	}

@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import rules.Card;
+import rules.Difficulty;
 import rules.Match;
 import rules.Suit;
 
@@ -70,8 +71,8 @@ public class PlayScreen extends BaseScreen {
 	final List<Card> handOrder = new ArrayList<Card>();
 	final List<Rectangle> handRects = new ArrayList<Rectangle>();
 
-	/** A new game, or the saved game {@code restored} if not null. */
-	public PlayScreen(OhHeckGame game, Match restored) {
+	/** A new game, or the saved game {@code restored} if not null, against computer players of the given difficulty. */
+	public PlayScreen(OhHeckGame game, Match restored, Difficulty difficulty) {
 		super(game);
 		this.options = game.options;
 		this.rng = options.seed == null ? new Random() : new Random(options.seed);
@@ -123,14 +124,15 @@ public class PlayScreen extends BaseScreen {
 			@Override
 			public void gameEnded() {
 				Match m = flow.match();
-				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN));
+				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN),
+						flow.difficulty());
 				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
 				overlays.highScoresButton.set(0, 0, 0, 0);
 				if (m.leaders().contains(HUMAN)) {
 					sparks.burst(table.w / 2, table.h / 2 + 100, 160);
 				}
 			}
-		});
+		}, difficulty, rng);
 		if (restored == null) {
 			newGame();
 		} else {
@@ -247,7 +249,7 @@ public class PlayScreen extends BaseScreen {
 	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */
 	private void save() {
 		if (options.persist) {
-			game.settings.saveGame(isGameOver() ? null : match().save());
+			game.settings.saveGame(isGameOver() ? null : match().save(), flow.difficulty().ordinal());
 		}
 	}
 
@@ -346,7 +348,7 @@ public class PlayScreen extends BaseScreen {
 			if (overlays.highScoresButton.contains(x, y)) {
 				game.showHighScores(newHighScore);
 			} else if (overlays.playAgainButton.contains(x, y)) {
-				newGame();
+				game.newGame(); // a fresh table, at the difficulty now chosen in Options
 			}
 			break;
 		}
@@ -406,7 +408,7 @@ public class PlayScreen extends BaseScreen {
 		}
 		menuOpen = false;
 		if (i == 2) {
-			newGame();
+			game.newGame(); // a fresh table, at the difficulty now chosen in Options
 		} else if (i == 3) {
 			game.showTitle();
 		}

@@ -2,8 +2,11 @@ package ohheck;
 
 import com.badlogic.gdx.math.Rectangle;
 
+import java.util.Random;
+
 import rules.Bot;
 import rules.Card;
+import rules.Difficulty;
 import rules.Match;
 
 /**
@@ -20,7 +23,7 @@ final class Autoplay {
 
 	private final PlayScreen screen;
 	private final GameOptions options;
-	private final Bot bot = new Bot();
+	private final Bot bot = Bot.of(Difficulty.NORMAL, new Random(7));
 	private float timer;
 	private boolean menuShown;
 
@@ -35,9 +38,9 @@ final class Autoplay {
 			while (m.phase() == Match.Phase.BIDDING || m.phase() == Match.Phase.PLAYING) {
 				int s = m.currentSeat();
 				if (m.phase() == Match.Phase.BIDDING) {
-					m.placeBid(s, bot.chooseBid(m.hand(s), m.trump(), m.bidsSoFar()));
+					m.placeBid(s, bot.chooseBid(m.view(s)));
 				} else {
-					m.playCard(s, bot.choosePlay(m.hand(s), m.currentTrick(), m.trump(), m.bid(s), m.tricksWon(s)));
+					m.playCard(s, bot.choosePlay(m.view(s)));
 				}
 			}
 			m.nextHand();
@@ -68,11 +71,10 @@ final class Autoplay {
 		}
 		timer = 0;
 		if (m.phase() == Match.Phase.BIDDING) {
-			int b = bot.chooseBid(m.hand(TableLayout.HUMAN), m.trump(), m.bidsSoFar());
+			int b = bot.chooseBid(m.view(TableLayout.HUMAN));
 			tapCentre(b < screen.overlays.bidButtons.size() ? screen.overlays.bidButtons.get(b) : null);
 		} else {
-			Card c = bot.choosePlay(m.hand(TableLayout.HUMAN), m.currentTrick(), m.trump(), m.bid(TableLayout.HUMAN),
-					m.tricksWon(TableLayout.HUMAN));
+			Card c = bot.choosePlay(m.view(TableLayout.HUMAN));
 			int i = screen.handOrder.indexOf(c);
 			tapCentre(i >= 0 ? screen.handRects.get(i) : null);
 		}

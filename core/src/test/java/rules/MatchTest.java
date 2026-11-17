@@ -16,7 +16,7 @@ import org.junit.Test;
 
 public class MatchTest {
 
-	private final Bot bot = new Bot();
+	private final Bot bot = Bot.of(Difficulty.NORMAL, new Random(1));
 
 	@Test
 	public void thousandsOfBotGamesFinishAndObeyTheRules() {
@@ -50,7 +50,7 @@ public class MatchTest {
 			for (int i = 1; i <= 4; i++) {
 				int seat = (m.dealer() + i) % 4;
 				assertEquals(seat, m.currentSeat());
-				int b = bot.chooseBid(m.hand(seat), m.trump(), m.bidsSoFar());
+				int b = bot.chooseBid(m.view(seat));
 				assertTrue(m.isLegalBid(b));
 				m.placeBid(seat, b);
 			}
@@ -66,7 +66,7 @@ public class MatchTest {
 				for (int i = 0; i < 4; i++) {
 					int seat = m.currentSeat();
 					assertEquals((leader + i) % 4, seat);
-					Card c = bot.choosePlay(m.hand(seat), m.currentTrick(), m.trump(), m.bid(seat), m.tricksWon(seat));
+					Card c = bot.choosePlay(m.view(seat));
 					assertTrue(m.legalPlays(seat).contains(c));
 					plays.add(c);
 					winner = m.playCard(seat, c);
@@ -117,12 +117,12 @@ public class MatchTest {
 			int s = m.currentSeat();
 			switch (m.phase()) {
 			case BIDDING:
-				int b = bot.chooseBid(m.hand(s), m.trump(), m.bidsSoFar());
+				int b = bot.chooseBid(m.view(s));
 				m.placeBid(s, b);
 				sb.append(s).append(" bids ").append(b).append('\n');
 				break;
 			case PLAYING:
-				Card c = bot.choosePlay(m.hand(s), m.currentTrick(), m.trump(), m.bid(s), m.tricksWon(s));
+				Card c = bot.choosePlay(m.view(s));
 				m.playCard(s, c);
 				sb.append(s).append(" plays ").append(c).append('\n');
 				break;
@@ -215,7 +215,7 @@ public class MatchTest {
 	private void bidAll(Match m) {
 		while (m.phase() == Match.Phase.BIDDING) {
 			int s = m.currentSeat();
-			m.placeBid(s, bot.chooseBid(m.hand(s), m.trump(), m.bidsSoFar()));
+			m.placeBid(s, bot.chooseBid(m.view(s)));
 		}
 	}
 }

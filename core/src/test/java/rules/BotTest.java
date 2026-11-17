@@ -1,156 +1,139 @@
 package rules;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static rules.TestCards.c;
-import static rules.TestCards.cards;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Random;
 
 import org.junit.Test;
 
-/**
- * Pins the bot to the behaviour of the original ComputerPlayer, case by case.
- */
+/** The computer players at each difficulty: they play legally, and the harder ones score more. */
 public class BotTest {
 
-	private final Bot bot = new Bot();
-
-	// ---- Bidding ----
-
-	@Test
-	public void bidsTrumpsPlusAces() {
-		assertEquals(2, bot.chooseBid(cards("AS 2C 5H"), Suit.CLUBS, 0));
+	/** Plays one game with the given level in each seat; returns the final scores. */
+	static int[] play(long seed, Difficulty... seats) {
+		Bot[] bots = new Bot[4];
+		for (int i = 0; i < 4; i++) {
+			bots[i] = Bot.of(seats[i], new Random(seed * 7 + i));
+		}
+		Match m = Match.random(4, new Random(seed));
+		while (m.phase() != Match.Phase.GAME_OVER) {
+			if (m.phase() == Match.Phase.HAND_OVER) {
+				m.nextHand();
+				continue;
+			}
+			int s = m.currentSeat();
+			if (m.phase() == Match.Phase.BIDDING) {
+				int b = bots[s].chooseBid(m.view(s));
+				assertTrue(seats[s] + " bid " + b, m.isLegalBid(b));
+				m.placeBid(s, b);
+			} else {
+				Card c = bots[s].choosePlay(m.view(s));
+				assertTrue(seats[s] + " played " + c, m.legalPlays(s).contains(c));
+				m.playCard(s, c);
+			}
+		}
+		int[] scores = new int[4];
+		for (int i = 0; i < 4; i++) {
+			scores[i] = m.score(i);
+		}
+		return scores;
 	}
 
 	@Test
-	public void trumpAceCountsOnce() {
-		assertEquals(1, bot.chooseBid(cards("AC 5H"), Suit.CLUBS, 5));
-	}
-
-	@Test
-	public void bidsOneLessToAvoidHook() {
-		// 3 cards, 1 bid so far: bidding 2 would total 3
-		assertEquals(1, bot.chooseBid(cards("AS 2C 5H"), Suit.CLUBS, 1));
-	}
-
-	@Test
-	public void zeroBidGoesUpToAvoidHook() {
-		assertEquals(1, bot.chooseBid(cards("2H"), Suit.CLUBS, 1));
-	}
-
-	// ---- Leading ----
-
-	@Test
-	public void leadsHighestNonTrumpWhenWantingTricks() {
-		assertEquals(c("KH"), bot.choosePlay(cards("2C KH 9S"), none(), Suit.CLUBS, 1, 0));
-	}
-
-	@Test
-	public void leadsHighestTrumpWhenOnlyTrumps() {
-		assertEquals(c("9C"), bot.choosePlay(cards("2C 9C"), none(), Suit.CLUBS, 1, 0));
-	}
-
-	@Test
-	public void leadsLowestTrumpWhenDoneTakingTricks() {
-		assertEquals(c("2C"), bot.choosePlay(cards("KH 2C 9C"), none(), Suit.CLUBS, 0, 0));
-	}
-
-	@Test
-	public void leadsLowestCardWhenDoneAndNoTrumps() {
-		assertEquals(c("3D"), bot.choosePlay(cards("KH 9S 3D"), none(), Suit.CLUBS, 1, 1));
-	}
-
-	// ---- Following suit ----
-
-	@Test
-	public void playsHighestFollowerWhenItCanWin() {
-		assertEquals(c("KH"), bot.choosePlay(cards("KH 2H 9S"), cards("5H"), Suit.CLUBS, 1, 0));
-	}
-
-	@Test
-	public void savesHighCardWhenItCannotWin() {
-		assertEquals(c("2H"), bot.choosePlay(cards("KH 2H"), cards("AH"), Suit.CLUBS, 1, 0));
-	}
-
-	@Test
-	public void savesHighCardWhenTrickIsTrumped() {
-		assertEquals(c("3H"), bot.choosePlay(cards("KH 3H"), cards("5H 2C"), Suit.CLUBS, 1, 0));
-	}
-
-	@Test
-	public void onlyFollowerIsPlayedEvenIfItLoses() {
-		assertEquals(c("KH"), bot.choosePlay(cards("KH 9S"), cards("AH"), Suit.CLUBS, 1, 0));
-	}
-
-	@Test
-	public void ducksWithLowestFollowerWhenDone() {
-		assertEquals(c("2H"), bot.choosePlay(cards("KH 2H 9H"), cards("5H"), Suit.CLUBS, 0, 0));
-	}
-
-	// ---- Void in the lead suit (original quirk: no deliberate trumping) ----
-
-	@Test
-	public void voidAndWantingTricksPlaysLowestCard() {
-		assertEquals(c("3D"), bot.choosePlay(cards("9S 3D AC"), cards("5H"), Suit.CLUBS, 2, 0));
-	}
-
-	@Test
-	public void voidAndDonePlaysHighestCardEvenATrump() {
-		assertEquals(c("AC"), bot.choosePlay(cards("9S 3D AC"), cards("5H"), Suit.CLUBS, 0, 0));
-	}
-
-	// ---- Small cases ----
-
-	@Test
-	public void singleCardIsPlayed() {
-		assertEquals(c("2D"), bot.choosePlay(cards("2D"), cards("AH"), Suit.CLUBS, 1, 0));
-	}
-
-	@Test
-	public void tiesBreakLikeTheOriginal() {
-		assertEquals(c("KS"), Bot.highest(cards("KS KD 2H")));
-		assertEquals(c("3D"), Bot.lowest(cards("3S 3D KH")));
-	}
-
-	// ---- Never breaks the rules ----
-
-	@Test
-	public void alwaysPlaysALegalCard() {
-		Random rng = new Random(7);
-		for (int i = 0; i < 20000; i++) {
-			List<Card> all = new ArrayList<Card>(new Deck().deal(52));
-			Collections.shuffle(all, rng);
-			int handSize = 1 + rng.nextInt(8);
-			List<Card> hand = all.subList(0, handSize);
-			List<Card> trick = all.subList(handSize, handSize + rng.nextInt(4));
-			Suit trump = Suit.values()[rng.nextInt(4)];
-			int bid = rng.nextInt(handSize + 1);
-			int won = rng.nextInt(handSize + 1);
-			Card played = bot.choosePlay(hand, trick, trump, bid, won);
-			Suit lead = trick.isEmpty() ? null : trick.get(0).suit();
-			assertTrue(played + " from " + hand + " on " + trick, Rules.isLegalPlay(hand, played, lead));
+	public void everyLevelPlaysLegally() {
+		for (long seed = 0; seed < 300; seed++) {
+			play(seed, Difficulty.EASY, Difficulty.NORMAL, Difficulty.EASY, Difficulty.NORMAL);
+		}
+		for (long seed = 0; seed < 30; seed++) {
+			play(seed, Difficulty.HARD, Difficulty.EASY, Difficulty.HARD, Difficulty.NORMAL);
 		}
 	}
 
-	@Test
-	public void alwaysBidsInRangeAndNeverHooks() {
-		Random rng = new Random(11);
-		for (int i = 0; i < 20000; i++) {
-			int handSize = 1 + rng.nextInt(8);
-			List<Card> hand = Deck.shuffled(rng).deal(handSize);
-			int bidsSoFar = rng.nextInt(3 * handSize + 1);
-			int b = bot.chooseBid(hand, Suit.values()[rng.nextInt(4)], bidsSoFar);
-			assertTrue(b >= 0 && b <= handSize);
-			assertNotEquals(handSize - bidsSoFar, b);
+	/** Average score of seat 0 (the level under test) against three of another level, minus their average. */
+	private static double edge(int games, Difficulty me, Difficulty others) {
+		double mine = 0, theirs = 0;
+		for (long seed = 0; seed < games; seed++) {
+			int[] s = play(1000 + seed, me, others, others, others);
+			mine += s[0];
+			theirs += (s[1] + s[2] + s[3]) / 3.0;
 		}
+		return (mine - theirs) / games;
 	}
 
-	private static List<Card> none() {
-		return Collections.emptyList();
+	@Test
+	public void normalBeatsEasy() {
+		assertTrue(edge(400, Difficulty.NORMAL, Difficulty.EASY) > 5);
+	}
+
+	@Test
+	public void hardBeatsNormal() {
+		assertTrue(edge(60, Difficulty.HARD, Difficulty.NORMAL) > 10);
+	}
+
+	@Test
+	public void sameSeedSamePlay() {
+		assertTrue(java.util.Arrays.equals(play(5, Difficulty.HARD, Difficulty.EASY, Difficulty.NORMAL, Difficulty.EASY),
+				play(5, Difficulty.HARD, Difficulty.EASY, Difficulty.NORMAL, Difficulty.EASY)));
+	}
+
+	@Test
+	public void hardRacesTheLeaderOrSecondPlace() {
+		TableView v = new TableView(4);
+		v.seat = 1;
+		v.scores[0] = 50;
+		v.scores[1] = 20;
+		v.scores[2] = 70;
+		v.scores[3] = 10;
+		assertEquals("behind: the leader", 2, HardBot.rival(v));
+		v.scores[1] = 90;
+		assertEquals("ahead: second place", 2, HardBot.rival(v));
+		v.scores[0] = 80;
+		assertEquals(0, HardBot.rival(v));
+	}
+
+	@Test
+	public void viewsRememberPlayedCardsAndVoids() {
+		// play hand 1 out and into hand 2's first trick, then check what seat 0 knows
+		Match m = Match.random(4, new Random(11));
+		Bot bot = Bot.of(Difficulty.NORMAL, new Random(1));
+		while (m.handIndex() < 1 || m.phase() == Match.Phase.BIDDING) {
+			if (m.phase() == Match.Phase.HAND_OVER) {
+				m.nextHand();
+			} else if (m.phase() == Match.Phase.BIDDING) {
+				m.placeBid(m.currentSeat(), bot.chooseBid(m.view(m.currentSeat())));
+			} else {
+				m.playCard(m.currentSeat(), bot.choosePlay(m.view(m.currentSeat())));
+			}
+		}
+		for (int i = 0; i < 4; i++) {
+			int s = m.currentSeat();
+			m.playCard(s, bot.choosePlay(m.view(s)));
+		}
+		TableView v = m.view(0);
+		int played = 0;
+		for (boolean p : v.played) {
+			played += p ? 1 : 0;
+		}
+		assertEquals("one trick of hand 2", 4, played);
+		Suit lead = m.lastTrick().get(0).suit();
+		for (int i = 1; i < 4; i++) {
+			int seat = m.lastTrickSeats().get(i);
+			boolean followed = m.lastTrick().get(i).suit() == lead;
+			assertEquals(!followed, v.voids[seat][lead.ordinal()]);
+		}
+		assertFalse(v.played[TableView.index(m.hand(0).get(0))]);
+		// and it survives saving
+		TableView again = Match.load(m.save(), new Random()).view(0);
+		assertTrue(java.util.Arrays.equals(v.played, again.played));
+	}
+
+	@Test
+	public void bidChancesAddUp() {
+		double[] d = NormalBot.trickDistribution(new double[] { 0.5, 0.5 });
+		assertEquals(0.25, d[0], 1e-9);
+		assertEquals(0.5, d[1], 1e-9);
+		assertEquals(0.25, d[2], 1e-9);
 	}
 }

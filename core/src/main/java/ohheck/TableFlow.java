@@ -1,7 +1,10 @@
 package ohheck;
 
+import java.util.Random;
+
 import rules.Bot;
 import rules.Card;
+import rules.Difficulty;
 import rules.Match;
 
 /**
@@ -40,7 +43,9 @@ final class TableFlow {
 
 	final DealAnimation deal = new DealAnimation();
 	private final Listener listener;
-	private final Bot bot = new Bot();
+	/** The computer players, one per seat (seat 0, yours, is unused). */
+	private final Bot[] bots = new Bot[4];
+	private Difficulty difficulty;
 
 	private Match match;
 	private TableState state = TableState.TURN;
@@ -48,8 +53,16 @@ final class TableFlow {
 	/** Seconds since the deal finished, for the trump card turning over. */
 	private float trumpT;
 
-	TableFlow(Listener listener) {
+	TableFlow(Listener listener, Difficulty difficulty, Random rng) {
 		this.listener = listener;
+		this.difficulty = difficulty;
+		for (int s = 1; s < bots.length; s++) {
+			bots[s] = Bot.of(difficulty, new Random(rng.nextLong()));
+		}
+	}
+
+	Difficulty difficulty() {
+		return difficulty;
 	}
 
 	// ---- starting
@@ -220,10 +233,9 @@ final class TableFlow {
 
 	private void botMove(int seat) {
 		if (match.phase() == Match.Phase.BIDDING) {
-			placeBid(seat, bot.chooseBid(match.hand(seat), match.trump(), match.bidsSoFar()));
+			placeBid(seat, bots[seat].chooseBid(match.view(seat)));
 		} else {
-			playCard(seat, bot.choosePlay(match.hand(seat), match.currentTrick(), match.trump(), match.bid(seat),
-					match.tricksWon(seat)));
+			playCard(seat, bots[seat].choosePlay(match.view(seat)));
 		}
 	}
 

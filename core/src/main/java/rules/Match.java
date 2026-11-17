@@ -45,6 +45,9 @@ public final class Match {
 
 	private final List<Card> trick = new ArrayList<Card>();
 	private final List<Integer> trickSeats = new ArrayList<Integer>();
+	/** Every card played this hand, in order, and who played it: what players remember. */
+	private final List<Card> history = new ArrayList<Card>();
+	private final List<Integer> historySeats = new ArrayList<Integer>();
 	private List<Card> lastTrick = Collections.emptyList();
 	private List<Integer> lastTrickSeats = Collections.emptyList();
 	private int lastTrickWinner = -1;
@@ -107,6 +110,8 @@ public final class Match {
 		hand.remove(card);
 		trick.add(card);
 		trickSeats.add(seat);
+		history.add(card);
+		historySeats.add(seat);
 
 		if (trick.size() < players) {
 			current = next(seat);
@@ -278,6 +283,37 @@ public final class Match {
 		return seats;
 	}
 
+	/** What the given player can see, for a computer player to decide from. */
+	public TableView view(int seat) {
+		TableView v = new TableView(players);
+		v.seat = seat;
+		v.handIndex = handIndex;
+		v.handSize = handSize();
+		v.dealer = dealer;
+		v.numberOfHands = Rules.numberOfHands();
+		v.trumpCard = trumpCard;
+		v.hand.addAll(hands.get(seat));
+		for (int s = 0; s < players; s++) {
+			v.bids[s] = bids[s];
+			v.tricksWon[s] = tricks[s];
+			v.scores[s] = scores[s];
+			v.cardsLeft[s] = hands.get(s).size();
+		}
+		v.trick.addAll(trick);
+		v.trickSeats.addAll(trickSeats);
+		Suit lead = null;
+		for (int i = 0; i < history.size(); i++) {
+			Card c = history.get(i);
+			v.played[TableView.index(c)] = true;
+			if (i % players == 0) {
+				lead = c.suit();
+			} else if (c.suit() != lead) {
+				v.voids[historySeats.get(i)][lead.ordinal()] = true;
+			}
+		}
+		return v;
+	}
+
 	// ---- Saving ----
 
 	/** Cards written as text ("AS", "10H"). */
@@ -314,6 +350,8 @@ public final class Match {
 		line(sb, "last", cards(lastTrick));
 		line(sb, "lastSeats", seats(lastTrickSeats));
 		line(sb, "lastWinner", String.valueOf(lastTrickWinner));
+		line(sb, "history", cards(history));
+		line(sb, "historySeats", seats(historySeats));
 		return sb.toString();
 	}
 
@@ -360,6 +398,11 @@ public final class Match {
 			m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last"), legacy));
 			m.lastTrickSeats = Collections.unmodifiableList(parseSeats(req(v, "lastSeats")));
 			m.lastTrickWinner = Integer.parseInt(req(v, "lastWinner"));
+			// (games saved before alpha-1.0.8's smarter players have no history: they just start forgetful)
+			if (v.containsKey("history") && v.containsKey("historySeats")) {
+				m.history.addAll(parseCards(v.get("history"), legacy));
+				m.historySeats.addAll(parseSeats(v.get("historySeats")));
+			}
 			m.check();
 			return m;
 		} catch (RuntimeException e) {
@@ -370,7 +413,8 @@ public final class Match {
 	/** Sanity checks after loading, so a damaged save is rejected rather than played. */
 	private void check() {
 		if (handIndex < 0 || handIndex >= Rules.numberOfHands() || dealer < 0 || dealer >= players || current < 0
-				|| current >= players || trick.size() != trickSeats.size() || trick.size() >= players) {
+				|| current >= players || trick.size() != trickSeats.size() || trick.size() >= players
+				|| history.size() != historySeats.size()) {
 			throw new IllegalArgumentException("Inconsistent game state");
 		}
 		java.util.Set<Card> seen = new java.util.HashSet<Card>();
@@ -494,6 +538,8 @@ public final class Match {
 		trumpCard = deck.deal();
 		trick.clear();
 		trickSeats.clear();
+		history.clear();
+		historySeats.clear();
 		phase = Phase.BIDDING;
 		current = next(dealer);
 	}

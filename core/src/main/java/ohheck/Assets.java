@@ -43,6 +43,8 @@ public final class Assets implements Disposable {
 	public final Texture titleText;
 	/** Title art from the original game. */
 	public final Texture bidTricksText, setText, trickWonText, makeBidText, gameOverText;
+	/** Difficulty badges, indexed by Difficulty.ordinal(): one, two or three spades on a chip. */
+	public final Texture[] levelBadge = new Texture[3];
 	/** Player bar icons: dealer button, trick, trick over the bid, a bid of zero. */
 	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon;
 	/** A 1x1 white texture, tinted to draw panels and buttons. */
@@ -81,6 +83,10 @@ public final class Assets implements Disposable {
 		trickIcon = mipmapped("images/icon_trick.png");
 		overIcon = mipmapped("images/icon_over.png");
 		zeroIcon = mipmapped("images/icon_zero.png");
+		String[] levels = { "easy", "normal", "hard" };
+		for (int i = 0; i < levels.length; i++) {
+			levelBadge[i] = mipmapped("images/level_" + levels[i] + ".png");
+		}
 		// the blurred sheet is stored at reduced size: take its cells from its own dimensions
 		int bw = cardSheetBlur.getWidth() / 13, bh = cardSheetBlur.getHeight() / 4;
 		for (int suit = 0; suit < 4; suit++) {
@@ -189,6 +195,9 @@ public final class Assets implements Disposable {
 			t.dispose();
 		}
 		white.dispose();
+		for (Texture t : levelBadge) {
+			t.dispose();
+		}
 		stroke.dispose();
 		font.getRegion().getTexture().dispose();
 		serif.getRegion().getTexture().dispose();

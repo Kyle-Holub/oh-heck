@@ -7,6 +7,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import rules.Difficulty;
 import rules.Match;
 
 /** The libGDX entry point shared by Android and desktop; switches between screens. */
@@ -144,8 +145,8 @@ public class OhHeckGame extends Game {
 		return HighScores.decode(options.persist ? settings.highScores() : "");
 	}
 
-	/** Records your finished game; returns its place in the table, or -1. */
-	int recordHighScore(int score, int place) {
+	/** Records your finished game, played at the given difficulty; returns its place in the table, or -1. */
+	int recordHighScore(int score, int place, Difficulty level) {
 		if (!options.persist) {
 			return -1;
 		}
@@ -153,7 +154,7 @@ public class OhHeckGame extends Game {
 		java.util.Calendar c = java.util.Calendar.getInstance();
 		String date = String.format(java.util.Locale.US, "%04d-%02d-%02d", c.get(java.util.Calendar.YEAR),
 				c.get(java.util.Calendar.MONTH) + 1, c.get(java.util.Calendar.DAY_OF_MONTH));
-		int at = h.add(new HighScores.Entry(score, place, date));
+		int at = h.add(new HighScores.Entry(score, place, date, level.ordinal()));
 		if (at >= 0) {
 			settings.setHighScores(h.encode());
 		}
@@ -164,7 +165,7 @@ public class OhHeckGame extends Game {
 		if (play != null) {
 			play.dispose();
 		}
-		play = new PlayScreen(this, null);
+		play = new PlayScreen(this, null, Difficulty.values()[settings.difficulty()]);
 		backStack.clear();
 		setScreen(play);
 	}
@@ -177,7 +178,7 @@ public class OhHeckGame extends Game {
 				newGame();
 				return;
 			}
-			play = new PlayScreen(this, saved);
+			play = new PlayScreen(this, saved, Difficulty.values()[settings.savedGameDifficulty()]);
 		}
 		backStack.clear();
 		setScreen(play);
@@ -199,7 +200,7 @@ public class OhHeckGame extends Game {
 			return Match.load(s, new Random());
 		} catch (IllegalArgumentException e) {
 			Gdx.app.error("OhHeck", "Discarding unreadable saved game", e);
-			settings.saveGame(null);
+			settings.saveGame(null, 0);
 			return null;
 		}
 	}
