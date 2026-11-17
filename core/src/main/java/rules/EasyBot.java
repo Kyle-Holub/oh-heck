@@ -7,7 +7,7 @@ import java.util.Random;
 final class EasyBot implements Bot {
 
 	/** How often the bid is off by one, and how often a card is chosen at random. */
-	private static final double BID_SLIP = 0.4, PLAY_SLIP = 0.3;
+	private static final double BID_SLIP = 0.6, PLAY_SLIP = 0.5;
 
 	private final NormalBot normal = new NormalBot();
 	private final Random rng;

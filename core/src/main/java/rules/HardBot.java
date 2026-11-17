@@ -21,8 +21,10 @@ import java.util.Random;
  */
 final class HardBot implements Bot {
 
-	/** Imagined deals per decision (the arena varies it to measure the trade-off). */
-	static int samples = 40;
+	/** In the last hand: the value of winning the game, and of each of our own points besides. */
+	static final double WIN = 100, WIN_TIEBREAK = 0.1;
+	/** Switch for the arena, to measure playing the last hand to win. */
+	static boolean playToWin = true;
 	/** How much spoiling the rival's hand is worth, against scoring its own. */
 	static final double SPOIL = 0.5;
 	/** Candidate deals drawn per deal kept, when weighting deals by the bids. */
@@ -42,7 +44,7 @@ final class HardBot implements Bot {
 
 	@Override
 	public int chooseBid(TableView v) {
-		List<Integer> bids = new ArrayList<Integer>();
+		final List<Integer> bids = new ArrayList<Integer>();
 		for (int b = 0; b <= v.handSize; b++) {
 			if (v.isLegalBid(b)) {
 				bids.add(b);
@@ -51,51 +53,118 @@ final class HardBot implements Bot {
 		if (bids.size() == 1) {
 			return bids.get(0);
 		}
-		List<List<Card>[]> deals = deals(v);
-		int rival = rival(v);
-		int best = bids.get(0);
-		double bestValue = Double.NEGATIVE_INFINITY;
-		for (int b : bids) {
-			double total = 0;
-			for (List<Card>[] deal : deals) {
-				Sim s = new Sim(v, deal);
-				s.bid(v.seat, b);
+		final TableView view = v;
+		final int rival = rival(v);
+		int pick = pick(v, bids.size(), budget(BID_DEALS_BASE + BID_DEALS_PER_CARD * v.handSize, bids.size()), new Outcome() {
+			@Override
+			public double of(int option, List<Card>[] deal) {
+				Sim s = new Sim(view, deal);
+				s.bid(view.seat, bids.get(option));
 				s.finishBidding(policy);
 				s.playOut(policy);
-				total += s.value(v.seat, rival);
+				return s.value(view.seat, rival);
 			}
-			if (total > bestValue) {
-				bestValue = total;
-				best = b;
+		});
+		return bids.get(pick);
+	}
+
+	@Override
+	public Card choosePlay(TableView v) {
+		final List<Card> legal = v.legalPlays();
+		if (legal.size() == 1) {
+			return legal.get(0);
+		}
+		final TableView view = v;
+		final int rival = rival(v);
+		int deals = legal.size() <= 2 ? FEW_DEALS : v.hand.size() >= 5 ? MANY_DEALS : SOME_DEALS;
+		int pick = pick(v, legal.size(), budget(deals, legal.size()), new Outcome() {
+			@Override
+			public double of(int option, List<Card>[] deal) {
+				Sim s = new Sim(view, deal);
+				s.play(view.seat, legal.get(option));
+				s.playOut(policy);
+				return s.value(view.seat, rival);
+			}
+		});
+		return legal.get(pick);
+	}
+
+	// ---- how hard to think
+
+	/**
+	 * Imagined deals per decision: more for bids in big hands and for plays with many cards
+	 * left, where an extra deal changes the answer most; fewer for a choice of two. The
+	 * arena scales them all with {@link #effort} to measure the trade-off.
+	 */
+	static final int BID_DEALS_BASE = 24, BID_DEALS_PER_CARD = 8, MANY_DEALS = 80, SOME_DEALS = 48, FEW_DEALS = 24;
+	static double effort = 1;
+	/** Deals are played in batches; after MIN_DEALS, stop as soon as one option is clearly best. */
+	static final int BATCH = 8, MIN_DEALS = 16;
+	/** How clearly: the best option's lead over the next, in standard errors of that lead. */
+	static final double CLEAR = 2.5;
+	/** At most this many play-outs per decision (deals times options), so no decision stutters on a phone. */
+	static final int MAX_PLAYOUTS = 480;
+
+	private static int budget(int deals, int options) {
+		int capped = Math.min(deals, MAX_PLAYOUTS / options);
+		return Math.max(MIN_DEALS, (int) Math.round(capped * effort));
+	}
+
+	/** The value of one option played out on one imagined deal. */
+	private interface Outcome {
+		double of(int option, List<Card>[] deal);
+	}
+
+	/**
+	 * Tries every option on the same imagined deals, a batch at a time, and returns the one
+	 * that does best on average, stopping early once one option is clearly ahead.
+	 */
+	private int pick(TableView v, int options, int budget, Outcome outcome) {
+		List<List<Card>[]> deals = deals(v, budget);
+		double[][] value = new double[options][budget];
+		double[] total = new double[options];
+		int used = 0;
+		while (used < budget) {
+			int end = Math.min(budget, used + BATCH);
+			for (int o = 0; o < options; o++) {
+				for (int d = used; d < end; d++) {
+					value[o][d] = outcome.of(o, deals.get(d));
+					total[o] += value[o][d];
+				}
+			}
+			used = end;
+			if (used >= MIN_DEALS && clearlyBest(value, total, used)) {
+				break;
+			}
+		}
+		int best = 0;
+		for (int o = 1; o < options; o++) {
+			if (total[o] > total[best]) {
+				best = o;
 			}
 		}
 		return best;
 	}
 
-	@Override
-	public Card choosePlay(TableView v) {
-		List<Card> legal = v.legalPlays();
-		if (legal.size() == 1) {
-			return legal.get(0);
-		}
-		List<List<Card>[]> deals = deals(v);
-		int rival = rival(v);
-		Card best = legal.get(0);
-		double bestValue = Double.NEGATIVE_INFINITY;
-		for (Card c : legal) {
-			double total = 0;
-			for (List<Card>[] deal : deals) {
-				Sim s = new Sim(v, deal);
-				s.play(v.seat, c);
-				s.playOut(policy);
-				total += s.value(v.seat, rival);
-			}
-			if (total > bestValue) {
-				bestValue = total;
-				best = c;
+	/** Is the leading option ahead of the next by more than CLEAR standard errors (comparing deal by deal)? */
+	private static boolean clearlyBest(double[][] value, double[] total, int n) {
+		int best = 0, second = -1;
+		for (int o = 1; o < total.length; o++) {
+			if (total[o] > total[best]) {
+				second = best;
+				best = o;
+			} else if (second < 0 || total[o] > total[second]) {
+				second = o;
 			}
 		}
-		return best;
+		double sum = 0, sumSq = 0;
+		for (int d = 0; d < n; d++) {
+			double diff = value[best][d] - value[second][d];
+			sum += diff;
+			sumSq += diff * diff;
+		}
+		double mean = sum / n, variance = Math.max(0, sumSq / n - mean * mean);
+		return mean > CLEAR * Math.sqrt(variance / n) + 1e-9;
 	}
 
 	/** The player to race: the highest-scoring other player (the leader, or second place if we lead). */
@@ -112,11 +181,11 @@ final class HardBot implements Bot {
 	// ---- imagining the unseen cards
 
 	/**
-	 * {@link #samples} deals of the unseen cards to the other players, the same deals used
+	 * {@code samples} deals of the unseen cards to the other players, the same deals used
 	 * for every choice. When reading the bids, draws several times as many and keeps them in
 	 * proportion to how well each explains the bids made.
 	 */
-	private List<List<Card>[]> deals(TableView v) {
+	private List<List<Card>[]> deals(TableView v, int samples) {
 		List<Card> unseen = new ArrayList<Card>();
 		for (Suit s : Suit.values()) {
 			for (Rank r : Rank.values()) {
@@ -324,9 +393,30 @@ final class HardBot implements Bot {
 			}
 		}
 
-		/** Our points for the hand, less SPOIL times the rival's. */
+		/**
+		 * How good this outcome is for us: our points for the hand, less SPOIL times the
+		 * rival's. In the last hand, what counts is winning the game: WIN for a win (shared
+		 * for a tie), plus a little for our own points so a lost cause still scores.
+		 */
 		double value(int me, int rival) {
 			double mine = Rules.score(bids[me], tricks[me]);
+			if (playToWin && handIndex == numberOfHands - 1) {
+				double total = scores[me] + mine;
+				int tied = 1;
+				for (int s = 0; s < players; s++) {
+					if (s == me) {
+						continue;
+					}
+					double theirs = scores[s] + Rules.score(bids[s], tricks[s]);
+					if (theirs > total) {
+						return mine * WIN_TIEBREAK;
+					}
+					if (theirs == total) {
+						tied++;
+					}
+				}
+				return WIN / tied + mine * WIN_TIEBREAK;
+			}
 			return rival < 0 ? mine : mine - SPOIL * Rules.score(bids[rival], tricks[rival]);
 		}
 
