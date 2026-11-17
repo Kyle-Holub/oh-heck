@@ -40,10 +40,12 @@ final class PlayerPanel {
 		BitmapFont f = screen.ui(1.3f);
 		f.setColor(turn ? Palette.GOLD_LIGHT : Palette.CREAM);
 		screen.glyphs.setText(f, name);
-		float nameW = screen.glyphs.width;
+		float nameW = screen.glyphs.width, nameH = screen.glyphs.height;
 		f.draw(screen.batch, name, x + 10, top - 9);
 		if (dealer) {
-			screen.batch.draw(assets.dealerIcon, x + 16 + nameW, top - 33, 26, 26);
+			// centred on the name's letters
+			float chip = 26, mid = top - 9 - nameH / 2;
+			screen.batch.draw(assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
 		}
 		f.setColor(BaseScreen.GOLD);
 		screen.text(f, String.valueOf(score), x + W - 10, top - 9, false);

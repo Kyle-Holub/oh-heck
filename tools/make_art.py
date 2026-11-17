@@ -338,6 +338,26 @@ def level_badges(out):
         downsample(img, 108, 108).save(os.path.join(out, "level_" + name + ".png"))
 
 
+def bid_icons(out):
+    """The table's bid tracker, one card per trick in the hand: open (no bid on it yet), bid, and bid over the hand."""
+    W, H = 84 * SS, 108 * SS
+    # open: a faint silhouette of a card
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([4 * SS, 4 * SS, W - 4 * SS, H - 4 * SS], 12 * SS, fill=(70, 52, 36, 120),
+                        outline=(150, 118, 70, 210), width=5 * SS)
+    downsample(img, 84, 108).save(os.path.join(out, "bid_open.png"))
+    # bid: a cream card with an inner gold border and a small gold diamond
+    img, d = icon_card(CREAM, inner=GOLD_DARK)
+    c, r = (W / 2, H / 2), 13 * SS
+    d.polygon([(c[0], c[1] - r * 1.3), (c[0] + r, c[1]), (c[0], c[1] + r * 1.3), (c[0] - r, c[1])], fill=GOLD_DARK)
+    downsample(img, 84, 108).save(os.path.join(out, "bid_taken.png"))
+    # over: the same card in a warm red, for bids beyond the cards in the hand
+    img, d = icon_card((178, 46, 36), inner=GOLD_LIGHT)
+    d.polygon([(c[0], c[1] - r * 1.3), (c[0] + r, c[1]), (c[0], c[1] + r * 1.3), (c[0] - r, c[1])], fill=GOLD_LIGHT)
+    downsample(img, 84, 108).save(os.path.join(out, "bid_over.png"))
+
+
 def sprites(out):
     # soft shadow for cards: a blurred rounded rectangle with margin all round (card area 120x160 of 160x200)
     S = 4
@@ -403,6 +423,7 @@ if __name__ == "__main__":
     table(out)
     icons(out)
     level_badges(out)
+    bid_icons(out)
     sprites(out)
     nine_patch("panel", out, fill=(18, 12, 8, 222), border=(176, 136, 66, 255))
     nine_patch("panel_turn", out, fill=(52, 36, 14, 236), border=GOLD_LIGHT + (255,), width=3, glow=GOLD_LIGHT + (200,))

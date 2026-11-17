@@ -43,6 +43,8 @@ public final class Assets implements Disposable {
 	public final Texture titleText;
 	/** Title art from the original game. */
 	public final Texture bidTricksText, setText, trickWonText, makeBidText, gameOverText;
+	/** The bid tracker's cards: a trick not bid on yet, a trick bid, a bid beyond the hand. */
+	public final Texture bidOpen, bidTaken, bidOver;
 	/** Difficulty badges, indexed by Difficulty.ordinal(): one, two or three spades on a chip. */
 	public final Texture[] levelBadge = new Texture[3];
 	/** Player bar icons: dealer button, trick, trick over the bid, a bid of zero. */
@@ -83,6 +85,9 @@ public final class Assets implements Disposable {
 		trickIcon = mipmapped("images/icon_trick.png");
 		overIcon = mipmapped("images/icon_over.png");
 		zeroIcon = mipmapped("images/icon_zero.png");
+		bidOpen = mipmapped("images/bid_open.png");
+		bidTaken = mipmapped("images/bid_taken.png");
+		bidOver = mipmapped("images/bid_over.png");
 		String[] levels = { "easy", "normal", "hard" };
 		for (int i = 0; i < levels.length; i++) {
 			levelBadge[i] = mipmapped("images/level_" + levels[i] + ".png");
@@ -191,7 +196,7 @@ public final class Assets implements Disposable {
 			p.getTexture().dispose();
 		}
 		titleText.dispose();
-		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, gameOverText, dealerIcon, trickIcon, overIcon, zeroIcon }) {
+		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, gameOverText, dealerIcon, trickIcon, overIcon, zeroIcon, bidOpen, bidTaken, bidOver }) {
 			t.dispose();
 		}
 		white.dispose();

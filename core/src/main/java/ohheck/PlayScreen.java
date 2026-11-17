@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Random;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -457,6 +458,7 @@ public class PlayScreen extends BaseScreen {
 		batch.draw(assets.table, 0, 0, w, h);
 
 		drawTally();
+		drawBidTracker();
 		drawTrump();
 		for (int seat = 0; seat < 4; seat++) {
 			drawSeat(seat);
@@ -530,6 +532,28 @@ public class PlayScreen extends BaseScreen {
 			} else {
 				stroke(cx, cy, TALLY_W, len, rot, Palette.MUTED, 0.28f);
 			}
+		}
+	}
+
+	// ---- the bid tracker, right of the tally: one card per trick in the hand
+
+	private static final float TRACKER_GAP = 3, TRACKER_MAX_W = 16;
+
+	/**
+	 * How the table has bid: one card per trick in this hand, filled in as the bids add
+	 * up, then a red card for each trick bid beyond the hand (everyone can't make it).
+	 */
+	private void drawBidTracker() {
+		Match m = match();
+		int n = m.handSize(), total = m.bidsSoFar();
+		int filled = Math.min(total, n), count = Math.max(total, n);
+		float x0 = 22 + 6 * TALLY_STEP + 16 + 22; // just past the tally's last mark
+		float avail = table.panelX(2) - 14 - x0; // and clear of the top player's panel
+		float iw = Math.min(TRACKER_MAX_W, avail / count - TRACKER_GAP), ih = iw * 18f / 14f;
+		float y = h - 12 - TALLY_H / 2 - ih / 2; // level with the tally marks
+		for (int i = 0; i < count; i++) {
+			Texture t = i < filled ? assets.bidTaken : i < n ? assets.bidOpen : assets.bidOver;
+			batch.draw(t, x0 + i * (iw + TRACKER_GAP), y, iw, ih);
 		}
 	}
 

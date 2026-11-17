@@ -18,8 +18,13 @@ public class TitleScreen extends BaseScreen {
 
 	// The opening sequence, once per launch: music over black, then cards begin to fall,
 	// the title slowly fades in on its own, and after a pause the menu appears.
-	private static final float CARDS_START = 1.0f, CARDS_FADE = 1.4f, TITLE_START = 2.2f, TITLE_FADE = 2.6f,
-			MENU_START = 7.0f, MENU_FADE = 0.9f, INTRO_END = MENU_START + MENU_FADE;
+	/**
+	 * The opening: black with the music, then the gold sparkles rise out of the dark, the
+	 * title fades in among them, and once it's there the cards start to fall; then the menu.
+	 */
+	private static final float SCENE_START = 1.0f, SCENE_FADE = 1.4f, TITLE_START = 2.2f, TITLE_FADE = 2.6f,
+			CARDS_START = TITLE_START + TITLE_FADE, MENU_START = 7.6f, MENU_FADE = 0.9f,
+			INTRO_END = MENU_START + MENU_FADE;
 	private float introT;
 	private final List<String> items = new ArrayList<String>();
 	private final List<Rectangle> hits = new ArrayList<Rectangle>();
@@ -63,7 +68,8 @@ public class TitleScreen extends BaseScreen {
 	public void render(float delta) {
 		float dt = Math.min(delta, 0.1f) * game.options.speed;
 		introT += dt;
-		if (introT >= CARDS_START) {
+		if (introT >= SCENE_START) {
+			cards.setFalling(introT >= CARDS_START);
 			cards.update(dt, w, h);
 		}
 		if (introT >= INTRO_END) {
@@ -76,7 +82,7 @@ public class TitleScreen extends BaseScreen {
 
 		ScreenUtils.clear(Color.BLACK);
 		begin();
-		if (introT >= CARDS_START) {
+		if (introT >= SCENE_START) {
 			// a dim spotlit backdrop behind the shower
 			batch.setColor(0.5f, 0.5f, 0.5f, 1f);
 			batch.draw(assets.table, 0, 0, w, h);
@@ -84,7 +90,7 @@ public class TitleScreen extends BaseScreen {
 			cards.draw(batch, w / 2, h / 2);
 			rect(0, 0, w, h, Palette.SHADE);
 			// the scene rises out of black
-			float dark = 1f - ramp(introT, CARDS_START, CARDS_FADE);
+			float dark = 1f - ramp(introT, SCENE_START, SCENE_FADE);
 			if (dark > 0) {
 				rect(0, 0, w, h, black.set(0, 0, 0, dark));
 			}

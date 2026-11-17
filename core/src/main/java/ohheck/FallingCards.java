@@ -84,8 +84,17 @@ public final class FallingCards {
 	/** Cards falling right now; showers ebb and swell over time. */
 	private float spawnRate() {
 		float e = 0.5f + 0.5f * MathUtils.sin(MathUtils.PI2 * time / period + phase);
-		float opening = fromEmpty ? 14f * (float) Math.exp(-time / 2.5f) : 0f;
+		float opening = fromEmpty ? 14f * (float) Math.exp(-fallingFor / 2.5f) : 0f;
 		return 1.5f + 13f * e * e * e + opening;
+	}
+
+	/** Whether new cards appear; until then only the sparkles drift (the opening starts with them alone). */
+	private boolean falling = true;
+	/** Seconds since cards started falling, for the opening shower. */
+	private float fallingFor;
+
+	public void setFalling(boolean falling) {
+		this.falling = falling;
 	}
 
 	public void update(float dt, float viewW, float viewH) {
@@ -96,6 +105,10 @@ public final class FallingCards {
 		}
 		time += dt;
 		updateSparkles(dt, viewW, viewH);
+		if (!falling) {
+			return;
+		}
+		fallingFor += dt;
 		spawnDebt += spawnRate() * dt;
 		while (spawnDebt >= 1f) {
 			spawnDebt -= 1f;
