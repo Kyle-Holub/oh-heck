@@ -6,7 +6,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 /**
  * A player's bar, after the original game's: name, dealer icon and score, and
  * one card icon per trick: faded = bid but not won yet, solid = won, red =
- * won over the bid. Glows gold while it's that player's turn.
+ * won over the bid; a bid of zero shows a struck-through circle first. Glows
+ * gold while it's that player's turn.
  */
 final class PlayerPanel {
 
@@ -48,19 +49,21 @@ final class PlayerPanel {
 		screen.text(f, String.valueOf(score), x + W - 10, top - 9, false);
 
 		float iy = y + 6;
-		if (bid == null || Math.max(bid, won) == 0) {
+		if (bid == null) {
 			BitmapFont s = screen.ui(1f);
 			s.setColor(Palette.MUTED);
-			String note = bid != null ? "bid 0" : dealing ? "" : turn ? "bidding..." : "no bid yet";
-			s.draw(screen.batch, note, x + 10, iy + 20);
+			s.draw(screen.batch, dealing ? "" : turn ? "bidding..." : "no bid yet", x + 10, iy + 20);
 			return;
 		}
 
-		// as big as fits: 28 wide for a few tricks, shrinking to fit 8
-		int icons = Math.max(bid, won);
-		float iw = Math.min(ICON_MAX_W, (W - 20) / icons - ICON_GAP), ih = iw * 18f / 14f;
-		for (int i = 0; i < icons; i++) {
-			float ix = x + 10 + i * (iw + ICON_GAP);
+		// as big as fits: 28 wide for a few tricks, shrinking to fit 8 (plus the zero icon)
+		int tricks = Math.max(bid, won), first = bid == 0 ? 1 : 0;
+		float iw = Math.min(ICON_MAX_W, (W - 20) / (first + tricks) - ICON_GAP), ih = iw * 18f / 14f;
+		if (bid == 0) {
+			screen.batch.draw(assets.zeroIcon, x + 10, iy, iw, ih);
+		}
+		for (int i = 0; i < tricks; i++) {
+			float ix = x + 10 + (first + i) * (iw + ICON_GAP);
 			if (i < Math.min(bid, won)) {
 				screen.batch.draw(assets.trickIcon, ix, iy, iw, ih);
 			} else if (i < bid) {

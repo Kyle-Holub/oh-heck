@@ -11,3 +11,4 @@ android/libs/
 /.project
 /.settings/
 /.vscode/
+__pycache__/
