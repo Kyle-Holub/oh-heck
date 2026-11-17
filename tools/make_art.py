@@ -270,13 +270,18 @@ def icons(out):
     d.rounded_rectangle([3 * SS, 3 * SS, W - 3 * SS, H - 3 * SS], 12 * SS, fill=CREAM, outline=GOLD, width=5 * SS)
     suit_shape(d, "spades", W / 2, H / 2, 46 * SS, INK)
     downsample(img, 84, 108).save(os.path.join(out, "icon_trick.png"))
-    # a trick over the bid: an oxblood card with a cream plus
+    # a trick over the bid: an oxblood card with a cream brush-stroke X, slightly tapered
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle([3 * SS, 3 * SS, W - 3 * SS, H - 3 * SS], 12 * SS, fill=(170, 40, 40), outline=GOLD, width=5 * SS)
-    t = 9 * SS
-    d.rectangle([W / 2 - t, H / 2 - 28 * SS, W / 2 + t, H / 2 + 28 * SS], fill=CREAM)
-    d.rectangle([W / 2 - 28 * SS, H / 2 - t, W / 2 + 28 * SS, H / 2 + t], fill=CREAM)
+    k = 22 * SS
+    for (x0, y0, x1, y1) in [(-k, -k * 1.15, k, k * 1.15), (k, -k * 1.15, -k, k * 1.15)]:
+        steps = 40
+        for i in range(steps + 1):
+            t = i / steps
+            r = (6.5 - 2.5 * abs(t - 0.35)) * SS  # thicker near the start of the stroke
+            cx, cy = W / 2 + x0 + (x1 - x0) * t, H / 2 + y0 + (y1 - y0) * t
+            d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CREAM)
     downsample(img, 84, 108).save(os.path.join(out, "icon_over.png"))
     # a bid of zero: a dark card with a cream circle struck through
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))

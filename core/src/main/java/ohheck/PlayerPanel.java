@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 /**
  * A player's bar, after the original game's: name, dealer icon and score, and
  * one card icon per trick: faded = bid but not won yet, solid = won, red =
- * won over the bid; a bid of zero shows a struck-through circle first. Glows
+ * won over the bid; a bid of zero shows a struck-through circle until a trick is taken. Glows
  * gold while it's that player's turn.
  */
 final class PlayerPanel {
@@ -57,9 +57,10 @@ final class PlayerPanel {
 		}
 
 		// as big as fits: 28 wide for a few tricks, shrinking to fit 8 (plus the zero icon)
-		int tricks = Math.max(bid, won), first = bid == 0 ? 1 : 0;
+		// a bid of zero shows its icon until a trick is taken; then the red over-the-bid icons replace it
+		int tricks = Math.max(bid, won), first = bid == 0 && won == 0 ? 1 : 0;
 		float iw = Math.min(ICON_MAX_W, (W - 20) / (first + tricks) - ICON_GAP), ih = iw * 18f / 14f;
-		if (bid == 0) {
+		if (first == 1) {
 			screen.batch.draw(assets.zeroIcon, x + 10, iy, iw, ih);
 		}
 		for (int i = 0; i < tricks; i++) {
