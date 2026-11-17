@@ -46,7 +46,7 @@ public class OptionsScreen extends BaseScreen {
 
 		// How to play: its own button, gold lettering, set apart from the settings below
 		float bw = 260, bh = 44;
-		rulesButton.set((w - bw) / 2, h - 74 - bh, bw, bh);
+		rulesButton.set((w - bw) / 2, h - 84 - bh, bw, bh);
 		frame(assets.buttonAlt, rulesButton.x, rulesButton.y, bw, bh);
 		BitmapFont rb = serif(1.6f);
 		rb.setColor(GOLD);
