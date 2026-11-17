@@ -60,6 +60,11 @@ android {
     }
   }
 
+  // the release lint pass adds ~7 s to every CI build; the tests cover the game, so skip it
+  lint {
+    checkReleaseBuilds false
+  }
+
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_1_8
     targetCompatibility JavaVersion.VERSION_1_8

@@ -30,6 +30,8 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
 
       - name: Unpack the signing key
         env:
@@ -47,10 +49,11 @@ jobs:
         run: printf 'dev-%04d' ${{ github.run_number }} > assets/build.txt
 
       # (the rules tests run in tests.yml on every push, so they aren't repeated here)
-      - name: Build APK and desktop jar
+      # (the desktop jar is built by the screenshots job, so the APK publishes sooner)
+      - name: Build APK
         env:
           OHHECK_KEYSTORE_PASSWORD: ${{ secrets.OHHECK_KEYSTORE_PASSWORD }}
-        run: ./gradlew android:assembleRelease lwjgl3:dist -PversionCode=${{ github.run_number }} --stacktrace
+        run: ./gradlew android:assembleRelease -PversionCode=${{ github.run_number }} --stacktrace
 
       - name: Publish dev build
         id: publish
@@ -62,8 +65,7 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           APK="oh-heck-${TAG}.apk"
           cp android/build/outputs/apk/release/android-release.apk "$APK"
-          cp build/dist/oh-heck-desktop.jar oh-heck-desktop.jar
-          gh release create "$TAG" "$APK" oh-heck-desktop.jar \
+          gh release create "$TAG" "$APK" \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Dev build ${{ github.run_number }}" \
@@ -87,21 +89,26 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
 
       - name: Install a virtual display
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
 
-      - name: Play a scripted game
+      - name: Label the build
+        run: echo "${{ needs.build.outputs.tag }}" > assets/build.txt
+
+      - name: Build the desktop jar and play a scripted game
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           env -u ANDROID_HOME -u ANDROID_SDK_ROOT \
-            xvfb-run -a -s "-screen 0 1600x800x24" ./gradlew lwjgl3:screenshots --stacktrace
+            xvfb-run -a -s "-screen 0 1600x800x24" ./gradlew lwjgl3:dist lwjgl3:screenshots --stacktrace
           ls -l build/screenshots
 
-      - name: Attach screenshots to the dev build
+      - name: Attach the desktop jar and screenshots to the dev build
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ needs.build.outputs.tag }}" build/screenshots/*.png
+        run: gh release upload "${{ needs.build.outputs.tag }}" build/dist/oh-heck-desktop.jar build/screenshots/*.png
