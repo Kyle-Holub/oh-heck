@@ -262,6 +262,37 @@ def nine_patch(name, out, fill, border, width=2, radius=12, size=48, glow=None):
     downsample(img, size, size).save(os.path.join(out, name + ".png"))
 
 
+def icon_card(fill, inner=None):
+    """A small card-shaped icon: gold edge, optional inner border like the card back."""
+    W, H = 84 * SS, 108 * SS
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([3 * SS, 3 * SS, W - 3 * SS, H - 3 * SS], 12 * SS, fill=fill, outline=GOLD, width=5 * SS)
+    if inner:
+        d.rounded_rectangle([11 * SS, 11 * SS, W - 11 * SS, H - 11 * SS], 7 * SS, outline=inner, width=2 * SS)
+    return img, d
+
+
+def struck_zero(d, W, H, colour, shadow):
+    """A circle struck through, drawn twice: a dark offset copy, then the symbol."""
+    r, t, k = 24 * SS, 7 * SS, 24 * SS * 0.72
+    for dx, c in ((2 * SS, shadow), (0, colour)):
+        d.ellipse([W / 2 - r + dx, H / 2 - r + dx, W / 2 + r + dx, H / 2 + r + dx], outline=c, width=t)
+        d.line([(W / 2 - k + dx, H / 2 + k + dx), (W / 2 + k + dx, H / 2 - k + dx)], fill=c, width=t)
+
+
+def brushed_x(d, W, H, colour, shadow):
+    """An X of two slightly tapered strokes, thicker near their start, with a dark offset copy behind."""
+    k = 21 * SS
+    for dx, c in ((2 * SS, shadow), (0, colour)):
+        for (x0, y0, x1, y1) in [(-k, -k * 1.15, k, k * 1.15), (k, -k * 1.15, -k, k * 1.15)]:
+            for i in range(41):
+                t = i / 40
+                r = (6.5 - 2.5 * abs(t - 0.35)) * SS
+                cx, cy = W / 2 + x0 + (x1 - x0) * t + dx, H / 2 + y0 + (y1 - y0) * t + dx
+                d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=c)
+
+
 def icons(out):
     # a won trick: a small cream card with a gold edge and a dark pip
     W, H = 84 * SS, 108 * SS
@@ -270,27 +301,13 @@ def icons(out):
     d.rounded_rectangle([3 * SS, 3 * SS, W - 3 * SS, H - 3 * SS], 12 * SS, fill=CREAM, outline=GOLD, width=5 * SS)
     suit_shape(d, "spades", W / 2, H / 2, 46 * SS, INK)
     downsample(img, 84, 108).save(os.path.join(out, "icon_trick.png"))
-    # a trick over the bid: an oxblood card with a cream brush-stroke X, slightly tapered
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.rounded_rectangle([3 * SS, 3 * SS, W - 3 * SS, H - 3 * SS], 12 * SS, fill=(170, 40, 40), outline=GOLD, width=5 * SS)
-    k = 22 * SS
-    for (x0, y0, x1, y1) in [(-k, -k * 1.15, k, k * 1.15), (k, -k * 1.15, -k, k * 1.15)]:
-        steps = 40
-        for i in range(steps + 1):
-            t = i / steps
-            r = (6.5 - 2.5 * abs(t - 0.35)) * SS  # thicker near the start of the stroke
-            cx, cy = W / 2 + x0 + (x1 - x0) * t, H / 2 + y0 + (y1 - y0) * t
-            d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CREAM)
+    # a trick over the bid: an oxblood card, inner gold border, a gold brushed X with an engraved shadow
+    img, d = icon_card(OXBLOOD, inner=GOLD)
+    brushed_x(d, W, H, GOLD_LIGHT, shadow=OXBLOOD_DARK)
     downsample(img, 84, 108).save(os.path.join(out, "icon_over.png"))
-    # a bid of zero: a dark card with a cream circle struck through
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.rounded_rectangle([3 * SS, 3 * SS, W - 3 * SS, H - 3 * SS], 12 * SS, fill=(44, 30, 20), outline=GOLD, width=5 * SS)
-    r, t = 25 * SS, 7 * SS
-    d.ellipse([W / 2 - r, H / 2 - r, W / 2 + r, H / 2 + r], outline=CREAM, width=t)
-    k = r * 0.72
-    d.line([(W / 2 - k, H / 2 + k), (W / 2 + k, H / 2 - k)], fill=CREAM, width=t)
+    # a bid of zero: an espresso card, inner gold border, a gold struck-through 0 with an engraved shadow
+    img, d = icon_card((44, 30, 20), inner=GOLD_DARK)
+    struck_zero(d, W, H, GOLD_LIGHT, shadow=(10, 6, 4))
     downsample(img, 84, 108).save(os.path.join(out, "icon_zero.png"))
     # the dealer button: a gold chip with a D
     S = 108 * SS
