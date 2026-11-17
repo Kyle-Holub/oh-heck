@@ -18,8 +18,8 @@ import java.util.Random;
  */
 final class HardBot implements Bot {
 
-	/** Imagined deals per decision. */
-	static final int SAMPLES = 40;
+	/** Imagined deals per decision (the arena varies it to measure the trade-off). */
+	static int samples = 40;
 	/** How much spoiling the rival's hand is worth, against scoring its own. */
 	static final double SPOIL = 0.5;
 
@@ -101,7 +101,7 @@ final class HardBot implements Bot {
 
 	// ---- imagining the unseen cards
 
-	/** SAMPLES deals of the unseen cards to the other players. The same deals are used for every choice. */
+	/** {@link #samples} deals of the unseen cards to the other players. The same deals are used for every choice. */
 	private List<List<Card>[]> deals(TableView v) {
 		List<Card> unseen = new ArrayList<Card>();
 		for (Suit s : Suit.values()) {
@@ -113,7 +113,7 @@ final class HardBot implements Bot {
 			}
 		}
 		List<List<Card>[]> deals = new ArrayList<List<Card>[]>();
-		for (int i = 0; i < SAMPLES; i++) {
+		for (int i = 0; i < samples; i++) {
 			deals.add(deal(v, unseen));
 		}
 		return deals;

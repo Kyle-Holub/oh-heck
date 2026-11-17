@@ -5,8 +5,8 @@ import java.util.List;
 /**
  * Plays like a decent human.
  * <p>
- * Bidding: estimates each card's chance of taking a trick (how many higher
- * cards are still out, whether its suit is likely to be trumped), works out
+ * Bidding: looks up each card's chance of taking a trick in {@link BidTable}
+ * (learned from simulated games: it depends a lot on the hand size), works out
  * the chance of taking 0, 1, 2... tricks, and bids whatever scores best on
  * average, since an exact bid is all that counts.
  * <p>
@@ -23,7 +23,7 @@ final class NormalBot implements Bot {
 	public int chooseBid(TableView v) {
 		double[] p = new double[v.hand.size()];
 		for (int i = 0; i < p.length; i++) {
-			p[i] = winChance(v, v.hand.get(i));
+			p[i] = BidTable.chance(v, v.hand.get(i));
 		}
 		double[] dist = trickDistribution(p);
 		int best = -1;
@@ -42,42 +42,6 @@ final class NormalBot implements Bot {
 			}
 		}
 		return best;
-	}
-
-	/** Rough chance that this card takes a trick, judged before play starts. */
-	static double winChance(TableView v, Card c) {
-		Suit trump = v.trump();
-		int unseen = 52 - v.handSize - 1; // not in my hand, not the face-up trump
-		double others = (double) (v.players - 1) * v.handSize;
-		double held = Math.min(1, others / unseen); // chance a given unseen card is in someone's hand
-		int higher = 0, mySuit = 0, myTrumps = 0;
-		for (Rank r : Rank.values()) {
-			Card o = Card.of(r, c.suit());
-			if (r.outranks(c.rank()) && !v.hand.contains(o) && o != v.trumpCard) {
-				higher++;
-			}
-		}
-		for (Card h : v.hand) {
-			if (h.suit() == c.suit()) {
-				mySuit++;
-			}
-			if (h.suit() == trump) {
-				myTrumps++;
-			}
-		}
-		double noneHigher = Math.pow(1 - held, higher);
-		if (c.suit() == trump) {
-			// long trumps tend to win late even when small
-			double length = 0.12 * Math.max(0, myTrumps - 2);
-			return Math.min(0.98, noneHigher + (1 - noneHigher) * length);
-		}
-		// a side card can be trumped by someone out of its suit
-		int suitOut = 13 - mySuit - (v.trumpCard.suit() == c.suit() ? 1 : 0);
-		int trumpsOut = 13 - myTrumps - 1;
-		double voidChance = Math.pow(1 - (double) suitOut / unseen, v.handSize);
-		double hasTrump = 1 - Math.pow(1 - (double) trumpsOut / unseen, v.handSize);
-		double safe = Math.pow(1 - voidChance * hasTrump, v.players - 1);
-		return noneHigher * safe;
 	}
 
 	/** Chance of taking exactly k tricks, k = 0..n, if each card wins independently with chance p[i]. */

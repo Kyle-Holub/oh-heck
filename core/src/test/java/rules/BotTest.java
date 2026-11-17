@@ -136,4 +136,31 @@ public class BotTest {
 		assertEquals(0.5, d[1], 1e-9);
 		assertEquals(0.25, d[2], 1e-9);
 	}
+
+	@Test
+	public void theBidTableIsSane() {
+		Match m = Match.random(4, new Random(3));
+		for (int hand = 0; hand < 8; hand++) {
+			TableView v = m.view(0);
+			for (Suit s : Suit.values()) {
+				for (Rank r : Rank.values()) {
+					double p = BidTable.chance(v, Card.of(r, s));
+					assertTrue(p >= 0 && p <= 1);
+				}
+			}
+			assertEquals("the ace of trumps always wins", 1.0, BidTable.chance(v, Card.of(Rank.ACE, v.trump())), 1e-9);
+			while (m.phase() != Match.Phase.HAND_OVER) {
+				int s = m.currentSeat();
+				Bot b = Bot.of(Difficulty.NORMAL, new Random(1));
+				if (m.phase() == Match.Phase.BIDDING) {
+					m.placeBid(s, b.chooseBid(m.view(s)));
+				} else {
+					m.playCard(s, b.choosePlay(m.view(s)));
+				}
+			}
+			if (hand < 7) {
+				m.nextHand();
+			}
+		}
+	}
 }

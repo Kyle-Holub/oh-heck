@@ -56,6 +56,19 @@ Every push to a `develop/*` branch builds the app and publishes it as a "Dev bui
 ./gradlew android:assembleDebug   # needs the Android SDK; skipped automatically without one
 ```
 
+### The computer players' arena
+
+When changing how the computer players bid or play, measure it in the arena: it plays thousands of games in duplicate (each deal four times, the player under test in every seat, so card luck cancels out) and reports points per hand, exact bids by round and win rates. It isn't part of the build or the tests.
+
+```
+./gradlew core:arena                         # each level at a table of its own, by round
+./gradlew core:arena -Parena="vs 400"        # each level against the one below
+./gradlew core:arena -Parena="samples 100"   # Hard's strength and speed by imagined deals per decision
+./gradlew core:arena -Parena="learn 4000"    # regenerate core/src/main/java/rules/BidTable.java
+```
+
+The Normal players bid from `BidTable`: how often each card took a trick in simulated games, by hand size, trump or not, and rank. Regenerate it (twice, since each round learns from the play of the last) after changing how they play. Without a computer, the same experiments can be run on GitHub: Actions, then **Arena**, then **Run workflow**; the results appear in the run's summary.
+
 GitHub runs the tests on every push. Pushes to `develop/*` also build the APK (signed with the key in the repository's secrets) and the desktop jar, publish them as a dev build for Obtainium, and play a scripted game whose screenshots are attached to it. Pushes to `refactor/*` or `feature/*` only play the scripted game, attaching the screenshots to a private draft release, to check a change before it ships.
 
 | Path | Contents |
