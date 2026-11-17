@@ -1,6 +1,6 @@
 # Oh Heck!
 
-A trick-taking card game (also known as *Oh Hell*): bid the exact number of tricks you'll take, then take exactly that many. You play against three computer opponents over 8 hands of 1 to 8 cards.
+A trick-taking card game (also known as *Oh Hell*): bid the exact number of tricks you'll take, then take exactly that many. You play against three computer opponents over 8 hands of 1 to 8 cards (or 8 down to 1, in Options).
 
 Built with [libGDX](https://libgdx.com/) for Android and desktop. The original 2017 Java Swing version is preserved on the `release/alpha-1.0.6` branch.
 

@@ -202,7 +202,7 @@ public class PlayScreen extends BaseScreen {
 
 	private void newGame() {
 		tumble = null;
-		Match m = Match.random(4, rng);
+		Match m = Match.random(4, rng, game.settings.handOrder());
 		overlays.setMatch(m);
 		newHighScore = -1;
 		flow.start(m);
