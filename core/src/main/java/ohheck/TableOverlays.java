@@ -28,7 +28,9 @@ final class TableOverlays {
 	// sizes of the panels and buttons drawn over the table
 	private static final float MENU_BUTTON_W = 80, MENU_BUTTON_H = 38;
 	private static final float PAUSE_BUTTON_W = 260, PAUSE_BUTTON_H = 56, PAUSE_GAP = 14;
-	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 176;
+	/** A bid that can't be made: the gold numeral greyed and faded. */
+	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
+	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190;
 	private static final float RESULTS_W = 470, RESULTS_H = 220, RESULTS_ROW = 26;
 	private static final float GAME_OVER_W = 420, GAME_OVER_H = 306, GAME_OVER_ROW = 27;
 	private static final float END_BUTTON_W = 170, END_BUTTON_H = 42;
@@ -128,23 +130,21 @@ final class TableOverlays {
 		float px = (table.w - pw) / 2, py = table.centreY() - ph / 2;
 		screen.frame(screen.assets.panel, px, py, pw, ph);
 
-		art.art(screen.assets.makeBidText, table.w / 2, py + ph - 36, 0.52f, 1f);
-		BitmapFont s = screen.ui(1f);
-		s.setColor(Palette.MUTED);
+		art.art(screen.assets.makeBidText, table.w / 2, py + ph - 44, 0.78f, 1f);
 		int forbidden = match.forbiddenBid();
-		String note = "Bids so far: " + match.bidsSoFar() + " of " + n
-				+ (forbidden >= 0 ? "   -   as dealer you can't bid " + forbidden : "");
-		screen.text(s, note, table.w / 2, py + ph - 60, true);
+		if (forbidden >= 0) {
+			BitmapFont s = screen.ui(1f);
+			s.setColor(Palette.MUTED);
+			screen.text(s, "As dealer you can't bid " + forbidden, table.w / 2, py + ph - 86, true);
+		}
 
 		BaseScreen.sizeTo(bidButtons, n + 1);
 		float bx = (table.w - rowW) / 2, by = py + 20;
-		BitmapFont bf = screen.ui(1.7f);
 		for (int b = 0; b <= n; b++) {
 			Rectangle r = bidButtons.get(b).set(bx + b * (bs + gap), by, bs, bs);
 			boolean ok = match.isLegalBid(b);
 			screen.frame(ok ? screen.assets.button : screen.assets.buttonOff, r.x, r.y, r.width, r.height);
-			bf.setColor(ok ? Palette.CREAM : Palette.MUTED);
-			screen.textIn(bf, String.valueOf(b), r.x, r.y, r.width, r.height);
+			screen.numeral(b, r.x + r.width / 2, r.y + r.height / 2, bs * 0.66f, ok ? Color.WHITE : NUMERAL_OFF);
 		}
 	}
 
@@ -225,7 +225,7 @@ final class TableOverlays {
 			t.draw(screen.batch, HighScores.ordinal(place(seat)), px + cols[0], y);
 			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
 			t.draw(screen.batch, PlayScreen.NAMES[seat] + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
-			t.draw(screen.batch, String.valueOf(match.bid(seat)), px + cols[2], y);
+			screen.numeral(match.bid(seat), px + cols[2] + 8, y - 8, 26, Color.WHITE);
 			t.draw(screen.batch, String.valueOf(match.tricksWon(seat)), px + cols[3], y);
 			t.draw(screen.batch, (pts > 0 ? "+" : "") + pts, px + cols[4], y);
 			t.setColor(place(seat) == 1 ? Palette.GOLD : Palette.CREAM);
