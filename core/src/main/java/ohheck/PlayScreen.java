@@ -584,11 +584,9 @@ public class PlayScreen extends BaseScreen {
 		}
 		art.flip(match().trumpCard(), x, y, cw, ch, p);
 		if (p >= 1 && lit > 0) {
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			batch.setColor(1f, 0.97f, 0.88f, 0.16f * lit);
-			batch.draw(assets.face(match().trumpCard()), x, y, cw, ch);
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			batch.setColor(Color.WHITE);
+			// and a light on it in the screen effects, lifting the corner's vignette (after the bloom,
+			// so the card brightens without glaring)
+			game.post.light((x + cw / 2) / w, (y + ch / 2) / h, 0.3f, lit);
 		}
 		motes.draw(batch, assets.glow);
 	}

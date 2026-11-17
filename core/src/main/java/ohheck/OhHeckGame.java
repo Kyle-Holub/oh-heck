@@ -28,7 +28,7 @@ public class OhHeckGame extends Game {
 	Assets assets;
 	Settings settings;
 	Audio audio;
-	private PostProcessor post;
+	PostProcessor post;
 
 	private TitleScreen title;
 	private RulesScreen rules;

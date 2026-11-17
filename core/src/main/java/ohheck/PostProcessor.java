@@ -64,6 +64,8 @@ final class PostProcessor implements Disposable {
 			+ "uniform sampler2D u_noise;\n"
 			+ "uniform vec2 u_noiseScale;\n"
 			+ "uniform vec2 u_noiseOffset;\n"
+			+ "uniform vec2 u_screen;\n"
+			+ "uniform vec4 u_light;\n"
 			+ "void main() {\n"
 			+ "  vec3 c = texture2D(u_texture, v_uv).rgb;\n"
 			+ "  c += texture2D(u_bloom, v_uv).rgb * 0.55;\n"
@@ -72,7 +74,12 @@ final class PostProcessor implements Disposable {
 			+ "  c = mix(c, c * c * (3.0 - 2.0 * c), 0.25);\n"
 			// vignette, slightly oval to suit a wide screen
 			+ "  vec2 p = (v_uv - 0.5) * vec2(1.0, 0.8);\n"
-			+ "  c *= mix(0.5, 1.0, smoothstep(0.75, 0.2, length(p)));\n"
+			+ "  float vig = mix(0.5, 1.0, smoothstep(0.75, 0.2, length(p)));\n"
+			// a soft light on one spot (the trump card): lifts the vignette there, a little beyond
+			+ "  vec2 q = gl_FragCoord.xy / u_screen.y;\n"
+			+ "  vec2 l = vec2(u_light.x * u_screen.x / u_screen.y, u_light.y);\n"
+			+ "  float lit = u_light.z > 0.0 ? smoothstep(u_light.z, 0.0, distance(q, l)) * u_light.w : 0.0;\n"
+			+ "  c *= mix(vig, 1.08, lit);\n"
 			// fine moving grain, from a tiled noise texture shifted every frame (a maths hash
 			// breaks up into blocky patterns at the medium precision many phone GPUs use)
 			+ "  float n = texture2D(u_noise, v_uv * u_noiseScale + u_noiseOffset).r;\n"
@@ -114,6 +121,19 @@ final class PostProcessor implements Disposable {
 		noise.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
 		noise.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 		p.dispose();
+	}
+
+	private float lightX, lightY, lightR, lightA;
+
+	/**
+	 * Lights a spot this frame: centre (x, y) as fractions of the screen from the
+	 * bottom left, radius as a fraction of its height, strength 0 to 1.
+	 */
+	void light(float x, float y, float radius, float strength) {
+		lightX = x;
+		lightY = y;
+		lightR = radius;
+		lightA = strength;
 	}
 
 	/** Size of the buffer the scene is drawn into while capturing. */
@@ -165,6 +185,9 @@ final class PostProcessor implements Disposable {
 		Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
 		combine.setUniformi("u_bloom", 1);
 		combine.setUniformi("u_noise", 2);
+		combine.setUniformf("u_screen", width, height);
+		combine.setUniformf("u_light", lightX, lightY, lightR, lightA);
+		lightR = 0; // set again each frame by whoever wants it
 		// one noise texel per screen pixel, at a new random offset each frame
 		combine.setUniformf("u_noiseScale", width / (float) NOISE_SIZE, height / (float) NOISE_SIZE);
 		combine.setUniformf("u_noiseOffset", MathUtils.random(), MathUtils.random());
