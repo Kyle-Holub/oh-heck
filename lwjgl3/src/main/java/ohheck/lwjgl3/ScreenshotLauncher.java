@@ -47,7 +47,7 @@ public class ScreenshotLauncher {
 			return 8; // scrolled down a little
 		}
 		if (state.equals("gameover")) {
-			return 14; // the winner's fireworks bursting
+			return 26; // the winner's fireworks bursting
 		}
 		if (state.startsWith("handover")) {
 			return 12; // the made/set labels have dropped beside the names
