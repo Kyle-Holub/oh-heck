@@ -271,7 +271,8 @@ public final class FallingCards {
 		// a glint when the card turns its face towards the light
 		VIEW_LIGHT.set(LIGHT).add(toCam).nor();
 		float spec = (float) Math.pow(Math.abs(n.dot(VIEW_LIGHT)), 40) * (1 - d);
-		if (spec > 0.04f && glinting.size() < glintStrength.length) {
+		// (none on the table: its cards are lit full bright already, and a glint would wash them out in the bloom)
+		if (!tableMode && spec > 0.04f && glinting.size() < glintStrength.length) {
 			glintStrength[glinting.size()] = spec;
 			glinting.add(f);
 		}
@@ -288,10 +289,7 @@ public final class FallingCards {
 		}
 	}
 
-	/**
-	 * Adds the glints on top, with additive blending so they brighten what is there (softer on
-	 * the table, where the cards are already bright enough to trip the bloom).
-	 */
+	/** Adds the glints on top, with additive blending so they brighten what is there. */
 	private void drawGlints(SpriteBatch batch, float cx, float cy) {
 		if (glinting.isEmpty()) {
 			return;
@@ -303,7 +301,7 @@ public final class FallingCards {
 			f.rot.transform(n);
 			toCam.set(f.pos).scl(-1);
 			TextureRegion r = n.dot(toCam) > 0 ? assets.face(f.card) : assets.back();
-			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(1f, 0.88f, 0.62f, Math.min(tableMode ? 0.25f : 0.7f, glintStrength[i])));
+			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(1f, 0.88f, 0.62f, Math.min(0.7f, glintStrength[i])));
 		}
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
