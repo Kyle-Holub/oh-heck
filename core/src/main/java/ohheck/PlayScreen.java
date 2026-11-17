@@ -640,7 +640,7 @@ public class PlayScreen extends BaseScreen {
 			batch.setColor(myTurn && !canPlay ? Palette.CARD_DIM : Color.WHITE);
 			float flip = flow.isDealing() ? flow.deal.flipOfYourCard(i) : 1f;
 			art.flip(c, x, y, cw, ch, flip);
-			if (flip >= 1 && c.suit() == match().trump()) {
+			if (flip >= 1 && flow.trumpFaceUp() && c.suit() == match().trump()) {
 				Glints.draw(batch, assets.glow, c, x, y, cw, ch, i == n - 1 ? cw : table.handGap, 0, time,
 						myTurn && !canPlay ? 0.5f : 1f);
 			}
