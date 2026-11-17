@@ -224,7 +224,10 @@ public class TableFlowTest {
 	@Test
 	public void aSavedGameResumesWithoutTheDeal() {
 		Match m = newGame(9);
-		playUntil(TableState.TRICK);
+		playUntil(TableState.RESULTS); // past hand 1 (a single trick ends it)
+		flow.nextHand();
+		playUntil(TableState.TRICK); // the first of hand 2's two tricks
+		assertEquals(Match.Phase.PLAYING, m.phase());
 		Match saved = Match.load(m.save(), new Random(1));
 		TableFlow resumed = new TableFlow(new Events());
 		resumed.resume(saved);
