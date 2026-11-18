@@ -167,7 +167,7 @@ final class TableOverlays {
 	 * to the right of your panel, where it stays while the scores are up.
 	 */
 	void drawHandLabels(float drop, float alpha) {
-		for (int seat = 0; seat < 4; seat++) {
+		for (int seat = 0; seat < match.players(); seat++) {
 			if (seat == TableLayout.HUMAN && drop <= 0) {
 				continue;
 			}
@@ -290,7 +290,7 @@ final class TableOverlays {
 	/** Seats from highest score to lowest; ties keep seat order. (Reused list.) */
 	List<Integer> ranked() {
 		ranked.clear();
-		for (int s = 0; s < 4; s++) {
+		for (int s = 0; s < match.players(); s++) {
 			ranked.add(s); // small Integers are cached: no garbage
 		}
 		Collections.sort(ranked, byScore);
@@ -300,7 +300,7 @@ final class TableOverlays {
 	/** 1 for the lead; players on the same score share a place. */
 	int place(int seat) {
 		int p = 1;
-		for (int s = 0; s < 4; s++) {
+		for (int s = 0; s < match.players(); s++) {
 			if (match.score(s) > match.score(seat)) {
 				p++;
 			}

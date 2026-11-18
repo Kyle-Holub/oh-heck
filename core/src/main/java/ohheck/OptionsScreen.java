@@ -147,21 +147,21 @@ public class OptionsScreen extends BaseScreen {
 		// the track, gold up to the chosen stop
 		float x0 = x + 214, x1 = x + rw - 36, ty = y + 84;
 		stop0 = x0;
-		stopStep = (x1 - x0) / 2;
+		stopStep = (x1 - x0) / (Difficulty.values().length - 1);
 		slider.set(x0 - 30, y + 48, x1 - x0 + 60, DIFFICULTY_H - 48);
-		int level = s.difficulty();
+		int level = s.difficulty().ordinal(); // (the slider's stop)
 		float knobX = x0 + level * stopStep;
 		rect(x0, ty - 2, x1 - x0, 4, TRACK);
 		rect(x0, ty - 2, knobX - x0, 4, GOLD);
 		BitmapFont l = ui(0.9f);
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < Difficulty.values().length; i++) {
 			float sx = x0 + i * stopStep;
 			rect(sx - 1.5f, ty - 7, 3, 14, i <= level ? GOLD : TRACK);
 			l.setColor(i == level ? Palette.GOLD_LIGHT : Palette.MUTED);
 			text(l, Difficulty.values()[i].label, sx, y + 60, true);
 		}
 		BitmapFont n = ui(0.85f);
-		String note = Player.tableDescription(Difficulty.values()[level]); // (from the matchmaking odds)
+		String note = Player.tableDescription(s.difficulty()); // (from the matchmaking odds)
 		glyphs.setText(n, note);
 		if (glyphs.width > rw - 48) { // keep it on one line inside the row
 			n = ui(0.85f * (rw - 48) / glyphs.width);
@@ -174,7 +174,8 @@ public class OptionsScreen extends BaseScreen {
 
 	/** Moves the slider to the stop nearest x. */
 	private void slideTo(float x) {
-		int level = Math.max(0, Math.min(2, Math.round((x - stop0) / stopStep)));
+		int n = Difficulty.values().length;
+		Difficulty level = Difficulty.values()[Math.max(0, Math.min(n - 1, Math.round((x - stop0) / stopStep)))];
 		if (level != game.settings.difficulty()) {
 			game.settings.setDifficulty(level);
 		}

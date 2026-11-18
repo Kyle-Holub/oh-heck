@@ -44,7 +44,7 @@ final class TableFlow {
 	final DealAnimation deal = new DealAnimation();
 	private final Listener listener;
 	/** The computer players, one per seat (seat 0, yours, is unused). */
-	private final Bot[] bots = new Bot[4];
+	private final Bot[] bots = new Bot[TableLayout.SEATS];
 
 	private Match match;
 	private TableState state = TableState.TURN;

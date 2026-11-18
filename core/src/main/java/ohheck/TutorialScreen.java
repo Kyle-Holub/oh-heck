@@ -21,39 +21,53 @@ import rules.Suit;
  */
 public class TutorialScreen extends BaseScreen {
 
-	/** A step: its heading, caption, how long its scene runs, and whether it then plays again. */
+	/** A step: its heading, caption, its scene, how long that runs, and whether it then plays again. */
 	private static final class Step {
 		final String heading, caption;
+		final Runnable scene;
 		final float length;
 		final boolean loops;
 
-		Step(String heading, String caption, float length) {
-			this(heading, caption, length, true);
+		Step(String heading, String caption, Runnable scene, float length) {
+			this(heading, caption, scene, length, true);
 		}
 
-		Step(String heading, String caption, float length, boolean loops) {
+		Step(String heading, String caption, Runnable scene, float length, boolean loops) {
 			this.heading = heading;
 			this.caption = caption;
+			this.scene = scene;
 			this.length = length;
 			this.loops = loops;
 		}
 	}
 
-	private static final Step[] STEPS = {
-			new Step("Welcome", "Oh Heck is about calling your shots: guess how many tricks you'll win, then win exactly that many.", 4f, false),
-			new Step("The cards", "Cards rank from Ace, the highest, down to 2, the lowest.", 4.5f),
-			new Step("A trick", "Everyone plays one card in turn. That's a trick. The highest card wins it.", 5.5f),
-			new Step("Follow suit", "You must play the suit that was led if you can. Here, a heart.", 4.5f),
-			new Step("Can't follow? Play anything", "No cards of the suit led? Play any card, but only the suit led can win, unless…", 5.5f),
-			new Step("Trump", "…you play a trump. The card turned up after the deal sets the trump suit, and any trump beats every other suit.", 6f),
-			new Step("The deal", "There are 8 hands. The first deals 1 card each, the next 2, and so on up to 8. (You can reverse this in Options.)", 6.5f),
-			new Step("Bidding", "Before playing, everyone bids how many tricks they'll win. Look at your cards and count your winners.", 9.5f),
-			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", 5.5f),
-			new Step("The dealer's hook", "The dealer bids last and can't make the bids add up to the number of tricks, so someone always misses.", 5.5f),
-			new Step("The counters", "Top left of the table: tally marks count the 8 hands, and under them one card per trick shows how many the table has bid.", 9f),
+	/** "8", the number of hands in a game, for the captions. */
+	private static final String HANDS = String.valueOf(Rules.numberOfHands());
+
+	/** The steps in order: to add one, write its scene below and list it here. */
+	private final Step[] steps = {
+			new Step("Welcome", "Oh Heck is about calling your shots: guess how many tricks you'll win, then win exactly that many.",
+					this::welcome, 4f, false),
+			new Step("The cards", "Cards rank from Ace, the highest, down to 2, the lowest.", this::ranks, 4.5f),
+			new Step("A trick", "Everyone plays one card in turn. That's a trick. The highest card wins it.", this::aTrick, 5.5f),
+			new Step("Follow suit", "You must play the suit that was led if you can. Here, a heart.", this::followSuit, 4.5f),
+			new Step("Can't follow? Play anything", "No cards of the suit led? Play any card, but only the suit led can win, unless…",
+					this::cantFollow, 5.5f),
+			new Step("Trump", "…you play a trump. The card turned up after the deal sets the trump suit, and any trump beats every other suit.",
+					this::trump, 6f),
+			new Step("The deal", "There are " + HANDS + " hands. The first deals 1 card each, the next 2, and so on up to " + HANDS
+					+ ". (You can reverse this in Options.)", this::theDeal, 6.5f),
+			new Step("Bidding", "Before playing, everyone bids how many tricks they'll win. Look at your cards and count your winners.",
+					this::bidding, 9.5f),
+			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", this::biddingZero, 5.5f),
+			new Step("The dealer's hook", "The dealer bids last and can't make the bids add up to the number of tricks, so someone always misses.",
+					this::dealersHook, 5.5f),
+			new Step("The counters", "Top left of the table: tally marks count the " + HANDS
+					+ " hands, and under them one card per trick shows how many the table has bid.", this::counters, 9f),
 			new Step("Scoring", "Make your bid exactly: " + Rules.MADE + " points, plus " + Rules.PER_TRICK_BID
-					+ " for each trick you bid. Miss it, high or low: lose " + Rules.PER_TRICK_OFF + " for each trick off.", 9f),
-			new Step("Ready", "Highest total after 8 hands wins. Good luck!", 5f, false) };
+					+ " for each trick you bid. Miss it, high or low: lose " + Rules.PER_TRICK_OFF + " for each trick off.",
+					this::scoring, 9f),
+			new Step("Ready", "Highest total after " + HANDS + " hands wins. Good luck!", this::ready, 5f, false) };
 
 	/** After a step's scene has run, it holds this long before playing again. */
 	private static final float HOLD = 1.6f;
@@ -94,7 +108,7 @@ public class TutorialScreen extends BaseScreen {
 	public void render(float delta) {
 		float dt = Math.min(delta, 0.1f) * game.options.speed;
 		shownFor += dt;
-		Step s = STEPS[step];
+		Step s = steps[step];
 		clock.advance(dt, s.length, s.loops, HOLD); // (the first and last play once)
 		t = clock.t();
 		sparks.step(dt);
@@ -107,7 +121,7 @@ public class TutorialScreen extends BaseScreen {
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 		fireworks.draw(batch, assets.glow);
-		scene(step);
+		steps[step].scene.run();
 		sparks.draw(batch, assets.glow);
 		caption(s);
 		header();
@@ -115,11 +129,11 @@ public class TutorialScreen extends BaseScreen {
 	}
 
 	boolean lastStep() {
-		return step == STEPS.length - 1;
+		return step == steps.length - 1;
 	}
 
 	void next() {
-		if (step < STEPS.length - 1) {
+		if (step < steps.length - 1) {
 			step++;
 			clock.restart();
 			t = 0;
@@ -185,9 +199,9 @@ public class TutorialScreen extends BaseScreen {
 		BitmapFont m = ui(0.9f);
 		m.setColor(Palette.MUTED);
 		sb.setLength(0);
-		sb.append(step + 1).append(" / ").append(STEPS.length);
+		sb.append(step + 1).append(" / ").append(steps.length);
 		text(m, sb.toString(), x + cw - 20, y + CAPTION_H - 14, false);
-		if (step == STEPS.length - 1) {
+		if (step == steps.length - 1) {
 			button(doneButton, "Ready to play", w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
 		} else {
 			text(m, "Tap to continue", x + cw - 20, y + 22, false);
@@ -207,50 +221,6 @@ public class TutorialScreen extends BaseScreen {
 
 	private static Card card(Rank r, Suit s) {
 		return Card.of(r, s);
-	}
-
-	private void scene(int i) {
-		switch (i) {
-		case 0:
-			welcome();
-			break;
-		case 1:
-			ranks();
-			break;
-		case 2:
-			aTrick();
-			break;
-		case 3:
-			followSuit();
-			break;
-		case 4:
-			cantFollow();
-			break;
-		case 5:
-			trump();
-			break;
-		case 6:
-			theDeal();
-			break;
-		case 7:
-			bidding();
-			break;
-		case 8:
-			biddingZero();
-			break;
-		case 9:
-			dealersHook();
-			break;
-		case 10:
-			counters();
-			break;
-		case 11:
-			scoring();
-			break;
-		default:
-			ready();
-			break;
-		}
 	}
 
 	// ---- the seats: three players, for room: you bottom left, Rupert left, Oswald right
@@ -595,7 +565,7 @@ public class TutorialScreen extends BaseScreen {
 		}
 		BitmapFont f = serif(1.6f);
 		f.setColor(GOLD.r, GOLD.g, GOLD.b, at(5.2f, 5.6f));
-		centred(f, "\u2026 and so on, up to 8", cx(), h - 70);
+		centred(f, "\u2026 and so on, up to " + HANDS, cx(), h - 70);
 	}
 
 	// ---- the bid panel, as at the table: 0..n, one picked, some barred

@@ -84,48 +84,50 @@ public final class Player {
 	/** This player's bot; rng drives its randomness. */
 	public Bot bot(Random rng) {
 		Bot base = style == Style.SPOILER && level == Difficulty.HARD ? new HardBot(rng, SPOILER_SPOIL)
-				: Bot.of(level, rng);
+				: level.bot(rng);
 		return style == Style.STEADY || style == Style.SPOILER ? base : new StyledBot(base, style, level, rng);
 	}
 
-	/**
-	 * The chance each seat goes to an easy, normal or expert player, by the difficulty
-	 * setting: Easy never seats an expert, Hard never a beginner, Normal a mix of all three.
-	 */
-	static final double[][] ODDS = { { 0.65, 0.35, 0 }, { 0.25, 0.5, 0.25 }, { 0, 0.35, 0.65 } };
-
 	/** Who you'll meet at this setting, in a line, from the odds (for the Options screen). */
 	public static String tableDescription(Difficulty setting) {
-		double[] odds = ODDS[setting.ordinal()];
-		String[] who = { "easy-going players", "solid players", "experts" };
-		String[] never = { "never a beginner", "never a solid player", "never an expert" };
-		Integer[] order = { 0, 1, 2 };
-		java.util.Arrays.sort(order, (a, b) -> Double.compare(odds[b], odds[a]) != 0 ? Double.compare(odds[b], odds[a]) : a - b);
-		StringBuilder sb = new StringBuilder("Mostly ").append(who[order[0]]);
-		for (int i = 1; i < 3; i++) {
-			double p = odds[order[i]];
+		List<Difficulty> byChance = new ArrayList<Difficulty>(java.util.Arrays.asList(Difficulty.values()));
+		byChance.sort((x, y) -> Double.compare(setting.chanceOf(y), setting.chanceOf(x))); // (stable: ties keep level order)
+		StringBuilder sb = new StringBuilder("Mostly ").append(byChance.get(0).many);
+		for (Difficulty l : byChance.subList(1, byChance.size())) {
+			double p = setting.chanceOf(l);
 			if (p > 0) {
-				sb.append(p < 0.2 ? ", the odd " : ", some ").append(p < 0.2 ? who[order[i]].replace("players", "player").replace("experts", "expert") : who[order[i]]);
+				sb.append(p < 0.2 ? ", the odd " + l.oddOne : ", some " + l.many);
 			}
 		}
-		for (int l = 0; l < 3; l++) {
-			if (odds[l] == 0) {
-				sb.append("; ").append(never[l]);
+		for (Difficulty l : Difficulty.values()) {
+			if (setting.chanceOf(l) == 0) {
+				sb.append("; never ").append(l.never);
 			}
 		}
 		return sb.append('.').toString();
+	}
+
+	/** The level a seat goes to, for r drawn evenly from 0 to 1, by the setting's odds. */
+	private static Difficulty pick(Difficulty setting, double r) {
+		Difficulty[] levels = Difficulty.values();
+		double sum = 0;
+		for (Difficulty l : levels) {
+			sum += setting.chanceOf(l);
+			if (r < sum) {
+				return l;
+			}
+		}
+		return levels[levels.length - 1];
 	}
 
 	/** Three different players for a new game at this setting (their ids, for seats 1-3). */
 	public static int[] draw(Difficulty setting, Random rng) {
 		List<Integer> chosen = new ArrayList<Integer>();
 		while (chosen.size() < 3) {
-			double r = rng.nextDouble();
-			double[] odds = ODDS[setting.ordinal()];
-			int level = r < odds[0] ? 0 : r < odds[0] + odds[1] ? 1 : 2;
+			Difficulty level = pick(setting, rng.nextDouble());
 			List<Integer> free = new ArrayList<Integer>();
 			for (Player p : ALL) {
-				if (p.level.ordinal() == level && !chosen.contains(p.id)) {
+				if (p.level == level && !chosen.contains(p.id)) {
 					free.add(p.id);
 				}
 			}

@@ -142,8 +142,8 @@ public class PlayScreen extends BaseScreen {
 			public void gameEnded() {
 				Match m = flow.match();
 				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN), level);
-				int[] finals = new int[4];
-				for (int s = 0; s < 4; s++) {
+				int[] finals = new int[m.players()];
+				for (int s = 0; s < finals.length; s++) {
 					finals[s] = m.score(s);
 				}
 				if (PlayScreen.this.game.stats().countGame(level, finals, Rules.numberOfHands(), players)) {
@@ -213,13 +213,13 @@ public class PlayScreen extends BaseScreen {
 
 	/** A new game: a table drawn for the difficulty now chosen in Options. */
 	private void newGame() {
-		level = Difficulty.values()[game.settings.difficulty()];
+		level = game.settings.difficulty();
 		seatPlayers(Player.draw(level, seating));
 		toss.clear();
 		end.reset();
 		game.stats().startGame();
 		game.saveStats();
-		Match m = Match.random(4, deck, game.settings.handOrder());
+		Match m = Match.random(TableLayout.SEATS, deck, game.settings.handOrder());
 		overlays.setMatch(m);
 		newHighScore = -1;
 		flow.start(m);
@@ -391,7 +391,7 @@ public class PlayScreen extends BaseScreen {
 		drawing.tally();
 		drawing.bidTracker();
 		drawing.trump(toss.trumpGone());
-		for (int seat = 0; seat < 4; seat++) {
+		for (int seat = 0; seat < match().players(); seat++) {
 			drawing.seat(seat);
 		}
 		drawing.hand();

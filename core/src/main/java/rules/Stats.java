@@ -166,7 +166,7 @@ public final class Stats {
 
 	/** Each totals' name in the save: the difficulties, then all of them. */
 	private static String bucket(int which) {
-		return which == ALL ? "all" : Difficulty.values()[which].name().toLowerCase();
+		return which == ALL ? "all" : Difficulty.values()[which].key();
 	}
 
 	/** A totals' numbers by name (the per-player counts are added separately). */

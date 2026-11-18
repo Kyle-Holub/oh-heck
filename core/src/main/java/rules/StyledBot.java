@@ -10,11 +10,6 @@ import java.util.Random;
  */
 final class StyledBot implements Bot {
 
-	/** How often the habit wins out over the cards, by level (easy, normal, hard). */
-	static final double[] LEAN = { 0.6, 0.2, 0.12 }; // (measured in the arena's "players": levels still rank)
-	/** How often a playing habit wins out, by level: a habit you can see, more so in weaker players. */
-	static final double[] PLAY_HABIT = { 0.8, 0.6, 0.4 };
-
 	private final Bot bot;
 	private final Style style;
 	private final double lean, habit;
@@ -25,8 +20,8 @@ final class StyledBot implements Bot {
 	StyledBot(Bot bot, Style style, Difficulty level, Random rng) {
 		this.bot = bot;
 		this.style = style;
-		this.lean = LEAN[level.ordinal()];
-		this.habit = PLAY_HABIT[level.ordinal()];
+		this.lean = level.styleLean;
+		this.habit = level.playHabit;
 		this.rng = rng;
 	}
 

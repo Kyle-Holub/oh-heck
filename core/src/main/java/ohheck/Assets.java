@@ -11,6 +11,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
 import rules.Card;
+import rules.Difficulty;
 
 /** Textures and fonts shared by the screens. */
 public final class Assets implements Disposable {
@@ -47,7 +48,7 @@ public final class Assets implements Disposable {
 	/** The bid tracker's cards: a trick not bid on yet, a trick bid, a bid beyond the hand. */
 	public final Texture bidOpen, bidTaken, bidOver;
 	/** Difficulty badges, indexed by Difficulty.ordinal(): one, two or three spades on a chip. */
-	public final Texture[] levelBadge = new Texture[3];
+	public final Texture[] levelBadge = new Texture[Difficulty.values().length];
 	/** Player bar icons: dealer button, trick, trick over the bid, a bid of zero, no bid yet. */
 	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon, waitingIcon;
 	/** Gold bid numerals 0-9 (the 0 struck through), one strip; see {@link #digit(int)}. */
@@ -107,9 +108,8 @@ public final class Assets implements Disposable {
 		bidOpen = mipmapped("images/bid_open.png");
 		bidTaken = mipmapped("images/bid_taken.png");
 		bidOver = mipmapped("images/bid_over.png");
-		String[] levels = { "easy", "normal", "hard" };
-		for (int i = 0; i < levels.length; i++) {
-			levelBadge[i] = mipmapped("images/level_" + levels[i] + ".png");
+		for (Difficulty d : Difficulty.values()) {
+			levelBadge[d.ordinal()] = mipmapped("images/level_" + d.key() + ".png");
 		}
 		// the blurred sheet is stored at reduced size: take its cells from its own dimensions
 		int bw = cardSheetBlur.getWidth() / 13, bh = cardSheetBlur.getHeight() / 4;

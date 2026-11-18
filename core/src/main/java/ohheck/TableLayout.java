@@ -12,6 +12,8 @@ import com.badlogic.gdx.math.Vector2;
 final class TableLayout {
 
 	static final int HUMAN = 0;
+	/** The seats this table is laid out for: you, left, top, right. */
+	static final int SEATS = 4;
 
 	static final float HAND_SCALE = 1.2f, BACK_SCALE = 0.55f, TRUMP_SCALE = 0.95f;
 	static final float PANEL_W = PlayerPanel.W, PANEL_H = PlayerPanel.H;
