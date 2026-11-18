@@ -4,7 +4,7 @@ import java.util.Random;
 
 import rules.Bot;
 import rules.Card;
-import rules.Difficulty;
+import rules.Player;
 import rules.Match;
 
 /**
@@ -45,7 +45,6 @@ final class TableFlow {
 	private final Listener listener;
 	/** The computer players, one per seat (seat 0, yours, is unused). */
 	private final Bot[] bots = new Bot[4];
-	private Difficulty difficulty;
 
 	private Match match;
 	private TableState state = TableState.TURN;
@@ -53,24 +52,15 @@ final class TableFlow {
 	/** Seconds since the deal finished, for the trump card turning over. */
 	private float trumpT;
 
-	TableFlow(Listener listener, Difficulty difficulty, Random rng) {
+	TableFlow(Listener listener) {
 		this.listener = listener;
-		setDifficulty(difficulty, rng);
 	}
 
-	/**
-	 * Swaps the computer players for ones of another level, straight away. Safe at any
-	 * moment: they keep nothing between moves, deciding each time from what's on the table.
-	 */
-	void setDifficulty(Difficulty d, Random rng) {
-		difficulty = d;
+	/** Seats the computer players: players[s - 1] (a {@link Player} id) in seat s. */
+	void seat(int[] players, Random rng) {
 		for (int s = 1; s < bots.length; s++) {
-			bots[s] = Bot.of(d, new Random(rng.nextLong()));
+			bots[s] = Player.ALL.get(players[s - 1]).bot(new Random(rng.nextLong()));
 		}
-	}
-
-	Difficulty difficulty() {
-		return difficulty;
 	}
 
 	// ---- starting

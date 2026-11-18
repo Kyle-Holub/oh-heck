@@ -16,7 +16,6 @@ import java.util.Set;
 import org.junit.Test;
 
 import rules.Card;
-import rules.Difficulty;
 import rules.Match;
 
 /** The card table's flow, without a screen: states, timing, turns and your moves. */
@@ -73,7 +72,13 @@ public class TableFlowTest {
 	}
 
 	private final Events events = new Events();
-	private final TableFlow flow = new TableFlow(events, Difficulty.NORMAL, new Random(1));
+	private final TableFlow flow = seated(events, new int[] { 4, 5, 6 }, 1); // three Normal players
+
+	private static TableFlow seated(TableFlow.Listener listener, int[] players, long seed) {
+		TableFlow f = new TableFlow(listener);
+		f.seat(players, new Random(seed));
+		return f;
+	}
 
 	private Match newGame(long seed) {
 		Match m = Match.random(4, new Random(seed));
@@ -230,7 +235,7 @@ public class TableFlowTest {
 		playUntil(TableState.TRICK); // the first of hand 2's two tricks
 		assertEquals(Match.Phase.PLAYING, m.phase());
 		Match saved = Match.load(m.save(), new Random(1));
-		TableFlow resumed = new TableFlow(new Events(), Difficulty.HARD, new Random(2));
+		TableFlow resumed = seated(new Events(), new int[] { 8, 9, 10 }, 2); // three experts
 		resumed.resume(saved);
 		assertEquals(TableState.TURN, resumed.state());
 		assertTrue(resumed.trumpFaceUp());

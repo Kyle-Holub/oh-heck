@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import rules.Player;
 import rules.Stats;
 
 /** Your ten best finished games, and (on its second tab) your statistics, by difficulty or for all. */
@@ -147,7 +148,7 @@ public class HighScoresScreen extends BaseScreen {
 				{ "Average score", g ? String.valueOf(Math.round(t.averageFinal())) : none },
 				{ "Best / worst score", g ? t.bestFinal + " / " + t.worstFinal : none },
 				{ "Perfect games", g ? String.valueOf(t.perfect) : none },
-				{ "Nemesis", t.nemesis() > 0 ? PlayScreen.NAMES[t.nemesis()] : none } };
+				{ "Nemesis", t.nemesis() >= 0 ? Player.ALL.get(t.nemesis()).name : none } };
 		int misses = t.over + t.under;
 		String[][] hands = {
 				{ "Hands played", String.valueOf(t.hands) },

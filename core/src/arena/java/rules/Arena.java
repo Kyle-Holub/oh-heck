@@ -246,6 +246,16 @@ public final class Arena {
 			report("Hard vs 3 Easy", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.EASY)));
 		} else if (what.equals("learn")) {
 			learn(n);
+		} else if (what.equals("players")) {
+			// each of the twelve against three plain Normal players: do the levels still rank, styles and all?
+			for (final Player p : Player.ALL) {
+				report(p.name + " (" + p.level.label + ", " + p.style.label + ") vs 3 Normal", run(n, new Maker() {
+					@Override
+					public Bot make(long seed) {
+						return p.bot(new Random(seed));
+					}
+				}, level(Difficulty.NORMAL)));
+			}
 		} else if (what.equals("effort")) {
 			for (double k : new double[] { 0.5, 1, 2 }) {
 				HardBot.effort = k;
@@ -255,7 +265,7 @@ public final class Arena {
 			}
 			HardBot.effort = 1;
 		} else {
-			System.out.println("Experiments: levels N | vs N | learn N | effort N");
+			System.out.println("Experiments: levels N | vs N | learn N | effort N | players N");
 		}
 		System.out.printf("(%.1f s)%n", (System.currentTimeMillis() - start) / 1000.0);
 	}

@@ -18,6 +18,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import rules.Card;
 import rules.Difficulty;
 import rules.Match;
+import rules.Player;
 import rules.Rules;
 import rules.Suit;
 
@@ -36,7 +37,7 @@ import rules.Suit;
  */
 public class PlayScreen extends BaseScreen {
 
-	static final String[] NAMES = { "You", "Tom", "Max", "Dan" };
+
 	private static final int HUMAN = TableLayout.HUMAN;
 
 	/** Your "Bid tricks!"/"Set!" takes this long to glide beside your panel. */
@@ -70,7 +71,10 @@ public class PlayScreen extends BaseScreen {
 	/** Where your just-finished game landed in the high score table, or -1. */
 	private int newHighScore = -1;
 	/** The easiest level this game has been played at: its high score badge. */
-	private Difficulty lowest;
+	/** The difficulty this game was started at: its high score badge and statistics level. */
+	private Difficulty level;
+	/** Who sits in seats 1-3 ({@link Player} ids). */
+	private int[] players;
 
 	// touch: the card under your finger, and whether it's being dragged
 	private Card pressed;
@@ -81,8 +85,11 @@ public class PlayScreen extends BaseScreen {
 	final List<Card> handOrder = new ArrayList<Card>();
 	final List<Rectangle> handRects = new ArrayList<Rectangle>();
 
-	/** A new game, or the saved game {@code restored} if not null, against computer players of the given difficulty. */
-	public PlayScreen(OhHeckGame game, Match restored, Difficulty difficulty) {
+	/**
+	 * A new game (restored null), or the saved game restored, started at the given difficulty
+	 * with the given players seated (drawn afresh if null, as for saves from before the pool).
+	 */
+	public PlayScreen(OhHeckGame game, Match restored, Difficulty savedLevel, int[] savedPlayers) {
 		super(game);
 		this.options = game.options;
 		this.rng = options.seed == null ? new Random() : new Random(options.seed);
@@ -127,7 +134,7 @@ public class PlayScreen extends BaseScreen {
 			@Override
 			public void handEnded() {
 				Match m = flow.match();
-				if (PlayScreen.this.game.stats().countHand(m.handIndex(), flow.difficulty(), m.bid(HUMAN), m.tricksWon(HUMAN))) {
+				if (PlayScreen.this.game.stats().countHand(m.handIndex(), level, m.bid(HUMAN), m.tricksWon(HUMAN))) {
 					PlayScreen.this.game.saveStats();
 				}
 				if (m.madeBid(HUMAN)) {
@@ -138,12 +145,12 @@ public class PlayScreen extends BaseScreen {
 			@Override
 			public void gameEnded() {
 				Match m = flow.match();
-				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN), lowest);
+				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN), level);
 				int[] finals = new int[4];
 				for (int s = 0; s < 4; s++) {
 					finals[s] = m.score(s);
 				}
-				if (PlayScreen.this.game.stats().countGame(lowest, finals, Rules.numberOfHands())) {
+				if (PlayScreen.this.game.stats().countGame(level, finals, Rules.numberOfHands(), players)) {
 					PlayScreen.this.game.saveStats();
 				}
 				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
@@ -154,11 +161,12 @@ public class PlayScreen extends BaseScreen {
 					fireworks.show(table.w, table.h);
 				}
 			}
-		}, difficulty, rng);
-		lowest = difficulty;
+		});
 		if (restored == null) {
 			newGame();
 		} else {
+			level = savedLevel;
+			seatPlayers(savedPlayers != null ? savedPlayers : Player.draw(level, rng));
 			overlays.setMatch(restored);
 			flow.resume(restored);
 		}
@@ -212,7 +220,10 @@ public class PlayScreen extends BaseScreen {
 		return tumble != null && (tumble.anyThrown() || !tumble.active()); // (once all have fallen, none is left)
 	}
 
+	/** A new game: a table drawn for the difficulty now chosen in Options. */
 	private void newGame() {
+		level = Difficulty.values()[game.settings.difficulty()];
+		seatPlayers(Player.draw(level, rng));
 		tumble = null;
 		game.stats().startGame();
 		game.saveStats();
@@ -293,30 +304,30 @@ public class PlayScreen extends BaseScreen {
 
 	// ------------------------------------------------------------ input
 
-	/** Notes that this game has also been played at level d (only an easier level changes its badge). */
-	void playedAt(Difficulty d) {
-		if (d.ordinal() < lowest.ordinal()) {
-			lowest = d;
-		}
-	}
-
 	@Override
 	public void show() {
 		super.show();
-		// a difficulty changed in Options applies straight away
-		Difficulty chosen = Difficulty.values()[game.settings.difficulty()];
-		if (chosen != flow.difficulty()) {
-			flow.setDifficulty(chosen, rng);
-			playedAt(chosen);
-			save();
-		}
 		game.audio.startMusic();
+	}
+
+	/** The name shown for a seat: "You", or the computer player sitting there. */
+	String name(int seat) {
+		return seat == HUMAN ? "You" : Player.ALL.get(players[seat - 1]).name;
+	}
+
+	private void seatPlayers(int[] ids) {
+		players = ids;
+		flow.seat(ids, rng);
 	}
 
 	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */
 	private void save() {
 		if (options.persist) {
-			game.settings.saveGame(isGameOver() ? null : match().save(), lowest.ordinal());
+			if (isGameOver()) {
+				game.settings.clearSavedGame();
+			} else {
+				game.settings.saveGame(match().save(), level.ordinal(), players);
+			}
 		}
 	}
 
@@ -652,7 +663,7 @@ public class PlayScreen extends BaseScreen {
 	/** A seat's panel and, for opponents, their face-down cards (while dealing, only those that have landed). */
 	private void drawSeat(int seat) {
 		boolean turn = flow.state() == TableState.TURN && match().currentSeat() == seat;
-		panel.draw(NAMES[seat], table.panelX(seat), table.panelTop(seat), turn, match().dealer() == seat,
+		panel.draw(name(seat), table.panelX(seat), table.panelTop(seat), turn, match().dealer() == seat,
 				match().score(seat), match().bid(seat), match().tricksWon(seat), flow.isDealing(), time);
 		if (seat == HUMAN) {
 			return;

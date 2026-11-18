@@ -31,7 +31,7 @@ final class TableOverlays {
 	/** A bid that can't be made: the gold numeral greyed and faded. */
 	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
 	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190;
-	private static final float RESULTS_W = 470, RESULTS_H = 220, RESULTS_ROW = 26;
+	private static final float RESULTS_W = 540, RESULTS_H = 220, RESULTS_ROW = 26;
 	private static final float GAME_OVER_W = 420, GAME_OVER_H = 306, GAME_OVER_ROW = 27;
 	private static final float END_BUTTON_W = 170, END_BUTTON_H = 42;
 	private static final float HINT_H = 40, HINT_PAD = 16;
@@ -224,7 +224,7 @@ final class TableOverlays {
 			t.setColor(Palette.MUTED);
 			t.draw(screen.batch, HighScores.ordinal(place(seat)), px + cols[0], y);
 			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
-			t.draw(screen.batch, PlayScreen.NAMES[seat] + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
+			t.draw(screen.batch, screen.name(seat) + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
 			screen.numeral(match.bid(seat), px + cols[2] + 8, y - 8, 26, Color.WHITE);
 			t.draw(screen.batch, String.valueOf(match.tricksWon(seat)), px + cols[3], y);
 			t.draw(screen.batch, (pts > 0 ? "+" : "") + pts, px + cols[4], y);
@@ -236,7 +236,7 @@ final class TableOverlays {
 		screen.text(s, "Tap to continue", table.w / 2, py + 26, true);
 	}
 
-	private static final float[] RESULT_COLS = { 22, 62, 185, 245, 310, 395 };
+	private static final float[] RESULT_COLS = { 22, 62, 255, 315, 380, 465 }; // (room for "Henrietta  (set)")
 	private static final String[] RESULT_HEAD = { "", "Player", "Bid", "Won", "Points", "Total" };
 
 	// ---- the end of the game
@@ -254,7 +254,7 @@ final class TableOverlays {
 			if (i > 0) {
 				sb.append(i == leaders.size() - 1 ? " and " : ", ");
 			}
-			sb.append(PlayScreen.NAMES[leaders.get(i)]);
+			sb.append(screen.name(leaders.get(i)));
 		}
 		if (leaders.size() > 1) {
 			sb.append(" tie!");
@@ -271,7 +271,7 @@ final class TableOverlays {
 			t.setColor(Palette.MUTED);
 			t.draw(screen.batch, HighScores.ordinal(place(s)), px + 60, y);
 			t.setColor(place(s) == 1 ? Palette.GOLD : Palette.CREAM);
-			t.draw(screen.batch, PlayScreen.NAMES[s], px + 120, y);
+			t.draw(screen.batch, screen.name(s), px + 120, y);
 			screen.text(t, String.valueOf(match.score(s)), px + pw - 140, y, false);
 			if (s == TableLayout.HUMAN && newHighScore == 0) { // only a score that tops the table
 				BitmapFont n = screen.ui(0.95f);

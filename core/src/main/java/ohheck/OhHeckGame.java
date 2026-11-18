@@ -35,6 +35,7 @@ public class OhHeckGame extends Game {
 	private RulesScreen rules;
 	private OptionsScreen optionsScreen;
 	private HighScoresScreen highScoresScreen;
+	private PlayersScreen playersScreen;
 	private Stats stats = new Stats();
 	private PlayScreen play;
 
@@ -64,6 +65,7 @@ public class OhHeckGame extends Game {
 		rules = new RulesScreen(this);
 		optionsScreen = new OptionsScreen(this);
 		highScoresScreen = new HighScoresScreen(this);
+		playersScreen = new PlayersScreen(this);
 		setScreen(title);
 	}
 
@@ -137,6 +139,10 @@ public class OhHeckGame extends Game {
 		open(optionsScreen);
 	}
 
+	void showPlayers() {
+		open(playersScreen);
+	}
+
 	/** The high score table; newest is the position just added (-1 for none) to pick out. */
 	void showHighScores(int newest) {
 		highScoresScreen.highlight(newest);
@@ -186,7 +192,7 @@ public class OhHeckGame extends Game {
 		if (play != null) {
 			play.dispose();
 		}
-		play = new PlayScreen(this, null, Difficulty.values()[settings.difficulty()]);
+		play = new PlayScreen(this, null, null, null);
 		backStack.clear();
 		setScreen(play);
 	}
@@ -199,8 +205,8 @@ public class OhHeckGame extends Game {
 				newGame();
 				return;
 			}
-			play = new PlayScreen(this, saved, Difficulty.values()[settings.difficulty()]);
-			play.playedAt(Difficulty.values()[settings.savedGameLowestDifficulty()]);
+			play = new PlayScreen(this, saved, Difficulty.values()[settings.savedGameDifficulty()],
+					settings.savedGamePlayers());
 		}
 		backStack.clear();
 		setScreen(play);
@@ -222,7 +228,7 @@ public class OhHeckGame extends Game {
 			return Match.load(s, new Random());
 		} catch (IllegalArgumentException e) {
 			Gdx.app.error("OhHeck", "Discarding unreadable saved game", e);
-			settings.saveGame(null, 0);
+			settings.clearSavedGame();
 			return null;
 		}
 	}
@@ -234,6 +240,7 @@ public class OhHeckGame extends Game {
 		rules.dispose();
 		optionsScreen.dispose();
 		highScoresScreen.dispose();
+		playersScreen.dispose();
 		if (play != null) {
 			play.dispose();
 		}

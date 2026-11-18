@@ -5,7 +5,6 @@ import java.util.List;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -17,7 +16,8 @@ public class RulesScreen extends BaseScreen {
 	private static final float HEADER_H = 56;
 
 	private final List<String> titles, bodies;
-	private float scroll, velocity, contentHeight;
+	private final Scroller scroller = new Scroller();
+	private float contentHeight;
 	private final Rectangle backButton = new Rectangle();
 
 	public RulesScreen(OhHeckGame game) {
@@ -30,26 +30,20 @@ public class RulesScreen extends BaseScreen {
 	@Override
 	public void show() {
 		super.show();
-		scroll = 0;
-		velocity = 0;
+		scroller.reset();
 	}
 
 	@Override
 	protected void drag(float dy) {
-		scroll += dy;
-		velocity = dy * 60f;
+		scroller.drag(dy);
 	}
 
 	@Override
 	public void render(float delta) {
 		float dt = Math.min(delta, 0.1f);
 		shownFor += dt * game.options.speed;
-		if (!Gdx.input.isTouched()) {
-			scroll += velocity * dt;
-			velocity *= Math.pow(0.04, dt);
-		}
 		if (game.options.autoplayHuman) {
-			scroll = shownFor > 1.0f ? 230 : 0;
+			scroller.offset = shownFor > 1.0f ? 230 : 0;
 			if (shownFor > 2.2f) {
 				game.newGame();
 				return;
@@ -61,10 +55,9 @@ public class RulesScreen extends BaseScreen {
 		batch.draw(assets.table, 0, 0, w, h);
 
 		float colW = Math.min(w - 100, 720), x = (w - colW) / 2;
-		float maxScroll = Math.max(0, contentHeight - (h - HEADER_H) + 30);
-		scroll = MathUtils.clamp(scroll, 0, maxScroll);
+		scroller.update(dt, Gdx.input.isTouched(), contentHeight - (h - HEADER_H) + 30);
 
-		float y = h - HEADER_H - 20 + scroll;
+		float y = h - HEADER_H - 20 + scroller.offset;
 		float top = y;
 		for (int i = 0; i < titles.size(); i++) {
 			BitmapFont t = serif(1.45f);
