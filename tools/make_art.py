@@ -279,13 +279,14 @@ def sunken_panel(name, out, fill, border, radius=12, size=48):
 
 
 def icon_card(fill, inner=None):
-    """A small card-shaped icon: gold edge, optional inner border like the card back."""
+    """A small card-shaped icon: a broad gold edge, optional inner border like the card back."""
     W, H = 84 * SS, 108 * SS
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([3 * SS, 3 * SS, W - 3 * SS, H - 3 * SS], 12 * SS, fill=fill, outline=GOLD, width=5 * SS)
+    # a broad gold edge: on a dark card it's the outline you see, so dark and light icons read the same size
+    d.rounded_rectangle([2 * SS, 2 * SS, W - 2 * SS, H - 2 * SS], 12 * SS, fill=fill, outline=GOLD, width=8 * SS)
     if inner:
-        d.rounded_rectangle([11 * SS, 11 * SS, W - 11 * SS, H - 11 * SS], 7 * SS, outline=inner, width=2 * SS)
+        d.rounded_rectangle([14 * SS, 14 * SS, W - 14 * SS, H - 14 * SS], 6 * SS, outline=inner, width=2 * SS)
     return img, d
 
 
