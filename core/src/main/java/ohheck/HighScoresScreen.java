@@ -61,8 +61,8 @@ public class HighScoresScreen extends BaseScreen {
 		BitmapFont t = serif(2.2f);
 		t.setColor(GOLD);
 		centred(t, showStats ? "Statistics" : "High scores", w / 2, h - 40);
-		button(scoresTab, "Scores", w - 220, h - 52, 130, 40, showStats ? assets.buttonAlt : assets.button);
-		button(statsTab, "Statistics", w - 82, h - 52, 130, 40, showStats ? assets.button : assets.buttonAlt);
+		button(scoresTab, "Scores", w - 250, h - 52, 130, 40, showStats ? assets.buttonAlt : assets.button);
+		button(statsTab, "Statistics", w - 98, h - 52, 160, 40, showStats ? assets.button : assets.buttonAlt);
 		button(backButton, "Back", 70, h - 52, 110, 40, assets.buttonAlt);
 		if (showStats) {
 			drawStats();
@@ -121,16 +121,19 @@ public class HighScoresScreen extends BaseScreen {
 
 	private void drawStats() {
 		// the filter: one button per difficulty (with its badge), then All
-		float fw = 132, fh = 40, fy = h - 116;
+		float fw = 152, fh = 40, fy = h - 116;
 		float fx = w / 2 - (4 * fw + 3 * 12) / 2;
 		int[] order = { Stats.ALL, 0, 1, 2 };
 		for (int i = 0; i < order.length; i++) {
 			int which = order[i];
 			float cx = fx + i * (fw + 12) + fw / 2;
-			button(filterButtons[which], FILTERS[which], cx, fy, fw, fh,
-					which == filter ? assets.button : assets.buttonAlt);
-			if (which != Stats.ALL) {
-				batch.draw(assets.levelBadge[which], cx - fw / 2 + 8, fy + 8, 24, 24);
+			boolean badge = which != Stats.ALL;
+			button(filterButtons[which], "", cx, fy, fw, fh, which == filter ? assets.button : assets.buttonAlt);
+			BitmapFont f = serif(1.5f);
+			f.setColor(Palette.CREAM);
+			textIn(f, FILTERS[which], cx - fw / 2 + (badge ? 28 : 0), fy, fw - (badge ? 28 : 0), fh);
+			if (badge) { // its level badge, left of the name
+				batch.draw(assets.levelBadge[which], cx - fw / 2 + 10, fy + 8, 24, 24);
 			}
 		}
 
