@@ -49,6 +49,9 @@ Every push to a `develop/*` branch builds the app and publishes it as a "Dev bui
 
 ## Development
 
+How the code is laid out, the screenshot run, CI, the arena and the art tools are mapped in
+[ARCHITECTURE.md](ARCHITECTURE.md).
+
 ```sh
 ./gradlew core:test        # rules, computer players, saved games, the table's flow (thousands of simulated games)
 ./gradlew lwjgl3:run       # run on desktop
