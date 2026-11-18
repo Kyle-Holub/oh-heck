@@ -15,17 +15,18 @@ import rules.Match;
 import rules.Player;
 import rules.Rules;
 import rules.SavedGame;
-import rules.Suit;
 
 /**
  * The card table: you (bottom) against three computer players (left, top,
  * right). The rules live in {@link Match}; this screen runs the table's
- * {@link TableState} machine, turns touches into moves, runs the computer
- * players and draws it all, with help from:
+ * {@link TableState} machine, runs the computer players and draws it all,
+ * with help from:
  * <ul>
  * <li>{@link TableLayout}: where things go
  * <li>{@link DealAnimation} and {@link TrickView}: cards moving
  * <li>{@link TableOverlays}: panels, scores and menus over the table
+ * <li>{@link TableInput}: your taps and drags, and the pause menu
+ * <li>{@link TableDrawing}, {@link TableToss} and {@link GameEnd}: drawing the table, and the game's end
  * <li>{@link Autoplay}: the scripted screenshot run (not normal play)
  * </ul>
  * Playing a card: tap it, or drag it up onto the table. Bidding: tap a number.
@@ -37,8 +38,6 @@ public class PlayScreen extends BaseScreen {
 
 	/** Your "Bid tricks!"/"Set!" takes this long to glide beside your panel. */
 	private static final float LABEL_DROP = 0.6f;
-	/** How far a finger moves on a card before it counts as dragging it. */
-	private static final float DRAG_START = 12f;
 
 	private final GameOptions options;
 	/**
@@ -65,7 +64,6 @@ public class PlayScreen extends BaseScreen {
 
 	/** Game time, for animations; stops while paused. */
 	private float time;
-	private boolean menuOpen;
 	/** Where your just-finished game landed in the high score table, or -1. */
 	private int newHighScore = -1;
 	/** The difficulty this game was started at: its high score badge and statistics level. */
@@ -73,10 +71,8 @@ public class PlayScreen extends BaseScreen {
 	/** Who sits in seats 1-3 ({@link Player} ids). */
 	private int[] players;
 
-	// touch: the card under your finger, and whether it's being dragged
-	private Card pressed;
-	private boolean dragging;
-	private float dragX, dragY;
+	/** Your taps and drags, and the pause menu. */
+	private final TableInput input = new TableInput(this);
 
 	/** Your hand in display order, and each card's tap area; rebuilt when drawn. */
 	final List<Card> handOrder = new ArrayList<Card>();
@@ -104,7 +100,7 @@ public class PlayScreen extends BaseScreen {
 					autoplay.skipHands(m);
 				}
 				trick.clear();
-				clearTouch();
+				input.clearTouch();
 			}
 
 			@Override
@@ -185,11 +181,11 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	boolean isMenuOpen() {
-		return menuOpen;
+		return input.menuOpen();
 	}
 
 	boolean isDragging() {
-		return dragging;
+		return input.dragging();
 	}
 
 	public boolean isGameOver() {
@@ -212,7 +208,7 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	Card pressedCard() {
-		return pressed;
+		return input.pressed();
 	}
 
 	/** A new game: a table drawn for the difficulty now chosen in Options. */
@@ -230,7 +226,7 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	boolean humanCanPlay() {
-		return !menuOpen && flow.yourTurnToPlay();
+		return !input.menuOpen() && flow.yourTurnToPlay();
 	}
 
 	// ----------------------------------------------------------- update
@@ -242,7 +238,7 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	private void update(float dt) {
-		if (menuOpen) {
+		if (input.menuOpen()) {
 			if (autoplay != null) {
 				autoplay.whilePaused(dt);
 			}
@@ -274,7 +270,7 @@ public class PlayScreen extends BaseScreen {
 
 	@Override
 	boolean animating() {
-		if (menuOpen) {
+		if (input.menuOpen()) {
 			return false;
 		}
 		switch (flow.state()) {
@@ -296,7 +292,7 @@ public class PlayScreen extends BaseScreen {
 		default:
 			break;
 		}
-		return dragging || sparks.active() || fireworks.active() || trick.anyInFlight(time) || toss.active();
+		return input.dragging() || sparks.active() || fireworks.active() || trick.anyInFlight(time) || toss.active();
 	}
 
 	// ------------------------------------------------------------ input
@@ -336,177 +332,52 @@ public class PlayScreen extends BaseScreen {
 	@Override
 	public void pause() {
 		save();
-		// leaving the app (home button, a call): come back to the menu
 		if (autoplay == null) {
-			menuOpen = true;
-			clearTouch();
+			input.openMenu(); // leaving the app (home button, a call): come back to the menu
 		}
 	}
+
+	// touches go to TableInput
 
 	@Override
 	protected void touchDown(float x, float y) {
 		super.touchDown(x, y);
-		pressed = null;
-		dragging = false;
-		if (!humanCanPlay()) {
-			return;
-		}
-		int i = cardAt(x, y);
-		if (i >= 0) {
-			pressed = handOrder.get(i);
-			dragX = x;
-			dragY = y;
-		}
+		input.touchDown(x, y);
 	}
 
 	@Override
 	protected void touchDragged(float x, float y) {
-		if (pressed == null) {
-			return;
-		}
-		if (!dragging && movedFrom(x, y) > DRAG_START && match().legalPlays(HUMAN).contains(pressed)) {
-			dragging = true;
-		}
-		dragX = x;
-		dragY = y;
+		input.touchDragged(x, y, movedFrom(x, y));
 	}
 
 	@Override
 	protected void touchUp(float x, float y) {
-		if (dragging) {
-			Card c = pressed;
-			clearTouch();
-			float handTop = handRects.isEmpty() ? 150 : handRects.get(0).y + handRects.get(0).height;
-			if (y > handTop + 10 && humanCanPlay()) {
-				// dropped on the table: play it from where it was let go
-				humanPlay(c, x - TableLayout.handCardW() / 2, y - TableLayout.handCardH() / 2);
-			}
-			return; // otherwise it drops back into your hand
+		if (!input.touchUp(x, y)) {
+			super.touchUp(x, y); // a tap, unless it was a swipe
 		}
-		pressed = null;
-		super.touchUp(x, y); // a tap, unless it was a swipe
 	}
 
 	/** A tap at world position (x, y). Autoplay taps come through here too. */
 	@Override
 	protected void tap(float x, float y) {
-		if (menuOpen) {
-			for (int i = 0; i < overlays.menuItems.size(); i++) {
-				if (overlays.menuItems.get(i).contains(x, y)) {
-					menuChoice(i);
-					return;
-				}
-			}
-			return;
-		}
-		if (overlays.menuButton.contains(x, y)) {
-			openMenu();
-			return;
-		}
-		switch (flow.state()) {
-		case SHUFFLE:
-		case DEAL:
-		case HAND_END:
-			flow.skip(); // the shuffle and deal, or the hand-end message
-			break;
-		case TURN:
-			if (match().currentSeat() == HUMAN) {
-				if (match().phase() == Match.Phase.BIDDING) {
-					tapBid(x, y);
-				} else {
-					tapCard(x, y);
-				}
-			}
-			break;
-		case TRICK:
-			break;
-		case RESULTS:
-			flow.nextHand();
-			break;
-		case GAME_OVER:
-			// only the buttons: a stray tap mustn't throw away the final scores
-			if (overlays.highScoresButton.contains(x, y)) {
-				game.showHighScores(newHighScore);
-			} else if (overlays.playAgainButton.contains(x, y)) {
-				game.newGame(); // a fresh table, at the difficulty now chosen in Options
-			}
-			break;
-		}
+		input.tap(x, y);
 	}
 
-	private void tapBid(float x, float y) {
-		for (int b = 0; b < overlays.bidButtons.size(); b++) {
-			if (overlays.bidButtons.get(b).contains(x, y)) {
-				if (!flow.bid(b)) {
-					overlays.hint("As dealer you can't bid " + b + ": the bids would add up to " + match().handSize());
-				}
-				return;
-			}
-		}
-	}
-
-	private void tapCard(float x, float y) {
-		int i = cardAt(x, y);
-		if (i < 0) {
-			return;
-		}
-		Card c = handOrder.get(i);
-		if (!match().legalPlays(HUMAN).contains(c)) {
-			overlays.hint("You must follow suit: play a " + singular(match().leadSuit()));
-			return;
-		}
-		Rectangle r = handRects.get(i);
-		humanPlay(c, r.x, r.y);
+	@Override
+	protected void back() {
+		input.back();
 	}
 
 	/** Plays your card, flying in from (fromX, fromY). */
-	private void humanPlay(Card c, float fromX, float fromY) {
-		clearTouch();
+	void humanPlay(Card c, float fromX, float fromY) {
+		input.clearTouch();
 		if (flow.play(c)) {
 			trick.fly(c, fromX, fromY, time);
 		}
 	}
 
-	@Override
-	protected void back() {
-		if (menuOpen) {
-			menuOpen = false;
-		} else {
-			openMenu();
-		}
-	}
-
-	private void openMenu() {
-		menuOpen = true;
-		clearTouch();
-	}
-
-	private void menuChoice(int i) {
-		if (i == 1) {
-			game.showOptions(); // the menu is still open when you come back
-			return;
-		}
-		menuOpen = false;
-		if (i == 2) {
-			game.newGame(); // a fresh table, at the difficulty now chosen in Options
-		} else if (i == 3) {
-			game.showTitle();
-		}
-	}
-
-	private int cardAt(float x, float y) {
-		// topmost first: later cards are drawn over earlier ones
-		for (int i = handRects.size() - 1; i >= 0; i--) {
-			if (handRects.get(i).contains(x, y)) {
-				return i;
-			}
-		}
-		return -1;
-	}
-
-	private void clearTouch() {
-		pressed = null;
-		dragging = false;
+	int newHighScore() {
+		return newHighScore;
 	}
 
 	// ------------------------------------------------------------- draw
@@ -529,7 +400,7 @@ public class PlayScreen extends BaseScreen {
 			flow.deal.draw(batch, assets, art, table);
 		}
 		fireworks.draw(batch, assets.glow); // behind the panels, so the scores stay readable
-		if (!menuOpen) {
+		if (!input.menuOpen()) {
 			overlays.drawMenuButton();
 			switch (flow.state()) {
 			case TURN:
@@ -553,12 +424,12 @@ public class PlayScreen extends BaseScreen {
 				break;
 			}
 		}
-		if (dragging) {
-			drawing.dragged(pressed, dragX, dragY);
+		if (input.dragging()) {
+			drawing.dragged(input.pressed(), input.dragX(), input.dragY());
 		}
 		toss.draw(batch); // over everything else as the cards fall away (the scores wait until they've gone)
 		sparks.draw(batch, assets.glow);
-		if (menuOpen) {
+		if (input.menuOpen()) {
 			overlays.drawMenu();
 		} else {
 			overlays.drawHint();
@@ -567,12 +438,6 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	// ----------------------------------------------------------- helpers
-
-	/** "heart", "spade"... */
-	private static String singular(Suit s) {
-		String n = s.name().toLowerCase();
-		return n.substring(0, n.length() - 1);
-	}
 
 	@Override
 	public String stateTag() {
