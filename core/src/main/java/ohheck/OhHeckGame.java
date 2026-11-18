@@ -53,7 +53,11 @@ public class OhHeckGame extends Game {
 
 	public OhHeckGame(GameOptions options) {
 		this.options = options;
+		tour = options.autoplayHuman ? new ScreenshotTour(this) : null;
 	}
+
+	/** The screenshot run's walk through the menus; null in normal play. */
+	final ScreenshotTour tour;
 
 	/** Screens to return to with Back: Options, How to play and High scores open over where you were. */
 	private final java.util.ArrayDeque<Screen> backStack = new java.util.ArrayDeque<Screen>();

@@ -1,0 +1,29 @@
+name: Set up the build
+description: Java 17 and Gradle (with its cache), and a virtual display for the screenshot run if asked.
+
+inputs:
+  display:
+    description: Install Xvfb and software OpenGL, for running the desktop game headless.
+    default: 'false'
+  write-cache:
+    description: Write the Gradle cache back (develop builds), not just read it.
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - uses: gradle/actions/setup-gradle@v4
+      with:
+        cache-read-only: ${{ inputs.write-cache != 'true' }}
+
+    - name: Install a virtual display
+      if: inputs.display == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null

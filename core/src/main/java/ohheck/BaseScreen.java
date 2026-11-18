@@ -19,6 +19,12 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	static final float WORLD_W = 800, WORLD_H = 480;
 	static final Color GOLD = Palette.GOLD;
 
+	// the bar across the top of the settings-style screens (Options, Roster)
+	static final float HEADER_H = 56;
+	static final Color HEADER = new Color(0.06f, 0.04f, 0.03f, 0.97f);
+	/** The Back button: centre x, size. */
+	static final float BACK_X = 70, BACK_W = 110, BACK_H = 40;
+
 	protected final OhHeckGame game;
 	protected final Assets assets;
 	protected final ExtendViewport viewport = new ExtendViewport(WORLD_W, WORLD_H);
@@ -225,6 +231,28 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 		glyphs.setText(f, label);
 		f.draw(batch, label, cx - glyphs.width / 2, y + bh / 2 + glyphs.height / 2);
 		return area.set(cx - bw / 2, y, bw, bh);
+	}
+
+	/** The bar across the top: a gold rule under it, the title in the middle, Back on the left. */
+	protected void header(String title, Rectangle back) {
+		rect(0, h - HEADER_H, w, HEADER_H, HEADER);
+		rect(0, h - HEADER_H - 2, w, 2, GOLD);
+		BitmapFont t = serif(1.6f);
+		t.setColor(GOLD);
+		centred(t, title, w / 2, h - 16);
+		backButton(back, h - HEADER_H + (HEADER_H - BACK_H) / 2);
+	}
+
+	/** The Back button, its bottom at y. */
+	protected Rectangle backButton(Rectangle area, float y) {
+		return button(area, "Back", BACK_X, y, BACK_W, BACK_H, assets.buttonAlt);
+	}
+
+	/** A section's name, in gold, above its rows (x is the rows' left edge). */
+	protected void heading(String name, float x, float y) {
+		BitmapFont f = serif(1.35f);
+		f.setColor(GOLD);
+		f.draw(batch, name, x + 6, y);
 	}
 
 	/** Grows or shrinks a list of reusable tap areas to n, keeping the existing objects. */

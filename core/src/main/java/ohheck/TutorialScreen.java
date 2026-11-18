@@ -9,7 +9,9 @@ import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import rules.Card;
+import rules.Player;
 import rules.Rank;
+import rules.Rules;
 import rules.Suit;
 
 /**
@@ -49,7 +51,8 @@ public class TutorialScreen extends BaseScreen {
 			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", 5.5f),
 			new Step("The dealer's hook", "The dealer bids last and can't make the bids add up to the number of tricks, so someone always misses.", 5.5f),
 			new Step("The counters", "Top left of the table: tally marks count the 8 hands, and under them one card per trick shows how many the table has bid.", 9f),
-			new Step("Scoring", "Make your bid exactly: 10 points, plus 2 for each trick you bid. Miss it, high or low: lose 5 for each trick off.", 9f),
+			new Step("Scoring", "Make your bid exactly: " + Rules.MADE + " points, plus " + Rules.PER_TRICK_BID
+					+ " for each trick you bid. Miss it, high or low: lose " + Rules.PER_TRICK_OFF + " for each trick off.", 9f),
 			new Step("Ready", "Highest total after 8 hands wins. Good luck!", 5f, false) };
 
 	/** After a step's scene has run, it holds this long before playing again. */
@@ -66,7 +69,9 @@ public class TutorialScreen extends BaseScreen {
 	private boolean firstRun;
 	private int step;
 	/** Seconds into this step, and into its scene (which loops). */
-	private float stepT, t, lastT;
+	/** The scene's clock; t is its time this frame, which every scene draws from. */
+	private final Timeline clock = new Timeline();
+	private float t;
 	private final StringBuilder sb = new StringBuilder();
 	private final Color tint = new Color();
 
@@ -81,28 +86,21 @@ public class TutorialScreen extends BaseScreen {
 	void open(boolean firstRun) {
 		this.firstRun = firstRun;
 		step = 0;
-		stepT = 0;
+		clock.restart();
+		t = 0;
 	}
 
 	@Override
 	public void render(float delta) {
 		float dt = Math.min(delta, 0.1f) * game.options.speed;
 		shownFor += dt;
-		stepT += dt;
 		Step s = STEPS[step];
-		lastT = t;
-		t = s.loops ? stepT % (s.length + HOLD) : Math.min(stepT, s.length); // (the first and last play once)
-		if (t < lastT) {
-			lastT = -1; // the scene looped: its moments happen again
-		}
+		clock.advance(dt, s.length, s.loops, HOLD); // (the first and last play once)
+		t = clock.t();
 		sparks.step(dt);
 		fireworks.update(dt);
-		if (game.options.autoplayHuman && stepT > AUTOPLAY_STEP) { // the screenshot run steps through
-			if (step == STEPS.length - 1) {
-				game.newGame();
-				return;
-			}
-			next();
+		if (game.tour != null && game.tour.step(this, clock.shown())) { // (the tour times each step)
+			return;
 		}
 
 		ScreenUtils.clear(Palette.BG);
@@ -116,14 +114,15 @@ public class TutorialScreen extends BaseScreen {
 		batch.end();
 	}
 
-	/** In the screenshot run, game seconds on each step. */
-	private static final float AUTOPLAY_STEP = 4.0f;
+	boolean lastStep() {
+		return step == STEPS.length - 1;
+	}
 
-	private void next() {
+	void next() {
 		if (step < STEPS.length - 1) {
 			step++;
-			stepT = 0;
-			t = lastT = 0;
+			clock.restart();
+			t = 0;
 		} else {
 			finish();
 		}
@@ -256,7 +255,9 @@ public class TutorialScreen extends BaseScreen {
 
 	// ---- the seats: three players, for room: you bottom left, Rupert left, Oswald right
 
-	private static final String[] NAMES = { "You", "Rupert", "", "Oswald" };
+	/** The two players at the tutorial's table, by roster id (so a renamed player is renamed here too). */
+	private static final String LEFT = Player.byId(4).name, RIGHT = Player.byId(7).name;
+	private static final String[] NAMES = { "You", LEFT, "", RIGHT };
 
 	private float seatX(int seat) {
 		switch (seat) {
@@ -289,7 +290,7 @@ public class TutorialScreen extends BaseScreen {
 		float dx = s == 3 ? 1 : s == 2 ? 0 : -1, dy = s == 2 ? 1 : 0;
 		float off = (1 - slide) * 260;
 		panel.draw(NAMES[s], seatX(s) + dx * off, seatTop(s) + dy * off, turn, dealer, score, bid, won, handSize, plain,
-				stepT);
+				clock.shown());
 	}
 
 
@@ -317,15 +318,12 @@ public class TutorialScreen extends BaseScreen {
 
 	// ---- timing
 
-	/** 0 before a, 1 after b, eased between. */
 	private float at(float a, float b) {
-		float k = MathUtils.clamp((t - a) / (b - a), 0, 1);
-		return k * k * (3 - 2 * k);
+		return clock.at(a, b);
 	}
 
-	/** Whether the scene just passed time a (once per loop). */
 	private boolean passed(float a) {
-		return lastT < a && t >= a;
+		return clock.passed(a);
 	}
 
 	// ---- drawing
@@ -391,7 +389,7 @@ public class TutorialScreen extends BaseScreen {
 
 	private void welcome() {
 		art.art(assets.titleText, cx(), cy() + 70, 0.62f, at(0, 0.8f));
-		float open = at(0.9f, 1.9f), sway = MathUtils.sin(stepT * 1.1f) * 2f; // a slow breath once open
+		float open = at(0.9f, 1.9f), sway = MathUtils.sin(clock.shown() * 1.1f) * 2f; // a slow breath once open
 		float pivotX = cx(), pivotY = cy() - CH - 30;
 		for (int i = 0; i < 4; i++) {
 			float k = at(0.7f + i * 0.08f, 1.2f + i * 0.08f);
@@ -408,7 +406,7 @@ public class TutorialScreen extends BaseScreen {
 			batch.draw(assets.face(c), x, y, CW / 2, CH / 2, CW, CH, 1, 1, rot);
 			batch.setColor(Color.WHITE);
 			if (open >= 1) {
-				Glints.draw(batch, assets.glow, c, x, y, CW, CH, CW, rot, stepT + i * 0.7f, 0.8f);
+				Glints.draw(batch, assets.glow, c, x, y, CW, CH, CW, rot, clock.shown() + i * 0.7f, 0.8f);
 			}
 		}
 		if (passed(2.0f) && game.settings.effects()) {
@@ -534,7 +532,7 @@ public class TutorialScreen extends BaseScreen {
 		art.shadow(tx, ty, CW, CH, 4);
 		art.flip(trumpCard, tx, ty, CW, CH, p);
 		if (p >= 1) {
-			Glints.draw(batch, assets.glow, trumpCard, tx, ty, CW, CH, CW, 0, stepT, 1f);
+			Glints.draw(batch, assets.glow, trumpCard, tx, ty, CW, CH, CW, 0, clock.shown(), 1f);
 		}
 		Card ace = card(Rank.ACE, Suit.DIAMONDS), two = card(Rank.TWO, Suit.SPADES);
 		boolean won = t >= 4.2f;
@@ -553,7 +551,7 @@ public class TutorialScreen extends BaseScreen {
 			glow(bx, by + lift, at(2.6f, 3.0f) * (1 - gone));
 			card(two, bx, by + lift, 2 + lift, 1, 1 - gone);
 			if (gone <= 0) {
-				Glints.draw(batch, assets.glow, two, bx, by + lift, CW, CH, CW, 0, stepT, 1f);
+				Glints.draw(batch, assets.glow, two, bx, by + lift, CW, CH, CW, 0, clock.shown(), 1f);
 			}
 		} else {
 			flying(two, fromX(0), fromY(0), rowX(1, 2), y, 2.0f, 2.4f, 1, 1);
@@ -569,7 +567,7 @@ public class TutorialScreen extends BaseScreen {
 		float dw = CW * DEAL_SCALE, dh = CH * DEAL_SCALE, gap = dw + 12;
 		float deckX = w - 60 - CW, deckY = cy() - CH / 2 - 20;
 		art.stack(deckX + CW / 2, deckY + CH / 2, 12, CW, CH, 0);
-		panel.draw("Oswald", seatX(1), seatTop(1), false, false, 0, null, 0, 1, true, stepT);
+		panel.draw(RIGHT, seatX(1), seatTop(1), false, false, 0, null, 0, 1, true, clock.shown());
 		seat(0, null, 0, false, true, 0, 1, true, 1);
 		// each player's cards in a row beside their panel
 		float[] rowYs = { seatTop(0) - PlayerPanel.H / 2 - dh / 2, seatTop(1) - PlayerPanel.H / 2 - dh / 2 };
@@ -693,7 +691,7 @@ public class TutorialScreen extends BaseScreen {
 		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
 		BitmapFont f = ui(1.15f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
-		centred(f, "Rupert bid 1.  Oswald bid 1.", cx(), cy() - 46);
+		centred(f, LEFT + " bid 1.  " + RIGHT + " bid 1.", cx(), cy() - 46);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(3.2f, 3.6f));
 		centred(f, "The total of the bids can't be 3, so you can't bid 1.", cx(), cy() - 74);
 	}
@@ -702,20 +700,15 @@ public class TutorialScreen extends BaseScreen {
 
 	private void counters() {
 		float scale = 1.6f, left = cx() - 250, top = h - 80;
-		int done = t >= 1.5f ? 3 : t >= 1.0f ? 2 : t >= 0.5f ? 1 : 0;
-		counterArt.tally(left, top, done, Counters.pulse(stepT), scale);
+		int done = clock.count(0.5f, 1.0f, 1.5f);
+		counterArt.tally(left, top, done, Counters.pulse(clock.shown()), scale);
 		BitmapFont f = ui(1.05f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(1.6f, 2.0f));
 		f.draw(batch, "Hands: three played, the 4th glowing (of 8)", left + 150 * scale, top - 12);
 		// a hand of 4 tricks: the bids come in, 1 + 2 + 1, then 1 more: one too many
 		int[] totals = { 0, 1, 3, 4, 5 };
 		float[] when = { 0, 3.4f, 4.2f, 5.0f, 5.8f };
-		int total = 0;
-		for (int i = 0; i < when.length; i++) {
-			if (t >= when[i]) {
-				total = totals[i];
-			}
-		}
+		int total = totals[clock.count(when) - 1];
 		float ty = top - Counters.TALLY_H * scale - Counters.TRACKER_BELOW_TALLY * scale;
 		float trackerAlpha = at(2.6f, 3.0f);
 		if (trackerAlpha > 0) {
@@ -732,26 +725,26 @@ public class TutorialScreen extends BaseScreen {
 	// ---- 12. scoring: your bid of 2 made (+14); Oswald one over his bid of 1, set (-5)
 
 	private void scoring() {
-		int mine = t >= 1.6f ? 2 : t >= 0.8f ? 1 : 0;
-		int his = t >= 5.6f ? 2 : t >= 4.8f ? 1 : 0;
-		seat(0, 2, mine, false, false, t >= 2.2f ? 14 : 0, 3, false, 1);
-		seat(3, 1, his, false, false, t >= 6.4f ? -5 : 0, 3, false, 1);
+		int mine = clock.count(0.8f, 1.6f), his = clock.count(4.8f, 5.6f);
+		seat(0, 2, mine, false, false, t >= 2.2f ? Rules.score(2, 2) : 0, 3, false, 1);
+		seat(3, 1, his, false, false, t >= 6.4f ? Rules.score(1, 2) : 0, 3, false, 1);
 		seat(1, null, 0, false, false, 0, 3, true, 1);
 		float yx = seatX(0) + PlayerPanel.W / 2, yy = seatTop(0) + 10;
 		if (passed(2.2f)) {
 			sparks.burst(yx, yy - PlayerPanel.H / 2, 70);
 		}
-		floating("+14", yx, yy, 2.2f, Palette.GOLD_LIGHT);
+		floating("+" + Rules.score(2, 2), yx, yy, 2.2f, Palette.GOLD_LIGHT);
 		float hx = seatX(3) + PlayerPanel.W / 2;
 		if (t >= 6.2f) {
 			art.art(assets.setText, hx, seatTop(3) - PlayerPanel.H - 34, 0.5f, at(6.2f, 6.5f));
 		}
-		floating("-5", hx, seatTop(3) + 10, 6.4f, Palette.RED);
+		floating(String.valueOf(Rules.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
 		BitmapFont f = ui(1.1f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
-		centred(f, "You bid 2 and won 2: made it. 10 + 2 + 2 = 14 points", cx(), cy() + 36);
+		centred(f, "You bid 2 and won 2: made it. " + Rules.MADE + " + " + Rules.PER_TRICK_BID + " + " + Rules.PER_TRICK_BID
+				+ " = " + Rules.score(2, 2) + " points", cx(), cy() + 36);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(6.6f, 7.0f));
-		centred(f, "Oswald bid 1 and won 2: one trick over, so -5", cx(), cy() - 4);
+		centred(f, RIGHT + " bid 1 and won 2: one trick over, so " + Rules.score(1, 2), cx(), cy() - 4);
 	}
 
 	// ---- 13. ready: the title (eased in once and kept), a few fireworks

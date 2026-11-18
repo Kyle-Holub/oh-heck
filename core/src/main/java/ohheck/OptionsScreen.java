@@ -2,6 +2,8 @@ package ohheck;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -9,6 +11,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import rules.Difficulty;
+import rules.Player;
 
 /**
  * The settings, saved on the device: the game (difficulty, hand sizes, speed) on the left;
@@ -16,28 +19,35 @@ import rules.Difficulty;
  */
 public class OptionsScreen extends BaseScreen {
 
-	private static final Color HEADER = new Color(0.06f, 0.04f, 0.03f, 0.97f);
-	private static final float HEADER_H = 56, COLUMN_W = 440, COLUMN_GAP = 34, SECTION_GAP = 40;
+	private static final float COLUMN_W = 440, COLUMN_GAP = 34, SECTION_GAP = 40;
 
 	private final Rectangle backButton = new Rectangle();
 
 	/** One setting below the difficulty: its name, its value on a button, and what a tap on the row does. */
-	private abstract class Row {
+	private static final class Row {
 		final String label;
+		final Supplier<String> value;
+		/** Whether the value is shown lit (on) or greyed (off). */
+		final BooleanSupplier on;
+		final Runnable tap;
 		final Rectangle bounds = new Rectangle();
 
-		Row(String label) {
+		Row(String label, Supplier<String> value, BooleanSupplier on, Runnable tap) {
 			this.label = label;
+			this.value = value;
+			this.on = on;
+			this.tap = tap;
 		}
 
-		abstract String value();
-
-		/** Whether the value is shown lit (on) or greyed (off). */
-		boolean on() {
-			return true;
+		/** A row that's always lit, like "Game speed" or "How to play". */
+		Row(String label, Supplier<String> value, Runnable tap) {
+			this(label, value, () -> true, tap);
 		}
 
-		abstract void tap();
+		/** An On/Off switch. */
+		static Row toggle(String label, BooleanSupplier on, Runnable flip) {
+			return new Row(label, () -> on.getAsBoolean() ? "On" : "Off", on, flip);
+		}
 	}
 
 	/** The game column (under the difficulty), the sound and display column, and Learn under it. */
@@ -45,100 +55,21 @@ public class OptionsScreen extends BaseScreen {
 			learnRows = new ArrayList<Row>();
 	{
 		final Settings s = game.settings;
-		gameRows.add(new Row("Hand progression") { // (from the next new game)
-			@Override
-			String value() {
-				return s.handOrder().label;
-			}
-
-			@Override
-			void tap() {
-				s.setHandOrder(s.handOrder().flipped());
-			}
-		});
-		gameRows.add(new Row("Game speed") {
-			@Override
-			String value() {
-				return Settings.SPEEDS[s.speed()];
-			}
-
-			@Override
-			void tap() {
-				s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
-			}
-		});
-		learnRows.add(new Row("How to play") {
-			@Override
-			String value() {
-				return "View";
-			}
-
-			@Override
-			void tap() {
-				game.showTutorial();
-			}
-		});
-		learnRows.add(new Row("Roster") {
-			@Override
-			String value() {
-				return "View";
-			}
-
-			@Override
-			void tap() {
-				game.showPlayers();
-			}
-		});
-		displayRows.add(new Row("Music") {
-			@Override
-			String value() {
-				return s.music() ? "On" : "Off";
-			}
-
-			@Override
-			boolean on() {
-				return s.music();
-			}
-
-			@Override
-			void tap() {
-				s.setMusic(!s.music());
-				game.audio.startMusic(); // starts or stops it to match
-			}
-		});
-		displayRows.add(new Row("Sound effects") {
-			@Override
-			String value() {
-				return s.sound() ? "On" : "Off";
-			}
-
-			@Override
-			boolean on() {
-				return s.sound();
-			}
-
-			@Override
-			void tap() {
-				s.setSound(!s.sound());
-				game.audio.play(Audio.Effect.PLAY_CARD);
-			}
-		});
-		displayRows.add(new Row("Visual effects") {
-			@Override
-			String value() {
-				return s.effects() ? "On" : "Off";
-			}
-
-			@Override
-			boolean on() {
-				return s.effects();
-			}
-
-			@Override
-			void tap() {
-				s.setEffects(!s.effects());
-			}
-		});
+		// (both take effect from the next new game)
+		gameRows.add(new Row("Hand progression", () -> s.handOrder().label, () -> s.setHandOrder(s.handOrder().flipped())));
+		gameRows.add(new Row("Game speed", () -> Settings.SPEEDS[s.speed()],
+				() -> s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length)));
+		displayRows.add(Row.toggle("Music", s::music, () -> {
+			s.setMusic(!s.music());
+			game.audio.startMusic(); // starts or stops it to match
+		}));
+		displayRows.add(Row.toggle("Sound effects", s::sound, () -> {
+			s.setSound(!s.sound());
+			game.audio.play(Audio.Effect.PLAY_CARD);
+		}));
+		displayRows.add(Row.toggle("Visual effects", s::effects, () -> s.setEffects(!s.effects())));
+		learnRows.add(new Row("How to play", () -> "View", game::showTutorial));
+		learnRows.add(new Row("Roster", () -> "View", game::showPlayers));
 	}
 
 	public OptionsScreen(OhHeckGame game) {
@@ -148,8 +79,7 @@ public class OptionsScreen extends BaseScreen {
 	@Override
 	public void render(float delta) {
 		shownFor += Math.min(delta, 0.1f) * game.options.speed;
-		if (game.options.autoplayHuman && shownFor > 1.5f) {
-			game.showPlayers(); // (the screenshot run goes on from there to How to play)
+		if (game.tour != null && game.tour.step(this, shownFor)) {
 			return;
 		}
 		ScreenUtils.clear(Palette.BG);
@@ -180,21 +110,8 @@ public class OptionsScreen extends BaseScreen {
 			y -= ROW_GAP;
 		}
 
-		// the header: back and the title
-		rect(0, h - HEADER_H, w, HEADER_H, HEADER);
-		rect(0, h - HEADER_H - 2, w, 2, Palette.GOLD);
-		BitmapFont t = serif(1.6f);
-		t.setColor(GOLD);
-		centred(t, "Options", w / 2, h - 16);
-		button(backButton, "Back", 70, h - HEADER_H + 8, 110, HEADER_H - 16, assets.buttonAlt);
+		header("Options", backButton);
 		batch.end();
-	}
-
-	/** A column's name, in gold above it. */
-	private void heading(String name, float x, float y) {
-		BitmapFont f = serif(1.35f);
-		f.setColor(GOLD);
-		f.draw(batch, name, x + 6, y);
 	}
 
 	private void drawRow(Row row, float x, float y, float rw, float rh) {
@@ -204,11 +121,11 @@ public class OptionsScreen extends BaseScreen {
 		glyphs.setText(f, row.label);
 		f.draw(batch, row.label, x + 24, y + rh / 2 + glyphs.height / 2);
 		float vw = 140;
-		boolean on = row.on();
+		boolean on = row.on.getAsBoolean();
 		frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 7, vw, rh - 14);
 		BitmapFont v = ui(1.4f);
 		v.setColor(on ? Palette.CREAM : Palette.MUTED);
-		textIn(v, row.value(), x + rw - vw - 14, y, vw, rh);
+		textIn(v, row.value.get(), x + rw - vw - 14, y, vw, rh);
 		row.bounds.set(x, y, rw, rh);
 	}
 
@@ -216,10 +133,6 @@ public class OptionsScreen extends BaseScreen {
 
 	private static final float ROW_H = 40, ROW_GAP = 6, DIFFICULTY_H = 112, KNOB = 34;
 	/** Who you'll likely meet at each setting, shown under the slider. */
-	private static final String[] LEVEL_NOTES = {
-			"Easy-going and solid players; never an expert.",
-			"A mix: some easy-going, mostly solid, the odd expert.",
-			"Solid players and experts; never a beginner." };
 	private static final Color TRACK = new Color(0.36f, 0.29f, 0.21f, 1f);
 	private final Rectangle slider = new Rectangle();
 	private float stop0, stopStep;
@@ -248,12 +161,13 @@ public class OptionsScreen extends BaseScreen {
 			text(l, Difficulty.values()[i].label, sx, y + 60, true);
 		}
 		BitmapFont n = ui(0.85f);
-		glyphs.setText(n, LEVEL_NOTES[level]);
+		String note = Player.tableDescription(Difficulty.values()[level]); // (from the matchmaking odds)
+		glyphs.setText(n, note);
 		if (glyphs.width > rw - 48) { // keep it on one line inside the row
 			n = ui(0.85f * (rw - 48) / glyphs.width);
 		}
 		n.setColor(Palette.MUTED);
-		n.draw(batch, LEVEL_NOTES[level], x + 24, y + 38);
+		n.draw(batch, note, x + 24, y + 38);
 		n.draw(batch, "Seats a new table from your next game.", x + 24, y + 20);
 		batch.draw(assets.levelBadge[level], knobX - KNOB / 2, ty - KNOB / 2, KNOB, KNOB);
 	}
@@ -302,7 +216,7 @@ public class OptionsScreen extends BaseScreen {
 		for (List<Row> rows : java.util.Arrays.asList(gameRows, displayRows, learnRows)) {
 			for (Row row : rows) {
 				if (row.bounds.contains(x, y)) { // (empty until drawn)
-					row.tap();
+					row.tap.run();
 					return;
 				}
 			}

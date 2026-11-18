@@ -102,11 +102,16 @@ public final class Rules {
 
 	// ---- Scoring ----
 
+	/** For making your bid exactly: this, plus PER_TRICK_BID for each trick bid. */
+	public static final int MADE = 10, PER_TRICK_BID = 2;
+	/** For missing it: this many points off for each trick over or under. */
+	public static final int PER_TRICK_OFF = 5;
+
 	/** Points for one hand: 10 + 2 per trick for making the bid exactly, else -5 per trick off. */
 	public static int score(int bid, int tricksTaken) {
 		if (bid == tricksTaken) {
-			return 10 + 2 * bid;
+			return MADE + PER_TRICK_BID * bid;
 		}
-		return -5 * Math.abs(bid - tricksTaken);
+		return -PER_TRICK_OFF * Math.abs(bid - tricksTaken);
 	}
 }
