@@ -76,7 +76,7 @@ final class TableDrawing {
 
 	void bidTracker() {
 		Match m = s.match();
-		float x0 = 22 - Counters.TALLY_W / 2; // lined up with the tally's first mark
+		float x0 = TALLY_X - Counters.TALLY_W / 2; // lined up with the tally's first mark
 		float avail = table.panelX(2) - 14 - x0; // and clear of the top player's panel
 		counters.tracker(x0, table.h - 12 - Counters.TALLY_H - Counters.TRACKER_BELOW_TALLY, avail, m.handSize(),
 				m.bidsSoFar(), 1f);
