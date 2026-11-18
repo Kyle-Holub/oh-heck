@@ -17,15 +17,25 @@ where things live, how they connect, and the tools around them.
 
 Everything here runs and tests without a screen.
 
-- `Match` is a whole game: hands, bids, tricks, scores, whose turn, and its own save
-  format (`save()` / `load()`). Moves are made with `placeBid` and `playCard`; anything
-  illegal throws.
-- `Rules` has the scoring and legality checks; `HandOrder` says which way the 8 hands run.
+- `Match` is a whole game: hands, bids, tricks, scores, whose turn. Moves are made with
+  `placeBid` and `playCard`; anything illegal throws. `save()` / `load()` go through
+  `MatchCodec`, its text format (which reads the older format too).
+- `RuleSet` is the rules a game is played by: how many hands and how big, which card wins,
+  what may be bid and played, and the scoring. A `Match` holds its rules (`rules()`) and
+  `TableView` carries them to the bots. `RuleSet.STANDARD` is the game as it's always been;
+  a variant extends `RuleSet`, overrides what it changes, and is added to `RuleSet.ALL` so
+  saved games (which record `rules=<name>`) can find it. `Rules` is a static shortcut to the
+  standard rules, for code without a game in hand (the tutorial, the statistics).
+  `HandOrder` says which way the hands run. `BidTable` is learned for the standard rules.
 - `TableView` is what a player may know at a moment (`Match.view(seat)`). Bots decide from
   it alone.
+- `Difficulty` holds everything that differs by level: its bot (`bot(rng)`), the
+  matchmaking odds as an Options setting (`chanceOf`), how strongly habits show, and the
+  words for the Options note. A new level is one more constant.
 - Bots: `Bot` (`Bot.of(level, rng)`), `EasyBot` (Normal with slips), `NormalBot`
   (bids from the learned `BidTable`, plays with card memory), `HardBot` (Monte Carlo over
-  imagined deals). `StyledBot` adds a habit (`Style`) on top of any of them.
+  imagined deals). Each `Style` writes its own habit (`bid` and `play` in its constant) and
+  `StyledBot` applies it on top of the level's bot. A new habit is one more `Style` constant.
 - `Player` is the roster of twelve: name, level, style, trait, and a **permanent id**.
   Look players up with `Player.byId`, never by position. Never renumber or reuse an id,
   because saves and statistics refer to players by id. `Player.draw` seats a table, using
@@ -37,7 +47,7 @@ Everything here runs and tests without a screen.
 ## The game: `core/src/main/java/ohheck` (libGDX)
 
 - `OhHeckGame` owns the shared things (sprite batch, `Assets`, `Audio`, `PostProcessor`,
-  `Settings`, `Stats`), the screens, and the back stack (`open` / `back`). Long-lived
+  `Settings`, `Records`), the screens, and the back stack (`open` / `back`). Long-lived
   screens are made once through `kept(...)`; the table (`PlayScreen`) is made per game.
 - `BaseScreen` is the base for every screen. It provides the 800×480 world stretched to the
   screen's shape, touch handling (`tap`, `drag`, `touchDown/Up`), fonts (`ui`, `serif`),
@@ -51,11 +61,15 @@ Everything here runs and tests without a screen.
 
 - `TableFlow` is the table's state machine:
   `SHUFFLE → DEAL → TURN ⇄ TRICK → HAND_END → RESULTS → (SHUFFLE | GAME_OVER)`. It drives
-  the bots, holds the timing, and calls a `Listener` (the screen) when things happen. It's
-  tested in `TableFlowTest`.
-- `PlayScreen` is the table screen. It holds the game, saving and statistics, and composes
-  each frame from the pieces below. `TableInput` takes its touches: tapping or dragging a
-  card, bidding, moving the table on, and the pause menu.
+  the bots, holds the timing, and tells its `Listener`s when things happen. Each listener
+  overrides only what it reacts to: the screen's effects, `TableSounds`, `GameRecorder`
+  (statistics and high scores) and, in the screenshot run, `Autoplay`. A new reaction is a
+  new listener. It's tested in `TableFlowTest`.
+- `PlayScreen` is the table screen. It holds the game and composes each frame from the
+  pieces below. Those pieces don't hold the screen: they read the table through
+  `TableScene` and act through `TableActions`, both implemented by `PlayScreen`.
+  `TableInput` takes its touches: tapping or dragging a card, bidding, moving the table on,
+  and the pause menu.
   - `TableDrawing`: counters, trump card, players' panels, your hand.
   - `TrickView`: the trick in the middle. `DealAnimation`: the deal.
   - `TableOverlays`: bid panel, hand results, game over, the menu, hints.
@@ -82,6 +96,9 @@ come from the roster (`Player.byId`) and `Rules.score`.
 
 `Settings` wraps the device's preferences: options, the saved game (`SavedGame`, one
 text), statistics, high scores (`HighScores`, stored by field name) and the tutorial flag.
+`Records` keeps statistics, high scores and the saved game behind one persist switch,
+writing to a `Records.Store` (Settings on the device); it's gdx-free and tested in
+`RecordsTest` with an in-memory store.
 Every format reads its older versions; the tests in `SavedGameTest`, `StatsTest`,
 `HighScoresTest` and `SaveTest` cover them. Keep it that way when
 changing a format.

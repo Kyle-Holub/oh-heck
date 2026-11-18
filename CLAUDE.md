@@ -21,8 +21,12 @@ the screenshot run, CI, the arena and the art tools.
 - **Generated files:** `BidTable.java` comes from the arena's `learn`; the images, fonts and
   launcher icons come from `python3 tools/build_art.py` (`--check` to compare). Regenerate
   them; don't edit by hand.
-- **Facts shown on screen** (scores, odds, player names) come from the rules and the
-  roster, not copied text.
+- **Facts shown on screen** (scores, odds, player names, hand counts) come from the rules
+  and the roster, not copied text.
+- **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
+  constant, a rules variant a `RuleSet` subclass listed in `RuleSet.ALL`, and a new reaction
+  to table events a `TableFlow.Listener`. Code playing a game asks `match.rules()`, not
+  `Rules`.
 
 ## Checking changes
 
