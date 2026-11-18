@@ -41,7 +41,8 @@ Everything here runs and tests without a screen.
   screens are made once through `kept(...)`; the table (`PlayScreen`) is made per game.
 - `BaseScreen` is the base for every screen. It provides the 800×480 world stretched to the
   screen's shape, touch handling (`tap`, `drag`, `touchDown/Up`), fonts (`ui`, `serif`),
-  frames and buttons, the gold bid numerals (`numeral`), and `stateTag()` for the
+  frames and buttons, the settings-style header bar with Back (`header`, `HEADER_H`),
+  section headings (`heading`), the gold bid numerals (`numeral`), and `stateTag()` for the
   screenshot run.
 - `Assets` loads every texture and font. Each loader registers what it makes, so
   `dispose()` releases everything.
@@ -52,8 +53,9 @@ Everything here runs and tests without a screen.
   `SHUFFLE → DEAL → TURN ⇄ TRICK → HAND_END → RESULTS → (SHUFFLE | GAME_OVER)`. It drives
   the bots, holds the timing, and calls a `Listener` (the screen) when things happen. It's
   tested in `TableFlowTest`.
-- `PlayScreen` is the table screen. It holds the game, your input (taps, dragging a card),
-  the pause menu, saving, statistics, and it composes each frame from:
+- `PlayScreen` is the table screen. It holds the game, saving and statistics, and composes
+  each frame from the pieces below. `TableInput` takes its touches: tapping or dragging a
+  card, bidding, moving the table on, and the pause menu.
   - `TableDrawing`: counters, trump card, players' panels, your hand.
   - `TrickView`: the trick in the middle. `DealAnimation`: the deal.
   - `TableOverlays`: bid panel, hand results, game over, the menu, hints.
@@ -67,14 +69,21 @@ Everything here runs and tests without a screen.
 ### Other screens
 
 `TitleScreen` (with `FallingCards`, the 3D shower), `TutorialScreen` (How to play: 13
-timed scenes, a tap each), `OptionsScreen` (setting rows are `Row` objects), `PlayersScreen`
-(the Roster), `HighScoresScreen` (plus the Statistics tab). Scrolling lists use `Scroller`.
+timed scenes, a tap each; each scene's clock is a `Timeline`, tested in `TimelineTest`),
+`OptionsScreen` (setting rows are `Row`s built from lambdas; `Row.toggle` for On/Off),
+`PlayersScreen` (the Roster), `HighScoresScreen` (plus the Statistics tab). Scrolling lists
+use `Scroller`.
+
+Facts the screens show come from the rules, not copied text: the Options difficulty note is
+`Player.tableDescription` (from the matchmaking odds), and the tutorial's players and points
+come from the roster (`Player.byId`) and `Rules.score`.
 
 ### Saving
 
 `Settings` wraps the device's preferences: options, the saved game (`SavedGame`, one
-text), statistics, high scores and the tutorial flag. Every format reads its older versions;
-the tests in `SavedGameTest`, `StatsTest` and `SaveTest` cover them. Keep it that way when
+text), statistics, high scores (`HighScores`, stored by field name) and the tutorial flag.
+Every format reads its older versions; the tests in `SavedGameTest`, `StatsTest`,
+`HighScoresTest` and `SaveTest` cover them. Keep it that way when
 changing a format.
 
 ## Randomness
@@ -95,12 +104,16 @@ wanted state appears:
 - `WANTED` lists state prefixes, as screens report them in `stateTag()` (for example
   `options`, `tutorial:8`, `bid:3`, `gameover`).
 - `settleFrames` sets how many frames to wait in a state before capturing it.
-- The screens' `autoplayHuman` branches move the run from screen to screen. The order
-  is title, high scores, statistics, options, roster, tutorial, then the game.
+- `ScreenshotTour` (in core) moves the run from screen to screen, with all its timings in
+  one place: title, high scores, statistics, options, roster, each tutorial step, then the
+  game. Each menu screen calls `game.tour.step(...)` once a frame; it's null in normal play.
 - `./gradlew lwjgl3:screenshots -Pshots=options,tutorial` captures only those and stops.
   On CI, add a line starting `[shots: options,tutorial]` to the commit message.
 
 ## CI (`.github/workflows`)
+
+All four share `.github/actions/setup` (JDK 17, the Gradle cache, and xvfb for the
+screenshot run).
 
 | Workflow | When | What |
 |---|---|---|
@@ -132,7 +145,11 @@ Duplicate deals rotate seats, so luck cancels out. Run it after any AI change.
 
 ## The art
 
-`python3 tools/make_art.py` regenerates the images in `assets/images`. It needs Pillow,
-NumPy, the DejaVu fonts and TeX Gyre Pagella (the bid numerals). Court cards come from
-`tools/court_art.py`. `make_fonts.py` and `make_icon.py` make the bitmap fonts and the app
-icon. The generated files are committed, so regenerate them and commit the results together.
+`python3 tools/build_art.py` rebuilds everything generated: the images in `assets/images`
+(`make_art.py`, with the court cards from `court_art.py`), the bitmap fonts (`make_fonts.py`)
+and the launcher icons (`make_icon.py`). `--check` builds into a temp folder and lists
+anything that differs from what's committed. It needs `pip install -r tools/requirements.txt`
+(pinned, so the output matches byte for byte) and the fonts-dejavu-core and fonts-texgyre
+packages. The six hand-lettered word images from the original game (`titleText.png` and
+the like) are source files, not generated. Commit the generated files with the change to
+the tools.

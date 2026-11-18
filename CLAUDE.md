@@ -18,8 +18,11 @@ the screenshot run, CI, the arena and the art tools.
 - **AI changes:** measure them in the arena (`players`, `levels`) before and after, and
   keep each level's win rate in its band. Don't make Easy harder.
 - **Text and spacing:** the game font has no Unicode minus sign. Use "-".
-- **Generated files:** `BidTable.java` comes from the arena's `learn`; the images in
-  `assets/images` come from `tools/make_art.py`. Regenerate them; don't edit by hand.
+- **Generated files:** `BidTable.java` comes from the arena's `learn`; the images, fonts and
+  launcher icons come from `python3 tools/build_art.py` (`--check` to compare). Regenerate
+  them; don't edit by hand.
+- **Facts shown on screen** (scores, odds, player names) come from the rules and the
+  roster, not copied text.
 
 ## Checking changes
 
