@@ -57,12 +57,12 @@ public class RecordsTest {
 		MemoryStore store = new MemoryStore();
 		Records r = new Records(store, true, null);
 		assertEquals(0, r.recordHighScore(50, 1, Difficulty.HARD, "2026-11-18"));
-		assertEquals(50, new Records(store, true, null).highScores().entries().get(0).score);
+		assertEquals(50, new Records(store, true, null).highScores().entries().get(0).score());
 
 		Match m = Match.random(4, new Random(1));
 		r.saveGame(new SavedGame(m, Difficulty.EASY, new int[] { 0, 1, 2 }), false);
 		assertTrue(r.hasSavedGame());
-		assertEquals(Difficulty.EASY, r.savedGame(new Random(2)).level);
+		assertEquals(Difficulty.EASY, r.savedGame(new Random(2)).level());
 		r.saveGame(null, true); // the game finished
 		assertFalse(r.hasSavedGame());
 	}

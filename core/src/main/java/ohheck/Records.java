@@ -3,6 +3,7 @@ package ohheck;
 import java.util.Random;
 
 import rules.Difficulty;
+import rules.Log;
 import rules.SavedGame;
 import rules.Stats;
 
@@ -103,6 +104,7 @@ final class Records {
 		try {
 			return store.savedGame(rng);
 		} catch (IllegalArgumentException e) {
+			Log.warn("Records", "Threw away a saved game that couldn't be read", e);
 			store.clearSavedGame();
 			return null;
 		}

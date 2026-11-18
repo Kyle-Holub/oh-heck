@@ -7,6 +7,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import rules.Log;
 import rules.SavedGame;
 
 /** The libGDX entry point shared by Android and desktop; switches between screens. */
@@ -62,6 +63,13 @@ public class OhHeckGame extends Game {
 
 	@Override
 	public void create() {
+		Log.to((tag, message, cause) -> { // the rules' reports go to the device log
+			if (cause != null) {
+				Gdx.app.error(tag, message, cause);
+			} else {
+				Gdx.app.error(tag, message);
+			}
+		});
 		batch = new SpriteBatch();
 		if (Gdx.files.internal("build.txt").exists()) {
 			build = Gdx.files.internal("build.txt").readString("UTF-8").trim();
@@ -188,7 +196,7 @@ public class OhHeckGame extends Game {
 				newGame();
 				return;
 			}
-			play = new PlayScreen(this, saved.match, saved.level, saved.players);
+			play = new PlayScreen(this, saved.match(), saved.level(), saved.players());
 		}
 		backStack.clear();
 		setScreen(play);

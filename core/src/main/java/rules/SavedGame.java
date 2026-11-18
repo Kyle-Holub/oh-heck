@@ -7,19 +7,10 @@ import java.util.Random;
  * difficulty it started at and who sits at the table, under their own "table." keys (which
  * the match's loader passes over). Older saves kept the last two apart, so loading takes
  * them as a fallback.
+ *
+ * @param players who sits in seats 1-3 ({@link Player} ids), or null when unknown (draw a new table)
  */
-public final class SavedGame {
-
-	public final Match match;
-	public final Difficulty level;
-	/** Who sits in seats 1-3 ({@link Player} ids), or null when unknown (draw a new table). */
-	public final int[] players;
-
-	public SavedGame(Match match, Difficulty level, int[] players) {
-		this.match = match;
-		this.level = level;
-		this.players = players;
-	}
+public record SavedGame(Match match, Difficulty level, int[] players) {
 
 	public String encode() {
 		return match.save() + "table.level=" + level.name() + "\n" + "table.players=" + players[0] + "," + players[1]
@@ -44,7 +35,7 @@ public final class SavedGame {
 			try {
 				d = Difficulty.valueOf(level);
 			} catch (IllegalArgumentException e) {
-				// keep the fallback
+				Log.warn("SavedGame", "Unknown level " + level + "; using " + d, null);
 			}
 		}
 		int[] ids = players != null ? parsePlayers(players) : legacyPlayers;
@@ -77,6 +68,7 @@ public final class SavedGame {
 			}
 			return ids;
 		} catch (NumberFormatException e) {
+			Log.warn("SavedGame", "Unreadable table " + s + "; seating a new one", e);
 			return null;
 		}
 	}

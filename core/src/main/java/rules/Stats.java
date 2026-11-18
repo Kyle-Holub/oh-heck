@@ -1,7 +1,12 @@
 package rules;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.ObjLongConsumer;
+import java.util.function.ToLongFunction;
 
 /**
  * Your statistics over every game you've played: kept for each difficulty and for all of
@@ -173,53 +178,55 @@ public final class Stats {
 		return which == ALL ? "all" : Difficulty.values()[which].key();
 	}
 
-	/** A totals' numbers by name (the per-player counts are added separately). */
-	private static java.util.Map<String, Long> fields(Totals t) {
-		java.util.Map<String, Long> f = new LinkedHashMap<String, Long>();
-		f.put("games", (long) t.games);
-		f.put("wins", (long) t.wins);
-		f.put("streak", (long) t.streak);
-		f.put("bestStreak", (long) t.bestStreak);
-		f.put("perfect", (long) t.perfect);
-		f.put("finalScores", t.finalScores);
-		f.put("bestFinal", (long) t.bestFinal);
-		f.put("worstFinal", (long) t.worstFinal);
-		f.put("hands", (long) t.hands);
-		f.put("made", (long) t.made);
-		f.put("zeroBids", (long) t.zeroBids);
-		f.put("zeroMade", (long) t.zeroMade);
-		f.put("over", (long) t.over);
-		f.put("under", (long) t.under);
-		f.put("tricks", (long) t.tricks);
-		f.put("bestHand", (long) t.bestHand);
-		f.put("worstHand", (long) t.worstHand);
-		return f;
+	/** One saved number of a {@link Totals}: its name in the save, and how to read and set it. */
+	private record Field(String name, ToLongFunction<Totals> get, ObjLongConsumer<Totals> set) {
+	}
+
+	/**
+	 * Every number a Totals saves, listed once, in the order the first builds wrote them
+	 * (their numbered format reads by position). A new statistic goes on the end; StatsTest
+	 * checks that each field of Totals is here. (The per-player counts are saved apart.)
+	 */
+	private static final List<Field> FIELDS = Arrays.asList(
+			new Field("games", t -> t.games, (t, v) -> t.games = (int) v),
+			new Field("wins", t -> t.wins, (t, v) -> t.wins = (int) v),
+			new Field("streak", t -> t.streak, (t, v) -> t.streak = (int) v),
+			new Field("bestStreak", t -> t.bestStreak, (t, v) -> t.bestStreak = (int) v),
+			new Field("perfect", t -> t.perfect, (t, v) -> t.perfect = (int) v),
+			new Field("finalScores", t -> t.finalScores, (t, v) -> t.finalScores = v),
+			new Field("bestFinal", t -> t.bestFinal, (t, v) -> t.bestFinal = (int) v),
+			new Field("worstFinal", t -> t.worstFinal, (t, v) -> t.worstFinal = (int) v),
+			new Field("hands", t -> t.hands, (t, v) -> t.hands = (int) v),
+			new Field("made", t -> t.made, (t, v) -> t.made = (int) v),
+			new Field("zeroBids", t -> t.zeroBids, (t, v) -> t.zeroBids = (int) v),
+			new Field("zeroMade", t -> t.zeroMade, (t, v) -> t.zeroMade = (int) v),
+			new Field("over", t -> t.over, (t, v) -> t.over = (int) v),
+			new Field("under", t -> t.under, (t, v) -> t.under = (int) v),
+			new Field("tricks", t -> t.tricks, (t, v) -> t.tricks = (int) v),
+			new Field("bestHand", t -> t.bestHand, (t, v) -> t.bestHand = (int) v),
+			new Field("worstHand", t -> t.worstHand, (t, v) -> t.worstHand = (int) v));
+
+	/** The saved names, in order (for the test). */
+	static List<String> fieldNames() {
+		List<String> names = new ArrayList<String>();
+		for (Field f : FIELDS) {
+			names.add(f.name());
+		}
+		return names;
 	}
 
 	/** Sets one number by its name; an unknown name is ignored (from a newer or older save). */
 	private static void set(Totals t, String name, long v) {
-		int i = (int) v;
-		if (name.equals("games")) t.games = i;
-		else if (name.equals("wins")) t.wins = i;
-		else if (name.equals("streak")) t.streak = i;
-		else if (name.equals("bestStreak")) t.bestStreak = i;
-		else if (name.equals("perfect")) t.perfect = i;
-		else if (name.equals("finalScores")) t.finalScores = v;
-		else if (name.equals("bestFinal")) t.bestFinal = i;
-		else if (name.equals("worstFinal")) t.worstFinal = i;
-		else if (name.equals("hands")) t.hands = i;
-		else if (name.equals("made")) t.made = i;
-		else if (name.equals("zeroBids")) t.zeroBids = i;
-		else if (name.equals("zeroMade")) t.zeroMade = i;
-		else if (name.equals("over")) t.over = i;
-		else if (name.equals("under")) t.under = i;
-		else if (name.equals("tricks")) t.tricks = i;
-		else if (name.equals("bestHand")) t.bestHand = i;
-		else if (name.equals("worstHand")) t.worstHand = i;
-		else if (name.startsWith("beatenBy.")) {
+		for (Field f : FIELDS) {
+			if (f.name().equals(name)) {
+				f.set().accept(t, v);
+				return;
+			}
+		}
+		if (name.startsWith("beatenBy.")) {
 			int id = Integer.parseInt(name.substring("beatenBy.".length()));
 			if (id >= 0 && id < t.beatenBy.length) { // (a removed player's count is dropped)
-				t.beatenBy[id] = i;
+				t.beatenBy[id] = (int) v;
 			}
 		}
 	}
@@ -231,8 +238,8 @@ public final class Stats {
 		sb.append("game.perfectSoFar=").append(perfectSoFar ? 1 : 0).append('\n');
 		for (int i = 0; i < totals.length; i++) {
 			String b = bucket(i);
-			for (java.util.Map.Entry<String, Long> e : fields(totals[i]).entrySet()) {
-				sb.append(b).append('.').append(e.getKey()).append('=').append(e.getValue()).append('\n');
+			for (Field f : FIELDS) {
+				sb.append(b).append('.').append(f.name()).append('=').append(f.get().applyAsLong(totals[i])).append('\n');
 			}
 			for (int id = 0; id < totals[i].beatenBy.length; id++) {
 				if (totals[i].beatenBy[id] > 0) {
@@ -276,6 +283,7 @@ public final class Stats {
 			}
 			return s;
 		} catch (RuntimeException e) {
+			Log.warn("Stats", "Unreadable statistics; starting afresh", e);
 			return new Stats();
 		}
 	}
@@ -290,7 +298,7 @@ public final class Stats {
 		s.handsCounted = Integer.parseInt(g[0]);
 		s.gameCounted = g[1].equals("1");
 		s.perfectSoFar = g[2].equals("1");
-		String[] names = fields(new Totals()).keySet().toArray(new String[0]);
+		String[] names = fieldNames().toArray(new String[0]);
 		for (int i = 0; i < s.totals.length; i++) {
 			String line = lines.get(String.valueOf(i));
 			if (line == null) {

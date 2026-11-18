@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import rules.Difficulty;
+import rules.Log;
 
 /**
  * Your ten best finished games: final score, where you placed, and the date.
@@ -14,21 +15,12 @@ final class HighScores {
 
 	static final int KEEP = 10;
 
-	static final class Entry {
-		final int score;
-		/** 1 = won (ties share a place), up to 4. */
-		final int place;
-		/** yyyy-mm-dd */
-		final String date;
-		/** The computer players' difficulty (a Difficulty ordinal), or -1 for games from before there was a choice. */
-		final int level;
-
-		Entry(int score, int place, String date, int level) {
-			this.score = score;
-			this.place = place;
-			this.date = date;
-			this.level = level;
-		}
+	/**
+	 * One finished game: its score, place (1 = won; ties share a place, up to 4), date
+	 * (yyyy-mm-dd) and the difficulty setting (a Difficulty ordinal, or -1 for games from
+	 * before there was a choice).
+	 */
+	record Entry(int score, int place, String date, int level) {
 	}
 
 	private final List<Entry> entries = new ArrayList<Entry>();
@@ -44,7 +36,7 @@ final class HighScores {
 	 */
 	int add(Entry e) {
 		int at = 0;
-		while (at < entries.size() && entries.get(at).score >= e.score) {
+		while (at < entries.size() && entries.get(at).score() >= e.score()) {
 			at++;
 		}
 		if (at >= KEEP) {
@@ -64,8 +56,8 @@ final class HighScores {
 			if (b.length() > 0) {
 				b.append(';');
 			}
-			String level = e.level >= 0 && e.level < Difficulty.values().length ? Difficulty.values()[e.level].name() : "-";
-			b.append("score:").append(e.score).append(",place:").append(e.place).append(",date:").append(e.date)
+			String level = e.level() >= 0 && e.level() < Difficulty.values().length ? Difficulty.values()[e.level()].name() : "-";
+			b.append("score:").append(e.score()).append(",place:").append(e.place()).append(",date:").append(e.date())
 					.append(",level:").append(level);
 		}
 		return b.toString();
@@ -83,8 +75,8 @@ final class HighScores {
 				if (e != null) {
 					h.add(e);
 				}
-			} catch (RuntimeException ignored) {
-				// skip a damaged entry
+			} catch (RuntimeException e) {
+				Log.warn("HighScores", "Skipped a damaged entry: " + part, e); // (the rest still load)
 			}
 		}
 		return h;

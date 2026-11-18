@@ -119,4 +119,31 @@ public class StatsTest {
 		assertEquals(3, seats.totals(Stats.ALL).games);
 		assertEquals(-1, seats.totals(Stats.ALL).nemesis());
 	}
+
+	/** Every number in Totals is saved, and comes back. */
+	@Test
+	public void everyStatisticIsSavedAndReadBack() throws Exception {
+		java.util.List<String> saved = Stats.fieldNames();
+		for (java.lang.reflect.Field f : Stats.Totals.class.getDeclaredFields()) {
+			if (f.getType() == int.class || f.getType() == long.class) {
+				assertTrue(f.getName() + " isn't saved", saved.contains(f.getName()));
+			}
+		}
+		Stats s = new Stats();
+		long n = 1;
+		for (java.lang.reflect.Field f : Stats.Totals.class.getDeclaredFields()) {
+			f.setAccessible(true);
+			if (f.getType() == int.class) {
+				f.setInt(s.totals(Difficulty.HARD.ordinal()), (int) n++);
+			} else if (f.getType() == long.class) {
+				f.setLong(s.totals(Difficulty.HARD.ordinal()), n++);
+			}
+		}
+		Stats back = Stats.decode(s.encode());
+		for (java.lang.reflect.Field f : Stats.Totals.class.getDeclaredFields()) {
+			if (f.getType() == int.class || f.getType() == long.class) {
+				assertEquals(f.getName(), f.get(s.totals(Difficulty.HARD.ordinal())), f.get(back.totals(Difficulty.HARD.ordinal())));
+			}
+		}
+	}
 }
