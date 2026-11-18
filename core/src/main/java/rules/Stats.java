@@ -18,8 +18,8 @@ public final class Stats {
 		public int bestFinal = Integer.MIN_VALUE, worstFinal = Integer.MAX_VALUE;
 		public int hands, made, zeroBids, zeroMade, over, under, tricks;
 		public int bestHand = Integer.MIN_VALUE, worstHand = Integer.MAX_VALUE;
-		/** Games each seat (1-3) finished above you. */
-		public final int[] beatenBy = new int[4];
+		/** Games each computer player (by {@link Player} id) finished above you. */
+		public final int[] beatenBy = new int[Player.ALL.size()];
 
 		public boolean anyGames() {
 			return games > 0;
@@ -46,10 +46,10 @@ public final class Stats {
 			return hands == 0 ? 0 : (double) tricks / hands;
 		}
 
-		/** The seat that has finished above you most often, or -1 if none has yet. */
+		/** The player (a {@link Player} id) who has finished above you most often, or -1 if none has yet. */
 		public int nemesis() {
 			int best = -1;
-			for (int s = 1; s < beatenBy.length; s++) {
+			for (int s = 0; s < beatenBy.length; s++) {
 				if (beatenBy[s] > 0 && (best < 0 || beatenBy[s] > beatenBy[best])) {
 					best = s;
 				}
@@ -120,10 +120,10 @@ public final class Stats {
 	}
 
 	/**
-	 * Counts the game, just finished (once), seat 0 being you; level is the easiest it was
-	 * played at.
+	 * Counts the game, just finished (once): seat 0 is you, seats 1-3 the given players
+	 * ({@link Player} ids); level is the difficulty it was started at.
 	 */
-	public boolean countGame(Difficulty level, int[] finalScores, int hands) {
+	public boolean countGame(Difficulty level, int[] finalScores, int hands, int[] players) {
 		if (gameCounted) {
 			return false;
 		}
@@ -151,7 +151,7 @@ public final class Stats {
 			}
 			for (int s = 1; s < finalScores.length; s++) {
 				if (finalScores[s] > mine) {
-					t.beatenBy[s]++;
+					t.beatenBy[players[s - 1]]++;
 				}
 			}
 		}
@@ -164,6 +164,9 @@ public final class Stats {
 
 	// ---- saving
 
+	/** Totals saved before the per-player counts. */
+	private static final int FIELDS = 17;
+
 	public String encode() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("game=").append(handsCounted).append(',').append(gameCounted ? 1 : 0).append(',')
@@ -172,10 +175,12 @@ public final class Stats {
 			Totals t = totals[i];
 			sb.append(i).append('=');
 			long[] v = { t.games, t.wins, t.streak, t.bestStreak, t.perfect, t.finalScores, t.bestFinal, t.worstFinal,
-					t.hands, t.made, t.zeroBids, t.zeroMade, t.over, t.under, t.tricks, t.bestHand, t.worstHand,
-					t.beatenBy[1], t.beatenBy[2], t.beatenBy[3] };
+					t.hands, t.made, t.zeroBids, t.zeroMade, t.over, t.under, t.tricks, t.bestHand, t.worstHand };
 			for (int j = 0; j < v.length; j++) {
 				sb.append(j == 0 ? "" : ",").append(v[j]);
+			}
+			for (int b : t.beatenBy) { // then one count per player
+				sb.append(',').append(b);
 			}
 			sb.append('\n');
 		}
@@ -224,8 +229,11 @@ public final class Stats {
 				t.tricks = Integer.parseInt(f[14]);
 				t.bestHand = Integer.parseInt(f[15]);
 				t.worstHand = Integer.parseInt(f[16]);
-				for (int b = 1; b <= 3; b++) {
-					t.beatenBy[b] = Integer.parseInt(f[16 + b]);
+				// (one count per player after the 17 totals; the first test builds kept three, by seat: dropped)
+				if (f.length == FIELDS + t.beatenBy.length) {
+					for (int b = 0; b < t.beatenBy.length; b++) {
+						t.beatenBy[b] = Integer.parseInt(f[FIELDS + b]);
+					}
 				}
 			}
 			return s;

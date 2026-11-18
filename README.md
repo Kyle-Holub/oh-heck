@@ -1,6 +1,6 @@
 # Oh Heck!
 
-A trick-taking card game (also known as *Oh Hell*): bid the exact number of tricks you'll take, then take exactly that many. You play against three computer opponents over 8 hands of 1 to 8 cards (or 8 down to 1, in Options).
+A trick-taking card game (also known as *Oh Hell*): bid the exact number of tricks you'll take, then take exactly that many. You play against three computer opponents, drawn from a cast of twelve with their own levels and habits (the difficulty setting decides how likely you are to meet the experts), over 8 hands of 1 to 8 cards (or 8 down to 1, in Options).
 
 Built with [libGDX](https://libgdx.com/) for Android and desktop. The original 2017 Java Swing version is preserved on the `release/alpha-1.0.6` branch.
 
@@ -64,6 +64,7 @@ When changing how the computer players bid or play, measure it in the arena: it 
 ./gradlew core:arena                         # each level at a table of its own, by round
 ./gradlew core:arena -Parena="vs 400"        # each level against the one below
 ./gradlew core:arena -Parena="effort 100"    # Hard's strength and speed at half, normal and double thinking
+./gradlew core:arena -Parena="players 200"   # each of the twelve players against three plain Normal ones
 ./gradlew core:arena -Parena="learn 4000"    # regenerate core/src/main/java/rules/BidTable.java
 ```
 

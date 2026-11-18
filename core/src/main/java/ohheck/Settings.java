@@ -51,9 +51,29 @@ public final class Settings {
 		prefs.putString("handOrder", order.name()).flush();
 	}
 
-	/** The easiest difficulty the saved game has been played at (its high score badge). */
-	public int savedGameLowestDifficulty() {
+	/** The difficulty the saved game was started at (its high score badge and statistics level). */
+	public int savedGameDifficulty() {
 		return Math.max(0, Math.min(2, prefs.getInteger("savedGameDifficulty", 1)));
+	}
+
+	/** Who sits at the saved game's table (Player ids for seats 1-3), or null if not saved (older saves). */
+	public int[] savedGamePlayers() {
+		String[] f = prefs.getString("savedGamePlayers", "").split(",");
+		if (f.length != 3) {
+			return null;
+		}
+		try {
+			int[] ids = new int[3];
+			for (int i = 0; i < 3; i++) {
+				ids[i] = Integer.parseInt(f[i].trim());
+				if (ids[i] < 0 || ids[i] >= rules.Player.ALL.size()) {
+					return null;
+				}
+			}
+			return ids;
+		} catch (NumberFormatException e) {
+			return null;
+		}
 	}
 
 	/** The game in progress, as saved by rules.Match.save(), or null. */
@@ -62,12 +82,13 @@ public final class Settings {
 		return s.isEmpty() ? null : s;
 	}
 
-	public void saveGame(String saved, int lowestDifficulty) {
+	public void saveGame(String saved, int difficulty, int[] players) {
 		if (saved == null) {
 			prefs.remove("savedGame");
 		} else {
 			prefs.putString("savedGame", saved);
-			prefs.putInteger("savedGameDifficulty", lowestDifficulty);
+			prefs.putInteger("savedGameDifficulty", difficulty);
+			prefs.putString("savedGamePlayers", players[0] + "," + players[1] + "," + players[2]);
 		}
 		prefs.flush();
 	}

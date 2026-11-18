@@ -19,6 +19,7 @@ import ohheck.OhHeckGame;
 import rules.Bot;
 import rules.Difficulty;
 import rules.Match;
+import rules.Player;
 import rules.Rules;
 import rules.Stats;
 
@@ -31,7 +32,7 @@ import rules.Stats;
 public class ScreenshotLauncher {
 
 	/** Prefixes of states to capture, as reported by the screens' stateTag(). */
-	private static final String[] WANTED = { "intro", "title", "highscores", "statistics", "options", "rules", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "highscores", "statistics", "options", "players", "rules", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:7", "bidding:7", "menu:7", "play:8:",
 			"tossing", "gameover" };
 
@@ -124,7 +125,9 @@ public class ScreenshotLauncher {
 		Random rng = new Random(7);
 		for (int g = 0; g < 12; g++) {
 			Difficulty level = Difficulty.values()[g % 3];
-			Bot[] bots = { Bot.of(Difficulty.NORMAL, rng), Bot.of(level, rng), Bot.of(level, rng), Bot.of(level, rng) };
+			int[] players = Player.draw(level, rng);
+			Bot[] bots = { Bot.of(Difficulty.NORMAL, rng), Player.ALL.get(players[0]).bot(rng),
+					Player.ALL.get(players[1]).bot(rng), Player.ALL.get(players[2]).bot(rng) };
 			Match m = new Match(4, rng, rng.nextInt(4));
 			stats.startGame();
 			while (m.phase() != Match.Phase.GAME_OVER) {
@@ -142,7 +145,7 @@ public class ScreenshotLauncher {
 			for (int s = 0; s < 4; s++) {
 				finals[s] = m.score(s);
 			}
-			stats.countGame(level, finals, Rules.numberOfHands());
+			stats.countGame(level, finals, Rules.numberOfHands(), players);
 		}
 		return stats;
 	}

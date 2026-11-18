@@ -10,8 +10,14 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import rules.Difficulty;
 
-/** How to play, then the settings, saved on the device: difficulty, hand sizes, music, sound, speed, effects. */
+/**
+ * The settings, saved on the device, in two columns: the game (difficulty, hand sizes,
+ * speed, and the players you might meet) and sound and display. How to play sits in the header.
+ */
 public class OptionsScreen extends BaseScreen {
+
+	private static final Color HEADER = new Color(0.06f, 0.04f, 0.03f, 0.97f);
+	private static final float HEADER_H = 56, COLUMN_W = 440, COLUMN_GAP = 34;
 
 	private final Rectangle backButton = new Rectangle(), rulesButton = new Rectangle();
 
@@ -34,10 +40,11 @@ public class OptionsScreen extends BaseScreen {
 		abstract void tap();
 	}
 
-	private final List<Row> settingRows = new ArrayList<Row>();
+	/** The game column (under the difficulty), and the sound and display column. */
+	private final List<Row> gameRows = new ArrayList<Row>(), displayRows = new ArrayList<Row>();
 	{
 		final Settings s = game.settings;
-		settingRows.add(new Row("Hand sizes") { // (from the next new game)
+		gameRows.add(new Row("Hand sizes") { // (from the next new game)
 			@Override
 			String value() {
 				return s.handOrder().label;
@@ -48,7 +55,29 @@ public class OptionsScreen extends BaseScreen {
 				s.setHandOrder(s.handOrder().flipped());
 			}
 		});
-		settingRows.add(new Row("Music") {
+		gameRows.add(new Row("Game speed") {
+			@Override
+			String value() {
+				return Settings.SPEEDS[s.speed()];
+			}
+
+			@Override
+			void tap() {
+				s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
+			}
+		});
+		gameRows.add(new Row("The players") {
+			@Override
+			String value() {
+				return "Meet them";
+			}
+
+			@Override
+			void tap() {
+				game.showPlayers();
+			}
+		});
+		displayRows.add(new Row("Music") {
 			@Override
 			String value() {
 				return s.music() ? "On" : "Off";
@@ -65,7 +94,7 @@ public class OptionsScreen extends BaseScreen {
 				game.audio.startMusic(); // starts or stops it to match
 			}
 		});
-		settingRows.add(new Row("Sound effects") {
+		displayRows.add(new Row("Sound effects") {
 			@Override
 			String value() {
 				return s.sound() ? "On" : "Off";
@@ -82,18 +111,7 @@ public class OptionsScreen extends BaseScreen {
 				game.audio.play(Audio.Effect.PLAY_CARD);
 			}
 		});
-		settingRows.add(new Row("Game speed") {
-			@Override
-			String value() {
-				return Settings.SPEEDS[s.speed()];
-			}
-
-			@Override
-			void tap() {
-				s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
-			}
-		});
-		settingRows.add(new Row("Visual effects") {
+		displayRows.add(new Row("Visual effects") {
 			@Override
 			String value() {
 				return s.effects() ? "On" : "Off";
@@ -119,36 +137,51 @@ public class OptionsScreen extends BaseScreen {
 	public void render(float delta) {
 		shownFor += Math.min(delta, 0.1f) * game.options.speed;
 		if (game.options.autoplayHuman && shownFor > 1.5f) {
-			game.showRules();
+			game.showPlayers(); // (the screenshot run goes on from there to How to play)
 			return;
 		}
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 
-		BitmapFont t = serif(2.2f);
+		float rh = ROW_H, top = h - HEADER_H - 46;
+		float left = (w - 2 * COLUMN_W - COLUMN_GAP) / 2, right = left + COLUMN_W + COLUMN_GAP;
+		heading("Game", left, top + 30);
+		heading("Sound & display", right, top + 30);
+		float y = top - DIFFICULTY_H;
+		drawDifficulty(left, y, COLUMN_W);
+		for (Row row : gameRows) {
+			y -= ROW_GAP + rh;
+			drawRow(row, left, y, COLUMN_W, rh);
+		}
+		y = top;
+		for (Row row : displayRows) {
+			y -= rh;
+			drawRow(row, right, y, COLUMN_W, rh);
+			y -= ROW_GAP;
+		}
+
+		// the header: back, the title, and How to play (gold lettering, set apart from the settings)
+		rect(0, h - HEADER_H, w, HEADER_H, HEADER);
+		rect(0, h - HEADER_H - 2, w, 2, Palette.GOLD);
+		BitmapFont t = serif(1.6f);
 		t.setColor(GOLD);
-		centred(t, "Options", w / 2, h - 40);
-
-		float rw = 460, rh = ROW_H, x = (w - rw) / 2;
-
-		// How to play: its own button, gold lettering, set apart from the settings below
-		float bw = 260, bh = 44;
-		rulesButton.set((w - bw) / 2, h - 78 - bh, bw, bh);
+		centred(t, "Options", w / 2, h - 16);
+		button(backButton, "Back", 70, h - HEADER_H + 8, 110, HEADER_H - 16, assets.buttonAlt);
+		float bw = 190, bh = HEADER_H - 16;
+		rulesButton.set(w - 20 - bw, h - HEADER_H + 8, bw, bh);
 		frame(assets.buttonAlt, rulesButton.x, rulesButton.y, bw, bh);
-		BitmapFont rb = serif(1.6f);
+		BitmapFont rb = serif(1.5f);
 		rb.setColor(GOLD);
 		textIn(rb, "How to play", rulesButton.x, rulesButton.y, bw, bh);
-
-		float y = rulesButton.y - 10 - DIFFICULTY_H;
-		drawDifficulty(x, y, rw);
-		y -= ROW_GAP + rh;
-		for (Row row : settingRows) {
-			drawRow(row, x, y, rw, rh);
-			y -= rh + ROW_GAP;
-		}
-		button(backButton, "Back", 70, h - 52, 110, 40, assets.buttonAlt);
 		batch.end();
+	}
+
+	/** A column's name, in gold above it. */
+	private void heading(String name, float x, float y) {
+		BitmapFont f = serif(1.35f);
+		f.setColor(GOLD);
+		f.draw(batch, name, x + 6, y);
 	}
 
 	private void drawRow(Row row, float x, float y, float rw, float rh) {
@@ -168,12 +201,12 @@ public class OptionsScreen extends BaseScreen {
 
 	// ---- difficulty: a slider with three stops, its knob the level's badge
 
-	private static final float ROW_H = 40, ROW_GAP = 6, DIFFICULTY_H = 94, KNOB = 34;
-	/** What to expect at each level, shown under the slider. */
+	private static final float ROW_H = 40, ROW_GAP = 6, DIFFICULTY_H = 112, KNOB = 34;
+	/** Who you'll likely meet at each setting, shown under the slider. */
 	private static final String[] LEVEL_NOTES = {
-			"Forgiving: they misjudge bids and slip up. Luck still counts!",
-			"Solid: they count cards, trump in and duck unwanted tricks.",
-			"Ruthless: they think ahead and gang up on the leader." };
+			"Mostly easy-going players, and an expert now and then.",
+			"A mix: some easy-going, mostly solid, the odd expert.",
+			"Mostly experts, who read the bids and sink the leader." };
 	private static final Color TRACK = new Color(0.36f, 0.29f, 0.21f, 1f);
 	private final Rectangle slider = new Rectangle();
 	private float stop0, stopStep;
@@ -186,10 +219,10 @@ public class OptionsScreen extends BaseScreen {
 		f.setColor(Palette.CREAM);
 		f.draw(batch, "Difficulty", x + 24, y + DIFFICULTY_H - 18);
 		// the track, gold up to the chosen stop
-		float x0 = x + 214, x1 = x + rw - 36, ty = y + 66;
+		float x0 = x + 214, x1 = x + rw - 36, ty = y + 84;
 		stop0 = x0;
 		stopStep = (x1 - x0) / 2;
-		slider.set(x0 - 30, y + 30, x1 - x0 + 60, DIFFICULTY_H - 30);
+		slider.set(x0 - 30, y + 48, x1 - x0 + 60, DIFFICULTY_H - 48);
 		int level = s.difficulty();
 		float knobX = x0 + level * stopStep;
 		rect(x0, ty - 2, x1 - x0, 4, TRACK);
@@ -199,7 +232,7 @@ public class OptionsScreen extends BaseScreen {
 			float sx = x0 + i * stopStep;
 			rect(sx - 1.5f, ty - 7, 3, 14, i <= level ? GOLD : TRACK);
 			l.setColor(i == level ? Palette.GOLD_LIGHT : Palette.MUTED);
-			text(l, Difficulty.values()[i].label, sx, y + 42, true);
+			text(l, Difficulty.values()[i].label, sx, y + 60, true);
 		}
 		BitmapFont n = ui(0.85f);
 		glyphs.setText(n, LEVEL_NOTES[level]);
@@ -207,7 +240,8 @@ public class OptionsScreen extends BaseScreen {
 			n = ui(0.85f * (rw - 48) / glyphs.width);
 		}
 		n.setColor(Palette.MUTED);
-		n.draw(batch, LEVEL_NOTES[level], x + 24, y + 20);
+		n.draw(batch, LEVEL_NOTES[level], x + 24, y + 38);
+		n.draw(batch, "Seats a new table from your next game.", x + 24, y + 20);
 		batch.draw(assets.levelBadge[level], knobX - KNOB / 2, ty - KNOB / 2, KNOB, KNOB);
 	}
 
@@ -256,10 +290,12 @@ public class OptionsScreen extends BaseScreen {
 			game.showRules();
 			return;
 		}
-		for (Row row : settingRows) {
-			if (row.bounds.contains(x, y)) { // (empty until drawn)
-				row.tap();
-				return;
+		for (List<Row> rows : java.util.Arrays.asList(gameRows, displayRows)) {
+			for (Row row : rows) {
+				if (row.bounds.contains(x, y)) { // (empty until drawn)
+					row.tap();
+					return;
+				}
 			}
 		}
 	}

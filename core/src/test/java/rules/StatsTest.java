@@ -52,8 +52,8 @@ public class StatsTest {
 			for (int h = 0; h < 8; h++) {
 				s.countHand(h, Difficulty.EASY, 1, 1);
 			}
-			assertTrue(s.countGame(Difficulty.EASY, g, 8));
-			assertFalse(s.countGame(Difficulty.EASY, g, 8));
+			assertTrue(s.countGame(Difficulty.EASY, g, 8, new int[] { 4, 6, 9 }));
+			assertFalse(s.countGame(Difficulty.EASY, g, 8, new int[] { 4, 6, 9 }));
 		}
 		Stats.Totals t = s.totals(Stats.ALL);
 		assertEquals(4, t.games);
@@ -64,7 +64,8 @@ public class StatsTest {
 		assertEquals(20, t.worstFinal);
 		assertEquals(50.0, t.averageFinal(), 1e-9);
 		assertEquals(4, t.perfect);
-		assertEquals(1, t.nemesis()); // Tom and Dan each finished above you once; the first named wins a tie
+		assertEquals(4, t.nemesis()); // players 4 and 9 each finished above you once; the first wins a tie
+		assertEquals(4, Stats.decode(s.encode()).totals(Stats.ALL).nemesis());
 	}
 
 	@Test
@@ -74,7 +75,7 @@ public class StatsTest {
 		for (int h = 0; h < 8; h++) {
 			s.countHand(h, Difficulty.NORMAL, 1, h == 4 ? 0 : 1);
 		}
-		s.countGame(Difficulty.NORMAL, new int[] { 80, 0, 0, 0 }, 8);
+		s.countGame(Difficulty.NORMAL, new int[] { 80, 0, 0, 0 }, 8, new int[] { 0, 1, 2 });
 		assertEquals(0, s.totals(Stats.ALL).perfect);
 	}
 

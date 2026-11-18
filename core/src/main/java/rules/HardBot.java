@@ -27,6 +27,8 @@ final class HardBot implements Bot {
 	static boolean playToWin = true;
 	/** How much spoiling the rival's hand is worth, against scoring its own. */
 	static final double SPOIL = 0.5;
+	/** This player's weight on the rival's points (a spoiler cares more). */
+	private final double spoil;
 	/** Candidate deals drawn per deal kept, when weighting deals by the bids. */
 	static final int CANDIDATES = 4;
 	/**
@@ -39,7 +41,13 @@ final class HardBot implements Bot {
 	private final NormalBot policy = new NormalBot();
 
 	HardBot(Random rng) {
+		this(rng, SPOIL);
+	}
+
+	/** A Hard player weighing the rival's points by spoil (SPOIL is the usual; a spoiler's is higher). */
+	HardBot(Random rng, double spoil) {
 		this.rng = rng;
+		this.spoil = spoil;
 	}
 
 	@Override
@@ -62,7 +70,7 @@ final class HardBot implements Bot {
 				s.bid(view.seat, bids.get(option));
 				s.finishBidding(policy);
 				s.playOut(policy);
-				return s.value(view.seat, rival);
+				return s.value(view.seat, rival, spoil);
 			}
 		});
 		return bids.get(pick);
@@ -83,7 +91,7 @@ final class HardBot implements Bot {
 				Sim s = new Sim(view, deal);
 				s.play(view.seat, legal.get(option));
 				s.playOut(policy);
-				return s.value(view.seat, rival);
+				return s.value(view.seat, rival, spoil);
 			}
 		});
 		return legal.get(pick);
@@ -394,11 +402,11 @@ final class HardBot implements Bot {
 		}
 
 		/**
-		 * How good this outcome is for us: our points for the hand, less SPOIL times the
+		 * How good this outcome is for us: our points for the hand, less spoil times the
 		 * rival's. In the last hand, what counts is winning the game: WIN for a win (shared
 		 * for a tie), plus a little for our own points so a lost cause still scores.
 		 */
-		double value(int me, int rival) {
+		double value(int me, int rival, double spoil) {
 			double mine = Rules.score(bids[me], tricks[me]);
 			if (playToWin && handIndex == numberOfHands - 1) {
 				double total = scores[me] + mine;
@@ -417,7 +425,7 @@ final class HardBot implements Bot {
 				}
 				return WIN / tied + mine * WIN_TIEBREAK;
 			}
-			return rival < 0 ? mine : mine - SPOIL * Rules.score(bids[rival], tricks[rival]);
+			return rival < 0 ? mine : mine - spoil * Rules.score(bids[rival], tricks[rival]);
 		}
 
 		/** What the given player would see now (reusing one view object). */
