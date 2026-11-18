@@ -297,7 +297,18 @@ public final class Match {
 	}
 
 	/** Seats with the highest score; more than one means a tie. */
-	public List<Integer> leaders() {
+	/** Where this seat stands: 1 for the lead, and players on the same score share a place. */
+	public int placeOf(int seat) {
+		int p = 1;
+		for (int s = 0; s < players; s++) {
+			if (scores[s] > scores[seat]) {
+				p++;
+			}
+		}
+		return p;
+	}
+
+		public List<Integer> leaders() {
 		int best = Integer.MIN_VALUE;
 		for (int s : scores) {
 			best = Math.max(best, s);

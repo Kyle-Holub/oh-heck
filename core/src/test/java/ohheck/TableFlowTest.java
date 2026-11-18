@@ -39,22 +39,22 @@ public class TableFlowTest {
 		}
 
 		@Override
-		public void shuffleSound() {
+		public void shuffling() {
 			shuffleSounds++;
 		}
 
 		@Override
-		public void played(int seat, Card c) {
+		public void played(Match m, int seat, Card c) {
 			playedBy.add(seat);
 		}
 
 		@Override
-		public void handEnded() {
+		public void handEnded(Match m) {
 			handsEnded++;
 		}
 
 		@Override
-		public void gameEnded() {
+		public void gameEnded(Match m) {
 			gamesEnded++;
 		}
 	}

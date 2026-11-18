@@ -10,7 +10,7 @@ import rules.HandOrder;
 import rules.SavedGame;
 
 /** Player options, saved on the device between sessions. */
-public final class Settings {
+public final class Settings implements Records.Store {
 
 	private final Preferences prefs = Gdx.app.getPreferences("oh-heck");
 

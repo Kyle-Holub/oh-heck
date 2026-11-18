@@ -14,7 +14,7 @@ import rules.Match;
  * through the same taps a person would make, and names what's on screen so
  * the run knows when to take each picture. Not used in normal play.
  */
-final class Autoplay {
+final class Autoplay implements TableFlow.Listener {
 
 	/** Pause before each of your moves; time the scores stay up; time the pause menu stays open. */
 	private static final float MOVE_DELAY = 1.2f, RESULTS_WAIT = 2.2f, MENU_WAIT = 1.5f;
@@ -32,8 +32,9 @@ final class Autoplay {
 		this.options = options;
 	}
 
-	/** Plays any hands listed in GameOptions.skipHands instantly, so the run reaches the interesting ones sooner. */
-	void skipHands(Match m) {
+	/** Before each deal: plays any hands listed in GameOptions.skipHands instantly, so the run reaches the interesting ones sooner. */
+	@Override
+	public void beforeDeal(Match m) {
 		while (m.phase() == Match.Phase.BIDDING && options.skipHands.contains(m.handIndex() + 1)) {
 			while (m.phase() == Match.Phase.BIDDING || m.phase() == Match.Phase.PLAYING) {
 				int s = m.currentSeat();

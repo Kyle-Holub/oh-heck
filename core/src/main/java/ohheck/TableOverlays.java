@@ -299,12 +299,6 @@ final class TableOverlays {
 
 	/** 1 for the lead; players on the same score share a place. */
 	int place(int seat) {
-		int p = 1;
-		for (int s = 0; s < match.players(); s++) {
-			if (match.score(s) > match.score(seat)) {
-				p++;
-			}
-		}
-		return p;
+		return match.placeOf(seat);
 	}
 }
