@@ -692,7 +692,7 @@ public class TutorialScreen extends BaseScreen {
 	private void counters() {
 		float scale = 1.6f, left = cx() - 250, top = h - 80;
 		int done = clock.count(0.5f, 1.0f, 1.5f);
-		counterArt.tally(left, top, done, Counters.pulse(clock.shown()), scale);
+		counterArt.tally(left, top, Rules.numberOfHands(), done, Counters.pulse(clock.shown()), scale);
 		BitmapFont f = ui(1.05f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(1.6f, 2.0f));
 		f.draw(batch, "Hands: three played, the 4th glowing (of 8)", left + 150 * scale, top - 12);

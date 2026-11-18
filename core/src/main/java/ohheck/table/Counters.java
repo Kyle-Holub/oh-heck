@@ -17,6 +17,8 @@ import ohheck.ui.Palette;
 public final class Counters {
 
 	public static final float TALLY_H = 36f, TALLY_W = 6f, TALLY_STEP = 12f;
+	/** Space between one gate of five and the next. */
+	private static final float TALLY_GATE_GAP = 16;
 	/** Small fixed leans so the strokes look hand drawn. */
 	private static final float[] TALLY_LEAN = { 3f, -2f, 4f, -1f, 0f, 2f, -3f, 1f };
 	public static final float TRACKER_GAP = 4, TRACKER_MAX_W = 21, TRACKER_BELOW_TALLY = 10;
@@ -30,21 +32,23 @@ public final class Counters {
 	}
 
 	/**
-	 * The tally, its top-left first mark at (left, top): done hands in gold, the one being
-	 * played glowing (pulse 0-1), the rest faint.
+	 * The tally, one mark per hand, its top-left first mark at (left, top): done hands in
+	 * gold, the one being played glowing (pulse 0-1), the rest faint.
 	 */
-	public void tally(float left, float top, int done, float pulse, float scale) {
+	public void tally(float left, float top, int marks, int done, float pulse, float scale) {
 		float th = TALLY_H * scale, tw = TALLY_W * scale, step = TALLY_STEP * scale;
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < marks; i++) {
+			// gates of five: four strokes, then a bar across them; each gate a little apart
+			int gate = i / 5, k = i % 5;
+			float gateX = left + gate * (4 * step + TALLY_GATE_GAP * scale);
 			float cx, cy = top - th / 2, len = th, rot;
-			if (i == 4) { // the bar across the first four
-				cx = left + 1.5f * step;
+			if (k == 4) { // the bar across the gate's four
+				cx = gateX + 1.5f * step;
 				len = 4 * step + 8 * scale;
 				rot = -52; // leaning up to the right
 			} else {
-				int col = i < 4 ? i : i - 1;
-				cx = left + col * step + (i > 4 ? 16 * scale : 0);
-				rot = TALLY_LEAN[i];
+				cx = gateX + k * step;
+				rot = TALLY_LEAN[i % TALLY_LEAN.length];
 			}
 			if (i == done) { // the hand being played glows
 				mark(cx, cy, tw + 6 * scale, len + 6 * scale, rot, Palette.GOLD_LIGHT, 0.18f + 0.22f * pulse);

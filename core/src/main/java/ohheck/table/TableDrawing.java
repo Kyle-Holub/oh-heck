@@ -29,6 +29,13 @@ import ohheck.ui.TapAreas;
 final class TableDrawing {
 
 	private static final int HUMAN = TableLayout.HUMAN;
+	/** The trump card's shadow lift; its warm glow, how long it takes to light, and its size against the card. */
+	private static final float TRUMP_LIFT = 4, TRUMP_GLOW_IN = 0.6f, TRUMP_GLOW_W = 1.9f, TRUMP_GLOW_H = 1.6f;
+	private static final Color TRUMP_GLOW = new Color(1f, 0.78f, 0.4f, 0.22f);
+	/** The tally's first mark: in from the left, down from the top. */
+	private static final float TALLY_X = 22, TALLY_DROP = 12;
+	/** Your cards' shadow lift, on top of how far a card is raised. */
+	private static final float HAND_LIFT = 5;
 
 	private final TableScene s;
 	private final PostProcessor post;
@@ -63,8 +70,8 @@ final class TableDrawing {
 
 	void tally() {
 		Match m = s.match();
-		int done = m.phase() == Match.Phase.GAME_OVER ? 8 : m.handIndex();
-		counters.tally(22, table.h - 12, done, Counters.pulse(s.time()), 1f);
+		int done = m.phase() == Match.Phase.GAME_OVER ? m.rules().numberOfHands() : m.handIndex();
+		counters.tally(TALLY_X, table.h - TALLY_DROP, m.rules().numberOfHands(), done, Counters.pulse(s.time()), 1f);
 	}
 
 	void bidTracker() {
@@ -86,14 +93,14 @@ final class TableDrawing {
 			return; // the trump card is still in the deck, or thrown off the table
 		}
 		float x = table.trumpX(), y = table.trumpY(), cw = table.trumpW(), ch = table.trumpH();
-		art.shadow(x, y, cw, ch, 4);
+		art.shadow(x, y, cw, ch, TRUMP_LIFT);
 		float p = flow.isDealing() ? 0 : MathUtils.clamp(flow.trumpTime() / TableFlow.TRUMP_FLIP_TIME, 0, 1);
 		// face up, the trump is lit: a warm glow behind it, and the card itself brightened
-		float lit = MathUtils.clamp((flow.trumpTime() - TableFlow.TRUMP_FLIP_TIME) / 0.6f, 0, 1);
+		float lit = MathUtils.clamp((flow.trumpTime() - TableFlow.TRUMP_FLIP_TIME) / TRUMP_GLOW_IN, 0, 1);
 		if (p >= 1 && lit > 0) {
 			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			float gw = cw * 1.9f, gh = ch * 1.6f;
-			batch.setColor(1f, 0.78f, 0.4f, 0.22f * lit);
+			float gw = cw * TRUMP_GLOW_W, gh = ch * TRUMP_GLOW_H;
+			batch.setColor(TRUMP_GLOW.r, TRUMP_GLOW.g, TRUMP_GLOW.b, TRUMP_GLOW.a * lit);
 			batch.draw(assets.glow, x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh);
 			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 			batch.setColor(Color.WHITE);
@@ -159,7 +166,7 @@ final class TableDrawing {
 			if (i >= shown || (s.isDragging() && c == s.pressedCard())) {
 				continue;
 			}
-			art.shadow(x, y, cw, ch, y - TableLayout.HAND_Y + 5);
+			art.shadow(x, y, cw, ch, y - TableLayout.HAND_Y + HAND_LIFT);
 			batch.setColor(myTurn && !canPlay ? Palette.CARD_DIM : Color.WHITE);
 			float flip = flow.isDealing() ? flow.deal.flipOfYourCard(i) : 1f;
 			art.flip(c, x, y, cw, ch, flip);
