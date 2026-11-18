@@ -78,14 +78,9 @@ public final class Player {
 		return max + 1;
 	}
 
-	/** How much more a spoiler weighs the leader's points than other experts do. */
-	static final double SPOILER_SPOIL = 1.2;
-
 	/** This player's bot; rng drives its randomness. */
 	public Bot bot(Random rng) {
-		Bot base = style == Style.SPOILER && level == Difficulty.HARD ? new HardBot(rng, SPOILER_SPOIL)
-				: level.bot(rng);
-		return style == Style.STEADY || style == Style.SPOILER ? base : new StyledBot(base, style, level, rng);
+		return style.bot(level, rng);
 	}
 
 	/** Who you'll meet at this setting, in a line, from the odds (for the Options screen). */
