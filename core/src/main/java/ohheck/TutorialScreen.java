@@ -38,7 +38,7 @@ public class TutorialScreen extends BaseScreen {
 	}
 
 	private static final Step[] STEPS = {
-			new Step("Welcome", "Oh Heck is about calling your shot: guess how many tricks you'll win, then win exactly that many.", 4f, false),
+			new Step("Welcome", "Oh Heck is about calling your shots: guess how many tricks you'll win, then win exactly that many.", 4f, false),
 			new Step("The cards", "Cards rank from Ace, the highest, down to 2, the lowest.", 4.5f),
 			new Step("A trick", "Everyone plays one card in turn. That's a trick. The highest card wins it.", 5.5f),
 			new Step("Follow suit", "You must play the suit that was led if you can. Here, a heart.", 4.5f),
@@ -189,7 +189,7 @@ public class TutorialScreen extends BaseScreen {
 		sb.append(step + 1).append(" / ").append(STEPS.length);
 		text(m, sb.toString(), x + cw - 20, y + CAPTION_H - 14, false);
 		if (step == STEPS.length - 1) {
-			button(doneButton, firstRun ? "Start playing" : "Done", w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
+			button(doneButton, "Ready to play", w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
 		} else {
 			text(m, "Tap to continue", x + cw - 20, y + 22, false);
 		}
@@ -303,7 +303,7 @@ public class TutorialScreen extends BaseScreen {
 	}
 
 	private float rowY(boolean withHand) {
-		return withHand ? handY() + CH + 30 : cy() - CH / 2 - 10;
+		return withHand ? handY() + CH + 56 : cy() - CH / 2 - 10; // (a clear gap: the hand isn't part of the trick)
 	}
 
 	/** Where a seat's card comes from (its panel). */
@@ -648,7 +648,7 @@ public class TutorialScreen extends BaseScreen {
 			}
 		}
 		BitmapFont f = ui(1.05f);
-		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(1.8f, 2.2f) * counting);
+		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(1.8f, 2.2f)); // stays up
 		f.draw(batch, "The Ace of trumps and a King:\ntwo likely winners, so bid 2", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
 		bidPanel(cx(), handY() + CH + 12, 3, t >= 5.2f ? 2 : -1, -1, at(4.4f, 4.8f) * (1 - at(6.2f, 6.4f)));
 	}
@@ -691,9 +691,11 @@ public class TutorialScreen extends BaseScreen {
 		seat(3, t >= 0.8f ? Integer.valueOf(1) : null, 0, false, false, 0, 3, false, 1);
 		seat(0, null, 0, true, true, 0, 3, false, 1);
 		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
-		BitmapFont f = ui(1.2f);
-		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(2.6f, 3.0f));
-		centred(f, "1 + 1 + 1 = 3 tricks: not allowed", cx(), cy() - 46);
+		BitmapFont f = ui(1.15f);
+		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
+		centred(f, "Rupert bid 1.  Oswald bid 1.", cx(), cy() - 46);
+		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(3.2f, 3.6f));
+		centred(f, "The total of the bids can't be 3, so you can't bid 1.", cx(), cy() - 74);
 	}
 
 	// ---- 11. the counters: the tally fills to the 4th hand; the tracker fills as bids come in, then a red one
