@@ -29,6 +29,8 @@ final class TableDrawing {
 	private final TableLayout table;
 	private final CardArt art;
 	private final PlayerPanel panel;
+	/** Reused for each placard, each frame. */
+	private final SeatState state = new SeatState();
 	private final Counters counters;
 	private final Motes motes = new Motes();
 
@@ -108,8 +110,9 @@ final class TableDrawing {
 		TableFlow flow = s.flow();
 		Match m = s.match();
 		boolean turn = flow.state() == TableState.TURN && m.currentSeat() == seat;
-		panel.draw(s.name(seat), table.panelX(seat), table.panelTop(seat), turn, m.dealer() == seat, m.score(seat),
-				m.bid(seat), m.tricksWon(seat), m.handSize(), flow.isDealing(), s.time());
+		state.reset().named(s.name(seat)).score(m.score(seat)).turn(turn).dealer(m.dealer() == seat)
+				.bid(m.bid(seat)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
+		panel.draw(state, table.panelX(seat), table.panelTop(seat), s.time());
 		if (seat == HUMAN) {
 			return;
 		}

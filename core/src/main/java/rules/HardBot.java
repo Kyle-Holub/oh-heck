@@ -246,7 +246,7 @@ final class HardBot implements Bot {
 
 	private static boolean anyoneElseBid(TableView v) {
 		for (int s = 0; s < v.players; s++) {
-			if (s != v.seat && v.bids[s] != null) {
+			if (s != v.seat && v.hasBid(s)) {
 				return true;
 			}
 		}
@@ -257,7 +257,7 @@ final class HardBot implements Bot {
 	private double likelihood(TableView v, List<Card>[] deal) {
 		double w = 1;
 		for (int s = 0; s < v.players; s++) {
-			if (s == v.seat || v.bids[s] == null) {
+			if (s == v.seat || !v.hasBid(s)) {
 				continue;
 			}
 			TableView then = bidTimeView(v, deal, s);
@@ -275,6 +275,7 @@ final class HardBot implements Bot {
 		t.handSize = v.handSize;
 		t.handIndex = v.handIndex;
 		t.numberOfHands = v.numberOfHands;
+		t.rules = v.rules;
 		t.trumpCard = v.trumpCard;
 		t.hand.addAll(deal[s]);
 		for (int i = 0; i < v.history.size(); i++) {
@@ -355,7 +356,7 @@ final class HardBot implements Bot {
 			scores = v.scores.clone();
 			voids = new boolean[players][];
 			for (int s = 0; s < players; s++) {
-				bids[s] = v.bids[s] == null ? -1 : v.bids[s];
+				bids[s] = v.bids[s]; // (NO_BID, -1, until they bid)
 				voids[s] = v.voids[s].clone();
 			}
 			trick.addAll(v.trick);
@@ -452,7 +453,7 @@ final class HardBot implements Bot {
 			v.hand.clear();
 			v.hand.addAll(hands[seat]);
 			for (int s = 0; s < players; s++) {
-				v.bids[s] = bids[s] < 0 ? null : bids[s];
+				v.bids[s] = bids[s];
 				v.tricksWon[s] = tricks[s];
 				v.scores[s] = scores[s];
 				v.cardsLeft[s] = hands[s].size();

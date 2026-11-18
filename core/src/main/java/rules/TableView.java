@@ -16,8 +16,8 @@ public final class TableView {
 	public RuleSet rules = RuleSet.STANDARD;
 	public Card trumpCard;
 	public final List<Card> hand = new ArrayList<Card>();
-	/** null where a player hasn't bid yet. */
-	public final Integer[] bids;
+	/** {@link Match#NO_BID} where a player hasn't bid yet. */
+	public final int[] bids;
 	public final int[] tricksWon, scores;
 	/** Cards each player still holds. */
 	public final int[] cardsLeft;
@@ -34,7 +34,8 @@ public final class TableView {
 
 	public TableView(int players) {
 		this.players = players;
-		bids = new Integer[players];
+		bids = new int[players];
+		java.util.Arrays.fill(bids, Match.NO_BID);
 		tricksWon = new int[players];
 		scores = new int[players];
 		cardsLeft = new int[players];
@@ -56,12 +57,16 @@ public final class TableView {
 
 	public int bidsSoFar() {
 		int t = 0;
-		for (Integer b : bids) {
-			if (b != null) {
-				t += b;
+		for (int s = 0; s < players; s++) {
+			if (hasBid(s)) {
+				t += bids[s];
 			}
 		}
 		return t;
+	}
+
+	public boolean hasBid(int seat) {
+		return bids[seat] != Match.NO_BID;
 	}
 
 	public boolean isLegalBid(int bid) {
@@ -74,6 +79,6 @@ public final class TableView {
 
 	/** Tricks this player still wants: their bid minus tricks taken (0 or less: wants no more). */
 	public int need() {
-		return (bids[seat] == null ? 0 : bids[seat]) - tricksWon[seat];
+		return (hasBid(seat) ? bids[seat] : 0) - tricksWon[seat];
 	}
 }

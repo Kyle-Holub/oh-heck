@@ -34,7 +34,7 @@ final class MatchCodec {
 		}
 		StringBuilder b = new StringBuilder();
 		for (int s = 0; s < m.players; s++) {
-			b.append(s > 0 ? "," : "").append(m.bids[s] == null ? "-" : m.bids[s].toString());
+			b.append(s > 0 ? "," : "").append(m.bids[s] == Match.NO_BID ? "-" : String.valueOf(m.bids[s]));
 		}
 		line(sb, "bids", b.toString());
 		line(sb, "tricks", ints(m.tricks));
@@ -83,7 +83,7 @@ final class MatchCodec {
 			int[] t = parseInts(req(v, "tricks"), m.players), sc = parseInts(req(v, "scores"), m.players),
 					pt = parseInts(req(v, "points"), m.players);
 			for (int s = 0; s < m.players; s++) {
-				m.bids[s] = b[s].equals("-") ? null : Integer.valueOf(b[s]);
+				m.bids[s] = b[s].equals("-") ? Match.NO_BID : Integer.parseInt(b[s]);
 				m.tricks[s] = t[s];
 				m.scores[s] = sc[s];
 				m.lastHandPoints[s] = pt[s];

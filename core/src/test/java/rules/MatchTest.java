@@ -2,7 +2,6 @@ package rules;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -41,7 +40,7 @@ public class MatchTest {
 			for (int s = 0; s < 4; s++) {
 				assertEquals(hand + 1, m.hand(s).size());
 				seen.addAll(m.hand(s));
-				assertNull(m.bid(s));
+				assertFalse(m.hasBid(s));
 			}
 			assertTrue(seen.add(m.trumpCard()));
 			assertEquals(4 * (hand + 1) + 1, seen.size());

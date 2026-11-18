@@ -34,15 +34,13 @@ final class PlayerPanel {
 		this.screen = screen;
 	}
 
-	/**
-	 * @param bid  the player's bid this hand, or null if they haven't bid
-	 * @param won  tricks taken this hand
-	 */
-	void draw(String name, float x, float top, boolean turn, boolean dealer, int score, Integer bid, int won, int handSize,
-			boolean dealing, float time) {
+	/** Draws the placard showing seat, its top-left corner at (x, top); time pulses the hourglass. */
+	void draw(SeatState seat, float x, float top, float time) {
 		Assets assets = screen.assets;
 		float y = top - H;
-		boolean waiting = bid == null && !dealing;
+		String name = seat.name;
+		boolean turn = seat.turn, waiting = seat.waiting();
+		int bid = seat.bid, won = seat.won, handSize = seat.handSize;
 		if (turn) {
 			screen.frame(assets.panelTurn, x - 4, y - 4, W + 8, H + 8);
 		} else if (waiting) {
@@ -57,16 +55,16 @@ final class PlayerPanel {
 		screen.glyphs.setText(f, name);
 		float nameW = screen.glyphs.width, nameH = screen.glyphs.height;
 		f.draw(screen.batch, name, x + 10, top - 9);
-		if (dealer) {
+		if (seat.dealer) {
 			// centred on the name's letters
 			float chip = 26, mid = top - 9 - nameH / 2;
 			screen.batch.draw(assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
 		}
 		f.setColor(waiting && !turn ? WAIT_SCORE : BaseScreen.GOLD);
-		screen.text(f, String.valueOf(score), x + W - 10, top - 9, false);
+		screen.text(f, String.valueOf(seat.score), x + W - 10, top - 9, false);
 
 		float iy = y + 6;
-		if (bid == null) {
+		if (!seat.hasBid()) {
 			if (waiting) {
 				// an hourglass: dim while waiting their turn, pulsing while they decide
 				float a = turn ? 0.75f + 0.25f * MathUtils.sin(time * 4f) : 0.55f;

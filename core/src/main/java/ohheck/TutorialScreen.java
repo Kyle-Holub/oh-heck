@@ -254,13 +254,23 @@ public class TutorialScreen extends BaseScreen {
 		}
 	}
 
-	/** Draws a seat's panel: bid null and dealing for a plain one; slide moves it in from off-screen. */
-	private void seat(int s, Integer bid, int won, boolean turn, boolean dealer, int score, int handSize, boolean plain,
-			float slide) {
-		float dx = s == 3 ? 1 : s == 2 ? 0 : -1, dy = s == 2 ? 1 : 0;
-		float off = (1 - slide) * 260;
-		panel.draw(NAMES[s], seatX(s) + dx * off, seatTop(s) + dy * off, turn, dealer, score, bid, won, handSize, plain,
-				clock.shown());
+	/** Draws seat s's panel showing state (its name is filled in). */
+	private void seat(int s, SeatState state) {
+		panel.draw(state.named(NAMES[s]), seatX(s), seatTop(s), clock.shown());
+	}
+
+	/** A placard with nothing on it yet. */
+	private static SeatState plain() {
+		return new SeatState().plain(true);
+	}
+
+	/** Yet to bid: the hourglass. */
+	private static SeatState waiting() {
+		return new SeatState();
+	}
+
+	private static SeatState bidOf(int bid) {
+		return new SeatState().bid(bid);
 	}
 
 
@@ -409,9 +419,9 @@ public class TutorialScreen extends BaseScreen {
 		int[] order = { 1, 3, 0 }; // who plays, in turn
 		Card[] cards = { card(Rank.SEVEN, Suit.HEARTS), card(Rank.KING, Suit.HEARTS), card(Rank.NINE, Suit.HEARTS) };
 		boolean taken = t >= 3.4f;
-		seat(0, null, 0, false, false, 0, 1, true, 1);
-		seat(1, null, 0, false, false, 0, 1, true, 1);
-		seat(3, taken ? Integer.valueOf(1) : null, taken ? 1 : 0, false, false, 0, 1, !taken, 1);
+		seat(0, plain());
+		seat(1, plain());
+		seat(3, taken ? bidOf(1).won(1) : plain());
 		float gone = at(2.8f, 3.4f), y = rowY(false);
 		for (int i = 0; i < 3; i++) {
 			float a = 0.3f + i * 0.5f;
@@ -447,7 +457,7 @@ public class TutorialScreen extends BaseScreen {
 		Card[] hand = { card(Rank.FOUR, Suit.HEARTS), card(Rank.QUEEN, Suit.CLUBS), card(Rank.EIGHT, Suit.SPADES) };
 		float y = rowY(true);
 		flying(led, fromX(3), fromY(3), rowX(0, 2), y, 0.2f, 0.6f, 1, 1);
-		seat(3, null, 0, false, false, 0, 1, true, 1);
+		seat(3, plain());
 		float dim = at(0.9f, 1.3f);
 		for (int i = 0; i < hand.length; i++) {
 			float x = handX(i, 3), hy = handY();
@@ -471,8 +481,8 @@ public class TutorialScreen extends BaseScreen {
 		Card led = card(Rank.JACK, Suit.DIAMONDS);
 		Card[] hand = { card(Rank.SIX, Suit.HEARTS), card(Rank.KING, Suit.CLUBS), card(Rank.FIVE, Suit.SPADES) };
 		float y = rowY(true);
-		seat(1, null, 0, false, false, 0, 1, true, 1);
-		seat(3, null, 0, false, false, 0, 1, true, 1);
+		seat(1, plain());
+		seat(3, plain());
 		flying(led, fromX(3), fromY(3), rowX(0, 3), y, 0.2f, 0.6f, 1, 1);
 		float play = 1.6f;
 		for (int i = 0; i < hand.length; i++) {
@@ -506,8 +516,8 @@ public class TutorialScreen extends BaseScreen {
 		}
 		Card ace = card(Rank.ACE, Suit.DIAMONDS), two = card(Rank.TWO, Suit.SPADES);
 		boolean won = t >= 4.2f;
-		seat(0, won ? Integer.valueOf(1) : null, won ? 1 : 0, false, false, 0, 1, !won, 1);
-		seat(1, null, 0, false, false, 0, 1, true, 1);
+		seat(0, won ? bidOf(1).won(1) : plain());
+		seat(1, plain());
 		float gone = at(3.6f, 4.2f), y = rowY(false);
 		float ax = MathUtils.lerp(rowX(0, 2), fromX(0), gone), ay = MathUtils.lerp(y, fromY(0), gone);
 		float bx = MathUtils.lerp(rowX(1, 2), fromX(0), gone), by = MathUtils.lerp(y, fromY(0), gone);
@@ -537,8 +547,8 @@ public class TutorialScreen extends BaseScreen {
 		float dw = CW * DEAL_SCALE, dh = CH * DEAL_SCALE, gap = dw + 12;
 		float deckX = w - 60 - CW, deckY = cy() - CH / 2 - 20;
 		art.stack(deckX + CW / 2, deckY + CH / 2, 12, CW, CH, 0);
-		panel.draw(RIGHT, seatX(1), seatTop(1), false, false, 0, null, 0, 1, true, clock.shown());
-		seat(0, null, 0, false, true, 0, 1, true, 1);
+		panel.draw(plain().named(RIGHT), seatX(1), seatTop(1), clock.shown());
+		seat(0, plain().dealer(true));
 		// each player's cards in a row beside their panel
 		float[] rowYs = { seatTop(0) - PlayerPanel.H / 2 - dh / 2, seatTop(1) - PlayerPanel.H / 2 - dh / 2 };
 		for (int round = 0; round < 3; round++) {
@@ -602,7 +612,7 @@ public class TutorialScreen extends BaseScreen {
 		float[] when = { 6.4f, 7.2f, 7.9f };
 		for (int i = 0; i < 3; i++) {
 			boolean bid = t >= when[i];
-			seat(seats[i], bid ? Integer.valueOf(bids[i]) : null, 0, i == 0 && !bid, false, 0, 3, false, 1);
+			seat(seats[i], (bid ? bidOf(bids[i]) : waiting()).turn(i == 0 && !bid).cards(3));
 		}
 		// counting: the Ace (1), then the King (2), with a note to read; then the bid panel; then the bids
 		float counting = 1 - at(4.0f, 4.3f);
@@ -626,9 +636,9 @@ public class TutorialScreen extends BaseScreen {
 	private void biddingZero() {
 		Card[] hand = { card(Rank.TWO, Suit.DIAMONDS), card(Rank.THREE, Suit.CLUBS), card(Rank.FOUR, Suit.HEARTS) };
 		boolean taken = t >= 3.0f;
-		seat(0, t >= 0.4f ? Integer.valueOf(0) : null, 0, t >= 3.4f, false, 0, 3, false, 1);
-		seat(1, null, 0, false, false, 0, 3, true, 1);
-		seat(3, taken ? Integer.valueOf(1) : null, taken ? 1 : 0, false, false, 0, 3, !taken, 1);
+		seat(0, (t >= 0.4f ? bidOf(0) : waiting()).turn(t >= 3.4f).cards(3));
+		seat(1, plain().cards(3));
+		seat(3, (taken ? bidOf(1).won(1) : plain()).cards(3));
 		// the trick, in a row: Rupert leads, Oswald, then you
 		Card[] played = { card(Rank.NINE, Suit.CLUBS), card(Rank.QUEEN, Suit.CLUBS), card(Rank.THREE, Suit.CLUBS) };
 		float[] when = { 1.0f, 1.4f, 1.8f };
@@ -655,9 +665,9 @@ public class TutorialScreen extends BaseScreen {
 	// ---- 10. the dealer's hook: 3 tricks, 2 bid so far; you, the dealer, can't bid 1
 
 	private void dealersHook() {
-		seat(1, t >= 0.3f ? Integer.valueOf(1) : null, 0, false, false, 0, 3, false, 1);
-		seat(3, t >= 0.8f ? Integer.valueOf(1) : null, 0, false, false, 0, 3, false, 1);
-		seat(0, null, 0, true, true, 0, 3, false, 1);
+		seat(1, (t >= 0.3f ? bidOf(1) : waiting()).cards(3));
+		seat(3, (t >= 0.8f ? bidOf(1) : waiting()).cards(3));
+		seat(0, waiting().turn(true).dealer(true).cards(3));
 		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
 		BitmapFont f = ui(1.15f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
@@ -696,9 +706,9 @@ public class TutorialScreen extends BaseScreen {
 
 	private void scoring() {
 		int mine = clock.count(0.8f, 1.6f), his = clock.count(4.8f, 5.6f);
-		seat(0, 2, mine, false, false, t >= 2.2f ? Rules.score(2, 2) : 0, 3, false, 1);
-		seat(3, 1, his, false, false, t >= 6.4f ? Rules.score(1, 2) : 0, 3, false, 1);
-		seat(1, null, 0, false, false, 0, 3, true, 1);
+		seat(0, bidOf(2).won(mine).score(t >= 2.2f ? Rules.score(2, 2) : 0).cards(3));
+		seat(3, bidOf(1).won(his).score(t >= 6.4f ? Rules.score(1, 2) : 0).cards(3));
+		seat(1, plain().cards(3));
 		float yx = seatX(0) + PlayerPanel.W / 2, yy = seatTop(0) + 10;
 		if (passed(2.2f)) {
 			sparks.burst(yx, yy - PlayerPanel.H / 2, 70);

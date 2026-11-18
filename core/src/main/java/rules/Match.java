@@ -1,6 +1,7 @@
 package rules;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -29,6 +30,9 @@ public final class Match {
 	}
 
 	final int players;
+	/** A seat's bid before it has bid. */
+	public static final int NO_BID = -1;
+
 	private final Random rng;
 	private final RuleSet rules;
 
@@ -43,7 +47,7 @@ public final class Match {
 	Card trumpCard;
 
 	final List<List<Card>> hands = new ArrayList<List<Card>>();
-	final Integer[] bids;
+	final int[] bids;
 	final int[] tricks;
 	final int[] scores;
 	final int[] lastHandPoints;
@@ -95,7 +99,8 @@ public final class Match {
 		this.players = players;
 		this.rng = rng;
 		this.rules = rules;
-		this.bids = new Integer[players];
+		this.bids = new int[players];
+		Arrays.fill(bids, NO_BID);
 		this.tricks = new int[players];
 		this.scores = new int[players];
 		this.lastHandPoints = new int[players];
@@ -224,16 +229,20 @@ public final class Match {
 		return Collections.unmodifiableList(hands.get(seat));
 	}
 
-	/** The seat's bid this hand, or null if it hasn't bid yet. */
-	public Integer bid(int seat) {
+	/** The seat's bid this hand, or {@link #NO_BID} if it hasn't bid yet. */
+	public int bid(int seat) {
 		return bids[seat];
+	}
+
+	public boolean hasBid(int seat) {
+		return bids[seat] != NO_BID;
 	}
 
 	public int bidsSoFar() {
 		int total = 0;
-		for (Integer b : bids) {
-			if (b != null) {
-				total += b;
+		for (int s = 0; s < players; s++) {
+			if (hasBid(s)) {
+				total += bids[s];
 			}
 		}
 		return total;
@@ -268,7 +277,7 @@ public final class Match {
 
 	/** Did the seat take exactly its bid? Meaningful once the hand is over. */
 	public boolean madeBid(int seat) {
-		return bids[seat] != null && bids[seat] == tricks[seat];
+		return hasBid(seat) && bids[seat] == tricks[seat];
 	}
 
 	/** Cards played so far in the trick in progress, lead first. */
@@ -422,7 +431,7 @@ public final class Match {
 		for (int i = 0; i < players; i++) {
 			int seat = (dealer + 1 + i) % players;
 			hands.set(seat, deck.deal(handSize()));
-			bids[seat] = null;
+			bids[seat] = NO_BID;
 			tricks[seat] = 0;
 		}
 		trumpCard = deck.deal();
