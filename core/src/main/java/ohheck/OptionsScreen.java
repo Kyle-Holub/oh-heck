@@ -69,7 +69,7 @@ public class OptionsScreen extends BaseScreen {
 		gameRows.add(new Row("The players") {
 			@Override
 			String value() {
-				return "Meet them";
+				return "View";
 			}
 
 			@Override

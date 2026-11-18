@@ -31,7 +31,7 @@ final class TableOverlays {
 	/** A bid that can't be made: the gold numeral greyed and faded. */
 	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
 	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190;
-	private static final float RESULTS_W = 470, RESULTS_H = 220, RESULTS_ROW = 26;
+	private static final float RESULTS_W = 540, RESULTS_H = 220, RESULTS_ROW = 26;
 	private static final float GAME_OVER_W = 420, GAME_OVER_H = 306, GAME_OVER_ROW = 27;
 	private static final float END_BUTTON_W = 170, END_BUTTON_H = 42;
 	private static final float HINT_H = 40, HINT_PAD = 16;
@@ -236,7 +236,7 @@ final class TableOverlays {
 		screen.text(s, "Tap to continue", table.w / 2, py + 26, true);
 	}
 
-	private static final float[] RESULT_COLS = { 22, 62, 185, 245, 310, 395 };
+	private static final float[] RESULT_COLS = { 22, 62, 255, 315, 380, 465 }; // (room for "Henrietta  (set)")
 	private static final String[] RESULT_HEAD = { "", "Player", "Bid", "Won", "Points", "Total" };
 
 	// ---- the end of the game

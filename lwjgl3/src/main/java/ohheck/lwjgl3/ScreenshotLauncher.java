@@ -80,7 +80,7 @@ public class ScreenshotLauncher {
 		final long start = System.nanoTime();
 
 		GameOptions o = new GameOptions();
-		o.seed = 20261118L; // a game the scripted player wins, to show the fireworks
+		o.seed = 20261129L; // a game the scripted player wins, to show the fireworks (found by replaying the rules)
 		o.autoplayHuman = true;
 		o.persist = false;
 		o.speed = 2f;
