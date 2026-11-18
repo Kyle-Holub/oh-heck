@@ -298,29 +298,36 @@ def struck_zero(d, W, H, colour, shadow):
         d.line([(W / 2 - k + dx, H / 2 + k + dx), (W / 2 + k + dx, H / 2 - k + dx)], fill=c, width=t)
 
 
+# Icon symbols share one size (about the spade's): ICON_SYMBOL is the hourglass's and the X's scale
+# against the drawings' original, card-filling size.
+ICON_SYMBOL = 0.7
+
+
 def hourglass(d, W, H, colour, shadow):
     """An hourglass: a bar top and bottom, two glass bulbs meeting at the waist, sand settled below."""
-    cx, cy, hw, hh, bar = W / 2, H / 2, 20 * SS, 30 * SS, 5 * SS
+    u = SS * ICON_SYMBOL
+    cx, cy, hw, hh, bar = W / 2, H / 2, 20 * u, 30 * u, 5 * u
     for dx, c in ((2 * SS, shadow), (0, colour)):
         x, y = cx + dx, cy + dx
-        d.rounded_rectangle([x - hw - 5 * SS, y - hh - bar, x + hw + 5 * SS, y - hh], 2 * SS, fill=c)
-        d.rounded_rectangle([x - hw - 5 * SS, y + hh, x + hw + 5 * SS, y + hh + bar], 2 * SS, fill=c)
-        glass = [(x - hw, y - hh), (x + hw, y - hh), (x + 3 * SS, y), (x + hw, y + hh), (x - hw, y + hh), (x - 3 * SS, y)]
-        d.line(glass + [glass[0]], fill=c, width=4 * SS, joint="curve")
+        d.rounded_rectangle([x - hw - 5 * u, y - hh - bar, x + hw + 5 * u, y - hh], 2 * u, fill=c)
+        d.rounded_rectangle([x - hw - 5 * u, y + hh, x + hw + 5 * u, y + hh + bar], 2 * u, fill=c)
+        glass = [(x - hw, y - hh), (x + hw, y - hh), (x + 3 * u, y), (x + hw, y + hh), (x - hw, y + hh), (x - 3 * u, y)]
+        d.line(glass + [glass[0]], fill=c, width=int(5 * u), joint="curve")
         if c == colour:
             # a little sand left above, a heap below
-            d.polygon([(x - 9 * SS, y - 11 * SS), (x + 9 * SS, y - 11 * SS), (x, y - 1 * SS)], fill=c)
-            d.polygon([(x - hw + 4 * SS, y + hh - 2 * SS), (x + hw - 4 * SS, y + hh - 2 * SS), (x, y + 13 * SS)], fill=c)
+            d.polygon([(x - 9 * u, y - 11 * u), (x + 9 * u, y - 11 * u), (x, y - 1 * u)], fill=c)
+            d.polygon([(x - hw + 4 * u, y + hh - 2 * u), (x + hw - 4 * u, y + hh - 2 * u), (x, y + 13 * u)], fill=c)
 
 
 def brushed_x(d, W, H, colour, shadow):
     """An X of two slightly tapered strokes, thicker near their start, with a dark offset copy behind."""
-    k = 21 * SS
+    u = SS * ICON_SYMBOL
+    k = 21 * u
     for dx, c in ((2 * SS, shadow), (0, colour)):
         for (x0, y0, x1, y1) in [(-k, -k * 1.15, k, k * 1.15), (k, -k * 1.15, -k, k * 1.15)]:
             for i in range(41):
                 t = i / 40
-                r = (6.5 - 2.5 * abs(t - 0.35)) * SS
+                r = (7 - 2.5 * abs(t - 0.35)) * u
                 cx, cy = W / 2 + x0 + (x1 - x0) * t + dx, H / 2 + y0 + (y1 - y0) * t + dx
                 d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=c)
 
