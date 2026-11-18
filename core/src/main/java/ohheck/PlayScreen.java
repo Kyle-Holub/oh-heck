@@ -30,8 +30,7 @@ import rules.SavedGame;
  * </ul>
  * Playing a card: tap it, or drag it up onto the table. Bidding: tap a number.
  */
-public class PlayScreen extends BaseScreen {
-
+public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	private static final int HUMAN = TableLayout.HUMAN;
 
@@ -46,8 +45,8 @@ public class PlayScreen extends BaseScreen {
 	 */
 	private final Random seating, bots, deck;
 
-	final TableLayout table = new TableLayout();
-	final TableOverlays overlays;
+	private final TableLayout table = new TableLayout();
+	private final TableOverlays overlays;
 	private final TableFlow flow;
 	private final CardArt art;
 	/** Draws the table (counters, trump, panels, your hand); the trick, overlays and effects are separate. */
@@ -63,7 +62,6 @@ public class PlayScreen extends BaseScreen {
 
 	/** Game time, for animations; stops while paused. */
 	private float time;
-	/** Where your just-finished game landed in the high score table, or -1. */
 	/** Keeps your statistics and high scores as the game goes. */
 	private final GameRecorder recorder;
 	/** The difficulty this game was started at: its high score badge and statistics level. */
@@ -72,11 +70,11 @@ public class PlayScreen extends BaseScreen {
 	private int[] players;
 
 	/** Your taps and drags, and the pause menu. */
-	private final TableInput input = new TableInput(this);
+	private final TableInput input = new TableInput(this, this);
 
 	/** Your hand in display order, and each card's tap area; rebuilt when drawn. */
-	final List<Card> handOrder = new ArrayList<Card>();
-	final List<Rectangle> handRects = new ArrayList<Rectangle>();
+	private final List<Card> handOrder = new ArrayList<Card>();
+	private final List<Rectangle> handRects = new ArrayList<Rectangle>();
 
 	/**
 	 * A new game (restored null), or the saved game restored, started at the given difficulty
@@ -89,9 +87,9 @@ public class PlayScreen extends BaseScreen {
 		bots = stream(options.seed, 0xB075L);
 		deck = stream(options.seed, 0xDEC4L);
 		this.art = new CardArt(batch, assets);
-		this.overlays = new TableOverlays(this, table, art);
-		this.autoplay = options.autoplayHuman ? new Autoplay(this, options) : null;
-		this.drawing = new TableDrawing(this, art);
+		this.overlays = new TableOverlays(this, this, table, art);
+		this.autoplay = options.autoplayHuman ? new Autoplay(this, input, options) : null;
+		this.drawing = new TableDrawing(this, this, art, game.post);
 		this.toss = new TableToss(assets, table);
 		recorder = new GameRecorder(game.records);
 		TableFlow.Listener table = new TableFlow.Listener() { // this screen's own effects
@@ -134,7 +132,7 @@ public class PlayScreen extends BaseScreen {
 		TableFlow.Listener sounds = new TableSounds(game.audio);
 		this.flow = autoplay != null ? new TableFlow(autoplay, table, sounds, recorder) : new TableFlow(table, sounds, recorder);
 		if (restored == null) {
-			newGame();
+			startGame();
 		} else {
 			level = savedLevel;
 			seatPlayers(savedPlayers != null ? savedPlayers : Player.draw(level, seating));
@@ -144,25 +142,15 @@ public class PlayScreen extends BaseScreen {
 		}
 	}
 
-	// ------------------------------------------------------------ the game
+	// ------------------------------------------------- the table, as TableScene
 
-	Match match() {
-		return flow.match();
-	}
-
-	TableState state() {
-		return flow.state();
-	}
-
-	float stateTime() {
-		return flow.stateTime();
-	}
-
-	boolean isMenuOpen() {
+	@Override
+	public boolean isMenuOpen() {
 		return input.menuOpen();
 	}
 
-	boolean isDragging() {
+	@Override
+	public boolean isDragging() {
 		return input.dragging();
 	}
 
@@ -171,26 +159,51 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	/** Game over and the scores are up (after the cards have fallen, and any fireworks have begun). */
-	boolean resultsShown() {
+	@Override
+	public boolean resultsShown() {
 		return flow.state() == TableState.GAME_OVER && end.resultsShown(flow.stateTime());
 	}
 
-	// for TableDrawing: what it draws from
-
-	TableFlow flow() {
+	@Override
+	public TableFlow flow() {
 		return flow;
 	}
 
-	float time() {
+	@Override
+	public float time() {
 		return time;
 	}
 
-	Card pressedCard() {
+	@Override
+	public Card pressedCard() {
 		return input.pressed();
 	}
 
+	@Override
+	public TableLayout layout() {
+		return table;
+	}
+
+	@Override
+	public TableOverlays overlays() {
+		return overlays;
+	}
+
+	@Override
+	public List<Card> handOrder() {
+		return handOrder;
+	}
+
+	@Override
+	public List<Rectangle> handRects() {
+		return handRects;
+	}
+
+	// ------------------------------------------------------------ the game
+
+
 	/** A new game: a table drawn for the difficulty now chosen in Options. */
-	private void newGame() {
+	private void startGame() {
 		level = game.settings.difficulty();
 		seatPlayers(Player.draw(level, seating));
 		toss.clear();
@@ -201,7 +214,8 @@ public class PlayScreen extends BaseScreen {
 		flow.start(m);
 	}
 
-	boolean humanCanPlay() {
+	@Override
+	public boolean humanCanPlay() {
 		return !input.menuOpen() && flow.yourTurnToPlay();
 	}
 
@@ -285,7 +299,8 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	/** The name shown for a seat: "You", or the computer player sitting there. */
-	String name(int seat) {
+	@Override
+	public String name(int seat) {
 		return seat == HUMAN ? "You" : Player.byId(players[seat - 1]).name;
 	}
 
@@ -338,16 +353,34 @@ public class PlayScreen extends BaseScreen {
 		input.back();
 	}
 
-	/** Plays your card, flying in from (fromX, fromY). */
-	void humanPlay(Card c, float fromX, float fromY) {
+	// ------------------------------------------- what your taps do, as TableActions
+
+	@Override
+	public void humanPlay(Card c, float fromX, float fromY) {
 		input.clearTouch();
 		if (flow.play(c)) {
 			trick.fly(c, fromX, fromY, time);
 		}
 	}
 
-	int newHighScore() {
-		return recorder.newHighScore();
+	@Override
+	public void showHighScores() {
+		game.showHighScores(recorder.newHighScore());
+	}
+
+	@Override
+	public void newGame() {
+		game.newGame();
+	}
+
+	@Override
+	public void showOptions() {
+		game.showOptions();
+	}
+
+	@Override
+	public void showTitle() {
+		game.showTitle();
 	}
 
 	// ------------------------------------------------------------- draw

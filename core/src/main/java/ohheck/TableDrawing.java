@@ -22,7 +22,8 @@ final class TableDrawing {
 
 	private static final int HUMAN = TableLayout.HUMAN;
 
-	private final PlayScreen s;
+	private final TableScene s;
+	private final PostProcessor post;
 	private final SpriteBatch batch;
 	private final Assets assets;
 	private final TableLayout table;
@@ -31,11 +32,13 @@ final class TableDrawing {
 	private final Counters counters;
 	private final Motes motes = new Motes();
 
-	TableDrawing(PlayScreen screen, CardArt art) {
-		this.s = screen;
+	/** Draws scene's table with screen's batch and art; post takes the light for the glow. */
+	TableDrawing(TableScene scene, BaseScreen screen, CardArt art, PostProcessor post) {
+		this.s = scene;
+		this.post = post;
 		this.batch = screen.batch;
 		this.assets = screen.assets;
-		this.table = screen.table;
+		this.table = scene.layout();
 		this.art = art;
 		this.panel = new PlayerPanel(screen);
 		this.counters = new Counters(screen);
@@ -51,14 +54,14 @@ final class TableDrawing {
 	void tally() {
 		Match m = s.match();
 		int done = m.phase() == Match.Phase.GAME_OVER ? 8 : m.handIndex();
-		counters.tally(22, s.h - 12, done, Counters.pulse(s.time()), 1f);
+		counters.tally(22, table.h - 12, done, Counters.pulse(s.time()), 1f);
 	}
 
 	void bidTracker() {
 		Match m = s.match();
 		float x0 = 22 - Counters.TALLY_W / 2; // lined up with the tally's first mark
 		float avail = table.panelX(2) - 14 - x0; // and clear of the top player's panel
-		counters.tracker(x0, s.h - 12 - Counters.TALLY_H - Counters.TRACKER_BELOW_TALLY, avail, m.handSize(),
+		counters.tracker(x0, table.h - 12 - Counters.TALLY_H - Counters.TRACKER_BELOW_TALLY, avail, m.handSize(),
 				m.bidsSoFar(), 1f);
 	}
 
@@ -93,7 +96,7 @@ final class TableDrawing {
 		if (p >= 1 && lit > 0) {
 			// and a light on it in the screen effects, lifting the corner's vignette (after the bloom,
 			// so the card brightens without glaring)
-			s.game.post.light((x + cw / 2) / s.w, (y + ch / 2) / s.h, 0.3f, lit);
+			post.light((x + cw / 2) / table.w, (y + ch / 2) / table.h, 0.3f, lit);
 		}
 		motes.draw(batch, assets.glow);
 	}
@@ -122,12 +125,12 @@ final class TableDrawing {
 	void hand() {
 		TableFlow flow = s.flow();
 		Match m = s.match();
-		List<Card> order = s.handOrder;
+		List<Card> order = s.handOrder();
 		order.clear();
 		order.addAll(m.hand(HUMAN));
 		Collections.sort(order, DISPLAY_ORDER);
 		int n = order.size();
-		BaseScreen.sizeTo(s.handRects, n);
+		BaseScreen.sizeTo(s.handRects(), n);
 		if (n == 0) {
 			return;
 		}
@@ -141,7 +144,7 @@ final class TableDrawing {
 			boolean canPlay = legal.contains(c);
 			float x = table.handStart + i * table.handGap;
 			float y = TableLayout.HAND_Y + (canPlay ? TableLayout.LIFT : 0);
-			s.handRects.get(i).set(x, y, i == n - 1 ? cw : table.handGap, ch);
+			s.handRects().get(i).set(x, y, i == n - 1 ? cw : table.handGap, ch);
 			if (i >= shown || (s.isDragging() && c == s.pressedCard())) {
 				continue;
 			}

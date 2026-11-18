@@ -21,14 +21,17 @@ final class Autoplay implements TableFlow.Listener {
 	/** The hand (0-based) whose bidding opens the pause menu once, to photograph it. */
 	private static final int MENU_DEMO_HAND = 6;
 
-	private final PlayScreen screen;
+	private final TableScene screen;
+	/** Where its taps go, as yours would. */
+	private final TableInput input;
 	private final GameOptions options;
 	private final Bot bot = Bot.of(Difficulty.NORMAL, new Random(7));
 	private float timer;
 	private boolean menuShown;
 
-	Autoplay(PlayScreen screen, GameOptions options) {
+	Autoplay(TableScene screen, TableInput input, GameOptions options) {
 		this.screen = screen;
+		this.input = input;
 		this.options = options;
 	}
 
@@ -53,7 +56,7 @@ final class Autoplay implements TableFlow.Listener {
 		timer += dt;
 		if (timer > MENU_WAIT) {
 			timer = 0;
-			tapCentre(screen.overlays.menuItems.isEmpty() ? null : screen.overlays.menuItems.get(0));
+			tapCentre(screen.overlays().menuItems.isEmpty() ? null : screen.overlays().menuItems.get(0));
 		}
 	}
 
@@ -64,7 +67,7 @@ final class Autoplay implements TableFlow.Listener {
 		if (!menuShown && m.handIndex() == MENU_DEMO_HAND && m.phase() == Match.Phase.BIDDING) {
 			menuShown = true;
 			timer = 0;
-			tapCentre(screen.overlays.menuButton);
+			tapCentre(screen.overlays().menuButton);
 			return;
 		}
 		if (timer < MOVE_DELAY) {
@@ -73,29 +76,29 @@ final class Autoplay implements TableFlow.Listener {
 		timer = 0;
 		if (m.phase() == Match.Phase.BIDDING) {
 			int b = bot.chooseBid(m.view(TableLayout.HUMAN));
-			tapCentre(b < screen.overlays.bidButtons.size() ? screen.overlays.bidButtons.get(b) : null);
+			tapCentre(b < screen.overlays().bidButtons.size() ? screen.overlays().bidButtons.get(b) : null);
 		} else {
 			Card c = bot.choosePlay(m.view(TableLayout.HUMAN));
-			int i = screen.handOrder.indexOf(c);
-			tapCentre(i >= 0 ? screen.handRects.get(i) : null);
+			int i = screen.handOrder().indexOf(c);
+			tapCentre(i >= 0 ? screen.handRects().get(i) : null);
 		}
 	}
 
 	/** The score table is up: move on after a while. */
 	void onResults(float shownFor) {
 		if (shownFor >= RESULTS_WAIT) {
-			screen.tap(screen.table.w / 2, screen.table.h / 2);
+			input.tap(screen.layout().w / 2, screen.layout().h / 2);
 		}
 	}
 
 	private void tapCentre(Rectangle r) {
 		if (r != null) {
-			screen.tap(r.x + Math.min(r.width, 30) / 2, r.y + r.height / 2);
+			input.tap(r.x + Math.min(r.width, 30) / 2, r.y + r.height / 2);
 		}
 	}
 
 	/** A short description of what's on screen, such as "deal:3" or "trick:5". */
-	static String describe(PlayScreen s) {
+	static String describe(TableScene s) {
 		Match m = s.match();
 		int hand = m.handIndex() + 1;
 		if (s.isMenuOpen()) {
