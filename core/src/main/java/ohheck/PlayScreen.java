@@ -1,15 +1,9 @@
 package ohheck;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -58,30 +52,22 @@ public class PlayScreen extends BaseScreen {
 	final TableOverlays overlays;
 	private final TableFlow flow;
 	private final CardArt art;
-	private final PlayerPanel panel = new PlayerPanel(this);
+	/** Draws the table (counters, trump, panels, your hand); the trick, overlays and effects are separate. */
+	private final TableDrawing drawing;
 	private final TrickView trick = new TrickView();
 	private final Sparks sparks = new Sparks();
 	private final Fireworks fireworks = new Fireworks();
-	/** At the game's end, the final hand's cards and the trump thrown off the table; null until then. */
-	private FallingCards tumble;
-	/** When the trump goes, then each card of the final hand in the order played. */
-	private static final float TOSS_TRUMP = 0.15f, TOSS_FIRST = 0.35f, TOSS_STEP = 0.025f;
-	/** After the cards: seconds of fireworks (if you won) before the scores, or a short pause before them. */
-	private static final float FIREWORKS_FIRST = 1.4f, SCORES_AFTER_CARDS = 0.3f;
-	/** Whether you won (fireworks to come); when (in game-over seconds) the scores appear. */
-	private boolean celebrate;
-	private float resultsAt;
-	private final Motes motes = new Motes();
+	/** At the game's end: the cards thrown off the table, and the order of what follows. */
+	private final TableToss toss;
+	private final GameEnd end = new GameEnd();
 	/** Drives your seat in scripted screenshot runs; null in normal play. */
 	private final Autoplay autoplay;
-	private final Counters counters;
 
 	/** Game time, for animations; stops while paused. */
 	private float time;
 	private boolean menuOpen;
 	/** Where your just-finished game landed in the high score table, or -1. */
 	private int newHighScore = -1;
-	/** The easiest level this game has been played at: its high score badge. */
 	/** The difficulty this game was started at: its high score badge and statistics level. */
 	private Difficulty level;
 	/** Who sits in seats 1-3 ({@link Player} ids). */
@@ -109,7 +95,8 @@ public class PlayScreen extends BaseScreen {
 		this.art = new CardArt(batch, assets);
 		this.overlays = new TableOverlays(this, table, art);
 		this.autoplay = options.autoplayHuman ? new Autoplay(this, options) : null;
-		this.counters = new Counters(this);
+		this.drawing = new TableDrawing(this, art);
+		this.toss = new TableToss(assets, table);
 		this.flow = new TableFlow(new TableFlow.Listener() {
 			@Override
 			public void beforeDeal(Match m) {
@@ -169,9 +156,8 @@ public class PlayScreen extends BaseScreen {
 				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
 				overlays.highScoresButton.set(0, 0, 0, 0);
 				// in turn: the table's cards fall away, then (if you won) fireworks, then the scores
-				tossTheTable(m);
-				celebrate = m.leaders().contains(HUMAN); // you won (or tied for the win)
-				resultsAt = Float.MAX_VALUE; // set once the cards are gone
+				toss.toss(m);
+				end.start(m.leaders().contains(HUMAN)); // you won (or tied for the win)
 			}
 		});
 		if (restored == null) {
@@ -210,38 +196,31 @@ public class PlayScreen extends BaseScreen {
 		return flow.match().phase() == Match.Phase.GAME_OVER;
 	}
 
-	/** Throws the trump and every card of the final hand (from where each was played) off the table. */
-	private void tossTheTable(Match m) {
-		// (its own seed, so the throw never changes the game's random numbers)
-		tumble = FallingCards.forTable(assets, new Random(m.score(HUMAN) * 31L + m.score(0)));
-		float cx = table.w / 2, cy = table.h / 2;
-		tumble.toss(m.trumpCard(), table.trumpX() + table.trumpW() / 2 - cx, table.trumpY() + table.trumpH() / 2 - cy,
-				table.trumpW(), 0, TOSS_TRUMP);
-		List<Card> played = m.playedThisHand();
-		List<Integer> seats = m.playedThisHandSeats();
-		for (int i = 0; i < played.size(); i++) {
-			int seat = seats.get(i);
-			Vector2 slot = table.trickSlot(seat);
-			tumble.toss(played.get(i), slot.x + Assets.CARD_W / 2f - cx, slot.y + Assets.CARD_H / 2f - cy, Assets.CARD_W,
-					TrickView.tilt(played.get(i), seat, m.handIndex()), TOSS_FIRST + i * TOSS_STEP);
-		}
-	}
-
 	/** Game over and the scores are up (after the cards have fallen, and any fireworks have begun). */
 	boolean resultsShown() {
-		return flow.state() == TableState.GAME_OVER && flow.stateTime() >= resultsAt;
+		return flow.state() == TableState.GAME_OVER && end.resultsShown(flow.stateTime());
 	}
 
-	/** Whether the trump card has been thrown off the table (so it's no longer drawn in its place). */
-	private boolean trumpGone() {
-		return tumble != null && (tumble.anyThrown() || !tumble.active()); // (once all have fallen, none is left)
+	// for TableDrawing: what it draws from
+
+	TableFlow flow() {
+		return flow;
+	}
+
+	float time() {
+		return time;
+	}
+
+	Card pressedCard() {
+		return pressed;
 	}
 
 	/** A new game: a table drawn for the difficulty now chosen in Options. */
 	private void newGame() {
 		level = Difficulty.values()[game.settings.difficulty()];
 		seatPlayers(Player.draw(level, seating));
-		tumble = null;
+		toss.clear();
+		end.reset();
 		game.stats().startGame();
 		game.saveStats();
 		Match m = Match.random(4, deck, game.settings.handOrder());
@@ -250,7 +229,7 @@ public class PlayScreen extends BaseScreen {
 		flow.start(m);
 	}
 
-	private boolean humanCanPlay() {
+	boolean humanCanPlay() {
 		return !menuOpen && flow.yourTurnToPlay();
 	}
 
@@ -278,17 +257,12 @@ public class PlayScreen extends BaseScreen {
 		overlays.update(dt);
 		sparks.step(dt);
 		fireworks.update(dt);
-		if (tumble != null) {
-			tumble.update(dt, table.w, table.h);
-			if (resultsAt == Float.MAX_VALUE && !tumble.active()) { // the last card has fallen
-				if (celebrate) {
-					sparks.burst(table.w / 2, table.h / 2 + 100, 160);
-					fireworks.show(table.w, table.h);
-				}
-				resultsAt = flow.stateTime() + (celebrate ? FIREWORKS_FIRST : SCORES_AFTER_CARDS);
-			}
+		toss.update(dt);
+		if (end.update(flow.stateTime(), toss.allGone())) { // the last card has fallen, and you won
+			sparks.burst(table.w / 2, table.h / 2 + 100, 160);
+			fireworks.show(table.w, table.h);
 		}
-		motes.update(dt, flow.trumpFaceUp() && !trumpGone(), table.trumpX(), table.trumpY(), table.trumpW(), table.trumpH());
+		drawing.updateMotes(dt, flow.trumpFaceUp() && !toss.trumpGone());
 		if (autoplay != null) {
 			if (flow.yourTurnToBid() || flow.yourTurnToPlay()) {
 				autoplay.yourTurn(dt);
@@ -322,8 +296,7 @@ public class PlayScreen extends BaseScreen {
 		default:
 			break;
 		}
-		return dragging || sparks.active() || fireworks.active() || trick.anyInFlight(time)
-				|| (tumble != null && tumble.active());
+		return dragging || sparks.active() || fireworks.active() || trick.anyInFlight(time) || toss.active();
 	}
 
 	// ------------------------------------------------------------ input
@@ -544,13 +517,13 @@ public class PlayScreen extends BaseScreen {
 		table.resize(w, h);
 		batch.draw(assets.table, 0, 0, w, h);
 
-		drawTally();
-		drawBidTracker();
-		drawTrump();
+		drawing.tally();
+		drawing.bidTracker();
+		drawing.trump(toss.trumpGone());
 		for (int seat = 0; seat < 4; seat++) {
-			drawSeat(seat);
+			drawing.seat(seat);
 		}
-		drawHand();
+		drawing.hand();
 		trick.draw(batch, assets, art, table, match(), flow.state() == TableState.TRICK, flow.stateTime(), time, fade);
 		if (flow.isDealing()) {
 			flow.deal.draw(batch, assets, art, table);
@@ -581,15 +554,9 @@ public class PlayScreen extends BaseScreen {
 			}
 		}
 		if (dragging) {
-			float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
-			batch.draw(assets.face(pressed), dragX - cw / 2, dragY - ch / 2, cw, ch);
-			if (pressed.suit() == match().trump()) {
-				Glints.draw(batch, assets.glow, pressed, dragX - cw / 2, dragY - ch / 2, cw, ch, cw, 0, time, 1f);
-			}
+			drawing.dragged(pressed, dragX, dragY);
 		}
-		if (tumble != null) {
-			tumble.draw(batch, table.w / 2, table.h / 2); // over the scores, briefly, as they fall away
-		}
+		toss.draw(batch); // over everything else as the cards fall away (the scores wait until they've gone)
 		sparks.draw(batch, assets.glow);
 		if (menuOpen) {
 			overlays.drawMenu();
@@ -599,103 +566,6 @@ public class PlayScreen extends BaseScreen {
 		batch.end();
 	}
 
-	// ---- the counters, top left: the hand tally, and the bid tracker under it
-
-	private void drawTally() {
-		int done = match().phase() == Match.Phase.GAME_OVER ? 8 : match().handIndex();
-		counters.tally(22, h - 12, done, Counters.pulse(time), 1f);
-	}
-
-	private void drawBidTracker() {
-		Match m = match();
-		float x0 = 22 - Counters.TALLY_W / 2; // lined up with the tally's first mark
-		float avail = table.panelX(2) - 14 - x0; // and clear of the top player's panel
-		counters.tracker(x0, h - 12 - Counters.TALLY_H - Counters.TRACKER_BELOW_TALLY, avail, m.handSize(), m.bidsSoFar(), 1f);
-	}
-
-	private void drawTrump() {
-		if (flow.state() == TableState.SHUFFLE || trumpGone()) {
-			if (trumpGone()) {
-				motes.draw(batch, assets.glow); // the last few still rising
-			}
-			return; // the trump card is still in the deck, or thrown off the table
-		}
-		float x = table.trumpX(), y = table.trumpY(), cw = table.trumpW(), ch = table.trumpH();
-		art.shadow(x, y, cw, ch, 4);
-		float p = flow.isDealing() ? 0 : MathUtils.clamp(flow.trumpTime() / TableFlow.TRUMP_FLIP_TIME, 0, 1);
-		// face up, the trump is lit: a warm glow behind it, and the card itself brightened
-		float lit = MathUtils.clamp((flow.trumpTime() - TableFlow.TRUMP_FLIP_TIME) / 0.6f, 0, 1);
-		if (p >= 1 && lit > 0) {
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			float gw = cw * 1.9f, gh = ch * 1.6f;
-			batch.setColor(1f, 0.78f, 0.4f, 0.22f * lit);
-			batch.draw(assets.glow, x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh);
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			batch.setColor(Color.WHITE);
-		}
-		art.flip(match().trumpCard(), x, y, cw, ch, p);
-		if (p >= 1) {
-			Glints.draw(batch, assets.glow, match().trumpCard(), x, y, cw, ch, cw, 0, time, lit);
-		}
-		if (p >= 1 && lit > 0) {
-			// and a light on it in the screen effects, lifting the corner's vignette (after the bloom,
-			// so the card brightens without glaring)
-			game.post.light((x + cw / 2) / w, (y + ch / 2) / h, 0.3f, lit);
-		}
-		motes.draw(batch, assets.glow);
-	}
-
-	/** A seat's panel and, for opponents, their face-down cards (while dealing, only those that have landed). */
-	private void drawSeat(int seat) {
-		boolean turn = flow.state() == TableState.TURN && match().currentSeat() == seat;
-		panel.draw(name(seat), table.panelX(seat), table.panelTop(seat), turn, match().dealer() == seat,
-				match().score(seat), match().bid(seat), match().tricksWon(seat), match().handSize(), flow.isDealing(), time);
-		if (seat == HUMAN) {
-			return;
-		}
-		int total = match().hand(seat).size();
-		int n = flow.isDealing() ? flow.deal.dealtTo(seat) : total;
-		float y = table.fanOrigin(seat).y;
-		for (int i = 0; i < n; i++) {
-			batch.draw(assets.back(), table.fanCardX(seat, i, total), y, TableLayout.backW(), TableLayout.backH());
-		}
-	}
-
-	private void drawHand() {
-		handOrder.clear();
-		handOrder.addAll(match().hand(HUMAN));
-		Collections.sort(handOrder, DISPLAY_ORDER);
-		int n = handOrder.size();
-		sizeTo(handRects, n);
-		if (n == 0) {
-			return;
-		}
-		int shown = flow.isDealing() ? flow.deal.dealtTo(HUMAN) : n;
-		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
-		table.layoutHand(n);
-		boolean myTurn = humanCanPlay();
-		List<Card> legal = myTurn ? match().legalPlays(HUMAN) : Collections.<Card>emptyList();
-		for (int i = 0; i < n; i++) {
-			Card c = handOrder.get(i);
-			boolean canPlay = legal.contains(c);
-			float x = table.handStart + i * table.handGap;
-			float y = TableLayout.HAND_Y + (canPlay ? TableLayout.LIFT : 0);
-			handRects.get(i).set(x, y, i == n - 1 ? cw : table.handGap, ch);
-			if (i >= shown || (dragging && c == pressed)) {
-				continue;
-			}
-			art.shadow(x, y, cw, ch, y - TableLayout.HAND_Y + 5);
-			batch.setColor(myTurn && !canPlay ? Palette.CARD_DIM : Color.WHITE);
-			float flip = flow.isDealing() ? flow.deal.flipOfYourCard(i) : 1f;
-			art.flip(c, x, y, cw, ch, flip);
-			if (flip >= 1 && flow.trumpFaceUp() && c.suit() == match().trump()) {
-				Glints.draw(batch, assets.glow, c, x, y, cw, ch, i == n - 1 ? cw : table.handGap, 0, time,
-						myTurn && !canPlay ? 0.5f : 1f);
-			}
-		}
-		batch.setColor(Color.WHITE);
-	}
-
 	// ----------------------------------------------------------- helpers
 
 	/** "heart", "spade"... */
@@ -703,26 +573,6 @@ public class PlayScreen extends BaseScreen {
 		String n = s.name().toLowerCase();
 		return n.substring(0, n.length() - 1);
 	}
-
-	/** Your hand sorted by suit (alternating colours), then rank. */
-	private static final Comparator<Card> DISPLAY_ORDER = new Comparator<Card>() {
-		private final Suit[] order = { Suit.CLUBS, Suit.HEARTS, Suit.SPADES, Suit.DIAMONDS };
-
-		private int suitIndex(Suit s) {
-			for (int i = 0; i < order.length; i++) {
-				if (order[i] == s) {
-					return i;
-				}
-			}
-			return 0;
-		}
-
-		@Override
-		public int compare(Card a, Card b) {
-			int d = suitIndex(a.suit()) - suitIndex(b.suit());
-			return d != 0 ? d : a.rank().strength() - b.rank().strength();
-		}
-	};
 
 	@Override
 	public String stateTag() {
