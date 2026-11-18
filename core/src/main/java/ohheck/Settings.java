@@ -73,6 +73,15 @@ public final class Settings {
 	}
 
 	/** Your best finished games, as HighScores.encode() writes them. */
+	/** Your statistics, as {@link rules.Stats#encode()} wrote them ("" for none yet). */
+	public String stats() {
+		return prefs.getString("stats", "");
+	}
+
+	public void setStats(String encoded) {
+		prefs.putString("stats", encoded).flush();
+	}
+
 	public String highScores() {
 		return prefs.getString("highScores", "");
 	}
