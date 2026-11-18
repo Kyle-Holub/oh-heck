@@ -1,6 +1,10 @@
 package ohheck;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+import java.util.function.Consumer;
 
 import rules.Bot;
 import rules.Card;
@@ -11,30 +15,39 @@ import rules.Match;
  * The card table's flow from the first shuffle to the final scores: which
  * {@link TableState} it's in, how long it stays there, and when the computer
  * players move. No drawing, so it can be tested on its own; {@link PlayScreen}
- * draws it and passes your moves in, and hears about events through
- * {@link Listener}.
+ * draws it and passes your moves in; it and others hear about events through
+ * {@link Listener}s.
  */
 final class TableFlow {
 
-	/** What the screen needs to hear about. */
+	/**
+	 * What happens at the table, for whoever wants to know: the screen's effects, the
+	 * sounds, the records. Each listener overrides only what it reacts to.
+	 */
 	interface Listener {
 		/** A new hand is about to be shuffled and dealt. */
-		void beforeDeal(Match m);
+		default void beforeDeal(Match m) {
+		}
 
 		/** The game changed: save it. */
-		void save(Match m);
+		default void save(Match m) {
+		}
 
 		/** A riffle begins during the shuffle. */
-		void shuffleSound();
+		default void shuffling() {
+		}
 
 		/** A card was played (yours, or a computer player's). */
-		void played(int seat, Card c);
+		default void played(Match m, int seat, Card c) {
+		}
 
 		/** The hand is over: "Bid Tricks!" or "You got set!" is showing. */
-		void handEnded();
+		default void handEnded(Match m) {
+		}
 
 		/** The last hand is over: final scores are showing. */
-		void gameEnded();
+		default void gameEnded(Match m) {
+		}
 	}
 
 	static final int HUMAN = TableLayout.HUMAN;
@@ -42,9 +55,9 @@ final class TableFlow {
 	static final float AI_DELAY = 0.8f, HAND_END_SHOW = 2.4f, TRUMP_FLIP_TIME = 0.45f;
 
 	final DealAnimation deal = new DealAnimation();
-	private final Listener listener;
+	private final List<Listener> listeners;
 	/** The computer players, one per seat (seat 0, yours, is unused). */
-	private final Bot[] bots = new Bot[4];
+	private final Bot[] bots = new Bot[TableLayout.SEATS];
 
 	private Match match;
 	private TableState state = TableState.TURN;
@@ -52,8 +65,15 @@ final class TableFlow {
 	/** Seconds since the deal finished, for the trump card turning over. */
 	private float trumpT;
 
-	TableFlow(Listener listener) {
-		this.listener = listener;
+	TableFlow(Listener... listeners) {
+		this.listeners = new ArrayList<Listener>(Arrays.asList(listeners));
+	}
+
+	/** Tells each listener, in the order given. */
+	private void tell(Consumer<Listener> event) {
+		for (Listener l : listeners) {
+			event.accept(l);
+		}
 	}
 
 	/** Seats the computer players: players[s - 1] (a {@link Player} id) in seat s. */
@@ -68,7 +88,7 @@ final class TableFlow {
 	/** Starts a new game: shuffle and deal its first hand. */
 	void start(Match m) {
 		match = m;
-		listener.save(m);
+		tell(l -> l.save(m));
 		startHand();
 	}
 
@@ -130,7 +150,7 @@ final class TableFlow {
 		case SHUFFLE:
 		case DEAL:
 			if (deal.update(dt)) {
-				listener.shuffleSound();
+				tell(Listener::shuffling);
 			}
 			if (deal.isDone()) {
 				enter(TableState.TURN);
@@ -197,7 +217,7 @@ final class TableFlow {
 			return false;
 		}
 		match.nextHand();
-		listener.save(match);
+		tell(l -> l.save(match));
 		if (match.phase() == Match.Phase.GAME_OVER) {
 			enter(TableState.GAME_OVER);
 		} else {
@@ -209,7 +229,7 @@ final class TableFlow {
 	// ---- internals
 
 	private void startHand() {
-		listener.beforeDeal(match);
+		tell(l -> l.beforeDeal(match));
 		if (match.phase() == Match.Phase.GAME_OVER) {
 			enter(TableState.GAME_OVER); // (the screenshot run can play hands out in beforeDeal)
 			return;
@@ -223,9 +243,9 @@ final class TableFlow {
 		state = s;
 		stateT = 0;
 		if (s == TableState.HAND_END) {
-			listener.handEnded();
+			tell(l -> l.handEnded(match));
 		} else if (s == TableState.GAME_OVER) {
-			listener.gameEnded();
+			tell(l -> l.gameEnded(match));
 		}
 	}
 
@@ -239,14 +259,14 @@ final class TableFlow {
 
 	private void placeBid(int seat, int bid) {
 		match.placeBid(seat, bid);
-		listener.save(match);
+		tell(l -> l.save(match));
 		enter(TableState.TURN);
 	}
 
 	private void playCard(int seat, Card c) {
 		int winner = match.playCard(seat, c);
-		listener.save(match);
-		listener.played(seat, c);
+		tell(l -> l.save(match));
+		tell(l -> l.played(match, seat, c));
 		enter(winner >= 0 ? TableState.TRICK : TableState.TURN);
 	}
 }

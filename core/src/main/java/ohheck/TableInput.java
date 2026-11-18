@@ -9,7 +9,8 @@ import rules.Suit;
 /**
  * What your taps and drags do at the table: playing a card (tap it, or drag it up onto
  * the table), bidding (tap a number), moving the table on, and the pause menu.
- * PlayScreen passes its touches here; this reads the table and acts through it.
+ * PlayScreen passes its touches here; this reads the table ({@link TableScene}) and acts
+ * through {@link TableActions}.
  */
 final class TableInput {
 
@@ -17,7 +18,8 @@ final class TableInput {
 	/** How far a finger moves on a card before it counts as dragging it. */
 	private static final float DRAG_START = 12f;
 
-	private final PlayScreen s;
+	private final TableScene s;
+	private final TableActions act;
 
 	private boolean menuOpen;
 	// the card under your finger, and whether it's being dragged
@@ -25,8 +27,9 @@ final class TableInput {
 	private boolean dragging;
 	private float dragX, dragY;
 
-	TableInput(PlayScreen screen) {
-		s = screen;
+	TableInput(TableScene scene, TableActions actions) {
+		s = scene;
+		act = actions;
 	}
 
 	boolean menuOpen() {
@@ -58,7 +61,7 @@ final class TableInput {
 		}
 		int i = cardAt(x, y);
 		if (i >= 0) {
-			pressed = s.handOrder.get(i);
+			pressed = s.handOrder().get(i);
 			dragX = x;
 			dragY = y;
 		}
@@ -84,17 +87,17 @@ final class TableInput {
 		}
 		Card c = pressed;
 		clearTouch();
-		float handTop = s.handRects.isEmpty() ? 150 : s.handRects.get(0).y + s.handRects.get(0).height;
+		float handTop = s.handRects().isEmpty() ? 150 : s.handRects().get(0).y + s.handRects().get(0).height;
 		if (y > handTop + 10 && s.humanCanPlay()) {
 			// dropped on the table: play it from where it was let go
-			s.humanPlay(c, x - TableLayout.handCardW() / 2, y - TableLayout.handCardH() / 2);
+			act.humanPlay(c, x - TableLayout.handCardW() / 2, y - TableLayout.handCardH() / 2);
 		}
 		return true; // otherwise it drops back into your hand
 	}
 
 	/** A tap at world position (x, y). Autoplay taps come through here too. */
 	void tap(float x, float y) {
-		TableOverlays o = s.overlays;
+		TableOverlays o = s.overlays();
 		if (menuOpen) {
 			for (int i = 0; i < o.menuItems.size(); i++) {
 				if (o.menuItems.get(i).contains(x, y)) {
@@ -132,19 +135,19 @@ final class TableInput {
 		case GAME_OVER:
 			// only the buttons: a stray tap mustn't throw away the final scores
 			if (o.highScoresButton.contains(x, y)) {
-				s.game.showHighScores(s.newHighScore());
+				act.showHighScores();
 			} else if (o.playAgainButton.contains(x, y)) {
-				s.game.newGame(); // a fresh table, at the difficulty now chosen in Options
+				act.newGame(); // a fresh table, at the difficulty now chosen in Options
 			}
 			break;
 		}
 	}
 
 	private void tapBid(float x, float y) {
-		for (int b = 0; b < s.overlays.bidButtons.size(); b++) {
-			if (s.overlays.bidButtons.get(b).contains(x, y)) {
+		for (int b = 0; b < s.overlays().bidButtons.size(); b++) {
+			if (s.overlays().bidButtons.get(b).contains(x, y)) {
 				if (!s.flow().bid(b)) {
-					s.overlays.hint("As dealer you can't bid " + b + ": the bids would add up to " + s.match().handSize());
+					s.overlays().hint("As dealer you can't bid " + b + ": the bids would add up to " + s.match().handSize());
 				}
 				return;
 			}
@@ -156,19 +159,19 @@ final class TableInput {
 		if (i < 0) {
 			return;
 		}
-		Card c = s.handOrder.get(i);
+		Card c = s.handOrder().get(i);
 		if (!s.match().legalPlays(HUMAN).contains(c)) {
-			s.overlays.hint("You must follow suit: play a " + singular(s.match().leadSuit()));
+			s.overlays().hint("You must follow suit: play a " + singular(s.match().leadSuit()));
 			return;
 		}
-		Rectangle r = s.handRects.get(i);
-		s.humanPlay(c, r.x, r.y);
+		Rectangle r = s.handRects().get(i);
+		act.humanPlay(c, r.x, r.y);
 	}
 
 	private int cardAt(float x, float y) {
 		// topmost first: later cards are drawn over earlier ones
-		for (int i = s.handRects.size() - 1; i >= 0; i--) {
-			if (s.handRects.get(i).contains(x, y)) {
+		for (int i = s.handRects().size() - 1; i >= 0; i--) {
+			if (s.handRects().get(i).contains(x, y)) {
 				return i;
 			}
 		}
@@ -199,14 +202,14 @@ final class TableInput {
 
 	private void menuChoice(int i) {
 		if (i == 1) {
-			s.game.showOptions(); // the menu is still open when you come back
+			act.showOptions(); // the menu is still open when you come back
 			return;
 		}
 		menuOpen = false;
 		if (i == 2) {
-			s.game.newGame(); // a fresh table, at the difficulty now chosen in Options
+			act.newGame(); // a fresh table, at the difficulty now chosen in Options
 		} else if (i == 3) {
-			s.game.showTitle();
+			act.showTitle();
 		}
 	}
 

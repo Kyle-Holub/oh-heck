@@ -41,7 +41,10 @@ final class TableOverlays {
 	final List<Rectangle> menuItems = new ArrayList<Rectangle>();
 	final Rectangle playAgainButton = new Rectangle(), highScoresButton = new Rectangle();
 
-	private final PlayScreen screen;
+	/** For its drawing tools: batch, fonts, frames, buttons. */
+	private final BaseScreen screen;
+	/** Who's who at the table. */
+	private final TableScene scene;
 	private final TableLayout table;
 	private final CardArt art;
 	private String hint = "";
@@ -57,8 +60,9 @@ final class TableOverlays {
 		}
 	};
 
-	TableOverlays(PlayScreen screen, TableLayout table, CardArt art) {
+	TableOverlays(BaseScreen screen, TableScene scene, TableLayout table, CardArt art) {
 		this.screen = screen;
+		this.scene = scene;
 		this.table = table;
 		this.art = art;
 	}
@@ -167,7 +171,7 @@ final class TableOverlays {
 	 * to the right of your panel, where it stays while the scores are up.
 	 */
 	void drawHandLabels(float drop, float alpha) {
-		for (int seat = 0; seat < 4; seat++) {
+		for (int seat = 0; seat < match.players(); seat++) {
 			if (seat == TableLayout.HUMAN && drop <= 0) {
 				continue;
 			}
@@ -224,7 +228,7 @@ final class TableOverlays {
 			t.setColor(Palette.MUTED);
 			t.draw(screen.batch, HighScores.ordinal(place(seat)), px + cols[0], y);
 			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
-			t.draw(screen.batch, screen.name(seat) + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
+			t.draw(screen.batch, scene.name(seat) + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
 			screen.numeral(match.bid(seat), px + cols[2] + 8, y - 8, 26, Color.WHITE);
 			t.draw(screen.batch, String.valueOf(match.tricksWon(seat)), px + cols[3], y);
 			t.draw(screen.batch, (pts > 0 ? "+" : "") + pts, px + cols[4], y);
@@ -254,7 +258,7 @@ final class TableOverlays {
 			if (i > 0) {
 				sb.append(i == leaders.size() - 1 ? " and " : ", ");
 			}
-			sb.append(screen.name(leaders.get(i)));
+			sb.append(scene.name(leaders.get(i)));
 		}
 		if (leaders.size() > 1) {
 			sb.append(" tie!");
@@ -271,7 +275,7 @@ final class TableOverlays {
 			t.setColor(Palette.MUTED);
 			t.draw(screen.batch, HighScores.ordinal(place(s)), px + 60, y);
 			t.setColor(place(s) == 1 ? Palette.GOLD : Palette.CREAM);
-			t.draw(screen.batch, screen.name(s), px + 120, y);
+			t.draw(screen.batch, scene.name(s), px + 120, y);
 			screen.text(t, String.valueOf(match.score(s)), px + pw - 140, y, false);
 			if (s == TableLayout.HUMAN && newHighScore == 0) { // only a score that tops the table
 				BitmapFont n = screen.ui(0.95f);
@@ -290,7 +294,7 @@ final class TableOverlays {
 	/** Seats from highest score to lowest; ties keep seat order. (Reused list.) */
 	List<Integer> ranked() {
 		ranked.clear();
-		for (int s = 0; s < 4; s++) {
+		for (int s = 0; s < match.players(); s++) {
 			ranked.add(s); // small Integers are cached: no garbage
 		}
 		Collections.sort(ranked, byScore);
@@ -299,12 +303,6 @@ final class TableOverlays {
 
 	/** 1 for the lead; players on the same score share a place. */
 	int place(int seat) {
-		int p = 1;
-		for (int s = 0; s < 4; s++) {
-			if (match.score(s) > match.score(seat)) {
-				p++;
-			}
-		}
-		return p;
+		return match.placeOf(seat);
 	}
 }

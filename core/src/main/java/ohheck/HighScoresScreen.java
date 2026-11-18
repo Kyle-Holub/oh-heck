@@ -43,7 +43,7 @@ public class HighScoresScreen extends BaseScreen {
 	@Override
 	public void show() {
 		super.show();
-		list = game.highScores().entries(); // read once, not every frame
+		list = game.records.highScores().entries(); // read once, not every frame
 		showStats = false;
 		confirmReset = 0;
 	}
@@ -139,7 +139,7 @@ public class HighScoresScreen extends BaseScreen {
 			}
 		}
 
-		Stats.Totals t = game.stats().totals(filter);
+		Stats.Totals t = game.records.stats().totals(filter);
 		String none = "\u2014";
 		boolean g = t.anyGames(), hd = t.anyHands();
 		String[][] games = {
@@ -204,7 +204,7 @@ public class HighScoresScreen extends BaseScreen {
 			}
 			if (resetButton.contains(x, y)) {
 				if (confirmReset > 0) {
-					game.resetStats();
+					game.records.resetStats();
 					confirmReset = 0;
 				} else {
 					confirmReset = RESET_CONFIRM_TIME;

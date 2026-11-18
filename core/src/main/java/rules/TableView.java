@@ -12,6 +12,8 @@ import java.util.List;
 public final class TableView {
 
 	public int seat, players, handIndex, handSize, dealer, numberOfHands;
+	/** The rules this game is played by. */
+	public RuleSet rules = RuleSet.STANDARD;
 	public Card trumpCard;
 	public final List<Card> hand = new ArrayList<Card>();
 	/** null where a player hasn't bid yet. */
@@ -63,11 +65,11 @@ public final class TableView {
 	}
 
 	public boolean isLegalBid(int bid) {
-		return Rules.isLegalBid(bid, handSize, bidsSoFar(), seat == dealer);
+		return rules.isLegalBid(bid, handSize, bidsSoFar(), seat == dealer);
 	}
 
 	public List<Card> legalPlays() {
-		return Rules.legalPlays(hand, leadSuit());
+		return rules.legalPlays(hand, leadSuit());
 	}
 
 	/** Tricks this player still wants: their bid minus tricks taken (0 or less: wants no more). */

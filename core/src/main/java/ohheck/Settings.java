@@ -10,7 +10,7 @@ import rules.HandOrder;
 import rules.SavedGame;
 
 /** Player options, saved on the device between sessions. */
-public final class Settings {
+public final class Settings implements Records.Store {
 
 	private final Preferences prefs = Gdx.app.getPreferences("oh-heck");
 
@@ -37,13 +37,13 @@ public final class Settings {
 		return SPEED_FACTORS[speed()];
 	}
 
-	/** Computer players' difficulty for new games (a rules.Difficulty ordinal); Normal unless chosen. */
-	public int difficulty() {
-		return Math.max(0, Math.min(2, prefs.getInteger("difficulty", 1)));
+	/** The difficulty setting for new games; Normal unless chosen. (Older builds saved its number.) */
+	public Difficulty difficulty() {
+		return Difficulty.fromSaved(prefs.getString("level", null), prefs.getInteger("difficulty", 1));
 	}
 
-	public void setDifficulty(int d) {
-		prefs.putInteger("difficulty", d).flush();
+	public void setDifficulty(Difficulty d) {
+		prefs.putString("level", d.name()).flush();
 	}
 
 	/** Which way new games' hands run: one card up to eight (the default), or eight down to one. */
@@ -70,7 +70,7 @@ public final class Settings {
 		if (s.isEmpty()) {
 			return null;
 		}
-		Difficulty legacyLevel = Difficulty.values()[Math.max(0, Math.min(2, prefs.getInteger("savedGameDifficulty", 1)))];
+		Difficulty legacyLevel = Difficulty.fromSaved(null, prefs.getInteger("savedGameDifficulty", 1));
 		String legacyPlayers = prefs.getString("savedGamePlayers", "");
 		return SavedGame.decode(s, rng, legacyLevel, legacyPlayers.isEmpty() ? null : SavedGame.parsePlayers(legacyPlayers));
 	}

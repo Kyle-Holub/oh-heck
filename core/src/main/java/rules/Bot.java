@@ -11,15 +11,8 @@ public interface Bot {
 	/** A legal card for the player whose turn it is. */
 	Card choosePlay(TableView v);
 
-	/** A computer player of the given difficulty; rng drives any randomness (seed it for repeatable games). */
+	/** A computer player of the given difficulty (see {@link Difficulty#bot}). */
 	static Bot of(Difficulty d, Random rng) {
-		switch (d) {
-		case EASY:
-			return new EasyBot(rng);
-		case HARD:
-			return new HardBot(rng);
-		default:
-			return new NormalBot();
-		}
+		return d.bot(rng);
 	}
 }

@@ -246,4 +246,17 @@ public class MatchTest {
 			m.placeBid(s, bot.chooseBid(m.view(s)));
 		}
 	}
+
+	@Test
+	public void placesShareOnATie() {
+		Match m = new Match(4, new Random(3), 0);
+		m.scores[0] = 30;
+		m.scores[1] = 50;
+		m.scores[2] = 30;
+		m.scores[3] = 10;
+		assertEquals(1, m.placeOf(1));
+		assertEquals(2, m.placeOf(0));
+		assertEquals(2, m.placeOf(2));
+		assertEquals(4, m.placeOf(3));
+	}
 }

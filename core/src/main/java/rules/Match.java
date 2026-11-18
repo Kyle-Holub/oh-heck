@@ -28,31 +28,34 @@ public final class Match {
 		GAME_OVER
 	}
 
-	private final int players;
+	final int players;
 	private final Random rng;
+	private final RuleSet rules;
 
-	private Phase phase;
-	private int handIndex;
+	// The game's state. Package-visible so MatchCodec can write and read it; nothing else touches it.
+
+	Phase phase;
+	int handIndex;
 	/** Which way the hands run (set once, when the game starts or loads). */
-	private HandOrder order = HandOrder.UP;
-	private int dealer;
-	private int current;
-	private Card trumpCard;
+	HandOrder order = HandOrder.UP;
+	int dealer;
+	int current;
+	Card trumpCard;
 
-	private final List<List<Card>> hands = new ArrayList<List<Card>>();
-	private final Integer[] bids;
-	private final int[] tricks;
-	private final int[] scores;
-	private final int[] lastHandPoints;
+	final List<List<Card>> hands = new ArrayList<List<Card>>();
+	final Integer[] bids;
+	final int[] tricks;
+	final int[] scores;
+	final int[] lastHandPoints;
 
-	private final List<Card> trick = new ArrayList<Card>();
-	private final List<Integer> trickSeats = new ArrayList<Integer>();
+	final List<Card> trick = new ArrayList<Card>();
+	final List<Integer> trickSeats = new ArrayList<Integer>();
 	/** Every card played this hand, in order, and who played it: what players remember. */
-	private final List<Card> history = new ArrayList<Card>();
-	private final List<Integer> historySeats = new ArrayList<Integer>();
-	private List<Card> lastTrick = Collections.emptyList();
-	private List<Integer> lastTrickSeats = Collections.emptyList();
-	private int lastTrickWinner = -1;
+	final List<Card> history = new ArrayList<Card>();
+	final List<Integer> historySeats = new ArrayList<Integer>();
+	List<Card> lastTrick = Collections.emptyList();
+	List<Integer> lastTrickSeats = Collections.emptyList();
+	int lastTrickWinner = -1;
 
 	/** A game with a random first dealer, its hands running one card up to eight. */
 	public static Match random(int players, Random rng) {
@@ -61,7 +64,12 @@ public final class Match {
 
 	/** A game with a random first dealer, its hands running the given way. */
 	public static Match random(int players, Random rng, HandOrder order) {
-		return new Match(players, rng, rng.nextInt(players), order);
+		return random(players, rng, order, RuleSet.STANDARD);
+	}
+
+	/** A game by the given rules, with a random first dealer, its hands running the given way. */
+	public static Match random(int players, Random rng, HandOrder order, RuleSet rules) {
+		return new Match(players, rng, rng.nextInt(players), order, rules);
 	}
 
 	public Match(int players, Random rng, int firstDealer) {
@@ -69,19 +77,24 @@ public final class Match {
 	}
 
 	public Match(int players, Random rng, int firstDealer, HandOrder order) {
-		this(players, rng);
+		this(players, rng, firstDealer, order, RuleSet.STANDARD);
+	}
+
+	public Match(int players, Random rng, int firstDealer, HandOrder order, RuleSet rules) {
+		this(players, rng, rules);
 		this.order = order;
 		this.dealer = firstDealer;
 		startHand();
 	}
 
-	/** Allocates an empty game, for the constructors above and {@link #load}. */
-	private Match(int players, Random rng) {
-		if (players < 2 || players * HandOrder.HANDS >= 52) {
+	/** Allocates an empty game, for the constructors above and {@link MatchCodec}. */
+	Match(int players, Random rng, RuleSet rules) {
+		if (players < 2 || players * rules.numberOfHands() >= 52) {
 			throw new IllegalArgumentException("Unsupported number of players: " + players);
 		}
 		this.players = players;
 		this.rng = rng;
+		this.rules = rules;
 		this.bids = new Integer[players];
 		this.tricks = new int[players];
 		this.scores = new int[players];
@@ -116,7 +129,7 @@ public final class Match {
 		requirePhase(Phase.PLAYING);
 		requireTurn(seat);
 		List<Card> hand = hands.get(seat);
-		if (!Rules.isLegalPlay(hand, card, leadSuit())) {
+		if (!rules.isLegalPlay(hand, card, leadSuit())) {
 			throw new IllegalArgumentException("Seat " + seat + " may not play " + card);
 		}
 		hand.remove(card);
@@ -130,7 +143,7 @@ public final class Match {
 			return -1;
 		}
 
-		int winner = trickSeats.get(Rules.trickWinner(trick, trumpCard.suit()));
+		int winner = trickSeats.get(rules.trickWinner(trick, trumpCard.suit()));
 		tricks[winner]++;
 		lastTrick = Collections.unmodifiableList(new ArrayList<Card>(trick));
 		lastTrickSeats = Collections.unmodifiableList(new ArrayList<Integer>(trickSeats));
@@ -141,7 +154,7 @@ public final class Match {
 
 		if (hand.isEmpty()) {
 			for (int i = 0; i < players; i++) {
-				lastHandPoints[i] = Rules.score(bids[i], tricks[i]);
+				lastHandPoints[i] = rules.score(bids[i], tricks[i]);
 				scores[i] += lastHandPoints[i];
 			}
 			phase = Phase.HAND_OVER;
@@ -152,7 +165,7 @@ public final class Match {
 	/** Deal the next hand, or end the game after the last one. */
 	public void nextHand() {
 		requirePhase(Phase.HAND_OVER);
-		if (handIndex + 1 >= Rules.numberOfHands()) {
+		if (handIndex + 1 >= rules.numberOfHands()) {
 			phase = Phase.GAME_OVER;
 			return;
 		}
@@ -189,8 +202,13 @@ public final class Match {
 		return handIndex;
 	}
 
+	/** The rules this game is played by. */
+	public RuleSet rules() {
+		return rules;
+	}
+
 	public int handSize() {
-		return order.handSize(handIndex);
+		return rules.handSize(order, handIndex);
 	}
 
 	public Card trumpCard() {
@@ -223,7 +241,7 @@ public final class Match {
 
 	/** Can the player whose turn it is make this bid? */
 	public boolean isLegalBid(int bid) {
-		return phase == Phase.BIDDING && Rules.isLegalBid(bid, handSize(), bidsSoFar(), current == dealer);
+		return phase == Phase.BIDDING && rules.isLegalBid(bid, handSize(), bidsSoFar(), current == dealer);
 	}
 
 	/** The bid the current player may not make, or -1 if every bid is allowed. */
@@ -231,7 +249,7 @@ public final class Match {
 		if (phase != Phase.BIDDING || current != dealer) {
 			return -1;
 		}
-		int f = Rules.forbiddenDealerBid(handSize(), bidsSoFar());
+		int f = rules.forbiddenDealerBid(handSize(), bidsSoFar());
 		return f >= 0 && f <= handSize() ? f : -1;
 	}
 
@@ -268,7 +286,7 @@ public final class Match {
 	}
 
 	public List<Card> legalPlays(int seat) {
-		return Rules.legalPlays(hands.get(seat), seat == current ? leadSuit() : null);
+		return rules.legalPlays(hands.get(seat), seat == current ? leadSuit() : null);
 	}
 
 	/** Every card played so far this hand (the whole hand once it's over), in order. */
@@ -295,7 +313,18 @@ public final class Match {
 	}
 
 	/** Seats with the highest score; more than one means a tie. */
-	public List<Integer> leaders() {
+	/** Where this seat stands: 1 for the lead, and players on the same score share a place. */
+	public int placeOf(int seat) {
+		int p = 1;
+		for (int s = 0; s < players; s++) {
+			if (scores[s] > scores[seat]) {
+				p++;
+			}
+		}
+		return p;
+	}
+
+		public List<Integer> leaders() {
 		int best = Integer.MIN_VALUE;
 		for (int s : scores) {
 			best = Math.max(best, s);
@@ -316,7 +345,8 @@ public final class Match {
 		v.handIndex = handIndex;
 		v.handSize = handSize();
 		v.dealer = dealer;
-		v.numberOfHands = Rules.numberOfHands();
+		v.numberOfHands = rules.numberOfHands();
+		v.rules = rules;
 		v.trumpCard = trumpCard;
 		v.hand.addAll(hands.get(seat));
 		for (int s = 0; s < players; s++) {
@@ -342,12 +372,7 @@ public final class Match {
 		return v;
 	}
 
-	// ---- Saving ----
-
-	/** Cards written as text ("AS", "10H"). */
-	private static final String FORMAT = "oh-heck-match-2";
-	/** The first format, which wrote cards as numbers from the enums' declaration order; still read. */
-	private static final String FORMAT_1 = "oh-heck-match-1";
+	// ---- Saving (the text format is MatchCodec's) ----
 
 	/**
 	 * The whole game state as a short text, for saving to storage. The random
@@ -355,95 +380,21 @@ public final class Match {
 	 * the Random given to {@link #load}.
 	 */
 	public String save() {
-		StringBuilder sb = new StringBuilder(FORMAT).append('\n');
-		line(sb, "players", String.valueOf(players));
-		line(sb, "phase", phase.name());
-		line(sb, "hand", String.valueOf(handIndex));
-		line(sb, "order", order.name());
-		line(sb, "dealer", String.valueOf(dealer));
-		line(sb, "current", String.valueOf(current));
-		line(sb, "trump", code(trumpCard));
-		for (int s = 0; s < players; s++) {
-			line(sb, "hand" + s, cards(hands.get(s)));
-		}
-		StringBuilder b = new StringBuilder();
-		for (int s = 0; s < players; s++) {
-			b.append(s > 0 ? "," : "").append(bids[s] == null ? "-" : bids[s].toString());
-		}
-		line(sb, "bids", b.toString());
-		line(sb, "tricks", ints(tricks));
-		line(sb, "scores", ints(scores));
-		line(sb, "points", ints(lastHandPoints));
-		line(sb, "trick", cards(trick));
-		line(sb, "trickSeats", seats(trickSeats));
-		line(sb, "last", cards(lastTrick));
-		line(sb, "lastSeats", seats(lastTrickSeats));
-		line(sb, "lastWinner", String.valueOf(lastTrickWinner));
-		line(sb, "history", cards(history));
-		line(sb, "historySeats", seats(historySeats));
-		return sb.toString();
+		return MatchCodec.encode(this);
 	}
 
 	/**
-	 * Rebuilds a game saved with {@link #save}.
+	 * Rebuilds a game saved with {@link #save} (or by an older build).
 	 *
 	 * @throws IllegalArgumentException if the text is not a valid saved game
 	 */
 	public static Match load(String saved, Random rng) {
-		try {
-			java.util.Map<String, String> v = new java.util.HashMap<String, String>();
-			String[] lines = saved.split("\n");
-			String format = lines[0].trim();
-			if (!format.equals(FORMAT) && !format.equals(FORMAT_1)) {
-				throw new IllegalArgumentException("Not a saved game");
-			}
-			boolean legacy = format.equals(FORMAT_1);
-			for (int i = 1; i < lines.length; i++) {
-				int eq = lines[i].indexOf('=');
-				if (eq > 0) {
-					v.put(lines[i].substring(0, eq), lines[i].substring(eq + 1).trim());
-				}
-			}
-			Match m = new Match(Integer.parseInt(req(v, "players")), rng);
-			m.phase = Phase.valueOf(req(v, "phase"));
-			m.handIndex = Integer.parseInt(req(v, "hand"));
-			// (games saved before the hands could run downwards always ran up)
-			m.order = v.containsKey("order") ? HandOrder.valueOf(v.get("order")) : HandOrder.UP;
-			m.dealer = Integer.parseInt(req(v, "dealer"));
-			m.current = Integer.parseInt(req(v, "current"));
-			m.trumpCard = card(req(v, "trump"), legacy);
-			for (int s = 0; s < m.players; s++) {
-				m.hands.set(s, parseCards(req(v, "hand" + s), legacy));
-			}
-			String[] b = req(v, "bids").split(",");
-			int[] t = parseInts(req(v, "tricks"), m.players), sc = parseInts(req(v, "scores"), m.players),
-					pt = parseInts(req(v, "points"), m.players);
-			for (int s = 0; s < m.players; s++) {
-				m.bids[s] = b[s].equals("-") ? null : Integer.valueOf(b[s]);
-				m.tricks[s] = t[s];
-				m.scores[s] = sc[s];
-				m.lastHandPoints[s] = pt[s];
-			}
-			m.trick.addAll(parseCards(req(v, "trick"), legacy));
-			m.trickSeats.addAll(parseSeats(req(v, "trickSeats")));
-			m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last"), legacy));
-			m.lastTrickSeats = Collections.unmodifiableList(parseSeats(req(v, "lastSeats")));
-			m.lastTrickWinner = Integer.parseInt(req(v, "lastWinner"));
-			// (games saved before alpha-1.0.8's smarter players have no history: they just start forgetful)
-			if (v.containsKey("history") && v.containsKey("historySeats")) {
-				m.history.addAll(parseCards(v.get("history"), legacy));
-				m.historySeats.addAll(parseSeats(v.get("historySeats")));
-			}
-			m.check();
-			return m;
-		} catch (RuntimeException e) {
-			throw new IllegalArgumentException("Corrupt saved game: " + e.getMessage(), e);
-		}
+		return MatchCodec.decode(saved, rng);
 	}
 
 	/** Sanity checks after loading, so a damaged save is rejected rather than played. */
-	private void check() {
-		if (handIndex < 0 || handIndex >= Rules.numberOfHands() || dealer < 0 || dealer >= players || current < 0
+	void check() {
+		if (handIndex < 0 || handIndex >= rules.numberOfHands() || dealer < 0 || dealer >= players || current < 0
 				|| current >= players || trick.size() != trickSeats.size() || trick.size() >= players
 				|| history.size() != historySeats.size()) {
 			throw new IllegalArgumentException("Inconsistent game state");
@@ -462,98 +413,6 @@ public final class Match {
 				throw new IllegalArgumentException("Card appears twice: " + c);
 			}
 		}
-	}
-
-	private static void line(StringBuilder sb, String key, String value) {
-		sb.append(key).append('=').append(value).append('\n');
-	}
-
-	private static String req(java.util.Map<String, String> v, String key) {
-		String s = v.get(key);
-		if (s == null) {
-			throw new IllegalArgumentException("Missing " + key);
-		}
-		return s;
-	}
-
-	// Card codes: rank then suit letter, e.g. "AS", "10H", "QD". Independent of the enums' order.
-	private static final String[] RANK_CODES = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
-	private static final String SUIT_CODES = "CDHS";
-	private static final Suit[] SUITS_BY_CODE = { Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES };
-	// The first format's numbering: suit * 13 + rank, in these orders
-	private static final Rank[] LEGACY_RANKS = { Rank.ACE, Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX,
-			Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING };
-	private static final Suit[] LEGACY_SUITS = { Suit.CLUBS, Suit.SPADES, Suit.HEARTS, Suit.DIAMONDS };
-
-	private static String code(Card c) {
-		return RANK_CODES[c.rank().strength()] + SUIT_CODES.charAt(java.util.Arrays.asList(SUITS_BY_CODE).indexOf(c.suit()));
-	}
-
-	private static Card card(String code, boolean legacy) {
-		if (legacy) {
-			int n = Integer.parseInt(code);
-			return Card.of(LEGACY_RANKS[n % 13], LEGACY_SUITS[n / 13]);
-		}
-		int suit = SUIT_CODES.indexOf(code.charAt(code.length() - 1));
-		String rank = code.substring(0, code.length() - 1);
-		for (Rank r : Rank.values()) {
-			if (RANK_CODES[r.strength()].equals(rank) && suit >= 0) {
-				return Card.of(r, SUITS_BY_CODE[suit]);
-			}
-		}
-		throw new IllegalArgumentException("Not a card: " + code);
-	}
-
-	private static String cards(List<Card> cs) {
-		StringBuilder sb = new StringBuilder();
-		for (Card c : cs) {
-			sb.append(sb.length() > 0 ? "," : "").append(code(c));
-		}
-		return sb.toString();
-	}
-
-	private static List<Card> parseCards(String s, boolean legacy) {
-		List<Card> list = new ArrayList<Card>();
-		for (String p : s.isEmpty() ? new String[0] : s.split(",")) {
-			list.add(card(p.trim(), legacy));
-		}
-		return list;
-	}
-
-	private static String seats(List<Integer> seats) {
-		StringBuilder sb = new StringBuilder();
-		for (Integer i : seats) {
-			sb.append(sb.length() > 0 ? "," : "").append(i);
-		}
-		return sb.toString();
-	}
-
-	private static List<Integer> parseSeats(String s) {
-		List<Integer> list = new ArrayList<Integer>();
-		for (String p : s.isEmpty() ? new String[0] : s.split(",")) {
-			list.add(Integer.valueOf(p));
-		}
-		return list;
-	}
-
-	private static String ints(int[] a) {
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < a.length; i++) {
-			sb.append(i > 0 ? "," : "").append(a[i]);
-		}
-		return sb.toString();
-	}
-
-	private static int[] parseInts(String s, int n) {
-		String[] p = s.split(",");
-		if (p.length != n) {
-			throw new IllegalArgumentException("Expected " + n + " values");
-		}
-		int[] a = new int[n];
-		for (int i = 0; i < n; i++) {
-			a[i] = Integer.parseInt(p[i]);
-		}
-		return a;
 	}
 
 	// ---- Internals ----

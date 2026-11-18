@@ -90,13 +90,17 @@ public final class Stats {
 	 * resumed at the end of a hand).
 	 */
 	public boolean countHand(int handIndex, Difficulty level, int bid, int won) {
+		return countHand(handIndex, level, bid, won, Rules.score(bid, won));
+	}
+
+	/** As above, with the points the hand scored (by the game's own rules). */
+	public boolean countHand(int handIndex, Difficulty level, int bid, int won, int points) {
 		if (handIndex < handsCounted) {
 			return false;
 		}
 		handsCounted = handIndex + 1;
 		boolean madeIt = bid == won;
 		perfectSoFar &= madeIt;
-		int points = Rules.score(bid, won);
 		for (Totals t : both(level)) {
 			t.hands++;
 			t.tricks += won;
@@ -166,7 +170,7 @@ public final class Stats {
 
 	/** Each totals' name in the save: the difficulties, then all of them. */
 	private static String bucket(int which) {
-		return which == ALL ? "all" : Difficulty.values()[which].name().toLowerCase();
+		return which == ALL ? "all" : Difficulty.values()[which].key();
 	}
 
 	/** A totals' numbers by name (the per-player counts are added separately). */

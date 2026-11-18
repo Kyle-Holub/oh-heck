@@ -339,8 +339,10 @@ final class HardBot implements Bot {
 		private final boolean[][] voids;
 		private int current;
 		private final TableView view;
+		private final RuleSet rules;
 
 		Sim(TableView v, List<Card>[] deal) {
+			rules = v.rules;
 			players = v.players;
 			dealer = v.dealer;
 			handSize = v.handSize;
@@ -397,7 +399,7 @@ final class HardBot implements Bot {
 				current = (seat + 1) % players;
 				return;
 			}
-			int winner = trickSeats.get(Rules.trickWinner(trick, trumpCard.suit()));
+			int winner = trickSeats.get(rules.trickWinner(trick, trumpCard.suit()));
 			tricks[winner]++;
 			trick.clear();
 			trickSeats.clear();
@@ -416,7 +418,7 @@ final class HardBot implements Bot {
 		 * for a tie), plus a little for our own points so a lost cause still scores.
 		 */
 		double value(int me, int rival, double spoil, boolean playToWin) {
-			double mine = Rules.score(bids[me], tricks[me]);
+			double mine = rules.score(bids[me], tricks[me]);
 			if (playToWin && handIndex == numberOfHands - 1) {
 				double total = scores[me] + mine;
 				int tied = 1;
@@ -424,7 +426,7 @@ final class HardBot implements Bot {
 					if (s == me) {
 						continue;
 					}
-					double theirs = scores[s] + Rules.score(bids[s], tricks[s]);
+					double theirs = scores[s] + rules.score(bids[s], tricks[s]);
 					if (theirs > total) {
 						return mine * WIN_TIEBREAK;
 					}
@@ -434,7 +436,7 @@ final class HardBot implements Bot {
 				}
 				return WIN / tied + mine * WIN_TIEBREAK;
 			}
-			return rival < 0 ? mine : mine - spoil * Rules.score(bids[rival], tricks[rival]);
+			return rival < 0 ? mine : mine - spoil * rules.score(bids[rival], tricks[rival]);
 		}
 
 		/** What the given player would see now (reusing one view object). */

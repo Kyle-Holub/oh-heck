@@ -1,6 +1,7 @@
 package rules;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -128,6 +129,22 @@ public class SaveTest {
 			if (line.startsWith("hand0=")) {
 				assertTrue(line, line.substring(6).matches("((10|[2-9JQKA])[CDHS],?)+"));
 			}
+		}
+	}
+
+	@Test
+	public void savesItsRulesAndReadsOlderSavesAsStandard() {
+		Match m = new Match(4, new Random(5), 0);
+		String saved = m.save();
+		assertTrue(saved.contains("rules=standard"));
+		assertSame(RuleSet.STANDARD, Match.load(saved, new Random(1)).rules());
+		String older = saved.replace("rules=standard\n", "");
+		assertSame(RuleSet.STANDARD, Match.load(older, new Random(1)).rules());
+		try {
+			Match.load(saved.replace("rules=standard", "rules=madeup"), new Random(1));
+			fail("a game by rules this build doesn't know");
+		} catch (IllegalArgumentException expected) {
+			// rejected
 		}
 	}
 }

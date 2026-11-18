@@ -1,117 +1,58 @@
 package rules;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The rules of Oh Heck, with no state of their own.
+ * The standard rules ({@link RuleSet#STANDARD}), for code that isn't holding a game: the
+ * tutorial, the statistics, the tests. Anything playing a {@link Match} asks the match's
+ * own {@link Match#rules()} instead, so it follows a variant too.
  */
 public final class Rules {
 
 	private Rules() {
 	}
 
-	/** Hands in a game; how many cards each holds depends on the game's {@link HandOrder}. */
+	private static final RuleSet STANDARD = RuleSet.STANDARD;
+
+	/** For making your bid exactly: this, plus PER_TRICK_BID for each trick bid. */
+	public static final int MADE = STANDARD.made(), PER_TRICK_BID = STANDARD.perTrickBid();
+	/** For missing it: this many points off for each trick over or under. */
+	public static final int PER_TRICK_OFF = STANDARD.perTrickOff();
+
 	public static int numberOfHands() {
-		return HandOrder.HANDS;
+		return STANDARD.numberOfHands();
 	}
 
-	// ---- Tricks ----
-
-	/**
-	 * Does {@code challenger} take the trick from the card currently winning it?
-	 * A higher card of the same suit wins, and a trump beats any non-trump.
-	 * An off-suit, non-trump card never wins.
-	 */
 	public static boolean beats(Card challenger, Card currentlyWinning, Suit trump) {
-		if (challenger.suit() == currentlyWinning.suit()) {
-			return challenger.rank().outranks(currentlyWinning.rank());
-		}
-		return challenger.suit() == trump;
+		return STANDARD.beats(challenger, currentlyWinning, trump);
 	}
 
-	/** Index into {@code plays} of the card that wins the trick. The first card is the lead. */
 	public static int trickWinner(List<Card> plays, Suit trump) {
-		if (plays.isEmpty()) {
-			throw new IllegalArgumentException("No cards played");
-		}
-		int winner = 0;
-		for (int i = 1; i < plays.size(); i++) {
-			if (beats(plays.get(i), plays.get(winner), trump)) {
-				winner = i;
-			}
-		}
-		return winner;
+		return STANDARD.trickWinner(plays, trump);
 	}
 
-	// ---- Following suit ----
-
-	/**
-	 * Can {@code card} be played from {@code hand}? Players must follow the lead
-	 * suit if they can; otherwise, or when leading, any card is allowed.
-	 *
-	 * @param leadSuit the suit led this trick, or null if this player is leading
-	 */
 	public static boolean isLegalPlay(List<Card> hand, Card card, Suit leadSuit) {
-		if (!hand.contains(card)) {
-			return false;
-		}
-		if (leadSuit == null || card.suit() == leadSuit) {
-			return true;
-		}
-		return !hasSuit(hand, leadSuit);
+		return STANDARD.isLegalPlay(hand, card, leadSuit);
 	}
 
-	/** The cards in {@code hand} that may be played, in hand order. */
 	public static List<Card> legalPlays(List<Card> hand, Suit leadSuit) {
-		List<Card> legal = new ArrayList<Card>();
-		for (Card c : hand) {
-			if (isLegalPlay(hand, c, leadSuit)) {
-				legal.add(c);
-			}
-		}
-		return legal;
+		return STANDARD.legalPlays(hand, leadSuit);
 	}
 
 	public static boolean hasSuit(List<Card> hand, Suit suit) {
-		for (Card c : hand) {
-			if (c.suit() == suit) {
-				return true;
-			}
-		}
-		return false;
+		return RuleSet.hasSuit(hand, suit);
 	}
 
-	// ---- Bidding ----
-
-	/**
-	 * The one bid the dealer may not make: the bid that would make the total
-	 * equal the number of tricks, so that someone must miss. Negative when the
-	 * others have already bid more than that, meaning nothing is forbidden.
-	 */
 	public static int forbiddenDealerBid(int handSize, int bidsSoFar) {
-		return handSize - bidsSoFar;
+		return STANDARD.forbiddenDealerBid(handSize, bidsSoFar);
 	}
 
 	public static boolean isLegalBid(int bid, int handSize, int bidsSoFar, boolean isDealer) {
-		if (bid < 0 || bid > handSize) {
-			return false;
-		}
-		return !(isDealer && bid == forbiddenDealerBid(handSize, bidsSoFar));
+		return STANDARD.isLegalBid(bid, handSize, bidsSoFar, isDealer);
 	}
-
-	// ---- Scoring ----
-
-	/** For making your bid exactly: this, plus PER_TRICK_BID for each trick bid. */
-	public static final int MADE = 10, PER_TRICK_BID = 2;
-	/** For missing it: this many points off for each trick over or under. */
-	public static final int PER_TRICK_OFF = 5;
 
 	/** Points for one hand: 10 + 2 per trick for making the bid exactly, else -5 per trick off. */
 	public static int score(int bid, int tricksTaken) {
-		if (bid == tricksTaken) {
-			return MADE + PER_TRICK_BID * bid;
-		}
-		return -PER_TRICK_OFF * Math.abs(bid - tricksTaken);
+		return STANDARD.score(bid, tricksTaken);
 	}
 }

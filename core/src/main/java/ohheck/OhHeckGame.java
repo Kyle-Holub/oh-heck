@@ -7,10 +7,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import rules.Difficulty;
-import rules.Match;
 import rules.SavedGame;
-import rules.Stats;
 
 /** The libGDX entry point shared by Android and desktop; switches between screens. */
 public class OhHeckGame extends Game {
@@ -44,7 +41,8 @@ public class OhHeckGame extends Game {
 		keptScreens.add(screen);
 		return screen;
 	}
-	private Stats stats = new Stats();
+	/** Statistics, high scores and the saved game. */
+	Records records;
 	private PlayScreen play;
 
 	public OhHeckGame() {
@@ -70,7 +68,7 @@ public class OhHeckGame extends Game {
 		}
 		assets = new Assets();
 		settings = new Settings();
-		stats = options.stats != null ? options.stats : Stats.decode(options.persist ? settings.stats() : "");
+		records = new Records(settings, options.persist, options.stats);
 		audio = new Audio(settings);
 		post = new PostProcessor();
 		title = kept(new TitleScreen(this));
@@ -173,45 +171,6 @@ public class OhHeckGame extends Game {
 		open(highScoresScreen);
 	}
 
-	/** High scores in memory; persisted only for real games. */
-	HighScores highScores() {
-		return HighScores.decode(options.persist ? settings.highScores() : "");
-	}
-
-	/** Records your finished game, played at the given difficulty; returns its place in the table, or -1. */
-	int recordHighScore(int score, int place, Difficulty level) {
-		if (!options.persist) {
-			return -1;
-		}
-		HighScores h = highScores();
-		java.util.Calendar c = java.util.Calendar.getInstance();
-		String date = String.format(java.util.Locale.US, "%04d-%02d-%02d", c.get(java.util.Calendar.YEAR),
-				c.get(java.util.Calendar.MONTH) + 1, c.get(java.util.Calendar.DAY_OF_MONTH));
-		int at = h.add(new HighScores.Entry(score, place, date, level.ordinal()));
-		if (at >= 0) {
-			settings.setHighScores(h.encode());
-		}
-		return at;
-	}
-
-	/** Your statistics (kept only in memory when nothing is saved, as in the screenshot run). */
-	public Stats stats() {
-		return stats;
-	}
-
-	/** Saves the statistics after a change. */
-	void saveStats() {
-		if (options.persist) {
-			settings.setStats(stats.encode());
-		}
-	}
-
-	/** Starts the statistics afresh. */
-	void resetStats() {
-		stats = new Stats();
-		saveStats();
-	}
-
 	void newGame() {
 		if (play != null) {
 			play.dispose();
@@ -224,7 +183,7 @@ public class OhHeckGame extends Game {
 	/** Back to the game in progress, or the saved one after the app was closed. */
 	void continueGame() {
 		if (play == null) {
-			SavedGame saved = loadSavedGame();
+			SavedGame saved = records.savedGame(new Random());
 			if (saved == null) {
 				newGame();
 				return;
@@ -239,20 +198,7 @@ public class OhHeckGame extends Game {
 		if (play != null) {
 			return !play.isGameOver();
 		}
-		return options.persist && settings.hasSavedGame();
-	}
-
-	private SavedGame loadSavedGame() {
-		if (!options.persist) {
-			return null;
-		}
-		try {
-			return settings.savedGame(new Random());
-		} catch (IllegalArgumentException e) {
-			Gdx.app.error("OhHeck", "Discarding unreadable saved game", e);
-			settings.clearSavedGame();
-			return null;
-		}
+		return records.hasSavedGame();
 	}
 
 	@Override

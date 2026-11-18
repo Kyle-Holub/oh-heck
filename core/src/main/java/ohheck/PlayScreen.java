@@ -13,7 +13,6 @@ import rules.Card;
 import rules.Difficulty;
 import rules.Match;
 import rules.Player;
-import rules.Rules;
 import rules.SavedGame;
 
 /**
@@ -31,8 +30,7 @@ import rules.SavedGame;
  * </ul>
  * Playing a card: tap it, or drag it up onto the table. Bidding: tap a number.
  */
-public class PlayScreen extends BaseScreen {
-
+public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	private static final int HUMAN = TableLayout.HUMAN;
 
@@ -47,8 +45,8 @@ public class PlayScreen extends BaseScreen {
 	 */
 	private final Random seating, bots, deck;
 
-	final TableLayout table = new TableLayout();
-	final TableOverlays overlays;
+	private final TableLayout table = new TableLayout();
+	private final TableOverlays overlays;
 	private final TableFlow flow;
 	private final CardArt art;
 	/** Draws the table (counters, trump, panels, your hand); the trick, overlays and effects are separate. */
@@ -64,19 +62,19 @@ public class PlayScreen extends BaseScreen {
 
 	/** Game time, for animations; stops while paused. */
 	private float time;
-	/** Where your just-finished game landed in the high score table, or -1. */
-	private int newHighScore = -1;
+	/** Keeps your statistics and high scores as the game goes. */
+	private final GameRecorder recorder;
 	/** The difficulty this game was started at: its high score badge and statistics level. */
 	private Difficulty level;
 	/** Who sits in seats 1-3 ({@link Player} ids). */
 	private int[] players;
 
 	/** Your taps and drags, and the pause menu. */
-	private final TableInput input = new TableInput(this);
+	private final TableInput input = new TableInput(this, this);
 
 	/** Your hand in display order, and each card's tap area; rebuilt when drawn. */
-	final List<Card> handOrder = new ArrayList<Card>();
-	final List<Rectangle> handRects = new ArrayList<Rectangle>();
+	private final List<Card> handOrder = new ArrayList<Card>();
+	private final List<Rectangle> handRects = new ArrayList<Rectangle>();
 
 	/**
 	 * A new game (restored null), or the saved game restored, started at the given difficulty
@@ -89,16 +87,14 @@ public class PlayScreen extends BaseScreen {
 		bots = stream(options.seed, 0xB075L);
 		deck = stream(options.seed, 0xDEC4L);
 		this.art = new CardArt(batch, assets);
-		this.overlays = new TableOverlays(this, table, art);
-		this.autoplay = options.autoplayHuman ? new Autoplay(this, options) : null;
-		this.drawing = new TableDrawing(this, art);
+		this.overlays = new TableOverlays(this, this, table, art);
+		this.autoplay = options.autoplayHuman ? new Autoplay(this, input, options) : null;
+		this.drawing = new TableDrawing(this, this, art, game.post);
 		this.toss = new TableToss(assets, table);
-		this.flow = new TableFlow(new TableFlow.Listener() {
+		recorder = new GameRecorder(game.records);
+		TableFlow.Listener table = new TableFlow.Listener() { // this screen's own effects
 			@Override
 			public void beforeDeal(Match m) {
-				if (autoplay != null) {
-					autoplay.skipHands(m);
-				}
 				trick.clear();
 				input.clearTouch();
 			}
@@ -109,82 +105,52 @@ public class PlayScreen extends BaseScreen {
 			}
 
 			@Override
-			public void shuffleSound() {
-				PlayScreen.this.game.audio.play(Audio.Effect.SHUFFLE);
-			}
-
-			@Override
-			public void played(int seat, Card c) {
+			public void played(Match m, int seat, Card c) {
 				if (seat != HUMAN) {
 					// computer players' cards fly in from their fan; yours already started from your hand
-					Vector2 from = table.seatAnchor(seat);
+					Vector2 from = PlayScreen.this.table.seatAnchor(seat);
 					trick.fly(c, from.x - Assets.CARD_W / 2f, from.y - Assets.CARD_H / 2f, time);
 				}
-				Audio audio = PlayScreen.this.game.audio;
-				audio.play(Audio.Effect.PLAY_CARD);
-				if (flow.match().phase() == Match.Phase.HAND_OVER) {
-					audio.play(flow.match().madeBid(HUMAN) ? Audio.Effect.WIN : Audio.Effect.LOSE);
-				}
 			}
 
 			@Override
-			public void handEnded() {
-				Match m = flow.match();
-				if (PlayScreen.this.game.stats().countHand(m.handIndex(), level, m.bid(HUMAN), m.tricksWon(HUMAN))) {
-					PlayScreen.this.game.saveStats();
-				}
+			public void handEnded(Match m) {
 				if (m.madeBid(HUMAN)) {
-					sparks.burst(table.centreX(), table.centreY(), 110);
+					sparks.burst(PlayScreen.this.table.centreX(), PlayScreen.this.table.centreY(), 110);
 				}
 			}
 
 			@Override
-			public void gameEnded() {
-				Match m = flow.match();
-				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN), level);
-				int[] finals = new int[4];
-				for (int s = 0; s < 4; s++) {
-					finals[s] = m.score(s);
-				}
-				if (PlayScreen.this.game.stats().countGame(level, finals, Rules.numberOfHands(), players)) {
-					PlayScreen.this.game.saveStats();
-				}
+			public void gameEnded(Match m) {
 				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
 				overlays.highScoresButton.set(0, 0, 0, 0);
 				// in turn: the table's cards fall away, then (if you won) fireworks, then the scores
 				toss.toss(m);
 				end.start(m.leaders().contains(HUMAN)); // you won (or tied for the win)
 			}
-		});
+		};
+		TableFlow.Listener sounds = new TableSounds(game.audio);
+		this.flow = autoplay != null ? new TableFlow(autoplay, table, sounds, recorder) : new TableFlow(table, sounds, recorder);
 		if (restored == null) {
-			newGame();
+			startGame();
 		} else {
 			level = savedLevel;
 			seatPlayers(savedPlayers != null ? savedPlayers : Player.draw(level, seating));
+			recorder.table(level, players, false);
 			overlays.setMatch(restored);
 			flow.resume(restored);
 		}
 	}
 
-	// ------------------------------------------------------------ the game
+	// ------------------------------------------------- the table, as TableScene
 
-	Match match() {
-		return flow.match();
-	}
-
-	TableState state() {
-		return flow.state();
-	}
-
-	float stateTime() {
-		return flow.stateTime();
-	}
-
-	boolean isMenuOpen() {
+	@Override
+	public boolean isMenuOpen() {
 		return input.menuOpen();
 	}
 
-	boolean isDragging() {
+	@Override
+	public boolean isDragging() {
 		return input.dragging();
 	}
 
@@ -193,39 +159,63 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	/** Game over and the scores are up (after the cards have fallen, and any fireworks have begun). */
-	boolean resultsShown() {
+	@Override
+	public boolean resultsShown() {
 		return flow.state() == TableState.GAME_OVER && end.resultsShown(flow.stateTime());
 	}
 
-	// for TableDrawing: what it draws from
-
-	TableFlow flow() {
+	@Override
+	public TableFlow flow() {
 		return flow;
 	}
 
-	float time() {
+	@Override
+	public float time() {
 		return time;
 	}
 
-	Card pressedCard() {
+	@Override
+	public Card pressedCard() {
 		return input.pressed();
 	}
 
+	@Override
+	public TableLayout layout() {
+		return table;
+	}
+
+	@Override
+	public TableOverlays overlays() {
+		return overlays;
+	}
+
+	@Override
+	public List<Card> handOrder() {
+		return handOrder;
+	}
+
+	@Override
+	public List<Rectangle> handRects() {
+		return handRects;
+	}
+
+	// ------------------------------------------------------------ the game
+
+
 	/** A new game: a table drawn for the difficulty now chosen in Options. */
-	private void newGame() {
-		level = Difficulty.values()[game.settings.difficulty()];
+	private void startGame() {
+		level = game.settings.difficulty();
 		seatPlayers(Player.draw(level, seating));
 		toss.clear();
 		end.reset();
-		game.stats().startGame();
-		game.saveStats();
-		Match m = Match.random(4, deck, game.settings.handOrder());
+		Match m = Match.random(TableLayout.SEATS, deck, game.settings.handOrder());
 		overlays.setMatch(m);
-		newHighScore = -1;
+		recorder.table(level, players, true);
 		flow.start(m);
 	}
 
-	boolean humanCanPlay() {
+	@Override
+	public boolean humanCanPlay() {
 		return !input.menuOpen() && flow.yourTurnToPlay();
 	}
 
@@ -309,7 +299,8 @@ public class PlayScreen extends BaseScreen {
 	}
 
 	/** The name shown for a seat: "You", or the computer player sitting there. */
-	String name(int seat) {
+	@Override
+	public String name(int seat) {
 		return seat == HUMAN ? "You" : Player.byId(players[seat - 1]).name;
 	}
 
@@ -320,13 +311,7 @@ public class PlayScreen extends BaseScreen {
 
 	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */
 	private void save() {
-		if (options.persist) {
-			if (isGameOver()) {
-				game.settings.clearSavedGame();
-			} else {
-				game.settings.saveGame(new SavedGame(match(), level, players));
-			}
-		}
+		game.records.saveGame(isGameOver() ? null : new SavedGame(match(), level, players), isGameOver());
 	}
 
 	@Override
@@ -368,16 +353,34 @@ public class PlayScreen extends BaseScreen {
 		input.back();
 	}
 
-	/** Plays your card, flying in from (fromX, fromY). */
-	void humanPlay(Card c, float fromX, float fromY) {
+	// ------------------------------------------- what your taps do, as TableActions
+
+	@Override
+	public void humanPlay(Card c, float fromX, float fromY) {
 		input.clearTouch();
 		if (flow.play(c)) {
 			trick.fly(c, fromX, fromY, time);
 		}
 	}
 
-	int newHighScore() {
-		return newHighScore;
+	@Override
+	public void showHighScores() {
+		game.showHighScores(recorder.newHighScore());
+	}
+
+	@Override
+	public void newGame() {
+		game.newGame();
+	}
+
+	@Override
+	public void showOptions() {
+		game.showOptions();
+	}
+
+	@Override
+	public void showTitle() {
+		game.showTitle();
 	}
 
 	// ------------------------------------------------------------- draw
@@ -391,7 +394,7 @@ public class PlayScreen extends BaseScreen {
 		drawing.tally();
 		drawing.bidTracker();
 		drawing.trump(toss.trumpGone());
-		for (int seat = 0; seat < 4; seat++) {
+		for (int seat = 0; seat < match().players(); seat++) {
 			drawing.seat(seat);
 		}
 		drawing.hand();
@@ -417,7 +420,7 @@ public class PlayScreen extends BaseScreen {
 				break;
 			case GAME_OVER:
 				if (resultsShown()) {
-					overlays.drawGameOver(newHighScore);
+					overlays.drawGameOver(recorder.newHighScore());
 				}
 				break;
 			default:
