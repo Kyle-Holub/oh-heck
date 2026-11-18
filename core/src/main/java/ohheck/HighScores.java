@@ -108,5 +108,4 @@ final class HighScores {
 		int level = f.length == 4 ? Integer.parseInt(f[3].trim()) : -1;
 		return new Entry(Integer.parseInt(f[0].trim()), Integer.parseInt(f[1].trim()), f[2].trim(), level);
 	}
-
 }

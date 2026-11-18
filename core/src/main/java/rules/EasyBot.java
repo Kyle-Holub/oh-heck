@@ -21,7 +21,7 @@ final class EasyBot implements Bot {
 		int b = normal.chooseBid(v);
 		if (rng.nextDouble() < BID_SLIP) {
 			int off = b + (rng.nextBoolean() ? 1 : -1);
-			if (off >= 0 && off <= v.handSize && v.isLegalBid(off)) {
+			if (off >= 0 && off <= v.handSize() && v.isLegalBid(off)) {
 				return off;
 			}
 		}

@@ -63,7 +63,7 @@ final class HardBot implements Bot {
 	@Override
 	public int chooseBid(TableView v) {
 		final List<Integer> bids = new ArrayList<Integer>();
-		for (int b = 0; b <= v.handSize; b++) {
+		for (int b = 0; b <= v.handSize(); b++) {
 			if (v.isLegalBid(b)) {
 				bids.add(b);
 			}
@@ -73,14 +73,14 @@ final class HardBot implements Bot {
 		}
 		final TableView view = v;
 		final int rival = rival(v);
-		int pick = pick(v, bids.size(), budget(BID_DEALS_BASE + BID_DEALS_PER_CARD * v.handSize, bids.size()), new Outcome() {
+		int pick = pick(v, bids.size(), budget(BID_DEALS_BASE + BID_DEALS_PER_CARD * v.handSize(), bids.size()), new Outcome() {
 			@Override
 			public double of(int option, List<Card>[] deal) {
 				Sim s = new Sim(view, deal);
-				s.bid(view.seat, bids.get(option));
+				s.bid(view.seat(), bids.get(option));
 				s.finishBidding(policy);
 				s.playOut(policy);
-				return s.value(view.seat, rival, spoil, playToWin);
+				return s.value(view.seat(), rival, spoil, playToWin);
 			}
 		});
 		return bids.get(pick);
@@ -94,14 +94,14 @@ final class HardBot implements Bot {
 		}
 		final TableView view = v;
 		final int rival = rival(v);
-		int deals = legal.size() <= 2 ? FEW_DEALS : v.hand.size() >= 5 ? MANY_DEALS : SOME_DEALS;
+		int deals = legal.size() <= 2 ? FEW_DEALS : v.hand().size() >= 5 ? MANY_DEALS : SOME_DEALS;
 		int pick = pick(v, legal.size(), budget(deals, legal.size()), new Outcome() {
 			@Override
 			public double of(int option, List<Card>[] deal) {
 				Sim s = new Sim(view, deal);
-				s.play(view.seat, legal.get(option));
+				s.play(view.seat(), legal.get(option));
 				s.playOut(policy);
-				return s.value(view.seat, rival, spoil, playToWin);
+				return s.value(view.seat(), rival, spoil, playToWin);
 			}
 		});
 		return legal.get(pick);
@@ -187,8 +187,8 @@ final class HardBot implements Bot {
 	/** The player to race: the highest-scoring other player (the leader, or second place if we lead). */
 	static int rival(TableView v) {
 		int rival = -1;
-		for (int s = 0; s < v.players; s++) {
-			if (s != v.seat && (rival < 0 || v.scores[s] > v.scores[rival])) {
+		for (int s = 0; s < v.players(); s++) {
+			if (s != v.seat() && (rival < 0 || v.score(s) > v.score(rival))) {
 				rival = s;
 			}
 		}
@@ -207,7 +207,7 @@ final class HardBot implements Bot {
 		for (Suit s : Suit.values()) {
 			for (Rank r : Rank.values()) {
 				Card c = Card.of(r, s);
-				if (!v.hand.contains(c) && !v.played[TableView.index(c)] && c != v.trumpCard) {
+				if (!v.hand().contains(c) && !v.played(c) && c != v.trumpCard()) {
 					unseen.add(c);
 				}
 			}
@@ -245,8 +245,8 @@ final class HardBot implements Bot {
 	}
 
 	private static boolean anyoneElseBid(TableView v) {
-		for (int s = 0; s < v.players; s++) {
-			if (s != v.seat && v.hasBid(s)) {
+		for (int s = 0; s < v.players(); s++) {
+			if (s != v.seat() && v.hasBid(s)) {
 				return true;
 			}
 		}
@@ -256,13 +256,13 @@ final class HardBot implements Bot {
 	/** How well this deal explains everyone's bids: Normal's bid with that hand against the bid made. */
 	private double likelihood(TableView v, List<Card>[] deal) {
 		double w = 1;
-		for (int s = 0; s < v.players; s++) {
-			if (s == v.seat || !v.hasBid(s)) {
+		for (int s = 0; s < v.players(); s++) {
+			if (s == v.seat() || !v.hasBid(s)) {
 				continue;
 			}
 			TableView then = bidTimeView(v, deal, s);
 			int expected = policy.chooseBid(then);
-			w *= Math.exp(-BID_SHARPNESS * Math.abs(expected - v.bids[s]));
+			w *= Math.exp(-BID_SHARPNESS * Math.abs(expected - v.bid(s)));
 		}
 		return w;
 	}
@@ -300,24 +300,24 @@ final class HardBot implements Bot {
 			boolean ignoreVoids = attempt == 29;
 			List<Card> pool = new ArrayList<Card>(unseen);
 			Collections.shuffle(pool, rng);
-			List<Card>[] hands = new List[v.players];
+			List<Card>[] hands = new List[v.players()];
 			boolean ok = true;
-			for (int s = 0; s < v.players && ok; s++) {
+			for (int s = 0; s < v.players() && ok; s++) {
 				hands[s] = new ArrayList<Card>();
-				if (s == v.seat) {
-					hands[s].addAll(v.hand);
+				if (s == v.seat()) {
+					hands[s].addAll(v.hand());
 					continue;
 				}
-				for (int i = 0; i < pool.size() && hands[s].size() < v.cardsLeft[s];) {
+				for (int i = 0; i < pool.size() && hands[s].size() < v.cardsLeft(s);) {
 					Card c = pool.get(i);
-					if (ignoreVoids || !v.voids[s][c.suit().ordinal()]) {
+					if (ignoreVoids || !v.isVoid(s, c.suit())) {
 						hands[s].add(c);
 						pool.remove(i);
 					} else {
 						i++;
 					}
 				}
-				ok = hands[s].size() == v.cardsLeft[s];
+				ok = hands[s].size() == v.cardsLeft(s);
 			}
 			if (ok) {
 				return hands;

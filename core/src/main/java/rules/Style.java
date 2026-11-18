@@ -21,7 +21,7 @@ public enum Style {
 	BOLD("Overbids") {
 		@Override
 		int bid(int bid, TableView v, StyledBot h) {
-			return h.leans() ? Math.min(v.handSize, bid + 1) : bid;
+			return h.leans() ? Math.min(v.handSize(), bid + 1) : bid;
 		}
 	},
 	TIMID("Underbids") {
@@ -42,7 +42,7 @@ public enum Style {
 		@Override
 		int bid(int bid, TableView v, StyledBot h) {
 			if (h.leans()) {
-				return Math.max(0, Math.min(v.handSize, bid + (h.rng.nextBoolean() ? 1 : -1)));
+				return Math.max(0, Math.min(v.handSize(), bid + (h.rng.nextBoolean() ? 1 : -1)));
 			}
 			return bid;
 		}
@@ -66,8 +66,8 @@ public enum Style {
 	STREAKY("Streaky") {
 		@Override
 		int bid(int bid, TableView v, StyledBot h) {
-			if (h.lastBidHand >= 0 && h.lastBidHand < v.handIndex && h.leans()) {
-				return v.scores[v.seat] > h.scoreAtLastBid ? Math.min(v.handSize, bid + 1) : Math.max(0, bid - 1);
+			if (h.lastBidHand >= 0 && h.lastBidHand < v.handIndex() && h.leans()) {
+				return v.score(v.seat()) > h.scoreAtLastBid ? Math.min(v.handSize(), bid + 1) : Math.max(0, bid - 1);
 			}
 			return bid;
 		}
@@ -77,14 +77,14 @@ public enum Style {
 		@Override
 		int bid(int bid, TableView v, StyledBot h) {
 			int best = Integer.MIN_VALUE;
-			for (int s = 0; s < v.players; s++) {
-				if (s != v.seat) {
-					best = Math.max(best, v.scores[s]);
+			for (int s = 0; s < v.players(); s++) {
+				if (s != v.seat()) {
+					best = Math.max(best, v.score(s));
 				}
 			}
-			boolean late = v.handIndex >= v.numberOfHands - 3;
-			if (v.handIndex > 0 && h.rng.nextDouble() < h.lean * (late ? 3 : 1)) {
-				return v.scores[v.seat] > best ? Math.max(0, bid - 1) : Math.min(v.handSize, bid + 1);
+			boolean late = v.handIndex() >= v.numberOfHands() - 3;
+			if (v.handIndex() > 0 && h.rng.nextDouble() < h.lean * (late ? 3 : 1)) {
+				return v.score(v.seat()) > best ? Math.max(0, bid - 1) : Math.min(v.handSize(), bid + 1);
 			}
 			return bid;
 		}
@@ -93,7 +93,7 @@ public enum Style {
 	TRUMP_HAPPY("Trump-happy") {
 		@Override
 		Card play(Card card, TableView v, List<Card> legal) {
-			if (v.trick.isEmpty() && v.hand.size() * 2 > v.handSize) {
+			if (v.trick().isEmpty() && v.hand().size() * 2 > v.handSize()) {
 				Card t = highest(legal, v.trump(), true);
 				return t != null ? t : card;
 			}
@@ -104,7 +104,7 @@ public enum Style {
 	TRUMP_HOARDER("Trump hoarder") {
 		@Override
 		Card play(Card card, TableView v, List<Card> legal) {
-			if (card.suit() == v.trump() && v.hand.size() > 2) {
+			if (card.suit() == v.trump() && v.hand().size() > 2) {
 				Card other = lowest(legal, v.trump());
 				return other != null ? other : card;
 			}
@@ -115,7 +115,7 @@ public enum Style {
 	ACE_LEADER("Ace leader") {
 		@Override
 		Card play(Card card, TableView v, List<Card> legal) {
-			if (v.trick.isEmpty()) {
+			if (v.trick().isEmpty()) {
 				Card high = highest(legal, v.trump(), false);
 				return high != null && high.rank().strength() >= Rank.KING.strength() ? high : card;
 			}

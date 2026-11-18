@@ -21,21 +21,21 @@ final class NormalBot implements Bot {
 
 	@Override
 	public int chooseBid(TableView v) {
-		double[] p = new double[v.hand.size()];
+		double[] p = new double[v.hand().size()];
 		for (int i = 0; i < p.length; i++) {
-			p[i] = BidTable.chance(v, v.hand.get(i));
+			p[i] = BidTable.chance(v, v.hand().get(i));
 		}
 		adjustForTheTable(v, p);
 		double[] dist = trickDistribution(p);
 		int best = -1;
 		double bestScore = Double.NEGATIVE_INFINITY;
-		for (int b = 0; b <= v.handSize; b++) {
+		for (int b = 0; b <= v.handSize(); b++) {
 			if (!v.isLegalBid(b)) {
 				continue;
 			}
 			double expected = 0;
 			for (int k = 0; k < dist.length; k++) {
-				expected += dist[k] * v.rules.score(b, k);
+				expected += dist[k] * v.rules().score(b, k);
 			}
 			if (expected > bestScore) {
 				bestScore = expected;
@@ -55,12 +55,12 @@ final class NormalBot implements Bot {
 	 * simulated games.
 	 */
 	static void adjustForTheTable(TableView v, double[] p) {
-		int before = ((v.seat - v.dealer - 1) % v.players + v.players) % v.players;
+		int before = ((v.seat() - v.dealer() - 1) % v.players() + v.players()) % v.players();
 		if (before == 0 || p.length == 0) {
 			return;
 		}
-		double over = v.bidsSoFar() - before * (double) v.handSize / v.players;
-		double shift = Math.max(-0.5, Math.min(0.6, -TABLE_PULL * over / v.handSize));
+		double over = v.bidsSoFar() - before * (double) v.handSize() / v.players();
+		double shift = Math.max(-0.5, Math.min(0.6, -TABLE_PULL * over / v.handSize()));
 		double expected = 0;
 		for (double x : p) {
 			expected += x;
@@ -100,7 +100,7 @@ final class NormalBot implements Bot {
 			return legal.get(0);
 		}
 		boolean want = v.need() > 0;
-		return v.trick.isEmpty() ? lead(v, legal, want) : follow(v, legal, want);
+		return v.trick().isEmpty() ? lead(v, legal, want) : follow(v, legal, want);
 	}
 
 	private Card lead(TableView v, List<Card> legal, boolean want) {
@@ -121,7 +121,7 @@ final class NormalBot implements Bot {
 					return c;
 				}
 			}
-			if (v.need() >= v.hand.size()) {
+			if (v.need() >= v.hand().size()) {
 				return highest(legal, trump, false); // every trick needed: lead strength
 			}
 			// otherwise feel out a side suit with a low card, keeping the high ones for later
@@ -133,11 +133,11 @@ final class NormalBot implements Bot {
 
 	private Card follow(TableView v, List<Card> legal, boolean want) {
 		Suit trump = v.trump();
-		Card winning = v.trick.get(v.rules.trickWinner(v.trick, trump));
-		boolean last = v.trick.size() == v.players - 1;
+		Card winning = v.trick().get(v.rules().trickWinner(v.trick(), trump));
+		boolean last = v.trick().size() == v.players() - 1;
 		Card cheapestWinner = null, highestWinner = null, highestLoser = null, lowestLoser = null;
 		for (Card c : legal) {
-			if (v.rules.beats(c, winning, trump)) {
+			if (v.rules().beats(c, winning, trump)) {
 				if (cheapestWinner == null || cheaper(c, cheapestWinner, trump)) {
 					cheapestWinner = c;
 				}
@@ -178,7 +178,7 @@ final class NormalBot implements Bot {
 		for (Rank r : Rank.values()) {
 			if (r.outranks(c.rank())) {
 				Card o = Card.of(r, c.suit());
-				if (!v.played[TableView.index(o)] && o != v.trumpCard && !v.hand.contains(o)) {
+				if (!v.played(o) && o != v.trumpCard() && !v.hand().contains(o)) {
 					return false;
 				}
 			}

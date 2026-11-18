@@ -18,19 +18,19 @@ final class BidTable {
 
 	/** The chance this card in the viewer's hand takes a trick this hand. */
 	static double chance(TableView v, Card c) {
-		int row = ((v.handSize - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();
+		int row = ((v.handSize() - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();
 		return CHANCE[row][context(v, c)];
 	}
 
 	/** Which column: the card's suit length in the hand, and the viewer's place in the bidding. */
 	static int context(TableView v, Card c) {
 		int length = 0;
-		for (Card h : v.hand) {
+		for (Card h : v.hand()) {
 			if (h.suit() == c.suit()) {
 				length++;
 			}
 		}
-		int place = ((v.seat - v.dealer - 1) % v.players + v.players) % v.players;
+		int place = ((v.seat() - v.dealer() - 1) % v.players() + v.players()) % v.players();
 		return (Math.max(1, Math.min(length, 3)) - 1) * 4 + Math.min(place, 3);
 	}
 

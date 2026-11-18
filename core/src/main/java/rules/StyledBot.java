@@ -35,8 +35,8 @@ final class StyledBot implements Bot {
 	public int chooseBid(TableView v) {
 		int bid = bot.chooseBid(v);
 		int leaned = style.bid(bid, v, this);
-		scoreAtLastBid = v.scores[v.seat];
-		lastBidHand = v.handIndex;
+		scoreAtLastBid = v.score(v.seat());
+		lastBidHand = v.handIndex();
 		return v.isLegalBid(leaned) ? leaned : bid;
 	}
 
