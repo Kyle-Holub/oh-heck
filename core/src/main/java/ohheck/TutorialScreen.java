@@ -398,7 +398,7 @@ public class TutorialScreen extends BaseScreen {
 			if (k <= 0) {
 				continue;
 			}
-			float rot = (i - 1.5f) * -16f * open + sway * open;
+			float rot = (i - 1.5f) * -21f * open + sway * open;
 			// each card turned about a point below the fan, so they spread like a hand of cards
 			float rx = MathUtils.sinDeg(-rot) * (CH + 10), ry = MathUtils.cosDeg(rot) * (CH + 10);
 			float x = pivotX + rx - CW / 2, y = pivotY + ry - CH / 2 + (1 - k) * -40;
