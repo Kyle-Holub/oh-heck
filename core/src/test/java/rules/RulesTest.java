@@ -162,4 +162,39 @@ public class RulesTest {
 	public void cardListHelperWorks() {
 		assertEquals(Arrays.asList(c("10H"), c("JC")), cards("10H JC"));
 	}
+
+	/** A variant: twice the points for a made bid, and only five hands. Overriding is all it takes. */
+	private static final RuleSet DOUBLE_SHORT = new RuleSet("double-short") {
+		@Override
+		public int numberOfHands() {
+			return 5;
+		}
+
+		@Override
+		public int made() {
+			return 20;
+		}
+	};
+
+	@Test
+	public void aVariantPlaysByItsOwnRules() {
+		Match m = Match.random(4, new java.util.Random(4), HandOrder.DOWN, DOUBLE_SHORT);
+		assertEquals(5, m.handSize());
+		assertEquals(24, m.rules().score(2, 2));
+		Bot bot = Bot.of(Difficulty.NORMAL, new java.util.Random(1));
+		int hands = 0;
+		while (m.phase() != Match.Phase.GAME_OVER) {
+			if (m.phase() == Match.Phase.BIDDING) {
+				m.placeBid(m.currentSeat(), bot.chooseBid(m.view(m.currentSeat())));
+			} else if (m.phase() == Match.Phase.PLAYING) {
+				m.playCard(m.currentSeat(), bot.choosePlay(m.view(m.currentSeat())));
+			} else {
+				hands++;
+				m.nextHand();
+			}
+		}
+		assertEquals(5, hands); // (the last nextHand ends the game)
+		assertEquals("1 to 8", HandOrder.UP.label());
+		assertEquals("8 to 1", HandOrder.DOWN.label());
+	}
 }

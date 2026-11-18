@@ -56,7 +56,7 @@ public class OptionsScreen extends BaseScreen {
 	{
 		final Settings s = game.settings;
 		// (both take effect from the next new game)
-		gameRows.add(new Row("Hand progression", () -> s.handOrder().label, () -> s.setHandOrder(s.handOrder().flipped())));
+		gameRows.add(new Row("Hand progression", () -> s.handOrder().label(), () -> s.setHandOrder(s.handOrder().flipped())));
 		gameRows.add(new Row("Game speed", () -> Settings.SPEEDS[s.speed()],
 				() -> s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length)));
 		displayRows.add(Row.toggle("Music", s::music, () -> {

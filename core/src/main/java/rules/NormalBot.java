@@ -35,7 +35,7 @@ final class NormalBot implements Bot {
 			}
 			double expected = 0;
 			for (int k = 0; k < dist.length; k++) {
-				expected += dist[k] * Rules.score(b, k);
+				expected += dist[k] * v.rules.score(b, k);
 			}
 			if (expected > bestScore) {
 				bestScore = expected;
@@ -133,11 +133,11 @@ final class NormalBot implements Bot {
 
 	private Card follow(TableView v, List<Card> legal, boolean want) {
 		Suit trump = v.trump();
-		Card winning = v.trick.get(Rules.trickWinner(v.trick, trump));
+		Card winning = v.trick.get(v.rules.trickWinner(v.trick, trump));
 		boolean last = v.trick.size() == v.players - 1;
 		Card cheapestWinner = null, highestWinner = null, highestLoser = null, lowestLoser = null;
 		for (Card c : legal) {
-			if (Rules.beats(c, winning, trump)) {
+			if (v.rules.beats(c, winning, trump)) {
 				if (cheapestWinner == null || cheaper(c, cheapestWinner, trump)) {
 					cheapestWinner = c;
 				}

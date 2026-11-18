@@ -21,6 +21,7 @@ final class MatchCodec {
 
 	static String encode(Match m) {
 		StringBuilder sb = new StringBuilder(FORMAT).append('\n');
+		line(sb, "rules", m.rules().name);
 		line(sb, "players", String.valueOf(m.players));
 		line(sb, "phase", m.phase.name());
 		line(sb, "hand", String.valueOf(m.handIndex));
@@ -65,7 +66,9 @@ final class MatchCodec {
 					v.put(lines[i].substring(0, eq), lines[i].substring(eq + 1).trim());
 				}
 			}
-			Match m = new Match(Integer.parseInt(req(v, "players")), rng);
+			// (games saved before there were rule sets were all standard)
+			RuleSet rules = v.containsKey("rules") ? RuleSet.named(v.get("rules")) : RuleSet.STANDARD;
+			Match m = new Match(Integer.parseInt(req(v, "players")), rng, rules);
 			m.phase = Match.Phase.valueOf(req(v, "phase"));
 			m.handIndex = Integer.parseInt(req(v, "hand"));
 			// (games saved before the hands could run downwards always ran up)

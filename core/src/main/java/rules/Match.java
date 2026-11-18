@@ -30,6 +30,7 @@ public final class Match {
 
 	final int players;
 	private final Random rng;
+	private final RuleSet rules;
 
 	// The game's state. Package-visible so MatchCodec can write and read it; nothing else touches it.
 
@@ -63,7 +64,12 @@ public final class Match {
 
 	/** A game with a random first dealer, its hands running the given way. */
 	public static Match random(int players, Random rng, HandOrder order) {
-		return new Match(players, rng, rng.nextInt(players), order);
+		return random(players, rng, order, RuleSet.STANDARD);
+	}
+
+	/** A game by the given rules, with a random first dealer, its hands running the given way. */
+	public static Match random(int players, Random rng, HandOrder order, RuleSet rules) {
+		return new Match(players, rng, rng.nextInt(players), order, rules);
 	}
 
 	public Match(int players, Random rng, int firstDealer) {
@@ -71,19 +77,24 @@ public final class Match {
 	}
 
 	public Match(int players, Random rng, int firstDealer, HandOrder order) {
-		this(players, rng);
+		this(players, rng, firstDealer, order, RuleSet.STANDARD);
+	}
+
+	public Match(int players, Random rng, int firstDealer, HandOrder order, RuleSet rules) {
+		this(players, rng, rules);
 		this.order = order;
 		this.dealer = firstDealer;
 		startHand();
 	}
 
 	/** Allocates an empty game, for the constructors above and {@link MatchCodec}. */
-	Match(int players, Random rng) {
-		if (players < 2 || players * HandOrder.HANDS >= 52) {
+	Match(int players, Random rng, RuleSet rules) {
+		if (players < 2 || players * rules.numberOfHands() >= 52) {
 			throw new IllegalArgumentException("Unsupported number of players: " + players);
 		}
 		this.players = players;
 		this.rng = rng;
+		this.rules = rules;
 		this.bids = new Integer[players];
 		this.tricks = new int[players];
 		this.scores = new int[players];
@@ -118,7 +129,7 @@ public final class Match {
 		requirePhase(Phase.PLAYING);
 		requireTurn(seat);
 		List<Card> hand = hands.get(seat);
-		if (!Rules.isLegalPlay(hand, card, leadSuit())) {
+		if (!rules.isLegalPlay(hand, card, leadSuit())) {
 			throw new IllegalArgumentException("Seat " + seat + " may not play " + card);
 		}
 		hand.remove(card);
@@ -132,7 +143,7 @@ public final class Match {
 			return -1;
 		}
 
-		int winner = trickSeats.get(Rules.trickWinner(trick, trumpCard.suit()));
+		int winner = trickSeats.get(rules.trickWinner(trick, trumpCard.suit()));
 		tricks[winner]++;
 		lastTrick = Collections.unmodifiableList(new ArrayList<Card>(trick));
 		lastTrickSeats = Collections.unmodifiableList(new ArrayList<Integer>(trickSeats));
@@ -143,7 +154,7 @@ public final class Match {
 
 		if (hand.isEmpty()) {
 			for (int i = 0; i < players; i++) {
-				lastHandPoints[i] = Rules.score(bids[i], tricks[i]);
+				lastHandPoints[i] = rules.score(bids[i], tricks[i]);
 				scores[i] += lastHandPoints[i];
 			}
 			phase = Phase.HAND_OVER;
@@ -154,7 +165,7 @@ public final class Match {
 	/** Deal the next hand, or end the game after the last one. */
 	public void nextHand() {
 		requirePhase(Phase.HAND_OVER);
-		if (handIndex + 1 >= Rules.numberOfHands()) {
+		if (handIndex + 1 >= rules.numberOfHands()) {
 			phase = Phase.GAME_OVER;
 			return;
 		}
@@ -191,8 +202,13 @@ public final class Match {
 		return handIndex;
 	}
 
+	/** The rules this game is played by. */
+	public RuleSet rules() {
+		return rules;
+	}
+
 	public int handSize() {
-		return order.handSize(handIndex);
+		return rules.handSize(order, handIndex);
 	}
 
 	public Card trumpCard() {
@@ -225,7 +241,7 @@ public final class Match {
 
 	/** Can the player whose turn it is make this bid? */
 	public boolean isLegalBid(int bid) {
-		return phase == Phase.BIDDING && Rules.isLegalBid(bid, handSize(), bidsSoFar(), current == dealer);
+		return phase == Phase.BIDDING && rules.isLegalBid(bid, handSize(), bidsSoFar(), current == dealer);
 	}
 
 	/** The bid the current player may not make, or -1 if every bid is allowed. */
@@ -233,7 +249,7 @@ public final class Match {
 		if (phase != Phase.BIDDING || current != dealer) {
 			return -1;
 		}
-		int f = Rules.forbiddenDealerBid(handSize(), bidsSoFar());
+		int f = rules.forbiddenDealerBid(handSize(), bidsSoFar());
 		return f >= 0 && f <= handSize() ? f : -1;
 	}
 
@@ -270,7 +286,7 @@ public final class Match {
 	}
 
 	public List<Card> legalPlays(int seat) {
-		return Rules.legalPlays(hands.get(seat), seat == current ? leadSuit() : null);
+		return rules.legalPlays(hands.get(seat), seat == current ? leadSuit() : null);
 	}
 
 	/** Every card played so far this hand (the whole hand once it's over), in order. */
@@ -329,7 +345,8 @@ public final class Match {
 		v.handIndex = handIndex;
 		v.handSize = handSize();
 		v.dealer = dealer;
-		v.numberOfHands = Rules.numberOfHands();
+		v.numberOfHands = rules.numberOfHands();
+		v.rules = rules;
 		v.trumpCard = trumpCard;
 		v.hand.addAll(hands.get(seat));
 		for (int s = 0; s < players; s++) {
@@ -377,7 +394,7 @@ public final class Match {
 
 	/** Sanity checks after loading, so a damaged save is rejected rather than played. */
 	void check() {
-		if (handIndex < 0 || handIndex >= Rules.numberOfHands() || dealer < 0 || dealer >= players || current < 0
+		if (handIndex < 0 || handIndex >= rules.numberOfHands() || dealer < 0 || dealer >= players || current < 0
 				|| current >= players || trick.size() != trickSeats.size() || trick.size() >= players
 				|| history.size() != historySeats.size()) {
 			throw new IllegalArgumentException("Inconsistent game state");

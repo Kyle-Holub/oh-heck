@@ -2,7 +2,6 @@ package ohheck;
 
 import rules.Difficulty;
 import rules.Match;
-import rules.Rules;
 
 /**
  * Keeps your records as a game goes: each hand and each finished game in the statistics,
@@ -39,7 +38,7 @@ final class GameRecorder implements TableFlow.Listener {
 
 	@Override
 	public void handEnded(Match m) {
-		records.saveStats(records.stats().countHand(m.handIndex(), level, m.bid(HUMAN), m.tricksWon(HUMAN)));
+		records.saveStats(records.stats().countHand(m.handIndex(), level, m.bid(HUMAN), m.tricksWon(HUMAN), m.lastHandPoints(HUMAN)));
 	}
 
 	@Override
@@ -49,6 +48,6 @@ final class GameRecorder implements TableFlow.Listener {
 		for (int s = 0; s < finals.length; s++) {
 			finals[s] = m.score(s);
 		}
-		records.saveStats(records.stats().countGame(level, finals, Rules.numberOfHands(), players));
+		records.saveStats(records.stats().countGame(level, finals, m.rules().numberOfHands(), players));
 	}
 }
