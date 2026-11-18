@@ -93,7 +93,7 @@ public class PlayersScreen extends BaseScreen {
 		rect(0, h - HEADER_H - 2, w, 2, Palette.GOLD);
 		BitmapFont hf = serif(1.6f);
 		hf.setColor(Palette.GOLD);
-		centred(hf, "The players", w / 2, h - 16);
+		centred(hf, "Roster", w / 2, h - 16);
 		button(backButton, "Back", 70, h - HEADER_H + 8, 110, HEADER_H - 16, assets.buttonAlt);
 		batch.end();
 	}

@@ -11,15 +11,15 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import rules.Difficulty;
 
 /**
- * The settings, saved on the device, in two columns: the game (difficulty, hand sizes,
- * speed, and the players you might meet) and sound and display. How to play sits in the header.
+ * The settings, saved on the device: the game (difficulty, hand sizes, speed) on the left;
+ * sound and display on the right, and under them Learn (How to play, and the Roster of players).
  */
 public class OptionsScreen extends BaseScreen {
 
 	private static final Color HEADER = new Color(0.06f, 0.04f, 0.03f, 0.97f);
-	private static final float HEADER_H = 56, COLUMN_W = 440, COLUMN_GAP = 34;
+	private static final float HEADER_H = 56, COLUMN_W = 440, COLUMN_GAP = 34, SECTION_GAP = 40;
 
-	private final Rectangle backButton = new Rectangle(), rulesButton = new Rectangle();
+	private final Rectangle backButton = new Rectangle();
 
 	/** One setting below the difficulty: its name, its value on a button, and what a tap on the row does. */
 	private abstract class Row {
@@ -40,8 +40,9 @@ public class OptionsScreen extends BaseScreen {
 		abstract void tap();
 	}
 
-	/** The game column (under the difficulty), and the sound and display column. */
-	private final List<Row> gameRows = new ArrayList<Row>(), displayRows = new ArrayList<Row>();
+	/** The game column (under the difficulty), the sound and display column, and Learn under it. */
+	private final List<Row> gameRows = new ArrayList<Row>(), displayRows = new ArrayList<Row>(),
+			learnRows = new ArrayList<Row>();
 	{
 		final Settings s = game.settings;
 		gameRows.add(new Row("Hand sizes") { // (from the next new game)
@@ -66,7 +67,18 @@ public class OptionsScreen extends BaseScreen {
 				s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length);
 			}
 		});
-		gameRows.add(new Row("The players") {
+		learnRows.add(new Row("How to play") {
+			@Override
+			String value() {
+				return "View";
+			}
+
+			@Override
+			void tap() {
+				game.showTutorial();
+			}
+		});
+		learnRows.add(new Row("Roster") {
 			@Override
 			String value() {
 				return "View";
@@ -160,20 +172,21 @@ public class OptionsScreen extends BaseScreen {
 			drawRow(row, right, y, COLUMN_W, rh);
 			y -= ROW_GAP;
 		}
+		y -= SECTION_GAP;
+		heading("Learn", right, y + 30);
+		for (Row row : learnRows) {
+			y -= rh;
+			drawRow(row, right, y, COLUMN_W, rh);
+			y -= ROW_GAP;
+		}
 
-		// the header: back, the title, and How to play (gold lettering, set apart from the settings)
+		// the header: back and the title
 		rect(0, h - HEADER_H, w, HEADER_H, HEADER);
 		rect(0, h - HEADER_H - 2, w, 2, Palette.GOLD);
 		BitmapFont t = serif(1.6f);
 		t.setColor(GOLD);
 		centred(t, "Options", w / 2, h - 16);
 		button(backButton, "Back", 70, h - HEADER_H + 8, 110, HEADER_H - 16, assets.buttonAlt);
-		float bw = 190, bh = HEADER_H - 16;
-		rulesButton.set(w - 20 - bw, h - HEADER_H + 8, bw, bh);
-		frame(assets.buttonAlt, rulesButton.x, rulesButton.y, bw, bh);
-		BitmapFont rb = serif(1.5f);
-		rb.setColor(GOLD);
-		textIn(rb, "How to play", rulesButton.x, rulesButton.y, bw, bh);
 		batch.end();
 	}
 
@@ -190,7 +203,7 @@ public class OptionsScreen extends BaseScreen {
 		f.setColor(Palette.CREAM);
 		glyphs.setText(f, row.label);
 		f.draw(batch, row.label, x + 24, y + rh / 2 + glyphs.height / 2);
-		float vw = 120;
+		float vw = 140;
 		boolean on = row.on();
 		frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 7, vw, rh - 14);
 		BitmapFont v = ui(1.4f);
@@ -204,9 +217,9 @@ public class OptionsScreen extends BaseScreen {
 	private static final float ROW_H = 40, ROW_GAP = 6, DIFFICULTY_H = 112, KNOB = 34;
 	/** Who you'll likely meet at each setting, shown under the slider. */
 	private static final String[] LEVEL_NOTES = {
-			"Mostly easy-going players, and an expert now and then.",
+			"Easy-going and solid players; never an expert.",
 			"A mix: some easy-going, mostly solid, the odd expert.",
-			"Mostly experts, who read the bids and sink the leader." };
+			"Solid players and experts; never a beginner." };
 	private static final Color TRACK = new Color(0.36f, 0.29f, 0.21f, 1f);
 	private final Rectangle slider = new Rectangle();
 	private float stop0, stopStep;
@@ -286,11 +299,7 @@ public class OptionsScreen extends BaseScreen {
 			back();
 			return;
 		}
-		if (rulesButton.contains(x, y)) {
-			game.showTutorial();
-			return;
-		}
-		for (List<Row> rows : java.util.Arrays.asList(gameRows, displayRows)) {
+		for (List<Row> rows : java.util.Arrays.asList(gameRows, displayRows, learnRows)) {
 			for (Row row : rows) {
 				if (row.bounds.contains(x, y)) { // (empty until drawn)
 					row.tap();
