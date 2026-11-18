@@ -287,7 +287,7 @@ public class OptionsScreen extends BaseScreen {
 			return;
 		}
 		if (rulesButton.contains(x, y)) {
-			game.showRules();
+			game.showTutorial();
 			return;
 		}
 		for (List<Row> rows : java.util.Arrays.asList(gameRows, displayRows)) {

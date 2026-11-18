@@ -40,7 +40,7 @@ public class PlayersScreen extends BaseScreen {
 		if (game.options.autoplayHuman) {
 			scroller.offset = shownFor > 1.0f ? 9999 : 0; // the screenshot run sees the end of the list
 			if (shownFor > 2.2f) {
-				game.showRules();
+				game.showTutorial(); // (the screenshot run goes on through the tutorial to a game)
 				return;
 			}
 		}

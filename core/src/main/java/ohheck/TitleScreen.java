@@ -160,7 +160,7 @@ public class TitleScreen extends BaseScreen {
 		if (item.equals("Continue")) {
 			game.continueGame();
 		} else if (item.equals("Play") || item.equals("New game")) {
-			game.newGame();
+			game.play(); // (the tutorial first, the very first time)
 		} else if (item.equals("High scores")) {
 			game.showHighScores(-1);
 		} else if (item.equals("Options")) {

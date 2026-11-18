@@ -32,7 +32,7 @@ public class OhHeckGame extends Game {
 	PostProcessor post;
 
 	private TitleScreen title;
-	private RulesScreen rules;
+	private TutorialScreen tutorial;
 	private OptionsScreen optionsScreen;
 	private HighScoresScreen highScoresScreen;
 	private PlayersScreen playersScreen;
@@ -62,7 +62,7 @@ public class OhHeckGame extends Game {
 		audio = new Audio(settings);
 		post = new PostProcessor();
 		title = new TitleScreen(this);
-		rules = new RulesScreen(this);
+		tutorial = new TutorialScreen(this);
 		optionsScreen = new OptionsScreen(this);
 		highScoresScreen = new HighScoresScreen(this);
 		playersScreen = new PlayersScreen(this);
@@ -131,8 +131,20 @@ public class OhHeckGame extends Game {
 		setScreen(title);
 	}
 
-	void showRules() {
-		open(rules);
+	/** How to play, from Options: the tutorial, with Back. */
+	void showTutorial() {
+		tutorial.open(false);
+		open(tutorial);
+	}
+
+	/** Play (a new game): the tutorial first if you've never seen it (it then starts the game). */
+	void play() {
+		if (!settings.tutorialSeen() && !options.autoplayHuman) {
+			tutorial.open(true);
+			open(tutorial);
+		} else {
+			newGame();
+		}
 	}
 
 	void showOptions() {
@@ -237,7 +249,7 @@ public class OhHeckGame extends Game {
 	public void dispose() {
 		super.dispose();
 		title.dispose();
-		rules.dispose();
+		tutorial.dispose();
 		optionsScreen.dispose();
 		highScoresScreen.dispose();
 		playersScreen.dispose();
