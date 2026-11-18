@@ -6,22 +6,22 @@ import java.util.Random;
 import java.util.Set;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import ohheck.GameOptions;
 import ohheck.OhHeckGame;
-import rules.Bot;
-import rules.Difficulty;
-import rules.Match;
-import rules.Player;
-import rules.Rules;
-import rules.Stats;
+import ohheck.platform.GameOptions;
+import ohheck.players.Bot;
+import ohheck.players.Difficulty;
+import ohheck.players.Player;
+import ohheck.records.Stats;
+import ohheck.rules.Match;
+import ohheck.rules.Rules;
 
 /**
  * Plays a seeded game with the bot in every seat, saving a screenshot the

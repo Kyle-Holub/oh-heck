@@ -7,28 +7,94 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import rules.Log;
-import rules.SavedGame;
+import ohheck.platform.Audio;
+import ohheck.platform.GameOptions;
+import ohheck.platform.Settings;
+import ohheck.records.Records;
+import ohheck.records.SavedGame;
+import ohheck.screens.HighScoresScreen;
+import ohheck.screens.OptionsScreen;
+import ohheck.screens.PlayersScreen;
+import ohheck.screens.ScreenshotTour;
+import ohheck.screens.TitleScreen;
+import ohheck.screens.TutorialScreen;
+import ohheck.table.PlayScreen;
+import ohheck.ui.Assets;
+import ohheck.ui.BaseScreen;
+import ohheck.ui.GameHost;
+import ohheck.ui.PostProcessor;
+import ohheck.util.Log;
 
 /** The libGDX entry point shared by Android and desktop; switches between screens. */
-public class OhHeckGame extends Game {
+public class OhHeckGame extends Game implements GameHost {
 
 	public static final String VERSION = "alpha-1.0.9";
 	/** The CI build ("dev-0042") from assets/build.txt, or "" for a local build. */
-	String build = "";
+	private String build = "";
 
-	/** A screen that can describe itself for automated screenshots. */
-	public interface Tagged {
-		String stateTag();
+
+	private final GameOptions options;
+	/** The one sprite batch all screens draw with. */
+	private SpriteBatch batch;
+	private Assets assets;
+	private Settings settings;
+	private Audio audio;
+	private PostProcessor post;
+
+	// ---- what the screens share (made in create(), so not final)
+
+	/** The CI build ("dev-0042"), or "" for a local build. */
+	@Override
+	public String version() {
+		return VERSION;
 	}
 
-	final GameOptions options;
-	/** The one sprite batch all screens draw with. */
-	SpriteBatch batch;
-	Assets assets;
-	Settings settings;
-	Audio audio;
-	PostProcessor post;
+	@Override
+	public String build() {
+		return build;
+	}
+
+	@Override
+	public GameOptions options() {
+		return options;
+	}
+
+	@Override
+	public SpriteBatch batch() {
+		return batch;
+	}
+
+	@Override
+	public Assets assets() {
+		return assets;
+	}
+
+	@Override
+	public Settings settings() {
+		return settings;
+	}
+
+	@Override
+	public Audio audio() {
+		return audio;
+	}
+
+	@Override
+	public PostProcessor post() {
+		return post;
+	}
+
+	/** Statistics, high scores and the saved game. */
+	@Override
+	public Records records() {
+		return records;
+	}
+
+	/** The screenshot run's walk through the menus; null in normal play. */
+	@Override
+	public GameHost.Tour tour() {
+		return tour;
+	}
 
 	private TitleScreen title;
 	private TutorialScreen tutorial;
@@ -43,7 +109,7 @@ public class OhHeckGame extends Game {
 		return screen;
 	}
 	/** Statistics, high scores and the saved game. */
-	Records records;
+	private Records records;
 	private PlayScreen play;
 
 	public OhHeckGame() {
@@ -56,7 +122,7 @@ public class OhHeckGame extends Game {
 	}
 
 	/** The screenshot run's walk through the menus; null in normal play. */
-	final ScreenshotTour tour;
+	private final ScreenshotTour tour;
 
 	/** Screens to return to with Back: Options, How to play and High scores open over where you were. */
 	private final java.util.ArrayDeque<Screen> backStack = new java.util.ArrayDeque<Screen>();
@@ -119,13 +185,14 @@ public class OhHeckGame extends Game {
 		capturing = false;
 		Screen s = getScreen();
 		idle = options.fixedStep <= 0 && s instanceof BaseScreen && !((BaseScreen) s).animating();
-		if (options.frameListener != null && s instanceof Tagged) {
-			options.frameListener.onFrame(((Tagged) s).stateTag());
+		if (options.frameListener != null && s instanceof GameHost.Tagged) {
+			options.frameListener.onFrame(((GameHost.Tagged) s).stateTag());
 		}
 	}
 
 	/** While the effects pass is capturing a frame, draw into its (smaller) buffer rather than the screen. */
-	void fitViewportToTarget() {
+	@Override
+	public void fitViewportToTarget() {
 		if (capturing) {
 			Gdx.gl.glViewport(0, 0, post.sceneWidth(), post.sceneHeight());
 		}
@@ -140,23 +207,27 @@ public class OhHeckGame extends Game {
 	}
 
 	/** Back to the screen that opened this one, or the title screen. */
-	void back() {
+	@Override
+	public void back() {
 		setScreen(backStack.isEmpty() ? title : backStack.pop());
 	}
 
-	void showTitle() {
+	@Override
+	public void showTitle() {
 		backStack.clear();
 		setScreen(title);
 	}
 
 	/** How to play, from Options: the tutorial, with Back. */
-	void showTutorial() {
+	@Override
+	public void showTutorial() {
 		tutorial.open(false);
 		open(tutorial);
 	}
 
 	/** Play (a new game): the tutorial first if you've never seen it (it then starts the game). */
-	void play() {
+	@Override
+	public void play() {
 		if (!settings.tutorialSeen() && !options.autoplayHuman) {
 			tutorial.open(true);
 			open(tutorial);
@@ -165,21 +236,25 @@ public class OhHeckGame extends Game {
 		}
 	}
 
-	void showOptions() {
+	@Override
+	public void showOptions() {
 		open(optionsScreen);
 	}
 
-	void showPlayers() {
+	@Override
+	public void showPlayers() {
 		open(playersScreen);
 	}
 
 	/** The high score table; newest is the position just added (-1 for none) to pick out. */
-	void showHighScores(int newest) {
+	@Override
+	public void showHighScores(int newest) {
 		highScoresScreen.highlight(newest);
 		open(highScoresScreen);
 	}
 
-	void newGame() {
+	@Override
+	public void newGame() {
 		if (play != null) {
 			play.dispose();
 		}
@@ -189,7 +264,8 @@ public class OhHeckGame extends Game {
 	}
 
 	/** Back to the game in progress, or the saved one after the app was closed. */
-	void continueGame() {
+	@Override
+	public void continueGame() {
 		if (play == null) {
 			SavedGame saved = records.savedGame(new Random());
 			if (saved == null) {
@@ -202,7 +278,8 @@ public class OhHeckGame extends Game {
 		setScreen(play);
 	}
 
-	boolean hasGameInProgress() {
+	@Override
+	public boolean hasGameInProgress() {
 		if (play != null) {
 			return !play.isGameOver();
 		}
