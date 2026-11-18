@@ -19,20 +19,26 @@ import rules.Suit;
  */
 public class TutorialScreen extends BaseScreen {
 
-	/** A step: its heading, caption and how long its scene runs before looping. */
+	/** A step: its heading, caption, how long its scene runs, and whether it then plays again. */
 	private static final class Step {
 		final String heading, caption;
 		final float length;
+		final boolean loops;
 
 		Step(String heading, String caption, float length) {
+			this(heading, caption, length, true);
+		}
+
+		Step(String heading, String caption, float length, boolean loops) {
 			this.heading = heading;
 			this.caption = caption;
 			this.length = length;
+			this.loops = loops;
 		}
 	}
 
 	private static final Step[] STEPS = {
-			new Step("Welcome", "Oh Heck is about calling your shot: guess how many tricks you'll win, then win exactly that many.", 4f),
+			new Step("Welcome", "Oh Heck is about calling your shot: guess how many tricks you'll win, then win exactly that many.", 4f, false),
 			new Step("The cards", "Cards rank from Ace, the highest, down to 2, the lowest.", 4.5f),
 			new Step("A trick", "Everyone plays one card in turn. That's a trick. The highest card wins it.", 5.5f),
 			new Step("Follow suit", "You must play the suit that was led if you can. Here, a heart.", 4.5f),
@@ -42,8 +48,8 @@ public class TutorialScreen extends BaseScreen {
 			new Step("Bidding", "Before playing, everyone bids how many tricks they'll win. Look at your cards and count your winners.", 6f),
 			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", 5.5f),
 			new Step("The dealer's hook", "The dealer bids last and can't make the bids add up to the number of tricks, so someone always misses.", 5.5f),
-			new Step("Scoring", "Make your bid exactly: 10 points, plus 2 for each trick you bid. Miss it, high or low: lose 5 for each trick off.", 7f),
-			new Step("Ready", "Highest total after 8 hands wins. Good luck!", 5f) };
+			new Step("Scoring", "Make your bid exactly: 10 points, plus 2 for each trick you bid. Miss it, high or low: lose 5 for each trick off.", 9f),
+			new Step("Ready", "Highest total after 8 hands wins. Good luck!", 5f, false) };
 
 	/** After a step's scene has run, it holds this long before playing again. */
 	private static final float HOLD = 1.6f;
@@ -82,7 +88,7 @@ public class TutorialScreen extends BaseScreen {
 		stepT += dt;
 		Step s = STEPS[step];
 		lastT = t;
-		t = stepT % (s.length + HOLD);
+		t = s.loops ? stepT % (s.length + HOLD) : Math.min(stepT, s.length); // (the first and last play once)
 		if (t < lastT) {
 			lastT = -1; // the scene looped: its moments happen again
 		}
@@ -242,9 +248,9 @@ public class TutorialScreen extends BaseScreen {
 		}
 	}
 
-	// ---- the seats: you bottom left, Rupert left, Lavinia top, Horatio right (as at the table)
+	// ---- the seats: you bottom left, Rupert left, Oswald top, Horatio right (as at the table)
 
-	private static final String[] NAMES = { "You", "Rupert", "Lavinia", "Horatio" };
+	private static final String[] NAMES = { "You", "Rupert", "Oswald", "Horatio" };
 
 	private float seatX(int seat) {
 		switch (seat) {
@@ -286,13 +292,17 @@ public class TutorialScreen extends BaseScreen {
 		}
 	}
 
-	/** Where a seat's card lands in the trick. */
-	private float slotX(int seat) {
-		return cx() - CW / 2 + (seat == 1 ? -88 : seat == 3 ? 88 : 0);
+	/**
+	 * The trick, laid out as a row (clearer than the table's cross): card i of n. With your
+	 * hand on show it sits above the hand (and the top seat is left out, for room).
+	 */
+	private float rowX(int i, int n) {
+		float gap = CW + 16;
+		return cx() - (n * gap - 16) / 2 + i * gap;
 	}
 
-	private float slotY(int seat) {
-		return cy() - CH / 2 + (seat == 2 ? 46 : seat == 0 ? -46 : 0);
+	private float rowY(boolean withHand) {
+		return withHand ? handY() + CH + 30 : cy() - CH / 2 - 10;
 	}
 
 	/** Where a seat's card comes from (its panel). */
@@ -404,30 +414,30 @@ public class TutorialScreen extends BaseScreen {
 		label("LOWEST", x0 + 12 * step + CW / 2, y + CH + 26, at(1.4f, 1.8f));
 	}
 
-	// ---- 3. a trick: four hearts in, the King wins, the trick goes to Lavinia
+	// ---- 3. a trick: four hearts in, one by one into a row; the King wins; the trick goes to Oswald
 
 	private void aTrick() {
-		Card[] cards = { card(Rank.NINE, Suit.HEARTS), card(Rank.SEVEN, Suit.HEARTS), card(Rank.KING, Suit.HEARTS),
-				card(Rank.THREE, Suit.HEARTS) };
-		int[] order = { 1, 2, 3, 0 };
+		int[] order = { 1, 2, 3, 0 }; // who plays, in turn
+		Card[] cards = { card(Rank.SEVEN, Suit.HEARTS), card(Rank.KING, Suit.HEARTS), card(Rank.THREE, Suit.HEARTS),
+				card(Rank.NINE, Suit.HEARTS) };
 		boolean taken = t >= 3.8f;
 		for (int s = 0; s < 4; s++) {
-			seat(s, s == 2 && taken ? Integer.valueOf(1) : null, s == 2 && taken ? 1 : 0, false, false, 0, 1, !(s == 2 && taken), 1);
+			boolean winner = s == 2 && taken;
+			seat(s, winner ? Integer.valueOf(1) : null, winner ? 1 : 0, false, false, 0, 1, !winner, 1);
 		}
-		float gone = at(3.2f, 3.8f);
+		float gone = at(3.2f, 3.8f), y = rowY(false);
 		for (int i = 0; i < 4; i++) {
-			int s = order[i];
 			float a = 0.3f + i * 0.5f;
-			boolean king = s == 2;
+			boolean king = i == 1;
 			float lift = king ? at(2.4f, 2.8f) * 10 : 0;
-			float x = MathUtils.lerp(slotX(s), fromX(2), gone), y = MathUtils.lerp(slotY(s), fromY(2), gone) + lift;
+			float x = MathUtils.lerp(rowX(i, 4), fromX(2), gone), cy = MathUtils.lerp(y, fromY(2), gone) + lift;
 			if (t >= a + 0.45f) {
 				if (king) {
-					glow(x, y, at(2.4f, 2.8f) * (1 - gone));
+					glow(x, cy, at(2.4f, 2.8f) * (1 - gone));
 				}
-				card(cards[s], x, y, 2 + lift, 1, 1 - gone);
+				card(cards[i], x, cy, 2 + lift, 1, 1 - gone);
 			} else {
-				flying(cards[s], fromX(s), fromY(s), slotX(s), slotY(s), a, a + 0.45f, 1, 1);
+				flying(cards[i], fromX(order[i]), fromY(order[i]), rowX(i, 4), y, a, a + 0.45f, 1, 1);
 			}
 		}
 	}
@@ -440,7 +450,7 @@ public class TutorialScreen extends BaseScreen {
 	}
 
 	private float handY() {
-		return CAPTION_H + 12 + 14;
+		return CAPTION_H + 12 + 12;
 	}
 
 	// ---- 4. follow suit: a heart is led; your heart is the only card you may play
@@ -448,23 +458,23 @@ public class TutorialScreen extends BaseScreen {
 	private void followSuit() {
 		Card led = card(Rank.TEN, Suit.HEARTS);
 		Card[] hand = { card(Rank.FOUR, Suit.HEARTS), card(Rank.QUEEN, Suit.CLUBS), card(Rank.EIGHT, Suit.SPADES) };
-		flying(led, fromX(2), fromY(2), slotX(2), slotY(2), 0.2f, 0.6f, 1, 1);
+		float y = rowY(true);
+		flying(led, rowX(0, 2), h + 10, rowX(0, 2), y, 0.2f, 0.6f, 1, 1);
 		float dim = at(0.9f, 1.3f);
 		for (int i = 0; i < hand.length; i++) {
-			float x = handX(i, 3), y = handY();
+			float x = handX(i, 3), hy = handY();
 			if (i == 0) {
-				float lift = at(1.0f, 1.3f) * 14;
+				float lift = at(1.0f, 1.3f) * 12;
 				if (t < 1.6f) {
-					glow(x, y + lift, at(1.0f, 1.3f));
-					card(hand[i], x, y + lift, 2 + lift, 1, 1);
+					glow(x, hy + lift, at(1.0f, 1.3f));
+					card(hand[i], x, hy + lift, 2 + lift, 1, 1);
 				} else {
-					flying(hand[i], x, y + lift, slotX(0), slotY(0) + 30, 1.6f, 2.2f, 1, 1);
+					flying(hand[i], x, hy + lift, rowX(1, 2), y, 1.6f, 2.2f, 1, 1);
 				}
 			} else {
-				card(hand[i], x, y, 2, 1 - 0.55f * dim, 1);
+				card(hand[i], x, hy, 2, 1 - 0.55f * dim, 1);
 			}
 		}
-		label("MUST FOLLOW", handX(0, 3) + CW / 2, handY() + CH + 34, at(1.0f, 1.3f) * (1 - at(1.6f, 1.8f)));
 	}
 
 	// ---- 5. can't follow: a diamond is led, you have none, your King of clubs can't win
@@ -472,96 +482,100 @@ public class TutorialScreen extends BaseScreen {
 	private void cantFollow() {
 		Card led = card(Rank.JACK, Suit.DIAMONDS);
 		Card[] hand = { card(Rank.SIX, Suit.HEARTS), card(Rank.KING, Suit.CLUBS), card(Rank.FIVE, Suit.SPADES) };
-		flying(led, fromX(2), fromY(2), slotX(2), slotY(2), 0.2f, 0.6f, 1, 1);
+		float y = rowY(true);
+		flying(led, rowX(0, 4), h + 10, rowX(0, 4), y, 0.2f, 0.6f, 1, 1);
 		float play = 1.6f;
 		for (int i = 0; i < hand.length; i++) {
-			float x = handX(i, 3), y = handY();
+			float x = handX(i, 3), hy = handY();
 			if (i == 1 && t >= play) {
-				flying(hand[i], x, y, slotX(0), slotY(0) + 30, play, play + 0.5f, 1 - 0.4f * at(3.3f, 3.6f), 1);
+				flying(hand[i], x, hy, rowX(1, 4), y, play, play + 0.5f, 1 - 0.4f * at(3.3f, 3.6f), 1);
 			} else {
-				glow(x, y, at(0.8f, 1.2f) * (1 - at(1.4f, 1.6f)) * 0.7f);
-				card(hand[i], x, y, 2, 1, 1);
+				glow(x, hy, at(0.8f, 1.2f) * (1 - at(1.4f, 1.6f)) * 0.7f);
+				card(hand[i], x, hy, 2, 1, 1);
 			}
 		}
-		flying(card(Rank.NINE, Suit.DIAMONDS), fromX(1), fromY(1), slotX(1), slotY(1), 2.3f, 2.7f, 1, 1);
-		flying(card(Rank.THREE, Suit.DIAMONDS), fromX(3), fromY(3), slotX(3), slotY(3), 2.7f, 3.1f, 1, 1);
+		flying(card(Rank.NINE, Suit.DIAMONDS), -CW, y, rowX(2, 4), y, 2.3f, 2.7f, 1, 1);
+		flying(card(Rank.THREE, Suit.DIAMONDS), w + 10, y, rowX(3, 4), y, 2.7f, 3.1f, 1, 1);
 		if (t >= 3.3f) { // the Jack, the highest diamond, wins
-			glow(slotX(2), slotY(2), at(3.3f, 3.6f));
-			card(led, slotX(2), slotY(2), 2, 1, 1);
+			glow(rowX(0, 4), y, at(3.3f, 3.6f));
+			card(led, rowX(0, 4), y, 2, 1, 1);
 		}
-		label("ANY CARD WILL DO", cx(), handY() + CH + 34, at(0.8f, 1.2f) * (1 - at(1.4f, 1.6f)));
-		label("ONLY DIAMONDS CAN WIN", cx(), slotY(2) + CH + 24, at(3.4f, 3.8f));
 	}
 
-	// ---- 6. trump: the top card turns up spades; a lowly 2 of spades beats the Ace of diamonds
+	// ---- 6. trump: the turned-up card says spades; a lowly 2 of spades beats the Ace of diamonds
 
 	private void trump() {
 		Card trumpCard = card(Rank.FIVE, Suit.SPADES);
-		float dx = w - 20 - CW - 30, dy = cy() + 30;
-		art.stack(dx + CW / 2, dy + CH / 2 - 4, 10, CW, CH, 0);
+		float tx = w - 40 - CW, ty = cy() + 20; // where the trump card sits at the table: top right
 		float p = at(0.3f, 0.9f);
-		art.shadow(dx, dy, CW, CH, 4);
-		art.flip(trumpCard, dx, dy, CW, CH, p);
+		float lit = at(0.9f, 1.5f);
+		glow(tx, ty, lit * 0.8f);
+		art.shadow(tx, ty, CW, CH, 4);
+		art.flip(trumpCard, tx, ty, CW, CH, p);
 		if (p >= 1) {
-			Glints.draw(batch, assets.glow, trumpCard, dx, dy, CW, CH, CW, 0, stepT, 1f);
+			Glints.draw(batch, assets.glow, trumpCard, tx, ty, CW, CH, CW, 0, stepT, 1f);
 		}
-		label("TRUMPS: SPADES", dx + CW / 2, dy - 12, at(0.9f, 1.3f));
 		Card ace = card(Rank.ACE, Suit.DIAMONDS), two = card(Rank.TWO, Suit.SPADES);
-		seat(0, t >= 4.2f ? Integer.valueOf(1) : null, t >= 4.2f ? 1 : 0, false, false, 0, 1, t < 4.2f, 1);
-		float gone = at(3.6f, 4.2f);
-		float ax = MathUtils.lerp(slotX(2), fromX(0), gone), ay = MathUtils.lerp(slotY(2), fromY(0), gone);
-		float tx = MathUtils.lerp(slotX(0), fromX(0), gone), ty = MathUtils.lerp(slotY(0), fromY(0), gone);
+		boolean won = t >= 4.2f;
+		seat(0, won ? Integer.valueOf(1) : null, won ? 1 : 0, false, false, 0, 1, !won, 1);
+		float gone = at(3.6f, 4.2f), y = rowY(false);
+		float ax = MathUtils.lerp(rowX(0, 2), fromX(0), gone), ay = MathUtils.lerp(y, fromY(0), gone);
+		float bx = MathUtils.lerp(rowX(1, 2), fromX(0), gone), by = MathUtils.lerp(y, fromY(0), gone);
 		if (t >= 1.8f) {
 			card(ace, ax, ay, 2, 1, 1 - gone);
 		} else {
-			flying(ace, fromX(2), fromY(2) + 80, slotX(2), slotY(2), 1.4f, 1.8f, 1, 1);
+			flying(ace, rowX(0, 2), h + 10, rowX(0, 2), y, 1.4f, 1.8f, 1, 1);
 		}
 		if (t >= 2.4f) {
 			float lift = at(2.6f, 3.0f) * 10;
-			glow(tx, ty + lift, at(2.6f, 3.0f) * (1 - gone));
-			card(two, tx, ty + lift, 2 + lift, 1, 1 - gone);
+			glow(bx, by + lift, at(2.6f, 3.0f) * (1 - gone));
+			card(two, bx, by + lift, 2 + lift, 1, 1 - gone);
 			if (gone <= 0) {
-				Glints.draw(batch, assets.glow, two, tx, ty + lift, CW, CH, CW, 0, stepT, 1f);
+				Glints.draw(batch, assets.glow, two, bx, by + lift, CW, CH, CW, 0, stepT, 1f);
 			}
 		} else {
-			flying(two, handX(1, 3), handY(), slotX(0), slotY(0), 2.0f, 2.4f, 1, 1);
+			flying(two, fromX(0), fromY(0), rowX(1, 2), y, 2.0f, 2.4f, 1, 1);
 		}
 	}
 
-	// ---- 7. the deal: 1 card each, then 2, then 3 ... up to 8
+	// ---- 7. the deal: 1 card each, then 2, then 3 ... up to 8 (two players, for room)
+
+	private static final float DEAL_SCALE = 0.8f;
 
 	private void theDeal() {
 		float[] starts = { 0.2f, 1.6f, 3.3f };
-		float deck = cx() - CW / 2, deckY = cy() - CH / 2;
-		art.stack(cx(), cy(), 12, CW, CH, 0);
-		for (int s = 0; s < 4; s++) {
-			seat(s, null, 0, false, s == 3, 0, 1, true, 1);
-		}
+		float dw = CW * DEAL_SCALE, dh = CH * DEAL_SCALE, gap = dw + 12;
+		float deckX = w - 60 - CW, deckY = cy() - CH / 2 - 20;
+		art.stack(deckX + CW / 2, deckY + CH / 2, 12, CW, CH, 0);
+		panel.draw("Oswald", seatX(1), seatTop(1), false, false, 0, null, 0, 1, true, stepT);
+		seat(0, null, 0, false, true, 0, 1, true, 1);
+		// each player's cards in a row beside their panel
+		float[] rowYs = { seatTop(0) - PlayerPanel.H / 2 - dh / 2, seatTop(1) - PlayerPanel.H / 2 - dh / 2 };
 		for (int round = 0; round < 3; round++) {
 			int n = round + 1;
-			float a = starts[round], end = round < 2 ? starts[round + 1] - 0.15f : 6.2f;
+			float a = starts[round], end = round < 2 ? starts[round + 1] - 0.15f : 99f;
 			if (t < a || t >= end) {
 				continue;
 			}
-			BitmapFont f = serif(1.5f);
-			f.setColor(GOLD.r, GOLD.g, GOLD.b, at(a, a + 0.3f));
-			centred(f, "Hand " + n + ": " + n + (n == 1 ? " card each" : " cards each"), cx(), cy() + CH / 2 + 46);
-			for (int k = 0; k < n * 4; k++) {
-				int s = k % 4, j = k / 4;
-				float ka = a + k * 0.06f;
+			BitmapFont f = serif(1.6f);
+			f.setColor(GOLD.r, GOLD.g, GOLD.b, at(a, a + 0.3f) * (1 - at(5.0f, 5.3f)));
+			centred(f, "Hand " + n + ": " + n + (n == 1 ? " card each" : " cards each"), cx(), h - 70);
+			for (int k = 0; k < n * 2; k++) {
+				int who = k % 2, j = k / 2; // you first (left of the dealer), then Oswald
+				float ka = a + k * 0.12f;
 				if (t < ka) {
 					break;
 				}
-				float kk = at(ka, ka + 0.3f);
-				float tx = fromX(s) + (j - (n - 1) / 2f) * 14, ty = fromY(s) - (s == 2 ? 70 : s == 0 ? -70 : 0);
-				float x = MathUtils.lerp(deck, tx, kk), y = MathUtils.lerp(deckY, ty, kk);
-				art.shadow(x, y, CW * 0.7f, CH * 0.7f, 4);
-				batch.draw(assets.back(), x, y, CW * 0.7f, CH * 0.7f);
+				float kk = at(ka, ka + 0.35f);
+				float x0 = cx() - (n * gap - 12) / 2;
+				float x = MathUtils.lerp(deckX, x0 + j * gap, kk), y = MathUtils.lerp(deckY, rowYs[who], kk);
+				art.shadow(x, y, dw, dh, 4);
+				batch.draw(assets.back(), x, y, dw, dh);
 			}
 		}
-		BitmapFont f = serif(1.5f);
-		f.setColor(GOLD.r, GOLD.g, GOLD.b, at(5.0f, 5.4f));
-		centred(f, "… and so on, up to 8", cx(), cy() - CH / 2 - 24);
+		BitmapFont f = serif(1.6f);
+		f.setColor(GOLD.r, GOLD.g, GOLD.b, at(5.2f, 5.6f));
+		centred(f, "\u2026 and so on, up to 8", cx(), h - 70);
 	}
 
 	// ---- the bid panel, as at the table: 0..n, one picked, some barred
@@ -590,59 +604,63 @@ public class TutorialScreen extends BaseScreen {
 
 	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
 
-	// ---- 8. bidding: count your winners, bid 2; the others bid in turn
+	// ---- 8. bidding: count your winners (the trump Ace, the King), bid 2; then the others bid
 
 	private void bidding() {
 		Card[] hand = { card(Rank.ACE, Suit.SPADES), card(Rank.KING, Suit.HEARTS), card(Rank.FOUR, Suit.CLUBS) };
 		int[] bids = { 2, 1, 0, 1 };
-		float[] when = { 2.8f, 3.3f, 3.7f, 4.1f };
+		float[] when = { 3.0f, 3.5f, 3.9f, 4.3f };
 		for (int s = 0; s < 4; s++) {
 			boolean bid = t >= when[s];
 			seat(s, bid ? Integer.valueOf(bids[s]) : null, 0, s == 0 && !bid, false, 0, 3, false, 1);
 		}
+		float counting = 1 - at(1.8f, 2.0f);
 		for (int i = 0; i < 3; i++) {
 			float x = handX(i, 3), y = handY();
-			float g = i < 2 ? at(0.5f + i * 0.4f, 0.9f + i * 0.4f) * (1 - at(2.6f, 2.9f)) : 0;
+			float g = i < 2 ? at(0.4f + i * 0.6f, 0.7f + i * 0.6f) * counting : 0;
 			glow(x, y, g);
-			card(hand[i], x, y + g * 10, 2 + g * 10, i == 2 ? 1 - 0.35f * at(0.5f, 0.9f) * (1 - at(2.6f, 2.9f)) : 1, 1);
+			card(hand[i], x, y, 2, i == 2 ? 1 - 0.4f * at(0.4f, 0.7f) * counting : 1, 1);
+			if (i < 2 && g > 0) { // counting them: 1, 2
+				numeral(i + 1, x + CW / 2, y + CH + 22, 30, tint.set(1, 1, 1, g));
+			}
 		}
-		label("A WINNER (TRUMP ACE)", handX(0, 3) + CW / 2, handY() + CH + 30, at(0.5f, 0.9f) * (1 - at(1.7f, 1.9f)));
-		label("PROBABLY A WINNER", handX(1, 3) + CW / 2, handY() + CH + 30, at(1.0f, 1.3f) * (1 - at(1.7f, 1.9f)));
-		// the bid panel between your hand and the top seat: 2 picked, then gone as the bids go up
-		bidPanel(cx(), handY() + CH + 12, 3, t >= 2.4f ? 2 : -1, -1, at(2.0f, 2.3f) * (1 - at(2.8f, 3.0f)));
+		BitmapFont f = ui(1.05f);
+		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(1.2f, 1.5f) * counting);
+		f.draw(batch, "Ace of trumps and a King:\ntwo likely winners", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
+		// then the bid: 2
+		bidPanel(cx(), handY() + CH + 12, 3, t >= 2.5f ? 2 : -1, -1, at(2.0f, 2.3f) * (1 - at(2.9f, 3.1f)));
 	}
 
-	// ---- 9. bidding zero: a low hand bids nothing, and lets the trick go by
+	// ---- 9. bidding zero: a low hand bids nothing, and lets the trick go by (Horatio takes it)
 
 	private void biddingZero() {
 		Card[] hand = { card(Rank.TWO, Suit.DIAMONDS), card(Rank.THREE, Suit.CLUBS), card(Rank.FOUR, Suit.HEARTS) };
-		boolean bid = t >= 0.4f;
-		seat(0, bid ? Integer.valueOf(0) : null, 0, t >= 3.8f, false, 0, 3, false, 1);
-		for (int s = 1; s < 4; s++) {
-			seat(s, s == 2 && t >= 3.4f ? Integer.valueOf(1) : null, s == 2 && t >= 3.4f ? 1 : 0, false, false, 0, 3, !(s == 2 && t >= 3.4f), 1);
-		}
-		float gone = at(2.8f, 3.4f);
-		Card[] played = { card(Rank.THREE, Suit.CLUBS), card(Rank.NINE, Suit.CLUBS), card(Rank.QUEEN, Suit.CLUBS),
-				card(Rank.FIVE, Suit.CLUBS) };
-		float[] when = { 2.2f, 1.0f, 1.4f, 1.8f };
+		boolean taken = t >= 3.4f;
+		seat(0, t >= 0.4f ? Integer.valueOf(0) : null, 0, t >= 3.8f, false, 0, 3, false, 1);
+		seat(1, null, 0, false, false, 0, 3, true, 1);
+		seat(3, taken ? Integer.valueOf(1) : null, taken ? 1 : 0, false, false, 0, 3, !taken, 1);
+		// the trick, in a row: Rupert leads, Oswald (above, off the scene), Horatio, then you
+		Card[] played = { card(Rank.NINE, Suit.CLUBS), card(Rank.FIVE, Suit.CLUBS), card(Rank.QUEEN, Suit.CLUBS),
+				card(Rank.THREE, Suit.CLUBS) };
+		float[] when = { 1.0f, 1.4f, 1.8f, 2.2f };
+		float y = rowY(true), gone = at(2.8f, 3.4f);
 		for (int i = 0; i < 3; i++) {
-			if (i == 1 && t >= when[0]) {
+			if (i == 1 && t >= when[3]) {
 				continue; // your 3 of clubs, played
 			}
 			card(hand[i], handX(i, 3), handY(), 2, 1, 1);
 		}
-		for (int s = 0; s < 4; s++) {
-			float x = MathUtils.lerp(slotX(s), fromX(2), gone), y = MathUtils.lerp(slotY(s), fromY(2), gone);
-			float a = when[s];
+		float[] fromXs = { fromX(1), rowX(1, 4), fromX(3), handX(1, 3) }, fromYs = { fromY(1), h + 10, fromY(3), handY() };
+		for (int i = 0; i < 4; i++) {
+			float x = MathUtils.lerp(rowX(i, 4), fromX(3), gone), cy = MathUtils.lerp(y, fromY(3), gone);
+			float a = when[i];
 			if (t >= a + 0.4f) {
-				card(played[s], x, y, 2, 1, 1 - gone);
-			} else if (s == 0) {
-				flying(played[s], handX(1, 3), handY(), slotX(0), slotY(0), a, a + 0.4f, 1, 1);
+				card(played[i], x, cy, 2, 1, 1 - gone);
 			} else {
-				flying(played[s], fromX(s), fromY(s), slotX(s), slotY(s), a, a + 0.4f, 1, 1);
+				flying(played[i], fromXs[i], fromYs[i], rowX(i, 4), y, a, a + 0.4f, 1, 1);
 			}
 		}
-		label("NO TRICKS: BID MADE", seatX(0) + PlayerPanel.W / 2, seatTop(0) + 22, at(3.8f, 4.2f));
+		label("NO TRICKS TAKEN: BID MADE", seatX(0) + PlayerPanel.W / 2, seatTop(0) + 22, at(3.8f, 4.2f));
 	}
 
 	// ---- 10. the dealer's hook: 3 tricks, 2 bid so far; the dealer can't bid 1
@@ -661,39 +679,38 @@ public class TutorialScreen extends BaseScreen {
 		centred(f, "1 + 0 + 1 + 1 = 3 tricks: not allowed", cx(), cy() - 46);
 	}
 
-	// ---- 11. scoring: your bid of 2 made (+14); Horatio over his bid of 1, set (-5)
+	// ---- 11. scoring: your bid of 2 made (+14); Horatio one over his bid of 1, set (-5)
 
 	private void scoring() {
-		int mine = t >= 1.2f ? 2 : t >= 0.6f ? 1 : 0;
-		int his = t >= 4.4f ? 2 : t >= 3.8f ? 1 : 0;
-		seat(0, 2, mine, false, false, t >= 1.6f ? 14 : 0, 3, false, 1);
-		seat(3, 1, his, false, false, t >= 5.0f ? -5 : 0, 3, false, 1);
+		int mine = t >= 1.6f ? 2 : t >= 0.8f ? 1 : 0;
+		int his = t >= 5.6f ? 2 : t >= 4.8f ? 1 : 0;
+		seat(0, 2, mine, false, false, t >= 2.2f ? 14 : 0, 3, false, 1);
+		seat(3, 1, his, false, false, t >= 6.4f ? -5 : 0, 3, false, 1);
 		seat(1, null, 0, false, false, 0, 3, true, 1);
 		seat(2, null, 0, false, false, 0, 3, true, 1);
 		float yx = seatX(0) + PlayerPanel.W / 2, yy = seatTop(0) + 10;
-		if (passed(1.6f)) {
+		if (passed(2.2f)) {
 			sparks.burst(yx, yy - PlayerPanel.H / 2, 70);
 		}
-		floating("+14", yx, yy, 1.6f, Palette.GOLD_LIGHT);
+		floating("+14", yx, yy, 2.2f, Palette.GOLD_LIGHT);
 		float hx = seatX(3) + PlayerPanel.W / 2;
-		if (t >= 4.8f) {
-			art.art(assets.setText, hx, seatTop(3) - PlayerPanel.H - 34, 0.5f, at(4.8f, 5.1f));
+		if (t >= 6.2f) {
+			art.art(assets.setText, hx, seatTop(3) - PlayerPanel.H - 34, 0.5f, at(6.2f, 6.5f));
 		}
-		floating("−5", hx, seatTop(3) + 10, 5.0f, Palette.RED);
-		BitmapFont f = ui(1.05f);
-		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(1.8f, 2.2f));
-		centred(f, "Bid 2, won 2:  10 + 2 + 2 = 14", cx(), cy() + 30);
-		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(5.2f, 5.6f));
-		centred(f, "Bid 1, won 2:  one over, −5", cx(), cy() - 4);
+		floating("-5", hx, seatTop(3) + 10, 6.4f, Palette.RED);
+		BitmapFont f = ui(1.1f);
+		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
+		centred(f, "You bid 2 and won 2: made it. 10 + 2 + 2 = 14 points", cx(), cy() + 36);
+		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(6.6f, 7.0f));
+		centred(f, "Horatio bid 1 and won 2: one trick over, so -5", cx(), cy() - 4);
 	}
 
-	// ---- 12. ready: your panel glows, a few fireworks
+	// ---- 12. ready: the title (eased in once and kept), a few fireworks
 
 	private void ready() {
 		if (passed(0.3f) && game.settings.effects()) {
 			fireworks.show(w, h);
 		}
-		seat(0, null, 0, true, false, 0, 1, true, 1);
-		art.art(assets.titleText, cx(), cy() + 20, 0.5f, at(0, 0.6f));
+		art.art(assets.titleText, cx(), cy() + 20, 0.62f, 0.25f + 0.75f * at(0, 1.2f));
 	}
 }

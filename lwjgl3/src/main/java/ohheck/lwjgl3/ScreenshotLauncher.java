@@ -32,7 +32,7 @@ import rules.Stats;
 public class ScreenshotLauncher {
 
 	/** Prefixes of states to capture, as reported by the screens' stateTag(). */
-	private static final String[] WANTED = { "intro", "title", "highscores", "statistics", "options", "players", "tutorial:3", "tutorial:6", "tutorial:8", "tutorial:10", "tutorial:11", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "highscores", "statistics", "options", "players", "tutorial:3", "tutorial:6", "tutorial:7", "tutorial:8", "tutorial:9", "tutorial:10", "tutorial:11", "tutorial:12", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:7", "bidding:7", "menu:7", "play:8:",
 			"tossing", "gameover" };
 
