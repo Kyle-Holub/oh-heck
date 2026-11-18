@@ -4,8 +4,9 @@ name: Preview
 # its screenshots on a draft release (drafts are private, so Obtainium never
 # sees them). Nothing is published; merge into a develop/ branch for that.
 #
-# For a quicker check, end the commit message with [shots: options,tutorial] (any
-# state prefixes): only those are captured, and the run stops once it has them.
+# For a quicker check, add a line to the commit message that starts with
+# [shots: options,tutorial] (any state prefixes): only those are captured, and the run
+# stops once it has them.
 
 on:
   push:
@@ -37,7 +38,7 @@ jobs:
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
-          SHOTS=$(git log -1 --pretty=%B | sed -n 's/.*\[shots: *\([^]]*\)\].*/\1/p' | head -1 | tr -d ' ')
+          SHOTS=$(git log -1 --pretty=%B | sed -n 's/^\[shots: *\([^]]*\)\].*/\1/p' | head -1 | tr -d ' ')
           echo "Shots: ${SHOTS:-all}"
           env -u ANDROID_HOME -u ANDROID_SDK_ROOT \
             xvfb-run -a -s "-screen 0 1600x800x24" ./gradlew lwjgl3:screenshots ${SHOTS:+-Pshots=$SHOTS} --stacktrace

@@ -89,6 +89,10 @@ public class ScreenshotLauncher {
 		final String outDir = args.length > 0 ? args[0] : "screenshots";
 		// a second argument, "options,tutorial" (gradle -Pshots=...), keeps only states starting with those
 		final String[] list = args.length > 1 && !args[1].trim().isEmpty() ? only(args[1].split(",")) : WANTED;
+		if (list.length == 0) {
+			System.err.println("No screenshot states start with \"" + args[1] + "\". They are: " + Arrays.toString(WANTED));
+			System.exit(1);
+		}
 		final Set<String> wanted = new HashSet<String>(Arrays.asList(list));
 		final int[] frames = { 0 };
 		final String[] seen = { "" };
