@@ -45,7 +45,7 @@ public class OptionsScreen extends BaseScreen {
 			learnRows = new ArrayList<Row>();
 	{
 		final Settings s = game.settings;
-		gameRows.add(new Row("Hand sizes") { // (from the next new game)
+		gameRows.add(new Row("Hand progression") { // (from the next new game)
 			@Override
 			String value() {
 				return s.handOrder().label;

@@ -2,7 +2,7 @@ package rules;
 
 /** Which way a game's eight hands run: one card up to eight (the classic way), or eight down to one. */
 public enum HandOrder {
-	UP("Ascending"), DOWN("Descending"); // (1 card up to 8, or 8 down to 1)
+	UP("1 to 8"), DOWN("8 to 1");
 
 	/** Hands in a game, and the most cards in any of them. */
 	public static final int HANDS = 8;
