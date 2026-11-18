@@ -52,6 +52,19 @@ public class PlayerTest {
 	}
 
 	@Test
+	public void easyNeverSeatsAnExpertAndHardNeverABeginner() {
+		Random rng = new Random(3);
+		for (int i = 0; i < 2000; i++) {
+			for (int id : Player.draw(Difficulty.EASY, rng)) {
+				assertNotEquals(Difficulty.HARD, Player.ALL.get(id).level);
+			}
+			for (int id : Player.draw(Difficulty.HARD, rng)) {
+				assertNotEquals(Difficulty.EASY, Player.ALL.get(id).level);
+			}
+		}
+	}
+
+	@Test
 	public void everyonePlaysLegally() {
 		for (Player p : Player.ALL) {
 			Random rng = new Random(p.id);

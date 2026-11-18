@@ -30,8 +30,8 @@ public final class Player {
 
 	/** Everyone, by id. */
 	public static final List<Player> ALL = Collections.unmodifiableList(Arrays.asList(
-			new Player(0, "Prudence", Difficulty.EASY, Style.TIMID,
-					"Never trusts her cards: often bids a trick fewer than they're worth."),
+			new Player(0, "Edmund", Difficulty.EASY, Style.TIMID,
+					"Never trusts his cards: often bids a trick fewer than they're worth."),
 			new Player(1, "Barnaby", Difficulty.EASY, Style.BOLD,
 					"Sure every hand's a winner, and often bids a trick more than it holds."),
 			new Player(2, "Nathaniel", Difficulty.EASY, Style.ACE_LEADER,
@@ -67,9 +67,9 @@ public final class Player {
 
 	/**
 	 * The chance each seat goes to an easy, normal or expert player, by the difficulty
-	 * setting: mostly easy-going, a mix, or mostly experts.
+	 * setting: Easy never seats an expert, Hard never a beginner, Normal a mix of all three.
 	 */
-	static final double[][] ODDS = { { 0.6, 0.3, 0.1 }, { 0.25, 0.5, 0.25 }, { 0.1, 0.3, 0.6 } };
+	static final double[][] ODDS = { { 0.65, 0.35, 0 }, { 0.25, 0.5, 0.25 }, { 0, 0.35, 0.65 } };
 
 	/** Three different players for a new game at this setting (their ids, for seats 1-3). */
 	public static int[] draw(Difficulty setting, Random rng) {
