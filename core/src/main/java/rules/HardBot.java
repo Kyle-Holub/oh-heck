@@ -23,8 +23,6 @@ final class HardBot implements Bot {
 
 	/** In the last hand: the value of winning the game, and of each of our own points besides. */
 	static final double WIN = 100, WIN_TIEBREAK = 0.1;
-	/** Switch for the arena, to measure playing the last hand to win. */
-	static boolean playToWin = true;
 	/** How much spoiling the rival's hand is worth, against scoring its own. */
 	static final double SPOIL = 0.5;
 	/** This player's weight on the rival's points (a spoiler cares more). */
@@ -40,14 +38,26 @@ final class HardBot implements Bot {
 	private final Random rng;
 	private final NormalBot policy = new NormalBot();
 
+	/** How hard to think: the deal budgets times this (1 normally; the arena tries others). */
+	private final double effort;
+	/** Whether the last hand is played to win the game rather than for points (the arena can turn it off). */
+	private final boolean playToWin;
+
 	HardBot(Random rng) {
 		this(rng, SPOIL);
 	}
 
 	/** A Hard player weighing the rival's points by spoil (SPOIL is the usual; a spoiler's is higher). */
 	HardBot(Random rng, double spoil) {
+		this(rng, spoil, 1, true);
+	}
+
+	/** For the arena's experiments: thinking effort, and whether the last hand is played to win. */
+	HardBot(Random rng, double spoil, double effort, boolean playToWin) {
 		this.rng = rng;
 		this.spoil = spoil;
+		this.effort = effort;
+		this.playToWin = playToWin;
 	}
 
 	@Override
@@ -70,7 +80,7 @@ final class HardBot implements Bot {
 				s.bid(view.seat, bids.get(option));
 				s.finishBidding(policy);
 				s.playOut(policy);
-				return s.value(view.seat, rival, spoil);
+				return s.value(view.seat, rival, spoil, playToWin);
 			}
 		});
 		return bids.get(pick);
@@ -91,7 +101,7 @@ final class HardBot implements Bot {
 				Sim s = new Sim(view, deal);
 				s.play(view.seat, legal.get(option));
 				s.playOut(policy);
-				return s.value(view.seat, rival, spoil);
+				return s.value(view.seat, rival, spoil, playToWin);
 			}
 		});
 		return legal.get(pick);
@@ -102,10 +112,9 @@ final class HardBot implements Bot {
 	/**
 	 * Imagined deals per decision: more for bids in big hands and for plays with many cards
 	 * left, where an extra deal changes the answer most; fewer for a choice of two. The
-	 * arena scales them all with {@link #effort} to measure the trade-off.
+	 * arena scales them all with {@code effort} to measure the trade-off.
 	 */
 	static final int BID_DEALS_BASE = 24, BID_DEALS_PER_CARD = 8, MANY_DEALS = 80, SOME_DEALS = 48, FEW_DEALS = 24;
-	static double effort = 1;
 	/** Deals are played in batches; after MIN_DEALS, stop as soon as one option is clearly best. */
 	static final int BATCH = 8, MIN_DEALS = 16;
 	/** How clearly: the best option's lead over the next, in standard errors of that lead. */
@@ -113,7 +122,7 @@ final class HardBot implements Bot {
 	/** At most this many play-outs per decision (deals times options), so no decision stutters on a phone. */
 	static final int MAX_PLAYOUTS = 480;
 
-	private static int budget(int deals, int options) {
+	private int budget(int deals, int options) {
 		int capped = Math.min(deals, MAX_PLAYOUTS / options);
 		return Math.max(MIN_DEALS, (int) Math.round(capped * effort));
 	}
@@ -406,7 +415,7 @@ final class HardBot implements Bot {
 		 * rival's. In the last hand, what counts is winning the game: WIN for a win (shared
 		 * for a tie), plus a little for our own points so a lost cause still scores.
 		 */
-		double value(int me, int rival, double spoil) {
+		double value(int me, int rival, double spoil, boolean playToWin) {
 			double mine = Rules.score(bids[me], tricks[me]);
 			if (playToWin && handIndex == numberOfHands - 1) {
 				double total = scores[me] + mine;

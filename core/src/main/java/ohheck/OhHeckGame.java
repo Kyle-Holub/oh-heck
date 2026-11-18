@@ -36,6 +36,13 @@ public class OhHeckGame extends Game {
 	private OptionsScreen optionsScreen;
 	private HighScoresScreen highScoresScreen;
 	private PlayersScreen playersScreen;
+	/** The screens made once and kept for the whole run (all but the table), released together. */
+	private final java.util.List<Screen> keptScreens = new java.util.ArrayList<Screen>();
+
+	private <T extends Screen> T kept(T screen) {
+		keptScreens.add(screen);
+		return screen;
+	}
 	private Stats stats = new Stats();
 	private PlayScreen play;
 
@@ -61,11 +68,11 @@ public class OhHeckGame extends Game {
 		stats = options.stats != null ? options.stats : Stats.decode(options.persist ? settings.stats() : "");
 		audio = new Audio(settings);
 		post = new PostProcessor();
-		title = new TitleScreen(this);
-		tutorial = new TutorialScreen(this);
-		optionsScreen = new OptionsScreen(this);
-		highScoresScreen = new HighScoresScreen(this);
-		playersScreen = new PlayersScreen(this);
+		title = kept(new TitleScreen(this));
+		tutorial = kept(new TutorialScreen(this));
+		optionsScreen = kept(new OptionsScreen(this));
+		highScoresScreen = kept(new HighScoresScreen(this));
+		playersScreen = kept(new PlayersScreen(this));
 		setScreen(title);
 	}
 
@@ -248,11 +255,9 @@ public class OhHeckGame extends Game {
 	@Override
 	public void dispose() {
 		super.dispose();
-		title.dispose();
-		tutorial.dispose();
-		optionsScreen.dispose();
-		highScoresScreen.dispose();
-		playersScreen.dispose();
+		for (Screen s : keptScreens) {
+			s.dispose();
+		}
 		if (play != null) {
 			play.dispose();
 		}

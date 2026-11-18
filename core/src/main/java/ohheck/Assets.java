@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
 import rules.Card;
@@ -65,13 +66,22 @@ public final class Assets implements Disposable {
 	private final TextureRegion back, backBlur;
 	private final TextureRegion[][] blurred = new TextureRegion[4][13];
 
+	/** Everything loaded here, released together in {@link #dispose()}: each loader adds what it makes. */
+	private final Array<Disposable> owned = new Array<Disposable>();
+
+	/** Registers something to release with the rest, and hands it back. */
+	private <T extends Disposable> T own(T d) {
+		owned.add(d);
+		return d;
+	}
+
 	public Assets() {
-		table = linear(new Texture(Gdx.files.internal("images/table.jpg")));
+		table = linear(own(new Texture(Gdx.files.internal("images/table.jpg"))));
 		cardSheet = mipmapped("images/cards_hd.png");
 		cardBack = mipmapped("images/back_hd.png");
 		cardSheetBlur = mipmapped("images/cards_blur.png");
 		cardBackBlur = mipmapped("images/back_blur.png");
-		shadow = linear(new Texture(Gdx.files.internal("images/shadow.png")));
+		shadow = linear(own(new Texture(Gdx.files.internal("images/shadow.png"))));
 		glow = mipmapped("images/glow.png");
 		panel = ninePatch("panel");
 		panelTurn = ninePatch("panel_turn");
@@ -114,9 +124,9 @@ public final class Assets implements Disposable {
 		Pixmap p = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
 		p.setColor(Color.WHITE);
 		p.fill();
-		white = new Texture(p);
+		white = own(new Texture(p));
 		p.dispose();
-		stroke = strokeTexture(32, 160);
+		stroke = own(strokeTexture(32, 160));
 		font = bitmapFont("ui");
 		serif = bitmapFont("serif");
 	}
@@ -167,16 +177,16 @@ public final class Assets implements Disposable {
 		return BLUR_PAD / (float) (SHEET_H + 2 * BLUR_PAD);
 	}
 
-	private static NinePatch ninePatch(String name) {
-		Texture t = new Texture(Gdx.files.internal("images/" + name + ".png"));
+	private NinePatch ninePatch(String name) {
+		Texture t = own(new Texture(Gdx.files.internal("images/" + name + ".png")));
 		t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 		NinePatch p = new NinePatch(t, 16, 16, 16, 16);
 		return p;
 	}
 
-	private static BitmapFont bitmapFont(String name) {
+	private BitmapFont bitmapFont(String name) {
 		Texture t = mipmapped("fonts/" + name + ".png");
-		BitmapFont f = new BitmapFont(Gdx.files.internal("fonts/" + name + ".fnt"), new TextureRegion(t), false);
+		BitmapFont f = own(new BitmapFont(Gdx.files.internal("fonts/" + name + ".fnt"), new TextureRegion(t), false));
 		f.setUseIntegerPositions(false);
 		return f;
 	}
@@ -189,8 +199,8 @@ public final class Assets implements Disposable {
 		return digits[n];
 	}
 
-	private static Texture mipmapped(String path) {
-		Texture t = new Texture(Gdx.files.internal(path), true);
+	private Texture mipmapped(String path) {
+		Texture t = own(new Texture(Gdx.files.internal(path), true));
 		t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
 		return t;
 	}
@@ -202,28 +212,9 @@ public final class Assets implements Disposable {
 
 	@Override
 	public void dispose() {
-		table.dispose();
-		cardSheet.dispose();
-		cardBack.dispose();
-		cardSheetBlur.dispose();
-		cardBackBlur.dispose();
-		shadow.dispose();
-		glow.dispose();
-		for (NinePatch p : new NinePatch[] { panel, panelTurn, panelWait, button, buttonAlt, buttonOff }) {
-			p.getTexture().dispose();
+		for (Disposable d : owned) {
+			d.dispose();
 		}
-		titleText.dispose();
-		for (Texture t : new Texture[] { bidTricksText, setText, trickWonText, makeBidText, gameOverText, dealerIcon, trickIcon, overIcon, zeroIcon, waitingIcon, bidDigits, bidOpen, bidTaken, bidOver }) {
-			t.dispose();
-		}
-		white.dispose();
-		for (Texture t : levelBadge) {
-			t.dispose();
-		}
-		stroke.dispose();
-		font.getRegion().getTexture().dispose();
-		serif.getRegion().getTexture().dispose();
-		font.dispose();
-		serif.dispose();
+		owned.clear();
 	}
 }

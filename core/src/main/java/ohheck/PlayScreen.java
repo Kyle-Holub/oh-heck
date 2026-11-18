@@ -46,7 +46,12 @@ public class PlayScreen extends BaseScreen {
 	private static final float DRAG_START = 12f;
 
 	private final GameOptions options;
-	private final Random rng;
+	/**
+	 * Separate random streams for who sits down, the bots' own randomness and the deck, so a
+	 * change that draws on one (a new player, a new habit) doesn't reshuffle the others: the
+	 * screenshot run's seeded game stays the same game.
+	 */
+	private final Random seating, bots, deck;
 
 	final TableLayout table = new TableLayout();
 	final TableOverlays overlays;
@@ -97,7 +102,9 @@ public class PlayScreen extends BaseScreen {
 	public PlayScreen(OhHeckGame game, Match restored, Difficulty savedLevel, int[] savedPlayers) {
 		super(game);
 		this.options = game.options;
-		this.rng = options.seed == null ? new Random() : new Random(options.seed);
+		seating = stream(options.seed, 0x5EA7L);
+		bots = stream(options.seed, 0xB075L);
+		deck = stream(options.seed, 0xDEC4L);
 		this.art = new CardArt(batch, assets);
 		this.overlays = new TableOverlays(this, table, art);
 		this.autoplay = options.autoplayHuman ? new Autoplay(this, options) : null;
@@ -170,7 +177,7 @@ public class PlayScreen extends BaseScreen {
 			newGame();
 		} else {
 			level = savedLevel;
-			seatPlayers(savedPlayers != null ? savedPlayers : Player.draw(level, rng));
+			seatPlayers(savedPlayers != null ? savedPlayers : Player.draw(level, seating));
 			overlays.setMatch(restored);
 			flow.resume(restored);
 		}
@@ -232,11 +239,11 @@ public class PlayScreen extends BaseScreen {
 	/** A new game: a table drawn for the difficulty now chosen in Options. */
 	private void newGame() {
 		level = Difficulty.values()[game.settings.difficulty()];
-		seatPlayers(Player.draw(level, rng));
+		seatPlayers(Player.draw(level, seating));
 		tumble = null;
 		game.stats().startGame();
 		game.saveStats();
-		Match m = Match.random(4, rng, game.settings.handOrder());
+		Match m = Match.random(4, deck, game.settings.handOrder());
 		overlays.setMatch(m);
 		newHighScore = -1;
 		flow.start(m);
@@ -326,6 +333,11 @@ public class PlayScreen extends BaseScreen {
 		game.audio.startMusic();
 	}
 
+	/** A random stream: unseeded normally; from the run's seed and a salt for the screenshot run. */
+	static Random stream(Long seed, long salt) {
+		return seed == null ? new Random() : new Random(seed * 0x9E3779B97F4A7C15L ^ salt);
+	}
+
 	/** The name shown for a seat: "You", or the computer player sitting there. */
 	String name(int seat) {
 		return seat == HUMAN ? "You" : Player.ALL.get(players[seat - 1]).name;
@@ -333,7 +345,7 @@ public class PlayScreen extends BaseScreen {
 
 	private void seatPlayers(int[] ids) {
 		players = ids;
-		flow.seat(ids, rng);
+		flow.seat(ids, bots);
 	}
 
 	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */

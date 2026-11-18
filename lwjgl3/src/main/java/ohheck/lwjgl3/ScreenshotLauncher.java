@@ -36,6 +36,20 @@ public class ScreenshotLauncher {
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:7", "bidding:7", "menu:7", "play:8:",
 			"tossing", "gameover" };
 
+	/** The wanted states that start with any of the given prefixes, in the usual order. */
+	private static String[] only(String[] prefixes) {
+		java.util.List<String> kept = new java.util.ArrayList<String>();
+		for (String w : WANTED) {
+			for (String p : prefixes) {
+				if (!p.trim().isEmpty() && w.startsWith(p.trim())) {
+					kept.add(w);
+					break;
+				}
+			}
+		}
+		return kept.toArray(new String[0]);
+	}
+
 	/** Hands played instantly: nothing on the list happens in them. */
 	private static final Integer[] SKIP = { 2, 5, 6 };
 
@@ -52,9 +66,6 @@ public class ScreenshotLauncher {
 		}
 		if (state.equals("title")) {
 			return 10; // cards falling, before the scripted run moves on at ~17 frames
-		}
-		if (state.equals("rules")) {
-			return 8; // scrolled down a little
 		}
 		if (state.equals("tossing")) {
 			return 8; // the final hand's cards in the air
@@ -76,14 +87,18 @@ public class ScreenshotLauncher {
 
 	public static void main(String[] args) {
 		final String outDir = args.length > 0 ? args[0] : "screenshots";
-		final Set<String> wanted = new HashSet<String>(Arrays.asList(WANTED));
+		// a second argument, "options,tutorial" (gradle -Pshots=...), keeps only states starting with those
+		final String[] list = args.length > 1 && !args[1].trim().isEmpty() ? only(args[1].split(",")) : WANTED;
+		final Set<String> wanted = new HashSet<String>(Arrays.asList(list));
 		final int[] frames = { 0 };
 		final String[] seen = { "" };
 		final int[] inState = { 0 };
 		final long start = System.nanoTime();
 
 		GameOptions o = new GameOptions();
-		o.seed = 20261129L; // a game the scripted player wins, to show the fireworks (found by replaying the rules)
+		// a game the scripted player wins (75 to 47, against Cornelius, Oswald and Horatio), to show the
+		// fireworks; found by replaying the rules with the table's random streams (see PlayScreen.stream)
+		o.seed = 20261166L;
 		o.autoplayHuman = true;
 		o.persist = false;
 		o.speed = 2f;
@@ -100,9 +115,9 @@ public class ScreenshotLauncher {
 				}
 				inState[0]++;
 				if (inState[0] == settleFrames(state)) {
-					for (String w : WANTED) {
+					for (String w : list) {
 						if (state.startsWith(w) && wanted.remove(w)) {
-							save(outDir + "/" + String.format("%02d-", WANTED.length - wanted.size()) + state.replace(':', '-') + ".png");
+							save(outDir + "/" + String.format("%02d-", list.length - wanted.size()) + state.replace(':', '-') + ".png");
 							break;
 						}
 					}
