@@ -59,7 +59,7 @@ final class TableFlow {
 	/** Seats the computer players: players[s - 1] (a {@link Player} id) in seat s. */
 	void seat(int[] players, Random rng) {
 		for (int s = 1; s < bots.length; s++) {
-			bots[s] = Player.ALL.get(players[s - 1]).bot(new Random(rng.nextLong()));
+			bots[s] = Player.byId(players[s - 1]).bot(new Random(rng.nextLong()));
 		}
 	}
 

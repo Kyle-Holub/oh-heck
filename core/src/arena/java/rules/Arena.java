@@ -258,12 +258,16 @@ public final class Arena {
 			}
 		} else if (what.equals("effort")) {
 			for (double k : new double[] { 0.5, 1, 2 }) {
-				HardBot.effort = k;
+				final double effort = k;
 				long t = System.currentTimeMillis();
-				report("Hard (effort " + k + ") vs 3 Normal", run(n, level(Difficulty.HARD), level(Difficulty.NORMAL)));
+				report("Hard (effort " + k + ") vs 3 Normal", run(n, new Maker() {
+					@Override
+					public Bot make(long seed) {
+						return new HardBot(new Random(seed), HardBot.SPOIL, effort, true);
+					}
+				}, level(Difficulty.NORMAL)));
 				System.out.printf("   %.1f s%n", (System.currentTimeMillis() - t) / 1000.0);
 			}
-			HardBot.effort = 1;
 		} else {
 			System.out.println("Experiments: levels N | vs N | learn N | effort N | players N");
 		}

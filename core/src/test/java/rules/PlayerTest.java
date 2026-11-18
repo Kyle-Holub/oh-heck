@@ -14,9 +14,11 @@ public class PlayerTest {
 	public void twelvePlayersFourAtEachLevel() {
 		assertEquals(12, Player.ALL.size());
 		int[] perLevel = new int[3];
-		for (int i = 0; i < Player.ALL.size(); i++) {
-			assertEquals(i, Player.ALL.get(i).id);
-			perLevel[Player.ALL.get(i).level.ordinal()]++;
+		java.util.Set<Integer> ids = new java.util.HashSet<Integer>();
+		for (Player p : Player.ALL) {
+			assertTrue("ids are permanent and never shared", ids.add(p.id));
+			assertEquals(p, Player.byId(p.id));
+			perLevel[p.level.ordinal()]++;
 		}
 		assertEquals(4, perLevel[0]);
 		assertEquals(4, perLevel[1]);
@@ -41,7 +43,7 @@ public class PlayerTest {
 		for (Difficulty d : Difficulty.values()) {
 			for (int i = 0; i < 2000; i++) {
 				for (int id : Player.draw(d, rng)) {
-					if (Player.ALL.get(id).level == Difficulty.HARD) {
+					if (Player.byId(id).level == Difficulty.HARD) {
 						experts[d.ordinal()][0]++;
 					}
 				}
@@ -56,10 +58,10 @@ public class PlayerTest {
 		Random rng = new Random(3);
 		for (int i = 0; i < 2000; i++) {
 			for (int id : Player.draw(Difficulty.EASY, rng)) {
-				assertNotEquals(Difficulty.HARD, Player.ALL.get(id).level);
+				assertNotEquals(Difficulty.HARD, Player.byId(id).level);
 			}
 			for (int id : Player.draw(Difficulty.HARD, rng)) {
-				assertNotEquals(Difficulty.EASY, Player.ALL.get(id).level);
+				assertNotEquals(Difficulty.EASY, Player.byId(id).level);
 			}
 		}
 	}
