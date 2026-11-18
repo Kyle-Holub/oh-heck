@@ -14,7 +14,7 @@ import rules.Stats;
 /** The libGDX entry point shared by Android and desktop; switches between screens. */
 public class OhHeckGame extends Game {
 
-	public static final String VERSION = "alpha-1.0.8";
+	public static final String VERSION = "alpha-1.0.9";
 	/** The CI build ("dev-0042") from assets/build.txt, or "" for a local build. */
 	String build = "";
 
