@@ -68,7 +68,7 @@ public class PlayScreen extends BaseScreen {
 	private final Motes motes = new Motes();
 	/** Drives your seat in scripted screenshot runs; null in normal play. */
 	private final Autoplay autoplay;
-	private final TextureRegion strokeRegion;
+	private final Counters counters;
 
 	/** Game time, for animations; stops while paused. */
 	private float time;
@@ -101,7 +101,7 @@ public class PlayScreen extends BaseScreen {
 		this.art = new CardArt(batch, assets);
 		this.overlays = new TableOverlays(this, table, art);
 		this.autoplay = options.autoplayHuman ? new Autoplay(this, options) : null;
-		this.strokeRegion = new TextureRegion(assets.stroke);
+		this.counters = new Counters(this);
 		this.flow = new TableFlow(new TableFlow.Listener() {
 			@Override
 			public void beforeDeal(Match m) {
@@ -586,64 +586,18 @@ public class PlayScreen extends BaseScreen {
 		batch.end();
 	}
 
-	// ---- the hand counter: tally marks, a gate of five then three
-
-	private static final float TALLY_H = 36f, TALLY_W = 6f, TALLY_STEP = 12f;
-	/** Small fixed leans so the strokes look hand drawn. */
-	private static final float[] TALLY_LEAN = { 3f, -2f, 4f, -1f, 0f, 2f, -3f, 1f };
+	// ---- the counters, top left: the hand tally, and the bid tracker under it
 
 	private void drawTally() {
 		int done = match().phase() == Match.Phase.GAME_OVER ? 8 : match().handIndex();
-		float left = 22, top = h - 12, pulse = 0.5f + 0.5f * MathUtils.sin(time * 3f);
-		for (int i = 0; i < 8; i++) {
-			float cx, cy = top - TALLY_H / 2, len = TALLY_H, rot;
-			if (i == 4) { // the bar across the first four
-				cx = left + 1.5f * TALLY_STEP;
-				len = 4 * TALLY_STEP + 8;
-				rot = -52; // leaning up to the right
-			} else {
-				int col = i < 4 ? i : i - 1;
-				cx = left + col * TALLY_STEP + (i > 4 ? 16 : 0);
-				rot = TALLY_LEAN[i];
-			}
-			if (i == done) { // the hand being played glows
-				stroke(cx, cy, TALLY_W + 6, len + 6, rot, Palette.GOLD_LIGHT, 0.18f + 0.22f * pulse);
-				stroke(cx, cy, TALLY_W, len, rot, Palette.GOLD_LIGHT, 1f);
-			} else if (i < done) {
-				stroke(cx, cy, TALLY_W, len, rot, GOLD, 1f);
-			} else {
-				stroke(cx, cy, TALLY_W, len, rot, Palette.MUTED, 0.28f);
-			}
-		}
+		counters.tally(22, h - 12, done, Counters.pulse(time), 1f);
 	}
 
-	// ---- the bid tracker, under the tally: one card per trick in the hand
-
-	private static final float TRACKER_GAP = 4, TRACKER_MAX_W = 21, TRACKER_BELOW_TALLY = 10;
-
-	/**
-	 * How the table has bid: one card per trick in this hand, filled in as the bids add
-	 * up, then a red card for each trick bid beyond the hand (everyone can't make it).
-	 */
 	private void drawBidTracker() {
 		Match m = match();
-		int n = m.handSize(), total = m.bidsSoFar();
-		int filled = Math.min(total, n), count = Math.max(total, n);
-		float x0 = 22 - TALLY_W / 2; // lined up with the tally's first mark
+		float x0 = 22 - Counters.TALLY_W / 2; // lined up with the tally's first mark
 		float avail = table.panelX(2) - 14 - x0; // and clear of the top player's panel
-		float iw = Math.min(TRACKER_MAX_W, avail / count - TRACKER_GAP), ih = iw * 18f / 14f;
-		float y = h - 12 - TALLY_H - TRACKER_BELOW_TALLY - ih;
-		for (int i = 0; i < count; i++) {
-			Texture t = i < filled ? assets.bidTaken : i < n ? assets.bidOpen : assets.bidOver;
-			batch.draw(t, x0 + i * (iw + TRACKER_GAP), y, iw, ih);
-		}
-	}
-
-	/** A soft-edged bar centred on (cx, cy), rotated by rot degrees. */
-	private void stroke(float cx, float cy, float sw, float sh, float rot, Color c, float alpha) {
-		batch.setColor(c.r, c.g, c.b, alpha);
-		batch.draw(strokeRegion, cx - sw / 2, cy - sh / 2, sw / 2, sh / 2, sw, sh, 1f, 1f, rot);
-		batch.setColor(Color.WHITE);
+		counters.tracker(x0, h - 12 - Counters.TALLY_H - Counters.TRACKER_BELOW_TALLY, avail, m.handSize(), m.bidsSoFar(), 1f);
 	}
 
 	private void drawTrump() {
