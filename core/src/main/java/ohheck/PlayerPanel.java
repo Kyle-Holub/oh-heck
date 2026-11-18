@@ -16,6 +16,14 @@ final class PlayerPanel {
 	static final float W = 214, H = 80;
 
 	private static final float ICON_MAX_W = 28, ICON_GAP = 3;
+
+	/**
+	 * The icons' width this hand: as big as fits the most any player can show (one per card
+	 * dealt), up to 28, so every panel's icons are the same size.
+	 */
+	private static float iconWidth(int handSize) {
+		return Math.min(ICON_MAX_W, (W - 20) / Math.max(1, handSize) - ICON_GAP);
+	}
 	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.32f);
 	/** Not bid yet: the panel's text dimmed. */
 	private static final Color WAIT_TEXT = new Color(0.72f, 0.66f, 0.58f, 1f), WAIT_SCORE = new Color(0.62f, 0.5f, 0.3f, 1f);
@@ -30,7 +38,7 @@ final class PlayerPanel {
 	 * @param bid  the player's bid this hand, or null if they haven't bid
 	 * @param won  tricks taken this hand
 	 */
-	void draw(String name, float x, float top, boolean turn, boolean dealer, int score, Integer bid, int won,
+	void draw(String name, float x, float top, boolean turn, boolean dealer, int score, Integer bid, int won, int handSize,
 			boolean dealing, float time) {
 		Assets assets = screen.assets;
 		float y = top - H;
@@ -62,7 +70,7 @@ final class PlayerPanel {
 			if (waiting) {
 				// an hourglass: dim while waiting their turn, pulsing while they decide
 				float a = turn ? 0.75f + 0.25f * MathUtils.sin(time * 4f) : 0.55f;
-				float iw = ICON_MAX_W, ih = iw * 18f / 14f;
+				float iw = iconWidth(handSize), ih = iw * 18f / 14f;
 				screen.batch.setColor(1f, 1f, 1f, a);
 				screen.batch.draw(assets.waitingIcon, x + 10, iy, iw, ih);
 				screen.batch.setColor(Color.WHITE);
@@ -70,10 +78,9 @@ final class PlayerPanel {
 			return;
 		}
 
-		// as big as fits: 28 wide for a few tricks, shrinking to fit 8 (plus the zero icon)
 		// a bid of zero shows its icon until a trick is taken; then the red over-the-bid icons replace it
 		int tricks = Math.max(bid, won), first = bid == 0 && won == 0 ? 1 : 0;
-		float iw = Math.min(ICON_MAX_W, (W - 20) / (first + tricks) - ICON_GAP), ih = iw * 18f / 14f;
+		float iw = iconWidth(handSize), ih = iw * 18f / 14f;
 		if (first == 1) {
 			screen.batch.draw(assets.zeroIcon, x + 10, iy, iw, ih);
 		}

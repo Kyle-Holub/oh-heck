@@ -94,9 +94,6 @@ final class Autoplay {
 	}
 
 	/** A short description of what's on screen, such as "deal:3" or "trick:5". */
-	/** Game over: until this many seconds in, the screenshot run calls it "tossing" (cards in the air). */
-	static final float TOSSING_SHOT_END = 1.2f;
-
 	static String describe(PlayScreen s) {
 		Match m = s.match();
 		int hand = m.handIndex() + 1;
@@ -125,7 +122,7 @@ final class Autoplay {
 			return "handover:" + hand;
 		default:
 			// the final hand's cards thrown off the table, then the scores
-			return s.stateTime() < TOSSING_SHOT_END ? "tossing" : "gameover";
+			return s.resultsShown() ? "gameover" : "tossing";
 		}
 	}
 }
