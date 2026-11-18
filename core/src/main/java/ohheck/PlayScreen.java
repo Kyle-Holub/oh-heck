@@ -18,6 +18,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import rules.Card;
 import rules.Difficulty;
 import rules.Match;
+import rules.Rules;
 import rules.Suit;
 
 /**
@@ -125,7 +126,11 @@ public class PlayScreen extends BaseScreen {
 
 			@Override
 			public void handEnded() {
-				if (flow.match().madeBid(HUMAN)) {
+				Match m = flow.match();
+				if (PlayScreen.this.game.stats().countHand(m.handIndex(), flow.difficulty(), m.bid(HUMAN), m.tricksWon(HUMAN))) {
+					PlayScreen.this.game.saveStats();
+				}
+				if (m.madeBid(HUMAN)) {
 					sparks.burst(table.centreX(), table.centreY(), 110);
 				}
 			}
@@ -134,6 +139,13 @@ public class PlayScreen extends BaseScreen {
 			public void gameEnded() {
 				Match m = flow.match();
 				newHighScore = PlayScreen.this.game.recordHighScore(m.score(HUMAN), overlays.place(HUMAN), lowest);
+				int[] finals = new int[4];
+				for (int s = 0; s < 4; s++) {
+					finals[s] = m.score(s);
+				}
+				if (PlayScreen.this.game.stats().countGame(lowest, finals, Rules.numberOfHands())) {
+					PlayScreen.this.game.saveStats();
+				}
 				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
 				overlays.highScoresButton.set(0, 0, 0, 0);
 				tossTheTable(m);
@@ -202,6 +214,8 @@ public class PlayScreen extends BaseScreen {
 
 	private void newGame() {
 		tumble = null;
+		game.stats().startGame();
+		game.saveStats();
 		Match m = Match.random(4, rng, game.settings.handOrder());
 		overlays.setMatch(m);
 		newHighScore = -1;

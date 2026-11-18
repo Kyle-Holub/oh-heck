@@ -2,6 +2,7 @@ package ohheck.lwjgl3;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 import com.badlogic.gdx.Gdx;
@@ -15,6 +16,11 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import ohheck.GameOptions;
 import ohheck.OhHeckGame;
+import rules.Bot;
+import rules.Difficulty;
+import rules.Match;
+import rules.Rules;
+import rules.Stats;
 
 /**
  * Plays a seeded game with the bot in every seat, saving a screenshot the
@@ -25,7 +31,7 @@ import ohheck.OhHeckGame;
 public class ScreenshotLauncher {
 
 	/** Prefixes of states to capture, as reported by the screens' stateTag(). */
-	private static final String[] WANTED = { "intro", "title", "highscores", "options", "rules", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "highscores", "statistics", "options", "rules", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:7", "bidding:7", "menu:7", "play:8:",
 			"tossing", "gameover" };
 
@@ -79,6 +85,7 @@ public class ScreenshotLauncher {
 		o.speed = 2f;
 		o.fixedStep = STEP; // game time per frame, not wall-clock time: runs as fast as frames are drawn
 		o.skipHands.addAll(Arrays.asList(SKIP));
+		o.stats = someStats();
 		o.frameListener = new GameOptions.FrameListener() {
 			@Override
 			public void onFrame(String state) {
@@ -109,6 +116,35 @@ public class ScreenshotLauncher {
 		config.useVsync(false);
 		config.setForegroundFPS(0); // as fast as possible
 		new Lwjgl3Application(new OhHeckGame(o), config);
+	}
+
+	/** Statistics from a dozen quick games between bots, so the statistics page has numbers to show. */
+	private static Stats someStats() {
+		Stats stats = new Stats();
+		Random rng = new Random(7);
+		for (int g = 0; g < 12; g++) {
+			Difficulty level = Difficulty.values()[g % 3];
+			Bot[] bots = { Bot.of(Difficulty.NORMAL, rng), Bot.of(level, rng), Bot.of(level, rng), Bot.of(level, rng) };
+			Match m = new Match(4, rng, rng.nextInt(4));
+			stats.startGame();
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				int s = m.currentSeat();
+				if (m.phase() == Match.Phase.BIDDING) {
+					m.placeBid(s, bots[s].chooseBid(m.view(s)));
+				} else if (m.phase() == Match.Phase.PLAYING) {
+					m.playCard(s, bots[s].choosePlay(m.view(s)));
+				} else {
+					stats.countHand(m.handIndex(), level, m.bid(0), m.tricksWon(0));
+					m.nextHand();
+				}
+			}
+			int[] finals = new int[4];
+			for (int s = 0; s < 4; s++) {
+				finals[s] = m.score(s);
+			}
+			stats.countGame(level, finals, Rules.numberOfHands());
+		}
+		return stats;
 	}
 
 	private static void save(String path) {

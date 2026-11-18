@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import rules.Difficulty;
 import rules.Match;
+import rules.Stats;
 
 /** The libGDX entry point shared by Android and desktop; switches between screens. */
 public class OhHeckGame extends Game {
@@ -34,6 +35,7 @@ public class OhHeckGame extends Game {
 	private RulesScreen rules;
 	private OptionsScreen optionsScreen;
 	private HighScoresScreen highScoresScreen;
+	private Stats stats = new Stats();
 	private PlayScreen play;
 
 	public OhHeckGame() {
@@ -55,6 +57,7 @@ public class OhHeckGame extends Game {
 		}
 		assets = new Assets();
 		settings = new Settings();
+		stats = options.stats != null ? options.stats : Stats.decode(options.persist ? settings.stats() : "");
 		audio = new Audio(settings);
 		post = new PostProcessor();
 		title = new TitleScreen(this);
@@ -159,6 +162,24 @@ public class OhHeckGame extends Game {
 			settings.setHighScores(h.encode());
 		}
 		return at;
+	}
+
+	/** Your statistics (kept only in memory when nothing is saved, as in the screenshot run). */
+	public Stats stats() {
+		return stats;
+	}
+
+	/** Saves the statistics after a change. */
+	void saveStats() {
+		if (options.persist) {
+			settings.setStats(stats.encode());
+		}
+	}
+
+	/** Starts the statistics afresh. */
+	void resetStats() {
+		stats = new Stats();
+		saveStats();
 	}
 
 	void newGame() {
