@@ -20,6 +20,7 @@ import rules.Difficulty;
 import rules.Match;
 import rules.Player;
 import rules.Rules;
+import rules.SavedGame;
 import rules.Suit;
 
 /**
@@ -340,7 +341,7 @@ public class PlayScreen extends BaseScreen {
 
 	/** The name shown for a seat: "You", or the computer player sitting there. */
 	String name(int seat) {
-		return seat == HUMAN ? "You" : Player.ALL.get(players[seat - 1]).name;
+		return seat == HUMAN ? "You" : Player.byId(players[seat - 1]).name;
 	}
 
 	private void seatPlayers(int[] ids) {
@@ -354,7 +355,7 @@ public class PlayScreen extends BaseScreen {
 			if (isGameOver()) {
 				game.settings.clearSavedGame();
 			} else {
-				game.settings.saveGame(match().save(), level.ordinal(), players);
+				game.settings.saveGame(new SavedGame(match(), level, players));
 			}
 		}
 	}

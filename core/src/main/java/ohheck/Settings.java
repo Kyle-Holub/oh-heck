@@ -1,9 +1,13 @@
 package ohheck;
 
+import java.util.Random;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
+import rules.Difficulty;
 import rules.HandOrder;
+import rules.SavedGame;
 
 /** Player options, saved on the device between sessions. */
 public final class Settings {
@@ -51,42 +55,31 @@ public final class Settings {
 		prefs.putString("handOrder", order.name()).flush();
 	}
 
-	/** The difficulty the saved game was started at (its high score badge and statistics level). */
-	public int savedGameDifficulty() {
-		return Math.max(0, Math.min(2, prefs.getInteger("savedGameDifficulty", 1)));
+	/** Whether a game in progress is saved. */
+	public boolean hasSavedGame() {
+		return !prefs.getString("savedGame", "").isEmpty();
 	}
 
-	/** Who sits at the saved game's table (Player ids for seats 1-3), or null if not saved (older saves). */
-	public int[] savedGamePlayers() {
-		String[] f = prefs.getString("savedGamePlayers", "").split(",");
-		if (f.length != 3) {
-			return null;
-		}
-		try {
-			int[] ids = new int[3];
-			for (int i = 0; i < 3; i++) {
-				ids[i] = Integer.parseInt(f[i].trim());
-				if (ids[i] < 0 || ids[i] >= rules.Player.ALL.size()) {
-					return null;
-				}
-			}
-			return ids;
-		} catch (NumberFormatException e) {
-			return null;
-		}
-	}
-
-	/** The game in progress, as saved by rules.Match.save(), or null. */
-	public String savedGame() {
+	/**
+	 * The game in progress, or null if none is saved. Throws IllegalArgumentException if it
+	 * can't be read. (Saves from before the table travelled with the game kept its difficulty
+	 * and players under keys of their own: read as a fallback.)
+	 */
+	public SavedGame savedGame(Random rng) {
 		String s = prefs.getString("savedGame", "");
-		return s.isEmpty() ? null : s;
+		if (s.isEmpty()) {
+			return null;
+		}
+		Difficulty legacyLevel = Difficulty.values()[Math.max(0, Math.min(2, prefs.getInteger("savedGameDifficulty", 1)))];
+		String legacyPlayers = prefs.getString("savedGamePlayers", "");
+		return SavedGame.decode(s, rng, legacyLevel, legacyPlayers.isEmpty() ? null : SavedGame.parsePlayers(legacyPlayers));
 	}
 
-	/** Saves the game in progress, the difficulty it started at, and who's at the table. */
-	public void saveGame(String saved, int difficulty, int[] players) {
-		prefs.putString("savedGame", saved);
-		prefs.putInteger("savedGameDifficulty", difficulty);
-		prefs.putString("savedGamePlayers", players[0] + "," + players[1] + "," + players[2]);
+	/** Saves the game in progress (with its difficulty and table) as one piece of text. */
+	public void saveGame(SavedGame game) {
+		prefs.putString("savedGame", game.encode());
+		prefs.remove("savedGameDifficulty"); // (the old separate keys: now part of the save)
+		prefs.remove("savedGamePlayers");
 		prefs.flush();
 	}
 
@@ -96,7 +89,6 @@ public final class Settings {
 		prefs.flush();
 	}
 
-	/** Your best finished games, as HighScores.encode() writes them. */
 	/** Whether you've seen (or skipped) the tutorial, shown before your first game. */
 	public boolean tutorialSeen() {
 		return prefs.getBoolean("tutorialSeen", false);
@@ -115,6 +107,7 @@ public final class Settings {
 		prefs.putString("stats", encoded).flush();
 	}
 
+	/** Your best finished games, as HighScores.encode() writes them. */
 	public String highScores() {
 		return prefs.getString("highScores", "");
 	}

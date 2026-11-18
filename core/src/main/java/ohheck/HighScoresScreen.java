@@ -148,7 +148,7 @@ public class HighScoresScreen extends BaseScreen {
 				{ "Average score", g ? String.valueOf(Math.round(t.averageFinal())) : none },
 				{ "Best / worst score", g ? t.bestFinal + " / " + t.worstFinal : none },
 				{ "Perfect games", g ? String.valueOf(t.perfect) : none },
-				{ "Nemesis", t.nemesis() >= 0 ? Player.ALL.get(t.nemesis()).name : none } };
+				{ "Nemesis", t.nemesis() >= 0 ? Player.byId(t.nemesis()).name : none } };
 		int misses = t.over + t.under;
 		String[][] hands = {
 				{ "Hands played", String.valueOf(t.hands) },

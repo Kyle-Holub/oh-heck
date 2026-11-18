@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import rules.Difficulty;
 import rules.Match;
+import rules.SavedGame;
 import rules.Stats;
 
 /** The libGDX entry point shared by Android and desktop; switches between screens. */
@@ -219,13 +220,12 @@ public class OhHeckGame extends Game {
 	/** Back to the game in progress, or the saved one after the app was closed. */
 	void continueGame() {
 		if (play == null) {
-			Match saved = loadSavedGame();
+			SavedGame saved = loadSavedGame();
 			if (saved == null) {
 				newGame();
 				return;
 			}
-			play = new PlayScreen(this, saved, Difficulty.values()[settings.savedGameDifficulty()],
-					settings.savedGamePlayers());
+			play = new PlayScreen(this, saved.match, saved.level, saved.players);
 		}
 		backStack.clear();
 		setScreen(play);
@@ -235,16 +235,15 @@ public class OhHeckGame extends Game {
 		if (play != null) {
 			return !play.isGameOver();
 		}
-		return options.persist && settings.savedGame() != null;
+		return options.persist && settings.hasSavedGame();
 	}
 
-	private Match loadSavedGame() {
-		String s = options.persist ? settings.savedGame() : null;
-		if (s == null) {
+	private SavedGame loadSavedGame() {
+		if (!options.persist) {
 			return null;
 		}
 		try {
-			return Match.load(s, new Random());
+			return settings.savedGame(new Random());
 		} catch (IllegalArgumentException e) {
 			Gdx.app.error("OhHeck", "Discarding unreadable saved game", e);
 			settings.clearSavedGame();

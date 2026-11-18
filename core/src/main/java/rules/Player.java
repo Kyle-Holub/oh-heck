@@ -28,7 +28,7 @@ public final class Player {
 		this.trait = trait;
 	}
 
-	/** Everyone, by id. */
+	/** Everyone (look a player up with {@link #byId(int)}, not by place in this list). */
 	public static final List<Player> ALL = Collections.unmodifiableList(Arrays.asList(
 			new Player(0, "Edmund", Difficulty.EASY, Style.TIMID,
 					"Never trusts his cards: often bids a trick fewer than they're worth."),
@@ -54,6 +54,29 @@ public final class Player {
 					"Expert play, and a habit of keeping his trumps for the last tricks."),
 			new Player(11, "Percival", Difficulty.HARD, Style.FRONT_RUNNER,
 					"An expert who plays it safe in front and takes his chances from behind.")));
+
+	/**
+	 * The player with this id, or null if there's none (a player since removed). Ids are
+	 * permanent: saves and statistics refer to players by id, so never renumber or reuse one;
+	 * a new player takes the next unused id, and the list's order doesn't matter.
+	 */
+	public static Player byId(int id) {
+		for (Player p : ALL) {
+			if (p.id == id) {
+				return p;
+			}
+		}
+		return null;
+	}
+
+	/** One more than the highest id in use (for per-player counts). */
+	public static int idLimit() {
+		int max = -1;
+		for (Player p : ALL) {
+			max = Math.max(max, p.id);
+		}
+		return max + 1;
+	}
 
 	/** How much more a spoiler weighs the leader's points than other experts do. */
 	static final double SPOILER_SPOIL = 1.2;

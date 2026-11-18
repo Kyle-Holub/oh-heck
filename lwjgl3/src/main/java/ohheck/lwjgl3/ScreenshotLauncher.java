@@ -148,8 +148,8 @@ public class ScreenshotLauncher {
 		for (int g = 0; g < 12; g++) {
 			Difficulty level = Difficulty.values()[g % 3];
 			int[] players = Player.draw(level, rng);
-			Bot[] bots = { Bot.of(Difficulty.NORMAL, rng), Player.ALL.get(players[0]).bot(rng),
-					Player.ALL.get(players[1]).bot(rng), Player.ALL.get(players[2]).bot(rng) };
+			Bot[] bots = { Bot.of(Difficulty.NORMAL, rng), Player.byId(players[0]).bot(rng),
+					Player.byId(players[1]).bot(rng), Player.byId(players[2]).bot(rng) };
 			Match m = new Match(4, rng, rng.nextInt(4));
 			stats.startGame();
 			while (m.phase() != Match.Phase.GAME_OVER) {

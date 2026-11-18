@@ -19,7 +19,7 @@ public final class Stats {
 		public int hands, made, zeroBids, zeroMade, over, under, tricks;
 		public int bestHand = Integer.MIN_VALUE, worstHand = Integer.MAX_VALUE;
 		/** Games each computer player (by {@link Player} id) finished above you. */
-		public final int[] beatenBy = new int[Player.ALL.size()];
+		public final int[] beatenBy = new int[Player.idLimit()];
 
 		public boolean anyGames() {
 			return games > 0;
@@ -162,32 +162,84 @@ public final class Stats {
 		return new Totals[] { totals[level.ordinal()], totals[ALL] };
 	}
 
-	// ---- saving
+	// ---- saving: one "name=value" line per number, e.g. "hard.games=12", "all.beatenBy.9=3"
 
-	/** Totals saved before the per-player counts. */
-	private static final int FIELDS = 17;
+	/** Each totals' name in the save: the difficulties, then all of them. */
+	private static String bucket(int which) {
+		return which == ALL ? "all" : Difficulty.values()[which].name().toLowerCase();
+	}
+
+	/** A totals' numbers by name (the per-player counts are added separately). */
+	private static java.util.Map<String, Long> fields(Totals t) {
+		java.util.Map<String, Long> f = new LinkedHashMap<String, Long>();
+		f.put("games", (long) t.games);
+		f.put("wins", (long) t.wins);
+		f.put("streak", (long) t.streak);
+		f.put("bestStreak", (long) t.bestStreak);
+		f.put("perfect", (long) t.perfect);
+		f.put("finalScores", t.finalScores);
+		f.put("bestFinal", (long) t.bestFinal);
+		f.put("worstFinal", (long) t.worstFinal);
+		f.put("hands", (long) t.hands);
+		f.put("made", (long) t.made);
+		f.put("zeroBids", (long) t.zeroBids);
+		f.put("zeroMade", (long) t.zeroMade);
+		f.put("over", (long) t.over);
+		f.put("under", (long) t.under);
+		f.put("tricks", (long) t.tricks);
+		f.put("bestHand", (long) t.bestHand);
+		f.put("worstHand", (long) t.worstHand);
+		return f;
+	}
+
+	/** Sets one number by its name; an unknown name is ignored (from a newer or older save). */
+	private static void set(Totals t, String name, long v) {
+		int i = (int) v;
+		if (name.equals("games")) t.games = i;
+		else if (name.equals("wins")) t.wins = i;
+		else if (name.equals("streak")) t.streak = i;
+		else if (name.equals("bestStreak")) t.bestStreak = i;
+		else if (name.equals("perfect")) t.perfect = i;
+		else if (name.equals("finalScores")) t.finalScores = v;
+		else if (name.equals("bestFinal")) t.bestFinal = i;
+		else if (name.equals("worstFinal")) t.worstFinal = i;
+		else if (name.equals("hands")) t.hands = i;
+		else if (name.equals("made")) t.made = i;
+		else if (name.equals("zeroBids")) t.zeroBids = i;
+		else if (name.equals("zeroMade")) t.zeroMade = i;
+		else if (name.equals("over")) t.over = i;
+		else if (name.equals("under")) t.under = i;
+		else if (name.equals("tricks")) t.tricks = i;
+		else if (name.equals("bestHand")) t.bestHand = i;
+		else if (name.equals("worstHand")) t.worstHand = i;
+		else if (name.startsWith("beatenBy.")) {
+			int id = Integer.parseInt(name.substring("beatenBy.".length()));
+			if (id >= 0 && id < t.beatenBy.length) { // (a removed player's count is dropped)
+				t.beatenBy[id] = i;
+			}
+		}
+	}
 
 	public String encode() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("game=").append(handsCounted).append(',').append(gameCounted ? 1 : 0).append(',')
-				.append(perfectSoFar ? 1 : 0).append('\n');
+		sb.append("game.handsCounted=").append(handsCounted).append('\n');
+		sb.append("game.counted=").append(gameCounted ? 1 : 0).append('\n');
+		sb.append("game.perfectSoFar=").append(perfectSoFar ? 1 : 0).append('\n');
 		for (int i = 0; i < totals.length; i++) {
-			Totals t = totals[i];
-			sb.append(i).append('=');
-			long[] v = { t.games, t.wins, t.streak, t.bestStreak, t.perfect, t.finalScores, t.bestFinal, t.worstFinal,
-					t.hands, t.made, t.zeroBids, t.zeroMade, t.over, t.under, t.tricks, t.bestHand, t.worstHand };
-			for (int j = 0; j < v.length; j++) {
-				sb.append(j == 0 ? "" : ",").append(v[j]);
+			String b = bucket(i);
+			for (java.util.Map.Entry<String, Long> e : fields(totals[i]).entrySet()) {
+				sb.append(b).append('.').append(e.getKey()).append('=').append(e.getValue()).append('\n');
 			}
-			for (int b : t.beatenBy) { // then one count per player
-				sb.append(',').append(b);
+			for (int id = 0; id < totals[i].beatenBy.length; id++) {
+				if (totals[i].beatenBy[id] > 0) {
+					sb.append(b).append(".beatenBy.").append(id).append('=').append(totals[i].beatenBy[id]).append('\n');
+				}
 			}
-			sb.append('\n');
 		}
 		return sb.toString();
 	}
 
-	/** Reads what {@link #encode()} wrote; anything unreadable starts afresh. */
+	/** Reads what {@link #encode()} wrote (or the first builds' numbered lines); anything unreadable starts afresh. */
 	public static Stats decode(String saved) {
 		Stats s = new Stats();
 		if (saved == null || saved.isEmpty()) {
@@ -198,41 +250,23 @@ public final class Stats {
 			for (String line : saved.split("\n")) {
 				int eq = line.indexOf('=');
 				if (eq > 0) {
-					lines.put(line.substring(0, eq), line.substring(eq + 1));
+					lines.put(line.substring(0, eq), line.substring(eq + 1).trim());
 				}
 			}
-			String[] g = lines.get("game").split(",");
-			s.handsCounted = Integer.parseInt(g[0]);
-			s.gameCounted = g[1].equals("1");
-			s.perfectSoFar = g[2].equals("1");
+			if (lines.containsKey("game")) {
+				return decodeNumbered(lines); // the first builds' format
+			}
+			if (!lines.containsKey("game.handsCounted")) {
+				return new Stats();
+			}
+			s.handsCounted = Integer.parseInt(lines.get("game.handsCounted"));
+			s.gameCounted = "1".equals(lines.get("game.counted"));
+			s.perfectSoFar = "1".equals(lines.get("game.perfectSoFar"));
 			for (int i = 0; i < s.totals.length; i++) {
-				String line = lines.get(String.valueOf(i));
-				if (line == null) {
-					continue;
-				}
-				String[] f = line.split(",");
-				Totals t = s.totals[i];
-				t.games = Integer.parseInt(f[0]);
-				t.wins = Integer.parseInt(f[1]);
-				t.streak = Integer.parseInt(f[2]);
-				t.bestStreak = Integer.parseInt(f[3]);
-				t.perfect = Integer.parseInt(f[4]);
-				t.finalScores = Long.parseLong(f[5]);
-				t.bestFinal = Integer.parseInt(f[6]);
-				t.worstFinal = Integer.parseInt(f[7]);
-				t.hands = Integer.parseInt(f[8]);
-				t.made = Integer.parseInt(f[9]);
-				t.zeroBids = Integer.parseInt(f[10]);
-				t.zeroMade = Integer.parseInt(f[11]);
-				t.over = Integer.parseInt(f[12]);
-				t.under = Integer.parseInt(f[13]);
-				t.tricks = Integer.parseInt(f[14]);
-				t.bestHand = Integer.parseInt(f[15]);
-				t.worstHand = Integer.parseInt(f[16]);
-				// (one count per player after the 17 totals; the first test builds kept three, by seat: dropped)
-				if (f.length == FIELDS + t.beatenBy.length) {
-					for (int b = 0; b < t.beatenBy.length; b++) {
-						t.beatenBy[b] = Integer.parseInt(f[FIELDS + b]);
+				String prefix = bucket(i) + ".";
+				for (Map.Entry<String, String> e : lines.entrySet()) {
+					if (e.getKey().startsWith(prefix)) {
+						set(s.totals[i], e.getKey().substring(prefix.length()), Long.parseLong(e.getValue()));
 					}
 				}
 			}
@@ -240,5 +274,36 @@ public final class Stats {
 		} catch (RuntimeException e) {
 			return new Stats();
 		}
+	}
+
+	/** Players on the roster when statistics were kept by position. */
+	private static final int LEGACY_PLAYERS = 12;
+
+	/** The first builds' format: "game=" then one line of numbers per totals, by position. */
+	private static Stats decodeNumbered(Map<String, String> lines) {
+		Stats s = new Stats();
+		String[] g = lines.get("game").split(",");
+		s.handsCounted = Integer.parseInt(g[0]);
+		s.gameCounted = g[1].equals("1");
+		s.perfectSoFar = g[2].equals("1");
+		String[] names = fields(new Totals()).keySet().toArray(new String[0]);
+		for (int i = 0; i < s.totals.length; i++) {
+			String line = lines.get(String.valueOf(i));
+			if (line == null) {
+				continue;
+			}
+			String[] f = line.split(",");
+			for (int j = 0; j < names.length && j < f.length; j++) {
+				set(s.totals[i], names[j], Long.parseLong(f[j]));
+			}
+			// then, from the build with twelve players, one count per player by id (the very first
+			// builds kept three, by seat: those can't be matched to players, so they're dropped)
+			if (f.length == names.length + LEGACY_PLAYERS) {
+				for (int id = 0; id < LEGACY_PLAYERS; id++) {
+					set(s.totals[i], "beatenBy." + id, Long.parseLong(f[names.length + id]));
+				}
+			}
+		}
+		return s;
 	}
 }

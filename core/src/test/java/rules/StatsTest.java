@@ -84,4 +84,39 @@ public class StatsTest {
 		assertEquals(0, Stats.decode("nonsense").totals(Stats.ALL).games);
 		assertEquals(0, Stats.decode("").totals(Stats.ALL).hands);
 	}
+
+	@Test
+	public void savedByNameAndReadBack() {
+		Stats s = new Stats();
+		s.startGame();
+		s.countHand(0, Difficulty.HARD, 2, 2);
+		s.countGame(Difficulty.HARD, new int[] { 10, 30, 0, 0 }, 1, new int[] { 9, 4, 1 });
+		String saved = s.encode();
+		assertTrue(saved.contains("hard.games=1"));
+		assertTrue(saved.contains("all.beatenBy.9=1"));
+		Stats back = Stats.decode(saved);
+		assertEquals(1, back.totals(Difficulty.HARD.ordinal()).made);
+		assertEquals(9, back.totals(Stats.ALL).nemesis());
+		assertEquals(saved, back.encode());
+		// a number this build doesn't know (from a newer one) is passed over
+		assertEquals(1, Stats.decode(saved + "all.someday=5\n").totals(Stats.ALL).games);
+	}
+
+	@Test
+	public void readsTheFirstBuildsNumberedLines() {
+		StringBuilder line = new StringBuilder("3,2,1,2,0,150,60,40,24,15,4,3,5,4,30,20,-10");
+		for (int id = 0; id < 12; id++) {
+			line.append(',').append(id == 7 ? 2 : 0); // Oswald (7) beat you twice
+		}
+		Stats s = Stats.decode("game=0,0,1\n3=" + line + "\n");
+		Stats.Totals t = s.totals(Stats.ALL);
+		assertEquals(3, t.games);
+		assertEquals(150 / 3.0, t.averageFinal(), 1e-9);
+		assertEquals(-10, t.worstHand);
+		assertEquals(7, t.nemesis());
+		// the very first, with three counts by seat: the counts are dropped, the rest kept
+		Stats seats = Stats.decode("game=0,0,1\n3=3,2,1,2,0,150,60,40,24,15,4,3,5,4,30,20,-10,1,0,0\n");
+		assertEquals(3, seats.totals(Stats.ALL).games);
+		assertEquals(-1, seats.totals(Stats.ALL).nemesis());
+	}
 }
