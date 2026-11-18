@@ -607,8 +607,9 @@ public class TutorialScreen extends BaseScreen {
 			card(hand[i], x, y + g * 10, 2 + g * 10, i == 2 ? 1 - 0.35f * at(0.5f, 0.9f) * (1 - at(2.6f, 2.9f)) : 1, 1);
 		}
 		label("A WINNER (TRUMP ACE)", handX(0, 3) + CW / 2, handY() + CH + 30, at(0.5f, 0.9f) * (1 - at(1.7f, 1.9f)));
-		label("PROBABLY A WINNER", handX(1, 3) + CW / 2, handY() + CH + 30, at(1.0f, 1.3f) * (1 - at(2.6f, 2.9f)));
-		bidPanel(cx(), cy() + 10, 3, t >= 2.3f ? 2 : -1, -1, at(1.8f, 2.1f) * (1 - at(2.8f, 3.0f)));
+		label("PROBABLY A WINNER", handX(1, 3) + CW / 2, handY() + CH + 30, at(1.0f, 1.3f) * (1 - at(1.7f, 1.9f)));
+		// the bid panel between your hand and the top seat: 2 picked, then gone as the bids go up
+		bidPanel(cx(), handY() + CH + 12, 3, t >= 2.4f ? 2 : -1, -1, at(2.0f, 2.3f) * (1 - at(2.8f, 3.0f)));
 	}
 
 	// ---- 9. bidding zero: a low hand bids nothing, and lets the trick go by
@@ -657,7 +658,7 @@ public class TutorialScreen extends BaseScreen {
 		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
 		BitmapFont f = ui(1.2f);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(2.6f, 3.0f));
-		centred(f, "1 + 0 + 1 + 1 = 3 tricks: not allowed", cx(), cy() + 70);
+		centred(f, "1 + 0 + 1 + 1 = 3 tricks: not allowed", cx(), cy() - 46);
 	}
 
 	// ---- 11. scoring: your bid of 2 made (+14); Horatio over his bid of 1, set (-5)
