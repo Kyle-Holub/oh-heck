@@ -161,38 +161,52 @@ public final class FallingCards {
 			updateSparkles(dt, viewW, viewH);
 		}
 		if (falling) {
-			fallingFor += dt;
-			spawnDebt += spawnRate() * dt;
-			while (spawnDebt >= 1f) {
-				spawnDebt -= 1f;
-				if (flakes.size() < MAX_CARDS) {
-					spawn(viewW, viewH, true);
-				}
-			}
+			spawnFalling(dt, viewW, viewH);
 		}
 		for (Iterator<Flake> it = flakes.iterator(); it.hasNext();) {
 			Flake f = it.next();
-			f.age += dt;
-			if (f.tossed) {
-				float t = f.age - f.delay;
-				if (t <= 0) {
-					continue; // still lying on the table
-				}
-				float k = f.pos.z / FOCAL;
-				f.vel.y -= GRAVITY * k * dt;
-				f.pos.mulAdd(f.vel, dt);
-				dq.set(f.axis, f.spin * Math.min(1f, t / SPIN_UP_TIME) * dt);
-			} else {
-				f.pos.y -= f.fall * dt;
-				f.pos.x += f.swayAmp * MathUtils.cos(f.swayFreq * f.age + f.swayPhase) * dt;
-				dq.set(f.axis, f.spin * dt);
-			}
-			f.rot.set(dq.mul(f.rot)).nor();
-			if (f.pos.y < -(halfH(f.pos.z, viewH) + CARD_H * 1.5f)) {
-				it.remove();
+			if (move(f, dt) && f.pos.y < -(halfH(f.pos.z, viewH) + CARD_H * 1.5f)) {
+				it.remove(); // fallen out of sight
 			}
 		}
 	}
+
+	/** New cards join the shower at its current rate. */
+	private void spawnFalling(float dt, float viewW, float viewH) {
+		fallingFor += dt;
+		spawnDebt += spawnRate() * dt;
+		while (spawnDebt >= 1f) {
+			spawnDebt -= 1f;
+			if (flakes.size() < MAX_CARDS) {
+				spawn(viewW, viewH, true);
+			}
+		}
+	}
+
+	/**
+	 * One card's flight: tossed cards arc under gravity once their delay is up; shower cards
+	 * drift down, swaying. False while a tossed card still lies on the table.
+	 */
+	private boolean move(Flake f, float dt) {
+		f.age += dt;
+		if (f.tossed) {
+			float t = f.age - f.delay;
+			if (t <= 0) {
+				return false; // still lying on the table
+			}
+			float k = f.pos.z / FOCAL;
+			f.vel.y -= GRAVITY * k * dt;
+			f.pos.mulAdd(f.vel, dt);
+			dq.set(f.axis, f.spin * Math.min(1f, t / SPIN_UP_TIME) * dt);
+		} else {
+			f.pos.y -= f.fall * dt;
+			f.pos.x += f.swayAmp * MathUtils.cos(f.swayFreq * f.age + f.swayPhase) * dt;
+			dq.set(f.axis, f.spin * dt);
+		}
+		f.rot.set(dq.mul(f.rot)).nor();
+		return true;
+	}
+
 
 	private float halfH(float z, float viewH) {
 		return viewH / 2 * z / FOCAL;

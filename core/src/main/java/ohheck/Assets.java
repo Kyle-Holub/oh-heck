@@ -102,15 +102,30 @@ public final class Assets implements Disposable {
 		zeroIcon = mipmapped("images/icon_zero.png");
 		waitingIcon = mipmapped("images/icon_waiting.png");
 		bidDigits = mipmapped("images/bid_digits.png");
-		for (int i = 0; i < 10; i++) {
-			digits[i] = new TextureRegion(bidDigits, i * DIGIT_W, 0, DIGIT_W, DIGIT_H);
-		}
+		cutDigits();
 		bidOpen = mipmapped("images/bid_open.png");
 		bidTaken = mipmapped("images/bid_taken.png");
 		bidOver = mipmapped("images/bid_over.png");
 		for (Difficulty d : Difficulty.values()) {
 			levelBadge[d.ordinal()] = mipmapped("images/level_" + d.key() + ".png");
 		}
+		cutCards();
+		back = new TextureRegion(cardBack);
+		backBlur = new TextureRegion(cardBackBlur);
+		white = own(whitePixel());
+		stroke = own(strokeTexture(32, 160));
+		font = bitmapFont("ui");
+		serif = bitmapFont("serif");
+	}
+	/** The bid numerals 0-9, side by side in one image. */
+	private void cutDigits() {
+		for (int i = 0; i < 10; i++) {
+			digits[i] = new TextureRegion(bidDigits, i * DIGIT_W, 0, DIGIT_W, DIGIT_H);
+		}
+	}
+
+	/** Each card's face from the sheets, sharp and blurred (rows by suit, columns by rank). */
+	private void cutCards() {
 		// the blurred sheet is stored at reduced size: take its cells from its own dimensions
 		int bw = cardSheetBlur.getWidth() / 13, bh = cardSheetBlur.getHeight() / 4;
 		for (int suit = 0; suit < 4; suit++) {
@@ -119,17 +134,18 @@ public final class Assets implements Disposable {
 				blurred[suit][rank] = new TextureRegion(cardSheetBlur, rank * bw, suit * bh, bw, bh);
 			}
 		}
-		back = new TextureRegion(cardBack);
-		backBlur = new TextureRegion(cardBackBlur);
+	}
+
+	/** A single white pixel, for drawing plain rectangles. */
+	private static Texture whitePixel() {
 		Pixmap p = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
 		p.setColor(Color.WHITE);
 		p.fill();
-		white = own(new Texture(p));
+		Texture t = new Texture(p);
 		p.dispose();
-		stroke = own(strokeTexture(32, 160));
-		font = bitmapFont("ui");
-		serif = bitmapFont("serif");
+		return t;
 	}
+
 
 	/** A capsule w wide and h tall with anti-aliased edges and a little transparent margin. */
 	private static Texture strokeTexture(int w, int h) {

@@ -1,5 +1,7 @@
 package ohheck;
 
+import java.util.List;
+
 import com.badlogic.gdx.math.Rectangle;
 
 import rules.Card;
@@ -98,18 +100,26 @@ final class TableInput {
 	void tap(float x, float y) {
 		TableOverlays o = s.overlays();
 		if (menuOpen) {
-			for (int i = 0; i < o.menuItems.size(); i++) {
-				if (o.menuItems.get(i).contains(x, y)) {
-					menuChoice(i);
-					return;
-				}
-			}
-			return;
-		}
-		if (o.menuButton.contains(x, y)) {
+			tapMenu(x, y);
+		} else if (o.menuButton.contains(x, y)) {
 			openMenu();
-			return;
+		} else {
+			tapTable(x, y);
 		}
+	}
+
+	private void tapMenu(float x, float y) {
+		List<Rectangle> items = s.overlays().menuItems;
+		for (int i = 0; i < items.size(); i++) {
+			if (items.get(i).contains(x, y)) {
+				menuChoice(i);
+				return;
+			}
+		}
+	}
+
+	/** What a tap does depends on the moment. */
+	private void tapTable(float x, float y) {
 		Match m = s.match();
 		switch (s.state()) {
 		case SHUFFLE:
@@ -132,15 +142,21 @@ final class TableInput {
 			s.flow().nextHand();
 			break;
 		case GAME_OVER:
-			// only the buttons: a stray tap mustn't throw away the final scores
-			if (o.highScoresButton.contains(x, y)) {
-				act.showHighScores();
-			} else if (o.playAgainButton.contains(x, y)) {
-				act.newGame(); // a fresh table, at the difficulty now chosen in Options
-			}
+			tapGameOver(x, y);
 			break;
 		}
 	}
+
+	/** Only the buttons: a stray tap mustn't throw away the final scores. */
+	private void tapGameOver(float x, float y) {
+		TableOverlays o = s.overlays();
+		if (o.highScoresButton.contains(x, y)) {
+			act.showHighScores();
+		} else if (o.playAgainButton.contains(x, y)) {
+			act.newGame(); // a fresh table, at the difficulty now chosen in Options
+		}
+	}
+
 
 	private void tapBid(float x, float y) {
 		for (int b = 0; b < s.overlays().bidButtons.size(); b++) {

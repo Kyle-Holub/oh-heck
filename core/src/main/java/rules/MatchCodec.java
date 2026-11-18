@@ -53,57 +53,79 @@ final class MatchCodec {
 	/** @throws IllegalArgumentException if the text is not a valid saved game */
 	static Match decode(String saved, Random rng) {
 		try {
-			java.util.Map<String, String> v = new java.util.HashMap<String, String>();
 			String[] lines = saved.split("\n");
 			String format = lines[0].trim();
 			if (!format.equals(FORMAT) && !format.equals(FORMAT_1)) {
 				throw new IllegalArgumentException("Not a saved game");
 			}
 			boolean legacy = format.equals(FORMAT_1);
-			for (int i = 1; i < lines.length; i++) {
-				int eq = lines[i].indexOf('=');
-				if (eq > 0) {
-					v.put(lines[i].substring(0, eq), lines[i].substring(eq + 1).trim());
-				}
-			}
+			java.util.Map<String, String> v = keyValues(lines);
 			// (games saved before there were rule sets were all standard)
 			RuleSet rules = v.containsKey("rules") ? RuleSet.named(v.get("rules")) : RuleSet.STANDARD;
 			Match m = new Match(Integer.parseInt(req(v, "players")), rng, rules);
-			m.phase = Match.Phase.valueOf(req(v, "phase"));
-			m.handIndex = Integer.parseInt(req(v, "hand"));
-			// (games saved before the hands could run downwards always ran up)
-			m.order = v.containsKey("order") ? HandOrder.valueOf(v.get("order")) : HandOrder.UP;
-			m.dealer = Integer.parseInt(req(v, "dealer"));
-			m.current = Integer.parseInt(req(v, "current"));
-			m.trumpCard = card(req(v, "trump"), legacy);
-			for (int s = 0; s < m.players; s++) {
-				m.hands.set(s, parseCards(req(v, "hand" + s), legacy));
-			}
-			String[] b = req(v, "bids").split(",");
-			int[] t = parseInts(req(v, "tricks"), m.players), sc = parseInts(req(v, "scores"), m.players),
-					pt = parseInts(req(v, "points"), m.players);
-			for (int s = 0; s < m.players; s++) {
-				m.bids[s] = b[s].equals("-") ? Match.NO_BID : Integer.parseInt(b[s]);
-				m.tricks[s] = t[s];
-				m.scores[s] = sc[s];
-				m.lastHandPoints[s] = pt[s];
-			}
-			m.trick.addAll(parseCards(req(v, "trick"), legacy));
-			m.trickSeats.addAll(parseSeats(req(v, "trickSeats")));
-			m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last"), legacy));
-			m.lastTrickSeats = Collections.unmodifiableList(parseSeats(req(v, "lastSeats")));
-			m.lastTrickWinner = Integer.parseInt(req(v, "lastWinner"));
-			// (games saved before alpha-1.0.8's smarter players have no history: they just start forgetful)
-			if (v.containsKey("history") && v.containsKey("historySeats")) {
-				m.history.addAll(parseCards(v.get("history"), legacy));
-				m.historySeats.addAll(parseSeats(v.get("historySeats")));
-			}
+			readHand(m, v, legacy);
+			readSeats(m, v, legacy);
+			readTricks(m, v, legacy);
 			m.check();
 			return m;
 		} catch (RuntimeException e) {
 			throw new IllegalArgumentException("Corrupt saved game: " + e.getMessage(), e);
 		}
 	}
+
+	/** "key=value" lines after the format line. */
+	private static java.util.Map<String, String> keyValues(String[] lines) {
+		java.util.Map<String, String> v = new java.util.HashMap<String, String>();
+		for (int i = 1; i < lines.length; i++) {
+			int eq = lines[i].indexOf('=');
+			if (eq > 0) {
+				v.put(lines[i].substring(0, eq), lines[i].substring(eq + 1).trim());
+			}
+		}
+		return v;
+	}
+
+	/** Where the game is: phase, which hand and which way they run, dealer, whose turn, trump. */
+	private static void readHand(Match m, java.util.Map<String, String> v, boolean legacy) {
+		m.phase = Match.Phase.valueOf(req(v, "phase"));
+		m.handIndex = Integer.parseInt(req(v, "hand"));
+		// (games saved before the hands could run downwards always ran up)
+		m.order = v.containsKey("order") ? HandOrder.valueOf(v.get("order")) : HandOrder.UP;
+		m.dealer = Integer.parseInt(req(v, "dealer"));
+		m.current = Integer.parseInt(req(v, "current"));
+		m.trumpCard = card(req(v, "trump"), legacy);
+	}
+
+	/** Each seat's cards, bid, tricks, score and last hand's points. */
+	private static void readSeats(Match m, java.util.Map<String, String> v, boolean legacy) {
+		for (int s = 0; s < m.players; s++) {
+			m.hands.set(s, parseCards(req(v, "hand" + s), legacy));
+		}
+		String[] b = req(v, "bids").split(",");
+		int[] t = parseInts(req(v, "tricks"), m.players), sc = parseInts(req(v, "scores"), m.players),
+				pt = parseInts(req(v, "points"), m.players);
+		for (int s = 0; s < m.players; s++) {
+			m.bids[s] = b[s].equals("-") ? Match.NO_BID : Integer.parseInt(b[s]);
+			m.tricks[s] = t[s];
+			m.scores[s] = sc[s];
+			m.lastHandPoints[s] = pt[s];
+		}
+	}
+
+	/** The trick in progress, the last one taken, and the hand's history. */
+	private static void readTricks(Match m, java.util.Map<String, String> v, boolean legacy) {
+		m.trick.addAll(parseCards(req(v, "trick"), legacy));
+		m.trickSeats.addAll(parseSeats(req(v, "trickSeats")));
+		m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last"), legacy));
+		m.lastTrickSeats = Collections.unmodifiableList(parseSeats(req(v, "lastSeats")));
+		m.lastTrickWinner = Integer.parseInt(req(v, "lastWinner"));
+		// (games saved before alpha-1.0.8's smarter players have no history: they just start forgetful)
+		if (v.containsKey("history") && v.containsKey("historySeats")) {
+			m.history.addAll(parseCards(v.get("history"), legacy));
+			m.historySeats.addAll(parseSeats(v.get("historySeats")));
+		}
+	}
+
 
 	private static void line(StringBuilder sb, String key, String value) {
 		sb.append(key).append('=').append(value).append('\n');

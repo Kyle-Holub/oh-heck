@@ -203,15 +203,7 @@ final class HardBot implements Bot {
 	 * proportion to how well each explains the bids made.
 	 */
 	private List<List<Card>[]> deals(TableView v, int samples) {
-		List<Card> unseen = new ArrayList<Card>();
-		for (Suit s : Suit.values()) {
-			for (Rank r : Rank.values()) {
-				Card c = Card.of(r, s);
-				if (!v.hand().contains(c) && !v.played(c) && c != v.trumpCard()) {
-					unseen.add(c);
-				}
-			}
-		}
+		List<Card> unseen = unseen(v);
 		List<List<Card>[]> deals = new ArrayList<List<Card>[]>();
 		if (!anyoneElseBid(v)) {
 			for (int i = 0; i < samples; i++) {
@@ -222,14 +214,36 @@ final class HardBot implements Bot {
 		int n = samples * CANDIDATES;
 		List<List<Card>[]> candidates = new ArrayList<List<Card>[]>(n);
 		double[] weight = new double[n];
-		double total = 0;
 		for (int i = 0; i < n; i++) {
 			List<Card>[] d = deal(v, unseen);
 			candidates.add(d);
 			weight[i] = likelihood(v, d);
-			total += weight[i];
 		}
-		// keep samples of them, in proportion to their weights (evenly spaced picks)
+		return keepByWeight(candidates, weight, samples);
+	}
+
+	/** Every card this player hasn't seen: not in their hand, not played, not the trump card. */
+	private static List<Card> unseen(TableView v) {
+		List<Card> unseen = new ArrayList<Card>();
+		for (Suit s : Suit.values()) {
+			for (Rank r : Rank.values()) {
+				Card c = Card.of(r, s);
+				if (!v.hand().contains(c) && !v.played(c) && c != v.trumpCard()) {
+					unseen.add(c);
+				}
+			}
+		}
+		return unseen;
+	}
+
+	/** Samples of the candidates, kept in proportion to their weights (evenly spaced picks). */
+	private List<List<Card>[]> keepByWeight(List<List<Card>[]> candidates, double[] weight, int samples) {
+		int n = candidates.size();
+		double total = 0;
+		for (double w : weight) {
+			total += w;
+		}
+		List<List<Card>[]> deals = new ArrayList<List<Card>[]>();
 		double step = total / samples, at = rng.nextDouble() * step, run = 0;
 		for (int i = 0; i < n && deals.size() < samples; i++) {
 			run += weight[i];
@@ -243,6 +257,7 @@ final class HardBot implements Bot {
 		}
 		return deals;
 	}
+
 
 	private static boolean anyoneElseBid(TableView v) {
 		for (int s = 0; s < v.players(); s++) {

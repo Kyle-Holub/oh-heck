@@ -89,48 +89,54 @@ abstract class BaseScreen extends ScreenAdapter implements OhHeckGame.Tagged {
 	public void show() {
 		shownFor = 0;
 		Gdx.input.setCatchKey(Input.Keys.BACK, true);
-		Gdx.input.setInputProcessor(new InputAdapter() {
-			// first finger only: a second finger on the screen is ignored
-			@Override
-			public boolean touchDown(int x, int y, int pointer, int button) {
-				if (pointer > 0) {
-					return false;
-				}
-				toWorld(x, y);
-				BaseScreen.this.touchDown(tmp.x, tmp.y);
-				return true;
-			}
+		Gdx.input.setInputProcessor(touches);
+	}
 
-			@Override
-			public boolean touchDragged(int x, int y, int pointer) {
-				if (pointer > 0) {
-					return false;
-				}
-				toWorld(x, y);
-				BaseScreen.this.touchDragged(tmp.x, tmp.y);
-				return true;
-			}
+	private final Touches touches = new Touches();
 
-			@Override
-			public boolean touchUp(int x, int y, int pointer, int button) {
-				if (pointer > 0) {
-					return false;
-				}
-				toWorld(x, y);
-				BaseScreen.this.touchUp(tmp.x, tmp.y);
-				return true;
-			}
-
-			@Override
-			public boolean keyDown(int keycode) {
-				if (keycode == Input.Keys.BACK || keycode == Input.Keys.ESCAPE) {
-					back();
-					return true;
-				}
+	/** Turns the device's touches and keys into the screen's, in world coordinates. */
+	private final class Touches extends InputAdapter {
+		// first finger only: a second finger on the screen is ignored
+		@Override
+		public boolean touchDown(int x, int y, int pointer, int button) {
+			if (pointer > 0) {
 				return false;
 			}
-		});
+			toWorld(x, y);
+			BaseScreen.this.touchDown(tmp.x, tmp.y);
+			return true;
+		}
+
+		@Override
+		public boolean touchDragged(int x, int y, int pointer) {
+			if (pointer > 0) {
+				return false;
+			}
+			toWorld(x, y);
+			BaseScreen.this.touchDragged(tmp.x, tmp.y);
+			return true;
+		}
+
+		@Override
+		public boolean touchUp(int x, int y, int pointer, int button) {
+			if (pointer > 0) {
+				return false;
+			}
+			toWorld(x, y);
+			BaseScreen.this.touchUp(tmp.x, tmp.y);
+			return true;
+		}
+
+		@Override
+		public boolean keyDown(int keycode) {
+			if (keycode == Input.Keys.BACK || keycode == Input.Keys.ESCAPE) {
+				back();
+				return true;
+			}
+			return false;
+		}
 	}
+
 
 	@Override
 	public void hide() {

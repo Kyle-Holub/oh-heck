@@ -92,45 +92,10 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		this.drawing = new TableDrawing(this, this, art, game.post);
 		this.toss = new TableToss(assets, table);
 		recorder = new GameRecorder(game.records);
-		TableFlow.Listener table = new TableFlow.Listener() { // this screen's own effects
-			@Override
-			public void beforeDeal(Match m) {
-				trick.clear();
-				input.clearTouch();
-			}
 
-			@Override
-			public void save(Match m) {
-				PlayScreen.this.save();
-			}
-
-			@Override
-			public void played(Match m, int seat, Card c) {
-				if (seat != HUMAN) {
-					// computer players' cards fly in from their fan; yours already started from your hand
-					Vector2 from = PlayScreen.this.table.seatAnchor(seat);
-					trick.fly(c, from.x - Assets.CARD_W / 2f, from.y - Assets.CARD_H / 2f, time);
-				}
-			}
-
-			@Override
-			public void handEnded(Match m) {
-				if (m.madeBid(HUMAN)) {
-					sparks.burst(PlayScreen.this.table.centreX(), PlayScreen.this.table.centreY(), 110);
-				}
-			}
-
-			@Override
-			public void gameEnded(Match m) {
-				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
-				overlays.highScoresButton.set(0, 0, 0, 0);
-				// in turn: the table's cards fall away, then (if you won) fireworks, then the scores
-				toss.toss(m);
-				end.start(m.leaders().contains(HUMAN)); // you won (or tied for the win)
-			}
-		};
-		TableFlow.Listener sounds = new TableSounds(game.audio);
-		this.flow = autoplay != null ? new TableFlow(autoplay, table, sounds, recorder) : new TableFlow(table, sounds, recorder);
+		TableFlow.Listener effects = new Effects(), sounds = new TableSounds(game.audio);
+		this.flow = autoplay != null ? new TableFlow(autoplay, effects, sounds, recorder)
+				: new TableFlow(effects, sounds, recorder);
 		if (restored == null) {
 			startGame();
 		} else {
@@ -139,6 +104,45 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			recorder.table(level, players, false);
 			overlays.setMatch(restored);
 			flow.resume(restored);
+		}
+	}
+
+	/** This screen's own reactions at the table: the trick, sparks, and the ending. */
+	private final class Effects implements TableFlow.Listener {
+		@Override
+		public void beforeDeal(Match m) {
+			trick.clear();
+			input.clearTouch();
+		}
+
+		@Override
+		public void save(Match m) {
+			PlayScreen.this.save();
+		}
+
+		@Override
+		public void played(Match m, int seat, Card c) {
+			if (seat != HUMAN) {
+				// computer players' cards fly in from their fan; yours already started from your hand
+				Vector2 from = table.seatAnchor(seat);
+				trick.fly(c, from.x - Assets.CARD_W / 2f, from.y - Assets.CARD_H / 2f, time);
+			}
+		}
+
+		@Override
+		public void handEnded(Match m) {
+			if (m.madeBid(HUMAN)) {
+				sparks.burst(table.centreX(), table.centreY(), 110);
+			}
+		}
+
+		@Override
+		public void gameEnded(Match m) {
+			overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
+			overlays.highScoresButton.set(0, 0, 0, 0);
+			// in turn: the table's cards fall away, then (if you won) fireworks, then the scores
+			toss.toss(m);
+			end.start(m.leaders().contains(HUMAN)); // you won (or tied for the win)
 		}
 	}
 
@@ -390,42 +394,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		begin();
 		table.resize(w, h);
 		batch.draw(assets.table, 0, 0, w, h);
-
-		drawing.tally();
-		drawing.bidTracker();
-		drawing.trump(toss.trumpGone());
-		for (int seat = 0; seat < match().players(); seat++) {
-			drawing.seat(seat);
-		}
-		drawing.hand();
-		trick.draw(batch, assets, art, table, match(), flow.state() == TableState.TRICK, flow.stateTime(), time, fade);
-		if (flow.isDealing()) {
-			flow.deal.draw(batch, assets, art, table);
-		}
+		drawTable();
 		fireworks.draw(batch, assets.glow); // behind the panels, so the scores stay readable
 		if (!input.menuOpen()) {
 			overlays.drawMenuButton();
-			switch (flow.state()) {
-			case TURN:
-				if (match().phase() == Match.Phase.BIDDING && match().currentSeat() == HUMAN) {
-					overlays.drawBidPanel();
-				}
-				break;
-			case HAND_END:
-				overlays.drawHandEnd(flow.stateTime());
-				break;
-			case RESULTS:
-				overlays.drawHandResults();
-				overlays.drawHandLabels(MathUtils.clamp(flow.stateTime() / LABEL_DROP, 0, 1), 1f);
-				break;
-			case GAME_OVER:
-				if (resultsShown()) {
-					overlays.drawGameOver(recorder.newHighScore());
-				}
-				break;
-			default:
-				break;
-			}
+			drawOverlay();
 		}
 		if (input.dragging()) {
 			drawing.dragged(input.pressed(), input.dragX(), input.dragY());
@@ -439,6 +412,47 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 		batch.end();
 	}
+
+	/** The counters, trump, players, your hand, the trick and the deal. */
+	private void drawTable() {
+		drawing.tally();
+		drawing.bidTracker();
+		drawing.trump(toss.trumpGone());
+		for (int seat = 0; seat < match().players(); seat++) {
+			drawing.seat(seat);
+		}
+		drawing.hand();
+		trick.draw(batch, assets, art, table, match(), flow.state() == TableState.TRICK, flow.stateTime(), time, fade);
+		if (flow.isDealing()) {
+			flow.deal.draw(batch, assets, art, table);
+		}
+	}
+
+	/** Whatever the moment shows over the table: your bid panel, the hand's end, the scores. */
+	private void drawOverlay() {
+		switch (flow.state()) {
+		case TURN:
+			if (match().phase() == Match.Phase.BIDDING && match().currentSeat() == HUMAN) {
+				overlays.drawBidPanel();
+			}
+			break;
+		case HAND_END:
+			overlays.drawHandEnd(flow.stateTime());
+			break;
+		case RESULTS:
+			overlays.drawHandResults();
+			overlays.drawHandLabels(MathUtils.clamp(flow.stateTime() / LABEL_DROP, 0, 1), 1f);
+			break;
+		case GAME_OVER:
+			if (resultsShown()) {
+				overlays.drawGameOver(recorder.newHighScore());
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
 
 	// ----------------------------------------------------------- helpers
 

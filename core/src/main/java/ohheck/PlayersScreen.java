@@ -51,46 +51,63 @@ public class PlayersScreen extends BaseScreen {
 		float listTop = h - HEADER_H - COLUMNS_H - 8;
 		float content = Player.ALL.size() * (ROW_H + ROW_GAP);
 		scroller.update(dt, Gdx.input.isTouched(), content - listTop + 14);
-
-		// the columns: name, level, style, then the habit taking the rest of the row
-		float cName = x + 20, cLevel = x + 190, cStyle = x + 320, cTrait = x + 470, traitW = x + listW - 20 - cTrait;
+		layoutColumns(x, listW);
 		float y = listTop + scroller.offset;
 		for (Player p : Player.ALL) {
 			if (y - ROW_H < h && y > 0) { // only what's on screen
-				frame(assets.panel, x, y - ROW_H, listW, ROW_H);
-				float mid = y - ROW_H / 2;
-				BitmapFont n = serif(1.45f);
-				n.setColor(Palette.CREAM);
-				glyphs.setText(n, p.name);
-				n.draw(batch, p.name, cName, mid + glyphs.height / 2);
-				batch.draw(assets.levelBadge[p.level.ordinal()], cLevel, mid - BADGE / 2, BADGE, BADGE);
-				BitmapFont f = ui(1.1f);
-				f.setColor(Palette.CREAM);
-				glyphs.setText(f, p.level.label);
-				f.draw(batch, p.level.label, cLevel + BADGE + 8, mid + glyphs.height / 2);
-				f.setColor(Palette.GOLD_LIGHT);
-				glyphs.setText(f, p.style.label);
-				f.draw(batch, p.style.label, cStyle, mid + glyphs.height / 2);
-				BitmapFont t = ui(0.95f);
-				t.setColor(Palette.MUTED);
-				glyphs.setText(t, p.trait, Palette.MUTED, traitW, Align.left, true);
-				t.draw(batch, p.trait, cTrait, mid + glyphs.height / 2, traitW, Align.left, true);
+				drawRow(p, x, y, listW);
 			}
 			y -= ROW_H + ROW_GAP;
 		}
+		drawColumnHeads(); // drawn last, so the list scrolls under them
+		header("Roster", backButton);
+		batch.end();
+	}
+	// the columns: name, level, style, then the habit taking the rest of the row
+	private float colName, colLevel, colStyle, colTrait, traitW;
 
-		// the header and column names drawn last, so the list scrolls under them
+	private void layoutColumns(float x, float listW) {
+		colName = x + 20;
+		colLevel = x + 190;
+		colStyle = x + 320;
+		colTrait = x + 470;
+		traitW = x + listW - 20 - colTrait;
+	}
+
+	/** One player's row, its top at y. */
+	private void drawRow(Player p, float x, float y, float listW) {
+		frame(assets.panel, x, y - ROW_H, listW, ROW_H);
+		float mid = y - ROW_H / 2;
+		BitmapFont n = serif(1.45f);
+		n.setColor(Palette.CREAM);
+		glyphs.setText(n, p.name);
+		n.draw(batch, p.name, colName, mid + glyphs.height / 2);
+		batch.draw(assets.levelBadge[p.level.ordinal()], colLevel, mid - BADGE / 2, BADGE, BADGE);
+		BitmapFont f = ui(1.1f);
+		f.setColor(Palette.CREAM);
+		glyphs.setText(f, p.level.label);
+		f.draw(batch, p.level.label, colLevel + BADGE + 8, mid + glyphs.height / 2);
+		f.setColor(Palette.GOLD_LIGHT);
+		glyphs.setText(f, p.style.label);
+		f.draw(batch, p.style.label, colStyle, mid + glyphs.height / 2);
+		BitmapFont t = ui(0.95f);
+		t.setColor(Palette.MUTED);
+		glyphs.setText(t, p.trait, Palette.MUTED, traitW, Align.left, true);
+		t.draw(batch, p.trait, colTrait, mid + glyphs.height / 2, traitW, Align.left, true);
+	}
+
+	/** The bar under the header with the column names. */
+	private void drawColumnHeads() {
 		rect(0, h - HEADER_H - COLUMNS_H - 8, w, COLUMNS_H + 8, HEADER);
 		BitmapFont c = ui(0.95f);
 		c.setColor(Palette.MUTED);
 		float cy = h - HEADER_H - 10;
-		c.draw(batch, "Player", cName, cy);
-		c.draw(batch, "Level", cLevel, cy);
-		c.draw(batch, "Style", cStyle, cy);
-		c.draw(batch, "Habit", cTrait, cy);
-		header("Roster", backButton);
-		batch.end();
+		c.draw(batch, "Player", colName, cy);
+		c.draw(batch, "Level", colLevel, cy);
+		c.draw(batch, "Style", colStyle, cy);
+		c.draw(batch, "Habit", colTrait, cy);
 	}
+
 
 	@Override
 	protected void tap(float x, float y) {

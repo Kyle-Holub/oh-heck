@@ -38,61 +38,72 @@ final class PlayerPanel {
 	void draw(SeatState seat, float x, float top, float time) {
 		Assets assets = screen.assets;
 		float y = top - H;
-		String name = seat.name;
-		boolean turn = seat.turn, waiting = seat.waiting();
-		int bid = seat.bid, won = seat.won, handSize = seat.handSize;
-		if (turn) {
+		if (seat.turn) {
 			screen.frame(assets.panelTurn, x - 4, y - 4, W + 8, H + 8);
-		} else if (waiting) {
+		} else if (seat.waiting()) {
 			screen.frame(assets.panelWait, x, y, W, H);
 		} else {
 			screen.frame(assets.panel, x, y, W, H);
 		}
+		drawNameAndScore(seat, x, top);
+		float iy = y + 6;
+		if (seat.hasBid()) {
+			drawTricks(seat, x + 10, iy);
+		} else if (seat.waiting()) {
+			drawHourglass(seat, x + 10, iy, time);
+		}
+	}
 
-		// name, dealer icon and score
+	/** The name (with the dealer's chip after it) on the left, the score on the right. */
+	private void drawNameAndScore(SeatState seat, float x, float top) {
+		boolean waiting = seat.waiting();
 		BitmapFont f = screen.ui(1.3f);
-		f.setColor(turn ? Palette.GOLD_LIGHT : waiting ? WAIT_TEXT : Palette.CREAM);
-		screen.glyphs.setText(f, name);
+		f.setColor(seat.turn ? Palette.GOLD_LIGHT : waiting ? WAIT_TEXT : Palette.CREAM);
+		screen.glyphs.setText(f, seat.name);
 		float nameW = screen.glyphs.width, nameH = screen.glyphs.height;
-		f.draw(screen.batch, name, x + 10, top - 9);
+		f.draw(screen.batch, seat.name, x + 10, top - 9);
 		if (seat.dealer) {
 			// centred on the name's letters
 			float chip = 26, mid = top - 9 - nameH / 2;
-			screen.batch.draw(assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
+			screen.batch.draw(screen.assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
 		}
-		f.setColor(waiting && !turn ? WAIT_SCORE : BaseScreen.GOLD);
+		f.setColor(waiting && !seat.turn ? WAIT_SCORE : BaseScreen.GOLD);
 		screen.text(f, String.valueOf(seat.score), x + W - 10, top - 9, false);
+	}
 
-		float iy = y + 6;
-		if (!seat.hasBid()) {
-			if (waiting) {
-				// an hourglass: dim while waiting their turn, pulsing while they decide
-				float a = turn ? 0.75f + 0.25f * MathUtils.sin(time * 4f) : 0.55f;
-				float iw = iconWidth(handSize), ih = iw * 18f / 14f;
-				screen.batch.setColor(1f, 1f, 1f, a);
-				screen.batch.draw(assets.waitingIcon, x + 10, iy, iw, ih);
-				screen.batch.setColor(Color.WHITE);
-			}
-			return;
-		}
+	/** Yet to bid: dim while waiting their turn, pulsing while they decide. */
+	private void drawHourglass(SeatState seat, float x, float y, float time) {
+		float a = seat.turn ? 0.75f + 0.25f * MathUtils.sin(time * 4f) : 0.55f;
+		float iw = iconWidth(seat.handSize), ih = iw * 18f / 14f;
+		screen.batch.setColor(1f, 1f, 1f, a);
+		screen.batch.draw(screen.assets.waitingIcon, x, y, iw, ih);
+		screen.batch.setColor(Color.WHITE);
+	}
 
-		// a bid of zero shows its icon until a trick is taken; then the red over-the-bid icons replace it
+	/**
+	 * One icon per trick: faded = bid, not won yet; solid = won; red = over the bid. A bid of
+	 * zero shows its icon until a trick is taken, when the red over-the-bid icons replace it.
+	 */
+	private void drawTricks(SeatState seat, float x, float y) {
+		Assets assets = screen.assets;
+		int bid = seat.bid, won = seat.won;
 		int tricks = Math.max(bid, won), first = bid == 0 && won == 0 ? 1 : 0;
-		float iw = iconWidth(handSize), ih = iw * 18f / 14f;
+		float iw = iconWidth(seat.handSize), ih = iw * 18f / 14f;
 		if (first == 1) {
-			screen.batch.draw(assets.zeroIcon, x + 10, iy, iw, ih);
+			screen.batch.draw(assets.zeroIcon, x, y, iw, ih);
 		}
 		for (int i = 0; i < tricks; i++) {
-			float ix = x + 10 + (first + i) * (iw + ICON_GAP);
+			float ix = x + (first + i) * (iw + ICON_GAP);
 			if (i < Math.min(bid, won)) {
-				screen.batch.draw(assets.trickIcon, ix, iy, iw, ih);
+				screen.batch.draw(assets.trickIcon, ix, y, iw, ih);
 			} else if (i < bid) {
 				screen.batch.setColor(BID_FADE);
-				screen.batch.draw(assets.trickIcon, ix, iy, iw, ih);
+				screen.batch.draw(assets.trickIcon, ix, y, iw, ih);
 				screen.batch.setColor(Color.WHITE);
 			} else {
-				screen.batch.draw(assets.overIcon, ix, iy, iw, ih);
+				screen.batch.draw(assets.overIcon, ix, y, iw, ih);
 			}
 		}
 	}
+
 }

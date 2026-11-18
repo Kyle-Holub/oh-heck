@@ -70,6 +70,26 @@ public class TitleScreen extends BaseScreen {
 	@Override
 	public void render(float delta) {
 		float dt = Math.min(delta, 0.1f) * game.options.speed;
+		if (update(dt)) {
+			return;
+		}
+		ScreenUtils.clear(Color.BLACK);
+		begin();
+		if (introT >= SCENE_START) {
+			drawScene();
+		}
+		float titleY = drawTitle();
+		fade = smooth(ramp(introT, MENU_START, MENU_FADE));
+		sizeTo(hits, items.size());
+		if (fade > 0) {
+			drawMenu(titleY);
+		}
+		fade = 1f;
+		batch.end();
+	}
+
+	/** Moves the intro on; true if the screenshot run has gone on to another screen. */
+	private boolean update(float dt) {
 		introT += dt;
 		if (introT >= SCENE_START) {
 			cards.setFalling(introT >= CARDS_START);
@@ -81,54 +101,49 @@ public class TitleScreen extends BaseScreen {
 		if (introT >= INTRO_END) {
 			shownFor += dt;
 		}
-		if (game.tour != null && game.tour.step(this, shownFor)) {
-			return;
-		}
+		return game.tour != null && game.tour.step(this, shownFor);
+	}
 
-		ScreenUtils.clear(Color.BLACK);
-		begin();
-		if (introT >= SCENE_START) {
-			// a dim spotlit backdrop behind the shower
-			batch.setColor(0.5f, 0.5f, 0.5f, 1f);
-			batch.draw(assets.table, 0, 0, w, h);
-			batch.setColor(Color.WHITE);
-			cards.draw(batch, w / 2, h / 2);
-			rect(0, 0, w, h, Palette.SHADE);
-			// the scene rises out of black
-			float dark = 1f - ramp(introT, SCENE_START, SCENE_FADE);
-			if (dark > 0) {
-				rect(0, 0, w, h, black.set(0, 0, 0, dark));
-			}
+	/** A dim spotlit backdrop behind the shower, rising out of black. */
+	private void drawScene() {
+		batch.setColor(0.5f, 0.5f, 0.5f, 1f);
+		batch.draw(assets.table, 0, 0, w, h);
+		batch.setColor(Color.WHITE);
+		cards.draw(batch, w / 2, h / 2);
+		rect(0, 0, w, h, Palette.SHADE);
+		float dark = 1f - ramp(introT, SCENE_START, SCENE_FADE);
+		if (dark > 0) {
+			rect(0, 0, w, h, black.set(0, 0, 0, dark));
 		}
+	}
 
-		// title, as in the original game, fading in slowly on its own
+	/** The title, as in the original game, fading in slowly on its own; returns its bottom edge. */
+	private float drawTitle() {
 		float tw = assets.titleText.getWidth() * 0.85f, th = assets.titleText.getHeight() * 0.85f;
 		float titleY = h - 30 - th;
 		float titleA = smooth(ramp(introT, TITLE_START, TITLE_FADE));
 		batch.setColor(1f, 1f, 1f, titleA);
 		batch.draw(assets.titleText, (w - tw) / 2, titleY, tw, th);
 		batch.setColor(Color.WHITE);
-
-		// then the menu
-		fade = smooth(ramp(introT, MENU_START, MENU_FADE));
-		sizeTo(hits, items.size());
-		if (fade > 0) {
-			float bw = 270, bh = 46, gap = 10;
-			float y = titleY - 18 - bh + (1 - fade) * -12;
-			for (int i = 0; i < items.size(); i++) {
-				button(hits.get(i), items.get(i), w / 2, y, bw, bh, i == 0 ? assets.button : assets.buttonAlt);
-				y -= bh + gap;
-			}
-			BitmapFont f = ui(0.9f);
-			f.setColor(Palette.MUTED.r, Palette.MUTED.g, Palette.MUTED.b, fade);
-			f.draw(batch, game.build.isEmpty() ? OhHeckGame.VERSION : OhHeckGame.VERSION + "  (" + game.build + ")", 10, 22);
-			String c = "©2026 Kyle Holub";
-			glyphs.setText(f, c);
-			f.draw(batch, c, w - 10 - glyphs.width, 22);
-		}
-		fade = 1f;
-		batch.end();
+		return titleY;
 	}
+
+	/** The menu buttons under the title, the version and the copyright, all at the current fade. */
+	private void drawMenu(float titleY) {
+		float bw = 270, bh = 46, gap = 10;
+		float y = titleY - 18 - bh + (1 - fade) * -12;
+		for (int i = 0; i < items.size(); i++) {
+			button(hits.get(i), items.get(i), w / 2, y, bw, bh, i == 0 ? assets.button : assets.buttonAlt);
+			y -= bh + gap;
+		}
+		BitmapFont f = ui(0.9f);
+		f.setColor(Palette.MUTED.r, Palette.MUTED.g, Palette.MUTED.b, fade);
+		f.draw(batch, game.build.isEmpty() ? OhHeckGame.VERSION : OhHeckGame.VERSION + "  (" + game.build + ")", 10, 22);
+		String c = "\u00a92026 Kyle Holub";
+		glyphs.setText(f, c);
+		f.draw(batch, c, w - 10 - glyphs.width, 22);
+	}
+
 
 	/** 0 before start, rising to 1 over length. */
 	private static float ramp(float t, float start, float length) {

@@ -150,35 +150,7 @@ final class DealAnimation {
 			}
 			t -= SPLIT;
 			if (t < RIFFLE) {
-				float step = (RIFFLE - DROP) / RIFFLE_CARDS;
-				int landed = 0, leftGone = 0, rightGone = 0;
-				for (int i = 0; i < RIFFLE_CARDS; i++) {
-					if (t >= i * step) {
-						if (i % 2 == 0) {
-							leftGone++;
-						} else {
-							rightGone++;
-						}
-					}
-					if (t >= i * step + DROP) {
-						landed++;
-					}
-				}
-				int perHalf = RIFFLE_CARDS / 2;
-				art.stack(cx - HALF_GAP, cy, 26 * (perHalf - leftGone) / perHalf + 1, cw, ch, 8);
-				art.stack(cx + HALF_GAP, cy, 26 * (perHalf - rightGone) / perHalf + 1, cw, ch, -8);
-				art.stack(cx, cy, landed * 52 / RIFFLE_CARDS, cw, ch, 0);
-				// cards in the air, arcing from their half to the pile
-				for (int i = 0; i < RIFFLE_CARDS; i++) {
-					float p = (t - i * step) / DROP;
-					if (p < 0 || p >= 1) {
-						continue;
-					}
-					float from = i % 2 == 0 ? cx - HALF_GAP : cx + HALF_GAP;
-					float x = MathUtils.lerp(from, cx, p), y = cy + 8 + MathUtils.sin(MathUtils.PI * p) * 16;
-					float rot = MathUtils.lerp(i % 2 == 0 ? 8 : -8, 0, p);
-					batch.draw(assets.back(), x - cw / 2, y - ch / 2, cw / 2, ch / 2, cw, ch, 1f, 1f, rot);
-				}
+				drawRiffle(batch, assets, art, t, cx, cy, cw, ch);
 				return;
 			}
 			// settle: the deck is squared up
@@ -192,4 +164,37 @@ final class DealAnimation {
 		float s = MathUtils.lerp(1f, TableLayout.BACK_SCALE / DECK_SCALE, p);
 		art.stack(MathUtils.lerp(cx, dx, p), MathUtils.lerp(cy, dy, p), 52, cw * s, ch * s, 0);
 	}
+	/** t seconds into a riffle: cards fall alternately from the two halves onto one pile in the middle. */
+	private void drawRiffle(SpriteBatch batch, Assets assets, CardArt art, float t, float cx, float cy, float cw, float ch) {
+		float step = (RIFFLE - DROP) / RIFFLE_CARDS;
+		int landed = 0, leftGone = 0, rightGone = 0;
+		for (int i = 0; i < RIFFLE_CARDS; i++) {
+			if (t >= i * step) {
+				if (i % 2 == 0) {
+					leftGone++;
+				} else {
+					rightGone++;
+				}
+			}
+			if (t >= i * step + DROP) {
+				landed++;
+			}
+		}
+		int perHalf = RIFFLE_CARDS / 2;
+		art.stack(cx - HALF_GAP, cy, 26 * (perHalf - leftGone) / perHalf + 1, cw, ch, 8);
+		art.stack(cx + HALF_GAP, cy, 26 * (perHalf - rightGone) / perHalf + 1, cw, ch, -8);
+		art.stack(cx, cy, landed * 52 / RIFFLE_CARDS, cw, ch, 0);
+		// cards in the air, arcing from their half to the pile
+		for (int i = 0; i < RIFFLE_CARDS; i++) {
+			float p = (t - i * step) / DROP;
+			if (p < 0 || p >= 1) {
+				continue;
+			}
+			float from = i % 2 == 0 ? cx - HALF_GAP : cx + HALF_GAP;
+			float x = MathUtils.lerp(from, cx, p), y = cy + 8 + MathUtils.sin(MathUtils.PI * p) * 16;
+			float rot = MathUtils.lerp(i % 2 == 0 ? 8 : -8, 0, p);
+			batch.draw(assets.back(), x - cw / 2, y - ch / 2, cw / 2, ch / 2, cw, ch, 1f, 1f, rot);
+		}
+	}
+
 }

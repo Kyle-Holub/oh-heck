@@ -77,43 +77,60 @@ public class HighScoresScreen extends BaseScreen {
 		float pw = 480, rowH = 30, ph = 66 + Math.max(1, list.size()) * rowH;
 		float px = (w - pw) / 2, top = h - 100;
 		frame(assets.panel, px, top - ph, pw, ph);
-
 		BitmapFont f = ui(1.15f);
-		float[] cols = { px + 36, px + 86, px + 190, px + 300, px + pw - 30 };
-		float badge = 24;
 		float y = top - 18;
 		if (list.isEmpty()) {
 			f.setColor(Palette.MUTED);
 			centred(f, "Finish a game to set your first high score", w / 2, y - 22);
-		} else {
-			f.setColor(Palette.MUTED);
-			text(f, "#", cols[0], y, true);
-			text(f, "Level", cols[1], y, true);
-			text(f, "Score", cols[2], y, true);
-			text(f, "Finished", cols[3], y, true);
-			text(f, "Date", cols[4], y, false);
-			y -= 40;
-			float pulse = 0.5f + 0.5f * MathUtils.sin(shownFor * 3f);
-			for (int i = 0; i < list.size(); i++) {
-				HighScores.Entry e = list.get(i);
-				if (i == newest) {
-					rect(px + 12, y - rowH + 8, pw - 24, rowH, highlight.set(0.97f, 0.85f, 0.56f, 0.10f + 0.08f * pulse));
-				}
-				Color c = i == newest ? Palette.GOLD_LIGHT : i == 0 ? GOLD : Palette.CREAM;
-				f.setColor(c);
-				text(f, String.valueOf(i + 1), cols[0], y, true);
-				if (e.level() >= 0 && e.level() < assets.levelBadge.length) {
-					batch.draw(assets.levelBadge[e.level()], cols[1] - badge / 2, y - 16, badge, badge);
-				}
-				text(f, String.valueOf(e.score()), cols[2], y, true);
-				f.setColor(e.place() == 1 ? GOLD : c);
-				text(f, e.place() == 1 ? "Won" : Wording.ordinal(e.place()), cols[3], y, true);
-				f.setColor(i == newest ? Palette.GOLD_LIGHT : Palette.MUTED);
-				text(f, e.date(), cols[4], y, false);
-				y -= rowH;
+			return;
+		}
+		scoreCols[0] = px + 36;
+		scoreCols[1] = px + 86;
+		scoreCols[2] = px + 190;
+		scoreCols[3] = px + 300;
+		scoreCols[4] = px + pw - 30;
+		drawScoreHeads(f, y);
+		y -= 40;
+		float pulse = 0.5f + 0.5f * MathUtils.sin(shownFor * 3f);
+		for (int i = 0; i < list.size(); i++) {
+			if (i == newest) { // the game just finished, picked out
+				rect(px + 12, y - rowH + 8, pw - 24, rowH, highlight.set(0.97f, 0.85f, 0.56f, 0.10f + 0.08f * pulse));
 			}
+			drawScoreRow(f, i, list.get(i), y);
+			y -= rowH;
 		}
 	}
+
+	/** The score table's columns: rank, level, score, place, date. */
+	private final float[] scoreCols = new float[5];
+
+	private void drawScoreHeads(BitmapFont f, float y) {
+		float[] cols = scoreCols;
+		f.setColor(Palette.MUTED);
+		text(f, "#", cols[0], y, true);
+		text(f, "Level", cols[1], y, true);
+		text(f, "Score", cols[2], y, true);
+		text(f, "Finished", cols[3], y, true);
+		text(f, "Date", cols[4], y, false);
+	}
+
+	/** Row i of the table: the newest in light gold, the best in gold. */
+	private void drawScoreRow(BitmapFont f, int i, HighScores.Entry e, float y) {
+		float[] cols = scoreCols;
+		float badge = 24;
+		Color c = i == newest ? Palette.GOLD_LIGHT : i == 0 ? GOLD : Palette.CREAM;
+		f.setColor(c);
+		text(f, String.valueOf(i + 1), cols[0], y, true);
+		if (e.level() >= 0 && e.level() < assets.levelBadge.length) {
+			batch.draw(assets.levelBadge[e.level()], cols[1] - badge / 2, y - 16, badge, badge);
+		}
+		text(f, String.valueOf(e.score()), cols[2], y, true);
+		f.setColor(e.place() == 1 ? GOLD : c);
+		text(f, e.place() == 1 ? "Won" : Wording.ordinal(e.place()), cols[3], y, true);
+		f.setColor(i == newest ? Palette.GOLD_LIGHT : Palette.MUTED);
+		text(f, e.date(), cols[4], y, false);
+	}
+
 
 	// ---- statistics
 

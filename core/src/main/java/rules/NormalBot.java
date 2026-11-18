@@ -153,19 +153,27 @@ final class NormalBot implements Bot {
 				}
 			}
 		}
-		if (want) {
-			if (cheapestWinner == null) {
-				return lowestLoser; // can't win: throw the least useful card
-			}
-			if (last) {
-				return cheapestWinner; // the trick is ours for the least
-			}
-			// others still to play: a top card of the led suit holds best; a trump, the lowest that wins
-			if (highestWinner.suit() != trump && isBoss(v, highestWinner)) {
-				return highestWinner;
-			}
-			return cheapestWinner.suit() == trump ? cheapestWinner : highestWinner;
+		return want ? toWin(v, trump, last, cheapestWinner, highestWinner, lowestLoser)
+				: toLose(last, cheapestWinner, highestWinner, highestLoser);
+	}
+
+	/** Following, wanting the trick (winners: the legal cards that would take it so far, or null). */
+	private Card toWin(TableView v, Suit trump, boolean last, Card cheapestWinner, Card highestWinner, Card lowestLoser) {
+		if (cheapestWinner == null) {
+			return lowestLoser; // can't win: throw the least useful card
 		}
+		if (last) {
+			return cheapestWinner; // the trick is ours for the least
+		}
+		// others still to play: a top card of the led suit holds best; a trump, the lowest that wins
+		if (highestWinner.suit() != trump && isBoss(v, highestWinner)) {
+			return highestWinner;
+		}
+		return cheapestWinner.suit() == trump ? cheapestWinner : highestWinner;
+	}
+
+	/** Following, not wanting it. */
+	private static Card toLose(boolean last, Card cheapestWinner, Card highestWinner, Card highestLoser) {
 		if (highestLoser != null) {
 			return highestLoser; // duck, shedding the most dangerous card that still loses
 		}
