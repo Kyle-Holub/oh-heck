@@ -82,14 +82,17 @@ public final class Settings {
 		return s.isEmpty() ? null : s;
 	}
 
+	/** Saves the game in progress, the difficulty it started at, and who's at the table. */
 	public void saveGame(String saved, int difficulty, int[] players) {
-		if (saved == null) {
-			prefs.remove("savedGame");
-		} else {
-			prefs.putString("savedGame", saved);
-			prefs.putInteger("savedGameDifficulty", difficulty);
-			prefs.putString("savedGamePlayers", players[0] + "," + players[1] + "," + players[2]);
-		}
+		prefs.putString("savedGame", saved);
+		prefs.putInteger("savedGameDifficulty", difficulty);
+		prefs.putString("savedGamePlayers", players[0] + "," + players[1] + "," + players[2]);
+		prefs.flush();
+	}
+
+	/** Forgets the saved game (finished, or unreadable). */
+	public void clearSavedGame() {
+		prefs.remove("savedGame");
 		prefs.flush();
 	}
 

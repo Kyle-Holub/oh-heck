@@ -228,7 +228,7 @@ public class OhHeckGame extends Game {
 			return Match.load(s, new Random());
 		} catch (IllegalArgumentException e) {
 			Gdx.app.error("OhHeck", "Discarding unreadable saved game", e);
-			settings.saveGame(null, 0);
+			settings.clearSavedGame();
 			return null;
 		}
 	}

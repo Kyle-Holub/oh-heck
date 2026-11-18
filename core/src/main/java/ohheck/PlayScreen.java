@@ -323,7 +323,11 @@ public class PlayScreen extends BaseScreen {
 	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */
 	private void save() {
 		if (options.persist) {
-			game.settings.saveGame(isGameOver() ? null : match().save(), level.ordinal(), players);
+			if (isGameOver()) {
+				game.settings.clearSavedGame();
+			} else {
+				game.settings.saveGame(match().save(), level.ordinal(), players);
+			}
 		}
 	}
 
