@@ -1,0 +1,8 @@
+rootProject.name = 'oh-heck'
+include 'core', 'lwjgl3'
+
+// The Android app needs the Android SDK; skip it on machines without one,
+// so the desktop version still builds anywhere with just a JDK.
+if (System.getenv('ANDROID_HOME') || System.getenv('ANDROID_SDK_ROOT') || file('local.properties').exists()) {
+  include 'android'
+}

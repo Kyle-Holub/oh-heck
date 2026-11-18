@@ -1,0 +1,114 @@
+name: Android dev build
+
+# On every push to a develop branch: build the APK and desktop jar and publish
+# them straight away as a "dev-NNNN" pre-release (Obtainium picks it up), then
+# play a scripted game and attach its screenshots to the same release.
+
+on:
+  push:
+    branches: ['develop/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-dev-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Unpack the signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.OHHECK_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Add the OHHECK_KEYSTORE_B64 and OHHECK_KEYSTORE_PASSWORD repository secrets (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/ohheck.keystore"
+          echo "OHHECK_KEYSTORE=$RUNNER_TEMP/ohheck.keystore" >> "$GITHUB_ENV"
+
+      # shown on the title screen, so you can tell which build is installed
+      - name: Label the build
+        run: printf 'dev-%04d' ${{ github.run_number }} > assets/build.txt
+
+      # (the rules tests run in tests.yml on every push, so they aren't repeated here)
+      # (the desktop jar is built by the screenshots job, so the APK publishes sooner)
+      - name: Build APK
+        env:
+          OHHECK_KEYSTORE_PASSWORD: ${{ secrets.OHHECK_KEYSTORE_PASSWORD }}
+        run: ./gradlew android:assembleRelease -PversionCode=${{ github.run_number }} --stacktrace
+
+      - name: Publish dev build
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # zero-padded so alphabetical order is build order (Obtainium and GitHub sort by name)
+          TAG="dev-$(printf '%04d' ${{ github.run_number }})"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          APK="oh-heck-${TAG}.apk"
+          cp android/build/outputs/apk/release/android-release.apk "$APK"
+          gh release create "$TAG" "$APK" \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Dev build ${{ github.run_number }}" \
+            --notes "Automatic test build from ${GITHUB_REF_NAME} (${GITHUB_SHA::7}): $(git log -1 --pretty=%s)"
+          # keep this branch's three newest dev builds (other branches' builds are left alone)
+          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+            --jq ".[] | select(.draft | not) | select(.tag_name | test(\"^dev-[0-9]{4,}$\"))
+                 | select(.body | startswith(\"Automatic test build from ${GITHUB_REF_NAME} (\")) | .tag_name" \
+            | sort -r | tail -n +4 | while read -r old; do gh release delete "$old" --yes --cleanup-tag; done
+
+  screenshots:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Install a virtual display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+
+      - name: Label the build
+        run: echo "${{ needs.build.outputs.tag }}" > assets/build.txt
+
+      - name: Build the desktop jar and play a scripted game
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          env -u ANDROID_HOME -u ANDROID_SDK_ROOT \
+            xvfb-run -a -s "-screen 0 1600x800x24" ./gradlew lwjgl3:dist lwjgl3:screenshots --stacktrace
+          ls -l build/screenshots
+
+      - name: Attach the desktop jar and screenshots to the dev build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ needs.build.outputs.tag }}" build/dist/oh-heck-desktop.jar build/screenshots/*.png

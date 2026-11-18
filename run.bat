@@ -1,17 +1,13 @@
 @echo off
-REM Build and run Oh Heck! on Windows. Requires a JDK (11+).
-setlocal
+REM Builds and runs Oh Heck! from the source code. Needs Java (JDK 17 or newer).
+REM The first run downloads Gradle and the game libraries, which takes a few minutes.
 cd /d "%~dp0"
-
-if exist bin rmdir /s /q bin
-mkdir bin
-dir /s /b src\*.java > sources.txt
-javac -d bin -cp "libraries/*" @sources.txt
-set BUILD_ERR=%ERRORLEVEL%
-del sources.txt
-if not %BUILD_ERR%==0 (
-  echo Build failed.
+where java >/dev/null 2>nul
+if errorlevel 1 (
+  echo Java was not found. Install a JDK 17 or newer from https://adoptium.net/
+  echo and make sure "Add to PATH" is selected, then run this again.
   pause
-  exit /b %BUILD_ERR%
+  exit /b 1
 )
-java -cp "bin;resources;libraries/*" game.main.Main
+call gradlew.bat lwjgl3:run
+if errorlevel 1 pause

@@ -1,9 +1,15 @@
-/bin/
+# Gradle and build output
+.gradle/
+build/
+local.properties
+android/libs/
 
-# IDE files
+# IDEs
 /.idea/
 *.iml
 /.classpath
 /.project
 /.settings/
 /.vscode/
+__pycache__/
+assets/build.txt
