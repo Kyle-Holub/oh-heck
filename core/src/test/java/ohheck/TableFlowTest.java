@@ -137,7 +137,7 @@ public class TableFlowTest {
 		assertEquals("still thinking", seat, m.currentSeat());
 		assertTrue(flow.isTurnOf(seat));
 		flow.update(0.1f);
-		assertTrue("has bid", m.bid(seat) != null);
+		assertTrue("has bid", m.hasBid(seat));
 	}
 
 	@Test
