@@ -68,7 +68,7 @@ When changing how the computer players bid or play, measure it in the arena: it 
 ./gradlew core:arena -Parena="vs 400"        # each level against the one below
 ./gradlew core:arena -Parena="effort 100"    # Hard's strength and speed at half, normal and double thinking
 ./gradlew core:arena -Parena="players 200"   # each of the twelve players against three plain Normal ones
-./gradlew core:arena -Parena="learn 4000"    # regenerate core/src/main/java/rules/BidTable.java
+./gradlew core:arena -Parena="learn 4000"    # regenerate core/src/main/java/ohheck/players/BidTable.java
 ```
 
 The Normal players bid from `BidTable`: how often each card took a trick in simulated games, by hand size, trump or not, rank, how many cards of its suit the holder had, and their place in the bidding. Regenerate it (twice, since each round learns from the play of the last) after changing how they play. Without a computer, the same experiments can be run on GitHub: Actions, then **Arena**, then **Run workflow**; the results appear in the run's summary.
@@ -77,13 +77,13 @@ GitHub runs the tests on every push. Pushes to `develop/*` also build the APK (s
 
 | Path | Contents |
 | --- | --- |
-| `core/src/main/java/rules` | Game rules, scoring, computer player decisions, the game engine and saving. No graphics |
-| `core/src/main/java/ohheck` | Screens (title with 3D falling cards, card table, the how-to-play tutorial, options, players, high scores and statistics), sound, settings and effects |
-| `.../ohheck/PlayScreen.java` | The card table: touch, and drawing the seats and your hand. With `TableFlow` (its states and timing, no drawing), `TableLayout` (where things go), `DealAnimation`, `TrickView`, `TableOverlays` (panels, scores, menus) and `Autoplay` (the scripted screenshot run) |
-| `core/src/test/java` | Tests for the rules, saved games, high scores, the rules text and the table's flow |
+| `core/src/main/java/ohheck/rules`, `players`, `records` | The rules, the computer players and the roster, saved games and statistics. No graphics |
+| `core/src/main/java/ohheck/table` | The card table: `PlayScreen`, its states and timing (`TableFlow`), layout, drawing, taps, and `Autoplay` (the scripted screenshot run) |
+| `core/src/main/java/ohheck/screens`, `ui`, `fx` | The other screens (title, tutorial, options, roster, high scores and statistics), what screens share, and the effects |
+| `core/src/test/java` | Tests for the rules, the players, saving, the table's flow, taps and layout, and the wording |
 | `android` | Android launcher, icon and manifest |
 | `lwjgl3` | Desktop launcher, plus the scripted screenshot run used on GitHub |
 | `assets` | Images, music, sound effects, fonts and the rules text |
-| `tools/` | Scripts that draw the cards, icons and frames (`make_art.py`), the app icon (`make_icon.py`) and bake the fonts (`make_fonts.py`) |
+| `tools/` | Scripts that draw the cards, icons and frames (`make_art.py`), the app icon (`make_icon.py`) and bake the fonts (`make_fonts.py`); `build_art.py` runs them all |
 
 All artwork, music and sound effects are by Kyle Holub. Fonts: DejaVu Sans and Serif (see `assets/fonts/DejaVu-LICENSE.txt`).
