@@ -81,8 +81,7 @@ public class TitleScreen extends BaseScreen {
 		if (introT >= INTRO_END) {
 			shownFor += dt;
 		}
-		if (game.options.autoplayHuman && shownFor > 3.5f) {
-			game.showHighScores(-1);
+		if (game.tour != null && game.tour.step(this, shownFor)) {
 			return;
 		}
 

@@ -100,12 +100,8 @@ public class TutorialScreen extends BaseScreen {
 		}
 		sparks.step(dt);
 		fireworks.update(dt);
-		if (game.options.autoplayHuman && stepT > AUTOPLAY_STEP) { // the screenshot run steps through
-			if (step == STEPS.length - 1) {
-				game.newGame();
-				return;
-			}
-			next();
+		if (game.tour != null && game.tour.step(this, stepT)) { // (stepT: the tour times each step)
+			return;
 		}
 
 		ScreenUtils.clear(Palette.BG);
@@ -119,10 +115,11 @@ public class TutorialScreen extends BaseScreen {
 		batch.end();
 	}
 
-	/** In the screenshot run, game seconds on each step. */
-	private static final float AUTOPLAY_STEP = 4.0f;
+	boolean lastStep() {
+		return step == STEPS.length - 1;
+	}
 
-	private void next() {
+	void next() {
 		if (step < STEPS.length - 1) {
 			step++;
 			stepT = 0;

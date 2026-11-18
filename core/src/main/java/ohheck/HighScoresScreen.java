@@ -19,6 +19,11 @@ public class HighScoresScreen extends BaseScreen {
 	private final Rectangle[] filterButtons = { new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle() };
 	/** Showing the statistics (not the high scores); which totals (a difficulty, or Stats.ALL). */
 	private boolean showStats;
+
+	/** The Statistics tab (for the screenshot run, which looks at both). */
+	void showStatistics() {
+		showStats = true;
+	}
 	private int filter = Stats.ALL;
 	/** Seconds left to tap Reset again to confirm, or 0. */
 	private float confirmReset;
@@ -47,12 +52,8 @@ public class HighScoresScreen extends BaseScreen {
 	public void render(float delta) {
 		float dt = Math.min(delta, 0.1f);
 		shownFor += dt * game.options.speed;
-		if (game.options.autoplayHuman && shownFor > 1.5f) {
-			if (shownFor > 3f) {
-				game.showOptions();
-				return;
-			}
-			showStats = true; // the screenshot run looks at both tabs
+		if (game.tour != null && game.tour.step(this, shownFor)) {
+			return;
 		}
 		confirmReset = Math.max(0, confirmReset - dt);
 		ScreenUtils.clear(Palette.BG);

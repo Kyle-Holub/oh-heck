@@ -16,6 +16,11 @@ public class PlayersScreen extends BaseScreen {
 	private final Rectangle backButton = new Rectangle();
 	private final Scroller scroller = new Scroller();
 
+	/** Shows the end of the list, or the top (for the screenshot run). */
+	void scrollToEnd(boolean end) {
+		scroller.offset = end ? 9999 : 0;
+	}
+
 	public PlayersScreen(OhHeckGame game) {
 		super(game);
 	}
@@ -35,12 +40,8 @@ public class PlayersScreen extends BaseScreen {
 	public void render(float delta) {
 		float dt = Math.min(delta, 0.1f);
 		shownFor += dt * game.options.speed;
-		if (game.options.autoplayHuman) {
-			scroller.offset = shownFor > 1.0f ? 9999 : 0; // the screenshot run sees the end of the list
-			if (shownFor > 2.2f) {
-				game.showTutorial(); // (the screenshot run goes on through the tutorial to a game)
-				return;
-			}
+		if (game.tour != null && game.tour.step(this, shownFor)) {
+			return;
 		}
 		ScreenUtils.clear(Palette.BG);
 		begin();

@@ -79,8 +79,7 @@ public class OptionsScreen extends BaseScreen {
 	@Override
 	public void render(float delta) {
 		shownFor += Math.min(delta, 0.1f) * game.options.speed;
-		if (game.options.autoplayHuman && shownFor > 1.5f) {
-			game.showPlayers(); // (the screenshot run goes on from there to How to play)
+		if (game.tour != null && game.tour.step(this, shownFor)) {
 			return;
 		}
 		ScreenUtils.clear(Palette.BG);
