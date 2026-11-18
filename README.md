@@ -75,7 +75,7 @@ GitHub runs the tests on every push. Pushes to `develop/*` also build the APK (s
 | Path | Contents |
 | --- | --- |
 | `core/src/main/java/rules` | Game rules, scoring, computer player decisions, the game engine and saving. No graphics |
-| `core/src/main/java/ohheck` | Screens (title with 3D falling cards, card table, how to play, options, high scores), sound, settings and effects |
+| `core/src/main/java/ohheck` | Screens (title with 3D falling cards, card table, the how-to-play tutorial, options, players, high scores and statistics), sound, settings and effects |
 | `.../ohheck/PlayScreen.java` | The card table: touch, and drawing the seats and your hand. With `TableFlow` (its states and timing, no drawing), `TableLayout` (where things go), `DealAnimation`, `TrickView`, `TableOverlays` (panels, scores, menus) and `Autoplay` (the scripted screenshot run) |
 | `core/src/test/java` | Tests for the rules, saved games, high scores, the rules text and the table's flow |
 | `android` | Android launcher, icon and manifest |

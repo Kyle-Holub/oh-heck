@@ -97,6 +97,15 @@ public final class Settings {
 	}
 
 	/** Your best finished games, as HighScores.encode() writes them. */
+	/** Whether you've seen (or skipped) the tutorial, shown before your first game. */
+	public boolean tutorialSeen() {
+		return prefs.getBoolean("tutorialSeen", false);
+	}
+
+	public void setTutorialSeen(boolean seen) {
+		prefs.putBoolean("tutorialSeen", seen).flush();
+	}
+
 	/** Your statistics, as {@link rules.Stats#encode()} wrote them ("" for none yet). */
 	public String stats() {
 		return prefs.getString("stats", "");
