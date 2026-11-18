@@ -59,7 +59,12 @@ public class PlayScreen extends BaseScreen {
 	/** At the game's end, the final hand's cards and the trump thrown off the table; null until then. */
 	private FallingCards tumble;
 	/** When the trump goes, then each card of the final hand in the order played. */
-	private static final float TOSS_TRUMP = 0.15f, TOSS_FIRST = 0.35f, TOSS_STEP = 0.04f;
+	private static final float TOSS_TRUMP = 0.15f, TOSS_FIRST = 0.35f, TOSS_STEP = 0.025f;
+	/** After the cards: seconds of fireworks (if you won) before the scores, or a short pause before them. */
+	private static final float FIREWORKS_FIRST = 1.4f, SCORES_AFTER_CARDS = 0.3f;
+	/** Whether you won (fireworks to come); when (in game-over seconds) the scores appear. */
+	private boolean celebrate;
+	private float resultsAt;
 	private final Motes motes = new Motes();
 	/** Drives your seat in scripted screenshot runs; null in normal play. */
 	private final Autoplay autoplay;
@@ -155,11 +160,10 @@ public class PlayScreen extends BaseScreen {
 				}
 				overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
 				overlays.highScoresButton.set(0, 0, 0, 0);
+				// in turn: the table's cards fall away, then (if you won) fireworks, then the scores
 				tossTheTable(m);
-				if (m.leaders().contains(HUMAN)) { // you won (or tied for the win)
-					sparks.burst(table.w / 2, table.h / 2 + 100, 160);
-					fireworks.show(table.w, table.h);
-				}
+				celebrate = m.leaders().contains(HUMAN); // you won (or tied for the win)
+				resultsAt = Float.MAX_VALUE; // set once the cards are gone
 			}
 		});
 		if (restored == null) {
@@ -215,6 +219,11 @@ public class PlayScreen extends BaseScreen {
 		}
 	}
 
+	/** Game over and the scores are up (after the cards have fallen, and any fireworks have begun). */
+	boolean resultsShown() {
+		return flow.state() == TableState.GAME_OVER && flow.stateTime() >= resultsAt;
+	}
+
 	/** Whether the trump card has been thrown off the table (so it's no longer drawn in its place). */
 	private boolean trumpGone() {
 		return tumble != null && (tumble.anyThrown() || !tumble.active()); // (once all have fallen, none is left)
@@ -263,6 +272,13 @@ public class PlayScreen extends BaseScreen {
 		fireworks.update(dt);
 		if (tumble != null) {
 			tumble.update(dt, table.w, table.h);
+			if (resultsAt == Float.MAX_VALUE && !tumble.active()) { // the last card has fallen
+				if (celebrate) {
+					sparks.burst(table.w / 2, table.h / 2 + 100, 160);
+					fireworks.show(table.w, table.h);
+				}
+				resultsAt = flow.stateTime() + (celebrate ? FIREWORKS_FIRST : SCORES_AFTER_CARDS);
+			}
 		}
 		motes.update(dt, flow.trumpFaceUp() && !trumpGone(), table.trumpX(), table.trumpY(), table.trumpW(), table.trumpH());
 		if (autoplay != null) {
@@ -543,7 +559,9 @@ public class PlayScreen extends BaseScreen {
 				overlays.drawHandLabels(MathUtils.clamp(flow.stateTime() / LABEL_DROP, 0, 1), 1f);
 				break;
 			case GAME_OVER:
-				overlays.drawGameOver(newHighScore);
+				if (resultsShown()) {
+					overlays.drawGameOver(newHighScore);
+				}
 				break;
 			default:
 				break;
@@ -664,7 +682,7 @@ public class PlayScreen extends BaseScreen {
 	private void drawSeat(int seat) {
 		boolean turn = flow.state() == TableState.TURN && match().currentSeat() == seat;
 		panel.draw(name(seat), table.panelX(seat), table.panelTop(seat), turn, match().dealer() == seat,
-				match().score(seat), match().bid(seat), match().tricksWon(seat), flow.isDealing(), time);
+				match().score(seat), match().bid(seat), match().tricksWon(seat), match().handSize(), flow.isDealing(), time);
 		if (seat == HUMAN) {
 			return;
 		}

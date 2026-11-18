@@ -57,7 +57,7 @@ public class ScreenshotLauncher {
 			return 8; // the final hand's cards in the air
 		}
 		if (state.equals("gameover")) {
-			return 14; // (after 1.2 s of tossing) the winner's fireworks bursting
+			return 6; // the scores just up, the winner's fireworks bursting behind them
 		}
 		if (state.startsWith("handover")) {
 			return 12; // the made/set labels have dropped beside the names
