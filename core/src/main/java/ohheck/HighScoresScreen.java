@@ -165,7 +165,11 @@ public class HighScoresScreen extends BaseScreen {
 		}
 	}
 
- else if (scoresTab.contains(x, y)) {
+	@Override
+	protected void tap(float x, float y) {
+		if (backButton.contains(x, y)) {
+			back();
+		} else if (scoresTab.contains(x, y)) {
 			showStats = false;
 		} else if (statsTab.contains(x, y)) {
 			showStats = true;
