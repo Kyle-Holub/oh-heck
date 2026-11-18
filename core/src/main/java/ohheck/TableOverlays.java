@@ -52,7 +52,6 @@ final class TableOverlays {
 
 	private Match match;
 	private final List<Integer> ranked = new ArrayList<Integer>();
-	private final StringBuilder sb = new StringBuilder();
 	private final Comparator<Integer> byScore = new Comparator<Integer>() {
 		@Override
 		public int compare(Integer a, Integer b) {
@@ -139,7 +138,7 @@ final class TableOverlays {
 		if (forbidden >= 0) {
 			BitmapFont s = screen.ui(1f);
 			s.setColor(Palette.MUTED);
-			screen.text(s, "As dealer you can't bid " + forbidden, table.w / 2, py + ph - 86, true);
+			screen.text(s, Wording.dealerCantBid(forbidden), table.w / 2, py + ph - 86, true);
 		}
 
 		BaseScreen.sizeTo(bidButtons, n + 1);
@@ -176,7 +175,7 @@ final class TableOverlays {
 				continue;
 			}
 			boolean made = match.madeBid(seat);
-			String s = made ? "Bid tricks!" : "Set!";
+			String s = Wording.handResult(made);
 			float scale, x, y, a = alpha;
 			if (seat == TableLayout.HUMAN) {
 				float p = Interpolation.pow2Out.apply(drop);
@@ -226,7 +225,7 @@ final class TableOverlays {
 			y -= RESULTS_ROW;
 			int pts = match.lastHandPoints(seat);
 			t.setColor(Palette.MUTED);
-			t.draw(screen.batch, HighScores.ordinal(place(seat)), px + cols[0], y);
+			t.draw(screen.batch, Wording.ordinal(place(seat)), px + cols[0], y);
 			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
 			t.draw(screen.batch, scene.name(seat) + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
 			screen.numeral(match.bid(seat), px + cols[2] + 8, y - 8, 26, Color.WHITE);
@@ -253,27 +252,20 @@ final class TableOverlays {
 		art.art(screen.assets.gameOverText, table.w / 2, py + ph - 50, 0.66f, 1f);
 
 		List<Integer> leaders = match.leaders();
-		sb.setLength(0);
-		for (int i = 0; i < leaders.size(); i++) {
-			if (i > 0) {
-				sb.append(i == leaders.size() - 1 ? " and " : ", ");
-			}
-			sb.append(scene.name(leaders.get(i)));
+		List<String> names = new ArrayList<String>();
+		for (int seat : leaders) {
+			names.add(scene.name(seat));
 		}
-		if (leaders.size() > 1) {
-			sb.append(" tie!");
-		} else {
-			sb.append(leaders.get(0) == TableLayout.HUMAN ? " win the game!" : " wins the game!");
-		}
+		String result = Wording.winners(names, leaders.size() == 1 && leaders.get(0) == TableLayout.HUMAN);
 		BitmapFont f = screen.ui(1.5f);
 		f.setColor(Palette.GOLD);
-		screen.text(f, sb.toString(), table.w / 2, py + ph - 94, true);
+		screen.text(f, result, table.w / 2, py + ph - 94, true);
 
 		BitmapFont t = screen.ui(1.2f);
 		float y = py + ph - 130;
 		for (int s : ranked()) {
 			t.setColor(Palette.MUTED);
-			t.draw(screen.batch, HighScores.ordinal(place(s)), px + 60, y);
+			t.draw(screen.batch, Wording.ordinal(place(s)), px + 60, y);
 			t.setColor(place(s) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(screen.batch, scene.name(s), px + 120, y);
 			screen.text(t, String.valueOf(match.score(s)), px + pw - 140, y, false);

@@ -109,8 +109,4 @@ final class HighScores {
 		return new Entry(Integer.parseInt(f[0].trim()), Integer.parseInt(f[1].trim()), f[2].trim(), level);
 	}
 
-	/** "1st", "2nd"... */
-	static String ordinal(int n) {
-		return n + (n == 1 ? "st" : n == 2 ? "nd" : n == 3 ? "rd" : "th");
-	}
 }

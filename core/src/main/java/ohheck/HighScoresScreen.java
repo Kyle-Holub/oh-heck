@@ -8,7 +8,6 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import rules.Player;
 import rules.Stats;
 
 /** Your ten best finished games, and (on its second tab) your statistics, by difficulty or for all. */
@@ -108,7 +107,7 @@ public class HighScoresScreen extends BaseScreen {
 				}
 				text(f, String.valueOf(e.score()), cols[2], y, true);
 				f.setColor(e.place() == 1 ? GOLD : c);
-				text(f, e.place() == 1 ? "Won" : HighScores.ordinal(e.place()), cols[3], y, true);
+				text(f, e.place() == 1 ? "Won" : Wording.ordinal(e.place()), cols[3], y, true);
 				f.setColor(i == newest ? Palette.GOLD_LIGHT : Palette.MUTED);
 				text(f, e.date(), cols[4], y, false);
 				y -= rowH;
@@ -140,25 +139,7 @@ public class HighScoresScreen extends BaseScreen {
 		}
 
 		Stats.Totals t = game.records.stats().totals(filter);
-		String none = "\u2014";
-		boolean g = t.anyGames(), hd = t.anyHands();
-		String[][] games = {
-				{ "Games played", String.valueOf(t.games) },
-				{ "Games won", g ? t.wins + "  (" + percent(t.winRate()) + ")" : none },
-				{ "Winning streak", g ? t.streak + "  (best " + t.bestStreak + ")" : none },
-				{ "Average score", g ? String.valueOf(Math.round(t.averageFinal())) : none },
-				{ "Best / worst score", g ? t.bestFinal + " / " + t.worstFinal : none },
-				{ "Perfect games", g ? String.valueOf(t.perfect) : none },
-				{ "Nemesis", t.nemesis() >= 0 ? Player.byId(t.nemesis()).name : none } };
-		int misses = t.over + t.under;
-		String[][] hands = {
-				{ "Hands played", String.valueOf(t.hands) },
-				{ "Bids made", hd ? percent(t.madeRate()) + "  (" + t.made + ")" : none },
-				{ "Zero bids made", t.zeroBids > 0 ? t.zeroMade + " of " + t.zeroBids : none },
-				{ "Misses: over / under", misses > 0 ? t.over + " / " + t.under : none },
-				{ "Tricks won", hd ? t.tricks + "  (" + String.format(java.util.Locale.US, "%.1f", t.tricksPerHand()) + " a hand)" : none },
-				{ "Best hand", hd ? t.bestHand + " points" : none },
-				{ "Worst hand", hd ? t.worstHand + " points" : none } };
+		String[][] games = Wording.gameRows(t), hands = Wording.handRows(t);
 		float top = fy - 18, x0 = w / 2 - STATS_PANEL_W - STATS_GAP / 2;
 		statPanel("Games", games, x0, top);
 		statPanel("Hands", hands, x0 + STATS_PANEL_W + STATS_GAP, top);
@@ -184,15 +165,7 @@ public class HighScoresScreen extends BaseScreen {
 		}
 	}
 
-	private static String percent(double share) {
-		return Math.round(share * 100) + "%";
-	}
-
-	@Override
-	protected void tap(float x, float y) {
-		if (backButton.contains(x, y)) {
-			back();
-		} else if (scoresTab.contains(x, y)) {
+ else if (scoresTab.contains(x, y)) {
 			showStats = false;
 		} else if (statsTab.contains(x, y)) {
 			showStats = true;

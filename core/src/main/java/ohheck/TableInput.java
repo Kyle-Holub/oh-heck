@@ -4,7 +4,6 @@ import com.badlogic.gdx.math.Rectangle;
 
 import rules.Card;
 import rules.Match;
-import rules.Suit;
 
 /**
  * What your taps and drags do at the table: playing a card (tap it, or drag it up onto
@@ -147,7 +146,7 @@ final class TableInput {
 		for (int b = 0; b < s.overlays().bidButtons.size(); b++) {
 			if (s.overlays().bidButtons.get(b).contains(x, y)) {
 				if (!s.flow().bid(b)) {
-					s.overlays().hint("As dealer you can't bid " + b + ": the bids would add up to " + s.match().handSize());
+					s.overlays().hint(Wording.dealerCantBid(b, s.match().handSize()));
 				}
 				return;
 			}
@@ -161,7 +160,7 @@ final class TableInput {
 		}
 		Card c = s.handOrder().get(i);
 		if (!s.match().legalPlays(HUMAN).contains(c)) {
-			s.overlays().hint("You must follow suit: play a " + singular(s.match().leadSuit()));
+			s.overlays().hint(Wording.mustFollow(s.match().leadSuit()));
 			return;
 		}
 		Rectangle r = s.handRects().get(i);
@@ -213,9 +212,4 @@ final class TableInput {
 		}
 	}
 
-	/** "heart", "spade"... */
-	private static String singular(Suit suit) {
-		String n = suit.name().toLowerCase();
-		return n.substring(0, n.length() - 1);
-	}
 }

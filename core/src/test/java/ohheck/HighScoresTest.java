@@ -47,12 +47,4 @@ public class HighScoresTest {
 		assertEquals(2, numbered.entries().get(0).level());
 		assertEquals("score:55,place:2,date:2026-11-10,level:HARD", numbered.encode());
 	}
-
-	@Test
-	public void ordinals() {
-		assertEquals("1st", HighScores.ordinal(1));
-		assertEquals("2nd", HighScores.ordinal(2));
-		assertEquals("3rd", HighScores.ordinal(3));
-		assertEquals("4th", HighScores.ordinal(4));
-	}
 }
