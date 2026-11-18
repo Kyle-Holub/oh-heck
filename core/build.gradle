@@ -21,7 +21,7 @@ test {
 // It is not part of the build or the tests (nothing depends on it), so it costs CI nothing.
 //   ./gradlew core:arena                          levels: each difficulty at a table of its own
 //   ./gradlew core:arena -Parena="vs 400"         each level against the one below
-//   ./gradlew core:arena -Parena="learn 4000"     regenerate rules/BidTable.java from simulated play
+//   ./gradlew core:arena -Parena="learn 4000"     regenerate ohheck/players/BidTable.java from simulated play
 //   ./gradlew core:arena -Parena="effort 100"     Hard's strength and speed at half, normal and double thinking
 //   ./gradlew core:arena -Parena="players 200"    each of the twelve players against three plain Normal ones
 sourceSets {
@@ -36,7 +36,7 @@ tasks.register('arena', JavaExec) {
   group = 'verification'
   description = 'Experiments on the computer players (see core/build.gradle)'
   classpath = sourceSets.arena.runtimeClasspath
-  mainClass = 'rules.Arena'
+  mainClass = 'ohheck.players.Arena'
   workingDir = rootDir
   args = (project.findProperty('arena') ?: 'levels 200').toString().split(' ').toList()
 }
