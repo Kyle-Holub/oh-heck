@@ -10,12 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: ./.github/actions/setup
 
       - name: Rules tests and desktop build
         # no Android SDK needed: unset it so only core + desktop are configured

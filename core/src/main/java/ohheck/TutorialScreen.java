@@ -9,7 +9,9 @@ import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import rules.Card;
+import rules.Player;
 import rules.Rank;
+import rules.Rules;
 import rules.Suit;
 
 /**
@@ -49,7 +51,8 @@ public class TutorialScreen extends BaseScreen {
 			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", 5.5f),
 			new Step("The dealer's hook", "The dealer bids last and can't make the bids add up to the number of tricks, so someone always misses.", 5.5f),
 			new Step("The counters", "Top left of the table: tally marks count the 8 hands, and under them one card per trick shows how many the table has bid.", 9f),
-			new Step("Scoring", "Make your bid exactly: 10 points, plus 2 for each trick you bid. Miss it, high or low: lose 5 for each trick off.", 9f),
+			new Step("Scoring", "Make your bid exactly: " + Rules.MADE + " points, plus " + Rules.PER_TRICK_BID
+					+ " for each trick you bid. Miss it, high or low: lose " + Rules.PER_TRICK_OFF + " for each trick off.", 9f),
 			new Step("Ready", "Highest total after 8 hands wins. Good luck!", 5f, false) };
 
 	/** After a step's scene has run, it holds this long before playing again. */
@@ -256,7 +259,9 @@ public class TutorialScreen extends BaseScreen {
 
 	// ---- the seats: three players, for room: you bottom left, Rupert left, Oswald right
 
-	private static final String[] NAMES = { "You", "Rupert", "", "Oswald" };
+	/** The two players at the tutorial's table, by roster id (so a renamed player is renamed here too). */
+	private static final String LEFT = Player.byId(4).name, RIGHT = Player.byId(7).name;
+	private static final String[] NAMES = { "You", LEFT, "", RIGHT };
 
 	private float seatX(int seat) {
 		switch (seat) {
@@ -569,7 +574,7 @@ public class TutorialScreen extends BaseScreen {
 		float dw = CW * DEAL_SCALE, dh = CH * DEAL_SCALE, gap = dw + 12;
 		float deckX = w - 60 - CW, deckY = cy() - CH / 2 - 20;
 		art.stack(deckX + CW / 2, deckY + CH / 2, 12, CW, CH, 0);
-		panel.draw("Oswald", seatX(1), seatTop(1), false, false, 0, null, 0, 1, true, stepT);
+		panel.draw(RIGHT, seatX(1), seatTop(1), false, false, 0, null, 0, 1, true, stepT);
 		seat(0, null, 0, false, true, 0, 1, true, 1);
 		// each player's cards in a row beside their panel
 		float[] rowYs = { seatTop(0) - PlayerPanel.H / 2 - dh / 2, seatTop(1) - PlayerPanel.H / 2 - dh / 2 };
@@ -693,7 +698,7 @@ public class TutorialScreen extends BaseScreen {
 		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
 		BitmapFont f = ui(1.15f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
-		centred(f, "Rupert bid 1.  Oswald bid 1.", cx(), cy() - 46);
+		centred(f, LEFT + " bid 1.  " + RIGHT + " bid 1.", cx(), cy() - 46);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(3.2f, 3.6f));
 		centred(f, "The total of the bids can't be 3, so you can't bid 1.", cx(), cy() - 74);
 	}
@@ -734,24 +739,25 @@ public class TutorialScreen extends BaseScreen {
 	private void scoring() {
 		int mine = t >= 1.6f ? 2 : t >= 0.8f ? 1 : 0;
 		int his = t >= 5.6f ? 2 : t >= 4.8f ? 1 : 0;
-		seat(0, 2, mine, false, false, t >= 2.2f ? 14 : 0, 3, false, 1);
-		seat(3, 1, his, false, false, t >= 6.4f ? -5 : 0, 3, false, 1);
+		seat(0, 2, mine, false, false, t >= 2.2f ? Rules.score(2, 2) : 0, 3, false, 1);
+		seat(3, 1, his, false, false, t >= 6.4f ? Rules.score(1, 2) : 0, 3, false, 1);
 		seat(1, null, 0, false, false, 0, 3, true, 1);
 		float yx = seatX(0) + PlayerPanel.W / 2, yy = seatTop(0) + 10;
 		if (passed(2.2f)) {
 			sparks.burst(yx, yy - PlayerPanel.H / 2, 70);
 		}
-		floating("+14", yx, yy, 2.2f, Palette.GOLD_LIGHT);
+		floating("+" + Rules.score(2, 2), yx, yy, 2.2f, Palette.GOLD_LIGHT);
 		float hx = seatX(3) + PlayerPanel.W / 2;
 		if (t >= 6.2f) {
 			art.art(assets.setText, hx, seatTop(3) - PlayerPanel.H - 34, 0.5f, at(6.2f, 6.5f));
 		}
-		floating("-5", hx, seatTop(3) + 10, 6.4f, Palette.RED);
+		floating(String.valueOf(Rules.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
 		BitmapFont f = ui(1.1f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
-		centred(f, "You bid 2 and won 2: made it. 10 + 2 + 2 = 14 points", cx(), cy() + 36);
+		centred(f, "You bid 2 and won 2: made it. " + Rules.MADE + " + " + Rules.PER_TRICK_BID + " + " + Rules.PER_TRICK_BID
+				+ " = " + Rules.score(2, 2) + " points", cx(), cy() + 36);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(6.6f, 7.0f));
-		centred(f, "Oswald bid 1 and won 2: one trick over, so -5", cx(), cy() - 4);
+		centred(f, RIGHT + " bid 1 and won 2: one trick over, so " + Rules.score(1, 2), cx(), cy() - 4);
 	}
 
 	// ---- 13. ready: the title (eased in once and kept), a few fireworks

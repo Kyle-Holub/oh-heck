@@ -24,14 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: ./.github/actions/setup
         with:
-          distribution: temurin
-          java-version: '17'
-
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
+          write-cache: 'true'
 
       - name: Unpack the signing key
         env:
@@ -83,19 +78,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: ./.github/actions/setup
         with:
-          distribution: temurin
-          java-version: '17'
-
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-
-      - name: Install a virtual display
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          display: 'true'
+          write-cache: 'true'
 
       - name: Label the build
         run: echo "${{ needs.build.outputs.tag }}" > assets/build.txt

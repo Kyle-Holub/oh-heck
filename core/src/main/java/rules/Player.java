@@ -94,6 +94,28 @@ public final class Player {
 	 */
 	static final double[][] ODDS = { { 0.65, 0.35, 0 }, { 0.25, 0.5, 0.25 }, { 0, 0.35, 0.65 } };
 
+	/** Who you'll meet at this setting, in a line, from the odds (for the Options screen). */
+	public static String tableDescription(Difficulty setting) {
+		double[] odds = ODDS[setting.ordinal()];
+		String[] who = { "easy-going players", "solid players", "experts" };
+		String[] never = { "never a beginner", "never a solid player", "never an expert" };
+		Integer[] order = { 0, 1, 2 };
+		java.util.Arrays.sort(order, (a, b) -> Double.compare(odds[b], odds[a]) != 0 ? Double.compare(odds[b], odds[a]) : a - b);
+		StringBuilder sb = new StringBuilder("Mostly ").append(who[order[0]]);
+		for (int i = 1; i < 3; i++) {
+			double p = odds[order[i]];
+			if (p > 0) {
+				sb.append(p < 0.2 ? ", the odd " : ", some ").append(p < 0.2 ? who[order[i]].replace("players", "player").replace("experts", "expert") : who[order[i]]);
+			}
+		}
+		for (int l = 0; l < 3; l++) {
+			if (odds[l] == 0) {
+				sb.append("; ").append(never[l]);
+			}
+		}
+		return sb.append('.').toString();
+	}
+
 	/** Three different players for a new game at this setting (their ids, for seats 1-3). */
 	public static int[] draw(Difficulty setting, Random rng) {
 		List<Integer> chosen = new ArrayList<Integer>();

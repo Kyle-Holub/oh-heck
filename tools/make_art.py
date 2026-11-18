@@ -278,15 +278,23 @@ def sunken_panel(name, out, fill, border, radius=12, size=48):
     downsample(img, size, size).save(os.path.join(out, name + ".png"))
 
 
-def icon_card(fill, inner=None):
-    """A small card-shaped icon: a broad gold edge, optional inner border like the card back."""
+def icon_card(fill, inner=None, broad=True):
+    """A small card-shaped icon: a gold edge, optional inner border like the card back.
+
+    Placard icons have a broad edge (on a dark card it's the outline you see, so dark and
+    light icons read the same size); the bid tracker's smaller cards keep a thinner one.
+    """
     W, H = 84 * SS, 108 * SS
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    # a broad gold edge: on a dark card it's the outline you see, so dark and light icons read the same size
-    d.rounded_rectangle([2 * SS, 2 * SS, W - 2 * SS, H - 2 * SS], 12 * SS, fill=fill, outline=GOLD, width=8 * SS)
-    if inner:
-        d.rounded_rectangle([14 * SS, 14 * SS, W - 14 * SS, H - 14 * SS], 6 * SS, outline=inner, width=2 * SS)
+    if broad:
+        d.rounded_rectangle([2 * SS, 2 * SS, W - 2 * SS, H - 2 * SS], 12 * SS, fill=fill, outline=GOLD, width=8 * SS)
+        if inner:
+            d.rounded_rectangle([14 * SS, 14 * SS, W - 14 * SS, H - 14 * SS], 6 * SS, outline=inner, width=2 * SS)
+    else:
+        d.rounded_rectangle([3 * SS, 3 * SS, W - 3 * SS, H - 3 * SS], 12 * SS, fill=fill, outline=GOLD, width=5 * SS)
+        if inner:
+            d.rounded_rectangle([11 * SS, 11 * SS, W - 11 * SS, H - 11 * SS], 7 * SS, outline=inner, width=2 * SS)
     return img, d
 
 
@@ -391,12 +399,12 @@ def bid_icons(out):
                         outline=(150, 118, 70, 210), width=5 * SS)
     downsample(img, 84, 108).save(os.path.join(out, "bid_open.png"))
     # bid: a cream card with an inner gold border and a small gold diamond
-    img, d = icon_card(CREAM, inner=GOLD_DARK)
+    img, d = icon_card(CREAM, inner=GOLD_DARK, broad=False)
     c, r = (W / 2, H / 2), 13 * SS
     d.polygon([(c[0], c[1] - r * 1.3), (c[0] + r, c[1]), (c[0], c[1] + r * 1.3), (c[0] - r, c[1])], fill=GOLD_DARK)
     downsample(img, 84, 108).save(os.path.join(out, "bid_taken.png"))
     # over: the same card in a warm red, for bids beyond the cards in the hand
-    img, d = icon_card((178, 46, 36), inner=GOLD_LIGHT)
+    img, d = icon_card((178, 46, 36), inner=GOLD_LIGHT, broad=False)
     d.polygon([(c[0], c[1] - r * 1.3), (c[0] + r, c[1]), (c[0], c[1] + r * 1.3), (c[0] - r, c[1])], fill=GOLD_LIGHT)
     downsample(img, 84, 108).save(os.path.join(out, "bid_over.png"))
 

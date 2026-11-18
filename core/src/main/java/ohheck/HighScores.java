@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import rules.Difficulty;
+
 /**
  * Your ten best finished games: final score, where you placed, and the date.
  * Pure Java so it can be tested without libGDX; Settings stores the text form.
@@ -55,14 +57,16 @@ final class HighScores {
 		return at;
 	}
 
-	/** "score,place,date,level;..." (older entries have no level) */
+	/** "score:72,place:1,date:2026-11-16,level:NORMAL;..." (level "-" for games from before there was a choice) */
 	String encode() {
 		StringBuilder b = new StringBuilder();
 		for (Entry e : entries) {
 			if (b.length() > 0) {
 				b.append(';');
 			}
-			b.append(e.score).append(',').append(e.place).append(',').append(e.date).append(',').append(e.level);
+			String level = e.level >= 0 && e.level < Difficulty.values().length ? Difficulty.values()[e.level].name() : "-";
+			b.append("score:").append(e.score).append(",place:").append(e.place).append(",date:").append(e.date)
+					.append(",level:").append(level);
 		}
 		return b.toString();
 	}
@@ -74,18 +78,43 @@ final class HighScores {
 			return h;
 		}
 		for (String part : s.split(";")) {
-			String[] f = part.split(",");
-			if (f.length != 3 && f.length != 4) {
-				continue;
-			}
 			try {
-				int level = f.length == 4 ? Integer.parseInt(f[3].trim()) : -1;
-				h.add(new Entry(Integer.parseInt(f[0].trim()), Integer.parseInt(f[1].trim()), f[2].trim(), level));
-			} catch (NumberFormatException ignored) {
+				Entry e = part.contains(":") ? named(part) : numbered(part);
+				if (e != null) {
+					h.add(e);
+				}
+			} catch (RuntimeException ignored) {
 				// skip a damaged entry
 			}
 		}
 		return h;
+	}
+
+	/** "score:72,place:1,date:...,level:NORMAL" (unknown fields are passed over). */
+	private static Entry named(String part) {
+		java.util.Map<String, String> f = new java.util.HashMap<String, String>();
+		for (String kv : part.split(",")) {
+			int c = kv.indexOf(':');
+			if (c > 0) {
+				f.put(kv.substring(0, c).trim(), kv.substring(c + 1).trim());
+			}
+		}
+		if (!f.containsKey("score") || !f.containsKey("place") || !f.containsKey("date")) {
+			return null;
+		}
+		String l = f.get("level");
+		int level = l == null || l.equals("-") ? -1 : Difficulty.valueOf(l).ordinal();
+		return new Entry(Integer.parseInt(f.get("score")), Integer.parseInt(f.get("place")), f.get("date"), level);
+	}
+
+	/** The first builds' form: "score,place,date[,level ordinal]". */
+	private static Entry numbered(String part) {
+		String[] f = part.split(",");
+		if (f.length != 3 && f.length != 4) {
+			return null;
+		}
+		int level = f.length == 4 ? Integer.parseInt(f[3].trim()) : -1;
+		return new Entry(Integer.parseInt(f[0].trim()), Integer.parseInt(f[1].trim()), f[2].trim(), level);
 	}
 
 	/** "1st", "2nd"... */

@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import rules.Difficulty;
+import rules.Player;
 
 /**
  * The settings, saved on the device: the game (difficulty, hand sizes, speed) on the left;
@@ -216,10 +217,6 @@ public class OptionsScreen extends BaseScreen {
 
 	private static final float ROW_H = 40, ROW_GAP = 6, DIFFICULTY_H = 112, KNOB = 34;
 	/** Who you'll likely meet at each setting, shown under the slider. */
-	private static final String[] LEVEL_NOTES = {
-			"Easy-going and solid players; never an expert.",
-			"A mix: some easy-going, mostly solid, the odd expert.",
-			"Solid players and experts; never a beginner." };
 	private static final Color TRACK = new Color(0.36f, 0.29f, 0.21f, 1f);
 	private final Rectangle slider = new Rectangle();
 	private float stop0, stopStep;
@@ -248,12 +245,13 @@ public class OptionsScreen extends BaseScreen {
 			text(l, Difficulty.values()[i].label, sx, y + 60, true);
 		}
 		BitmapFont n = ui(0.85f);
-		glyphs.setText(n, LEVEL_NOTES[level]);
+		String note = Player.tableDescription(Difficulty.values()[level]); // (from the matchmaking odds)
+		glyphs.setText(n, note);
 		if (glyphs.width > rw - 48) { // keep it on one line inside the row
 			n = ui(0.85f * (rw - 48) / glyphs.width);
 		}
 		n.setColor(Palette.MUTED);
-		n.draw(batch, LEVEL_NOTES[level], x + 24, y + 38);
+		n.draw(batch, note, x + 24, y + 38);
 		n.draw(batch, "Seats a new table from your next game.", x + 24, y + 20);
 		batch.draw(assets.levelBadge[level], knobX - KNOB / 2, ty - KNOB / 2, KNOB, KNOB);
 	}
