@@ -1,7 +1,6 @@
 package ohheck;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Align;
@@ -12,8 +11,7 @@ import rules.Player;
 /** The twelve computer players you can meet: name, level and habit, in a list that scrolls. */
 public class PlayersScreen extends BaseScreen {
 
-	private static final Color HEADER = new Color(0.06f, 0.04f, 0.03f, 0.97f);
-	private static final float HEADER_H = 56, ROW_H = 62, ROW_GAP = 6, COLUMNS_H = 26, BADGE = 26;
+	private static final float ROW_H = 62, ROW_GAP = 6, COLUMNS_H = 26, BADGE = 26;
 
 	private final Rectangle backButton = new Rectangle();
 	private final Scroller scroller = new Scroller();
@@ -89,12 +87,7 @@ public class PlayersScreen extends BaseScreen {
 		c.draw(batch, "Level", cLevel, cy);
 		c.draw(batch, "Style", cStyle, cy);
 		c.draw(batch, "Habit", cTrait, cy);
-		rect(0, h - HEADER_H, w, HEADER_H, HEADER);
-		rect(0, h - HEADER_H - 2, w, 2, Palette.GOLD);
-		BitmapFont hf = serif(1.6f);
-		hf.setColor(Palette.GOLD);
-		centred(hf, "Roster", w / 2, h - 16);
-		button(backButton, "Back", 70, h - HEADER_H + 8, 110, HEADER_H - 16, assets.buttonAlt);
+		header("Roster", backButton);
 		batch.end();
 	}
 

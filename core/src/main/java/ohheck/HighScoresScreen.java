@@ -64,7 +64,7 @@ public class HighScoresScreen extends BaseScreen {
 		centred(t, showStats ? "Statistics" : "High scores", w / 2, h - 40);
 		button(scoresTab, "Scores", w - 250, h - 52, 130, 40, showStats ? assets.buttonAlt : assets.button);
 		button(statsTab, "Statistics", w - 98, h - 52, 160, 40, showStats ? assets.button : assets.buttonAlt);
-		button(backButton, "Back", 70, h - 52, 110, 40, assets.buttonAlt);
+		backButton(backButton, h - 52);
 		if (showStats) {
 			drawStats();
 		} else {
