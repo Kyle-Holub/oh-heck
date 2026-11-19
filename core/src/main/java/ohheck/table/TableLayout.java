@@ -95,6 +95,11 @@ final class TableLayout {
 		return seatAnchor(seat);
 	}
 
+	Vector2 dealSpot(int seat) {
+		Vector2 trick = trickSlot(seat);
+		return slot.set(trick.x + Assets.CARD_W / 2f, trick.y + Assets.CARD_H / 2f);
+	}
+
 	float centreX() {
 		return w / 2;
 	}

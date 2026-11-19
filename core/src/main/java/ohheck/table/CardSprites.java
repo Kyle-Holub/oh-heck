@@ -58,9 +58,9 @@ final class CardSprites {
 		TableLayout layout = s.layout();
 		if (flow.state() != TableState.GAME_OVER) {
 			if (flow.isDealing()) {
-				Vector2 d = layout.deckSpot(flow.deal().dealer());
-				dealer.set(d.x - TableLayout.backW() / 2, d.y - TableLayout.backH() / 2, TableLayout.backW(),
-						TableLayout.backH(), 0, 0, DEAL_LIFT);
+				Vector2 d = layout.dealSpot(flow.deal().dealer());
+				float dw = Assets.CARD_W * DealAnimation.DECK_SCALE, dh = Assets.CARD_H * DealAnimation.DECK_SCALE;
+				dealer.set(d.x - dw / 2, d.y - dh / 2, dw, dh, 0, 0, DEAL_LIFT);
 			}
 			for (int seat = 1; seat < m.players(); seat++) {
 				fan(flow, m, layout, seat, now);
