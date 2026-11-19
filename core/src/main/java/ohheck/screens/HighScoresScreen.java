@@ -65,13 +65,16 @@ public class HighScoresScreen extends BaseScreen {
 	}
 
 	@Override
-	public void render(float delta) {
-		float dt = Math.min(delta, 0.1f);
-		shownFor += dt * game.options().speed;
-		if (game.tour() != null && game.tour().step(this, shownFor)) {
-			return;
+	protected void update(float step) {
+		shownFor += step * game.options().speed;
+		confirmReset = Math.max(0, confirmReset - step);
+		if (game.tour() != null) {
+			game.tour().step(this, shownFor);
 		}
-		confirmReset = Math.max(0, confirmReset - dt);
+	}
+
+	@Override
+	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);

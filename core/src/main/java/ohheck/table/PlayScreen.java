@@ -233,12 +233,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	// ----------------------------------------------------------- update
 
 	@Override
-	public void render(float delta) {
-		update(Math.min(delta, 0.1f) * options.speed * game.settings().speedFactor());
-		draw();
+	protected void update(float step) {
+		advance(step * options.speed * game.settings().speedFactor());
 	}
 
-	private void update(float dt) {
+	/** Moves the table on by dt seconds of game time. */
+	private void advance(float dt) {
 		if (input.menuOpen()) {
 			if (autoplay != null) {
 				autoplay.whilePaused(dt);
@@ -374,7 +374,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	// ------------------------------------------------------------- draw
 
-	private void draw() {
+	@Override
+	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		table.resize(w, h);

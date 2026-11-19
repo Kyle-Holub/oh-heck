@@ -118,25 +118,28 @@ public class TutorialScreen extends BaseScreen {
 	}
 
 	@Override
-	public void render(float delta) {
-		float dt = Math.min(delta, 0.1f) * game.options().speed;
+	protected void update(float step) {
+		float dt = step * game.options().speed;
 		shownFor += dt;
-		Step s = steps[step];
+		Step s = steps[this.step];
 		clock.advance(dt, s.length, s.loops, HOLD); // (the first and last play once)
 		t = clock.t();
 		sparks.step(dt);
 		fireworks.update(dt);
-		if (game.tour() != null && game.tour().step(this, clock.shown())) { // (the tour times each step)
-			return;
+		if (game.tour() != null) {
+			game.tour().step(this, clock.shown()); // (the tour times each step)
 		}
+	}
 
+	@Override
+	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 		fireworks.draw(batch, assets.glow);
 		steps[step].scene.run();
 		sparks.draw(batch, assets.glow);
-		caption(s);
+		caption(steps[step]);
 		header();
 		batch.end();
 	}

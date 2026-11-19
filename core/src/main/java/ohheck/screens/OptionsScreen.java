@@ -82,11 +82,15 @@ public class OptionsScreen extends BaseScreen {
 	}
 
 	@Override
-	public void render(float delta) {
-		shownFor += Math.min(delta, 0.1f) * game.options().speed;
-		if (game.tour() != null && game.tour().step(this, shownFor)) {
-			return;
+	protected void update(float step) {
+		shownFor += step * game.options().speed;
+		if (game.tour() != null) {
+			game.tour().step(this, shownFor);
 		}
+	}
+
+	@Override
+	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);

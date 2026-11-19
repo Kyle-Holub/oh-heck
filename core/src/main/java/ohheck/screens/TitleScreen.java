@@ -80,11 +80,12 @@ public class TitleScreen extends BaseScreen {
 	}
 
 	@Override
-	public void render(float delta) {
-		float dt = Math.min(delta, 0.1f) * game.options().speed;
-		if (update(dt)) {
-			return;
-		}
+	protected void update(float step) {
+		advance(step * game.options().speed);
+	}
+
+	@Override
+	protected void draw() {
 		ScreenUtils.clear(Color.BLACK);
 		begin();
 		if (introT >= SCENE_START) {
@@ -101,7 +102,7 @@ public class TitleScreen extends BaseScreen {
 	}
 
 	/** Moves the intro on; true if the screenshot run has gone on to another screen. */
-	private boolean update(float dt) {
+	private boolean advance(float dt) {
 		introT += dt;
 		if (introT >= SCENE_START) {
 			cards.setFalling(introT >= CARDS_START);

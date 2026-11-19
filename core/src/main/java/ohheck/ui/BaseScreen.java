@@ -13,6 +13,8 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
+import ohheck.anim.FixedSteps;
+
 /** Shared plumbing for the menu-style screens: viewport, taps, text and boxes. */
 public abstract class BaseScreen extends ScreenAdapter implements GameHost.Tagged {
 
@@ -89,9 +91,47 @@ public abstract class BaseScreen extends ScreenAdapter implements GameHost.Tagge
 		return Vector2.dst(x, y, downX, downY);
 	}
 
+	// ---- the game loop: fixed steps, then one picture
+
+	/** The game moves on in steps this long (seconds), whatever the frame rate, on every device and in CI. */
+	public static final float STEP = 1 / 60f;
+	/** The most one frame may move the game on: after a stall it catches up only this far. */
+	private static final float MAX_FRAME = 0.1f;
+	private final FixedSteps steps = new FixedSteps(STEP, MAX_FRAME);
+	/** This frame's real length. */
+	private float frameDelta;
+	/** Set once another screen has taken over (the steps stop at once). */
+	private boolean hidden;
+
+	/** Moves the screen on by whole steps for the time that has passed, then draws it once. */
+	@Override
+	public final void render(float delta) {
+		frameDelta = Math.min(delta, MAX_FRAME);
+		for (int n = steps.frame(delta); n > 0; n--) {
+			update(STEP);
+			if (hidden) {
+				return; // gone to another screen
+			}
+		}
+		draw();
+	}
+
+	/** One step of the game: step seconds of real time (screens scale it by the game speed). */
+	protected abstract void update(float step);
+
+	/** The screen as it is now. */
+	protected abstract void draw();
+
+	/** This frame's real length (for things tied to frames rather than steps, like a finger's fling). */
+	protected float frameDelta() {
+		return frameDelta;
+	}
+
 	@Override
 	public void show() {
 		shownFor = 0;
+		hidden = false;
+		steps.reset();
 		Gdx.input.setCatchKey(Input.Keys.BACK, true);
 		Gdx.input.setInputProcessor(touches);
 	}
@@ -144,6 +184,7 @@ public abstract class BaseScreen extends ScreenAdapter implements GameHost.Tagge
 
 	@Override
 	public void hide() {
+		hidden = true;
 		Gdx.input.setInputProcessor(null);
 	}
 
