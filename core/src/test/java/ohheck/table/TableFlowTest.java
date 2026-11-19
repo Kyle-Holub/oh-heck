@@ -132,7 +132,8 @@ public class TableFlowTest {
 		int seat = m.currentSeat();
 		flow.update(TableFlow.AI_DELAY - 0.05f);
 		assertEquals("still thinking", seat, m.currentSeat());
-		assertTrue(flow.isTurnOf(seat));
+		assertEquals(TableState.TURN, flow.state());
+		assertEquals(seat, flow.match().currentSeat());
 		flow.update(0.1f);
 		assertTrue("has bid", m.hasBid(seat));
 	}

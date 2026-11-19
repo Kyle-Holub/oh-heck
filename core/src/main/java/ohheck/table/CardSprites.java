@@ -55,21 +55,21 @@ final class CardSprites {
 		framed = -1;
 		FlowView flow = s.flow();
 		Match m = s.match();
-		TableLayout table = s.layout();
+		TableLayout layout = s.layout();
 		if (flow.state() != TableState.GAME_OVER) {
 			if (flow.isDealing()) {
-				Vector2 d = table.deckSpot(flow.deal().dealer());
+				Vector2 d = layout.deckSpot(flow.deal().dealer());
 				dealer.set(d.x - TableLayout.backW() / 2, d.y - TableLayout.backH() / 2, TableLayout.backW(),
 						TableLayout.backH(), 0, 0, DEAL_LIFT);
 			}
 			for (int seat = 1; seat < m.players(); seat++) {
-				fan(flow, m, table, seat, now);
+				fan(flow, m, layout, seat, now);
 			}
-			hand(s, flow, m, table, now);
+			hand(s, flow, m, layout, now);
 			if (flow.state() == TableState.TRICK) {
-				gathering(m, table, flow.stateTime(), now);
+				gathering(m, layout, flow.stateTime(), now);
 			} else {
-				trick(m.currentTrick(), m.currentTrickSeats(), m, table, now);
+				trick(m.currentTrick(), m.currentTrickSeats(), m, layout, now);
 			}
 		}
 		for (int i = 0; i < Card.COUNT; i++) {
@@ -108,13 +108,13 @@ final class CardSprites {
 		return since;
 	}
 
-	private void fan(FlowView flow, Match m, TableLayout table, int seat, float now) {
+	private void fan(FlowView flow, Match m, TableLayout layout, int seat, float now) {
 		List<Card> hand = m.hand(seat);
 		int total = hand.size();
-		float y = table.fanOrigin(seat).y;
+		float y = layout.fanOrigin(seat).y;
 		for (int i = 0; i < total; i++) {
 			CardSprite sp = sprite(hand.get(i));
-			pose.set(table.fanCardX(seat, i, total), y, TableLayout.backW(), TableLayout.backH(), 0, 0, 0);
+			pose.set(layout.fanCardX(seat, i, total), y, TableLayout.backW(), TableLayout.backH(), 0, 0, 0);
 			if (flow.isDealing()) {
 				dealt(flow, seat, i, sp, pose, now);
 			} else {
@@ -124,7 +124,7 @@ final class CardSprites {
 		}
 	}
 
-	private void hand(TableScene s, FlowView flow, Match m, TableLayout table, float now) {
+	private void hand(TableScene s, FlowView flow, Match m, TableLayout layout, float now) {
 		List<Card> order = s.handOrder();
 		int n = order.size();
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
@@ -141,7 +141,7 @@ final class CardSprites {
 				glintW[idx] = cw;
 				continue;
 			}
-			float x = table.handStart + i * table.handGap, y = TableLayout.HAND_Y + (canPlay ? TableLayout.LIFT : 0);
+			float x = layout.handStart + i * layout.handGap, y = TableLayout.HAND_Y + (canPlay ? TableLayout.LIFT : 0);
 			pose.set(x, y, cw, ch, 0, 1, y - TableLayout.HAND_Y + HAND_LIFT);
 			if (flow.isDealing()) {
 				pose.flip = 0;
@@ -154,23 +154,23 @@ final class CardSprites {
 				sp.moveTo(pose, SETTLE, 0, now, 0);
 			}
 			dim[idx] = myTurn && !canPlay;
-			glintW[idx] = i == n - 1 ? cw : table.handGap;
+			glintW[idx] = i == n - 1 ? cw : layout.handGap;
 		}
 	}
 
-	private void trick(List<Card> cards, List<Integer> seats, Match m, TableLayout table, float now) {
+	private void trick(List<Card> cards, List<Integer> seats, Match m, TableLayout layout, float now) {
 		for (int i = 0; i < cards.size(); i++) {
 			Card c = cards.get(i);
 			int seat = seats.get(i);
 			CardSprite sp = sprite(c);
-			Vector2 slot = table.trickSlot(seat);
+			Vector2 slot = layout.trickSlot(seat);
 			place(sp, TRICK, i);
 			sp.moveTo(pose.set(slot.x, slot.y, Assets.CARD_W, Assets.CARD_H, TrickView.tilt(c, seat, m.handIndex()), 1,
 					TRICK_LIFT), PLAYED, PLAY_ARC, now, 0);
 		}
 	}
 
-	private void gathering(Match m, TableLayout table, float elapsed, float now) {
+	private void gathering(Match m, TableLayout layout, float elapsed, float now) {
 		if (elapsed >= TrickView.TRICK_PAUSE) {
 			return;
 		}
@@ -178,7 +178,7 @@ final class CardSprites {
 		List<Card> cards = m.lastTrick();
 		int winner = m.lastTrickWinner();
 		if (elapsed < gatherFrom) {
-			trick(cards, m.lastTrickSeats(), m, table, now);
+			trick(cards, m.lastTrickSeats(), m, layout, now);
 			for (int i = 0; i < cards.size(); i++) {
 				if (m.lastTrickSeats().get(i) == winner) {
 					framed = cards.get(i).index();
@@ -186,7 +186,7 @@ final class CardSprites {
 			}
 			return;
 		}
-		Vector2 sink = table.seatAnchor(winner);
+		Vector2 sink = layout.seatAnchor(winner);
 		float cw = Assets.CARD_W, ch = Assets.CARD_H;
 		pose.set(sink.x - cw / 4, sink.y - ch / 4, cw / 2, ch / 2, 0, 1, COLLECT_LIFT);
 		for (int i = 0; i < cards.size(); i++) {

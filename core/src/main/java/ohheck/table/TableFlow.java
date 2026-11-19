@@ -133,10 +133,6 @@ final class TableFlow implements FlowView {
 		return state == TableState.TURN && match.phase() == Match.Phase.PLAYING && match.currentSeat() == Seating.YOU;
 	}
 
-	boolean isTurnOf(int seat) {
-		return state == TableState.TURN && match.currentSeat() == seat;
-	}
-
 	void update(float dt) {
 		stateTime += dt;
 		if (!isDealing()) {

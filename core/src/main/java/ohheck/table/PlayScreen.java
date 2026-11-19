@@ -27,7 +27,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final GameOptions options;
 	private final TableStreams streams;
 
-	private final TableLayout table = new TableLayout();
+	private final TableLayout layout = new TableLayout();
 	private final TableOverlays overlays;
 	private final OverlayTargets targets = new OverlayTargets();
 	private final TableFlow flow;
@@ -63,10 +63,10 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		this.options = game.options();
 		this.streams = TableStreams.of(options.seed);
 		this.art = new CardArt(batch, assets);
-		this.overlays = new TableOverlays(paint, this, table, art, targets);
+		this.overlays = new TableOverlays(paint, this, layout, art, targets);
 		this.you = options.autoplayHuman ? new Autoplay(this, input, targets, options) : YourSeat.PERSON;
 		this.drawing = new TableDrawing(this, paint, art, game.post());
-		this.toss = new TableToss(assets, table);
+		this.toss = new TableToss(assets, layout);
 		this.recorder = new GameRecorder(game.records());
 		this.flow = new TableFlow(you, new Effects(), new TableSounds(game.audio()), recorder);
 		if (!you.thinkAtOnce() && options.fixedStep <= 0) {
@@ -93,7 +93,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		@Override
 		public void handEnded(Match m) {
 			if (m.madeBid(Seating.YOU)) {
-				sparks.burst(table.centreX(), table.centreY(), 110);
+				sparks.burst(layout.centreX(), layout.centreY(), 110);
 			}
 		}
 
@@ -151,7 +151,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	public TableLayout layout() {
-		return table;
+		return layout;
 	}
 
 	@Override
@@ -205,8 +205,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		fireworks.update(dt);
 		toss.update(dt);
 		if (end.update(flow.stateTime(), toss.allGone())) {
-			sparks.burst(table.w / 2, table.h / 2 + 100, 160);
-			fireworks.show(table.w, table.h);
+			sparks.burst(layout.w / 2, layout.h / 2 + 100, 160);
+			fireworks.show(layout.w, layout.h);
 		}
 		drawing.updateMotes(dt, flow.trumpFaceUp() && !toss.trumpGone());
 		you.update(dt);
@@ -333,7 +333,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
 		begin();
-		table.resize(w, h);
+		layout.resize(w, h);
 		batch.draw(assets.table, 0, 0, w, h);
 		drawTable();
 		fireworks.draw(batch, assets.glow);
@@ -360,12 +360,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 		drawing.layoutHand();
 		if (flow.state() == TableState.TRICK) {
-			TrickView.drawTrickWon(art, assets, table, match(), flow.stateTime());
+			TrickView.drawTrickWon(art, assets, layout, match(), flow.stateTime());
 		}
 		cards.update(this, time);
 		cards.draw(batch, assets, art, match(), flow.trumpFaceUp(), time, paint.fade());
 		if (flow.isDealing()) {
-			flow.deal().drawShuffle(batch, assets, art, table);
+			flow.deal().drawShuffle(batch, assets, art, layout);
 		}
 	}
 

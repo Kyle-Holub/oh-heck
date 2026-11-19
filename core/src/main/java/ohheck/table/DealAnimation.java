@@ -79,10 +79,10 @@ final class DealAnimation implements FlowView.Deal {
 	}
 
 	@Override
-	public void drawShuffle(SpriteBatch batch, Assets assets, CardArt art, TableLayout table) {
+	public void drawShuffle(SpriteBatch batch, Assets assets, CardArt art, TableLayout layout) {
 		float cw = Assets.CARD_W * DECK_SCALE, ch = Assets.CARD_H * DECK_SCALE;
-		float cx = table.centreX(), cy = table.centreY();
-		Vector2 d = table.deckSpot(dealer);
+		float cx = layout.centreX(), cy = layout.centreY();
+		Vector2 d = layout.deckSpot(dealer);
 		float dx = d.x, dy = d.y;
 		int stage = shuffle.at(t);
 		float u = shuffle.into(t);

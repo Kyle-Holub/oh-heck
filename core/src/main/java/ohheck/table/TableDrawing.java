@@ -36,7 +36,7 @@ final class TableDrawing {
 	private final PostProcessor post;
 	private final SpriteBatch batch;
 	private final Assets assets;
-	private final TableLayout table;
+	private final TableLayout layout;
 	private final CardArt art;
 	private final PlayerPanel panel;
 	private final SeatState state = new SeatState();
@@ -48,27 +48,27 @@ final class TableDrawing {
 		this.post = post;
 		this.batch = paint.batch;
 		this.assets = paint.assets;
-		this.table = scene.layout();
+		this.layout = scene.layout();
 		this.art = art;
 		this.panel = new PlayerPanel(paint);
 		this.counters = new Counters(paint);
 	}
 
 	void updateMotes(float dt, boolean trumpShowing) {
-		motes.update(dt, trumpShowing, table.trumpX(), table.trumpY(), table.trumpW(), table.trumpH());
+		motes.update(dt, trumpShowing, layout.trumpX(), layout.trumpY(), layout.trumpW(), layout.trumpH());
 	}
 
 	void tally() {
 		Match m = scene.match();
 		int done = m.phase() == Match.Phase.GAME_OVER ? m.rules().numberOfHands() : m.handIndex();
-		counters.tally(TALLY_X, table.h - TALLY_DROP, m.rules().numberOfHands(), done, Counters.pulse(scene.time()), 1f);
+		counters.tally(TALLY_X, layout.h - TALLY_DROP, m.rules().numberOfHands(), done, Counters.pulse(scene.time()), 1f);
 	}
 
 	void bidTracker() {
 		Match m = scene.match();
 		float x0 = TALLY_X - Counters.TALLY_W / 2;
-		float avail = table.panelX(2) - 14 - x0;
-		counters.tracker(x0, table.h - 12 - Counters.TALLY_H - Counters.TRACKER_BELOW_TALLY, avail, m.handSize(),
+		float avail = layout.panelX(2) - 14 - x0;
+		counters.tracker(x0, layout.h - 12 - Counters.TALLY_H - Counters.TRACKER_BELOW_TALLY, avail, m.handSize(),
 				m.bidsSoFar(), 1f);
 	}
 
@@ -80,7 +80,7 @@ final class TableDrawing {
 			}
 			return;
 		}
-		float x = table.trumpX(), y = table.trumpY(), cw = table.trumpW(), ch = table.trumpH();
+		float x = layout.trumpX(), y = layout.trumpY(), cw = layout.trumpW(), ch = layout.trumpH();
 		art.shadow(x, y, cw, ch, TRUMP_LIFT);
 		float p = flow.isDealing() ? 0 : TRUMP_TURNING.progress(flow.trumpTime());
 		float lit = TRUMP_LIGHTING.progress(flow.trumpTime());
@@ -98,7 +98,7 @@ final class TableDrawing {
 			Glints.draw(batch, assets.glow, trump, x, y, cw, ch, cw, 0, scene.time(), lit);
 		}
 		if (p >= 1 && lit > 0) {
-			post.light((x + cw / 2) / table.w, (y + ch / 2) / table.h, 0.3f, lit);
+			post.light((x + cw / 2) / layout.w, (y + ch / 2) / layout.h, 0.3f, lit);
 		}
 		motes.draw(batch, assets.glow);
 	}
@@ -109,7 +109,7 @@ final class TableDrawing {
 		boolean turn = flow.state() == TableState.TURN && m.currentSeat() == seat;
 		state.reset().named(scene.name(seat)).score(m.score(seat)).turn(turn).dealer(m.dealer() == seat)
 				.bid(m.bid(seat)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
-		panel.draw(state, table.panelX(seat), table.panelTop(seat), scene.time());
+		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
 	}
 
 	void layoutHand() {
@@ -125,12 +125,12 @@ final class TableDrawing {
 			return;
 		}
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
-		table.layoutHand(n);
+		layout.layoutHand(n);
 		List<Card> legal = scene.humanCanPlay() ? m.legalPlays(Seating.YOU) : Collections.<Card>emptyList();
 		for (int i = 0; i < n; i++) {
-			float x = table.handStart + i * table.handGap;
+			float x = layout.handStart + i * layout.handGap;
 			float y = TableLayout.HAND_Y + (legal.contains(order.get(i)) ? TableLayout.LIFT : 0);
-			scene.handRects().get(i).set(x, y, i == n - 1 ? cw : table.handGap, ch);
+			scene.handRects().get(i).set(x, y, i == n - 1 ? cw : layout.handGap, ch);
 		}
 	}
 

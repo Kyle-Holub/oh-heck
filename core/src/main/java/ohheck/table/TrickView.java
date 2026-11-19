@@ -25,9 +25,9 @@ final class TrickView {
 		return TRICK_PAUSE + (youWon ? TRICK_WON_SHOW : 0);
 	}
 
-	static void drawTrickWon(CardArt art, Assets assets, TableLayout table, Match match, float elapsed) {
+	static void drawTrickWon(CardArt art, Assets assets, TableLayout layout, Match match, float elapsed) {
 		if (match.lastTrickWinner() == Seating.YOU && elapsed > TRICK_WON.start()) {
-			art.art(assets.trickWonText, table.centreX(), table.centreY(), 0.8f, TRICK_WON.progress(elapsed));
+			art.art(assets.trickWonText, layout.centreX(), layout.centreY(), 0.8f, TRICK_WON.progress(elapsed));
 		}
 	}
 

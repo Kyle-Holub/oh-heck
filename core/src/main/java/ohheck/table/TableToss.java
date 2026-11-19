@@ -17,24 +17,24 @@ final class TableToss {
 	private static final float TOSS_TRUMP = 0.15f, TOSS_FIRST = 0.35f, TOSS_STEP = 0.025f;
 
 	private final Assets assets;
-	private final TableLayout table;
+	private final TableLayout layout;
 	private FallingCards tumble;
 
-	TableToss(Assets assets, TableLayout table) {
+	TableToss(Assets assets, TableLayout layout) {
 		this.assets = assets;
-		this.table = table;
+		this.layout = layout;
 	}
 
 	void toss(Match m) {
 		tumble = FallingCards.forTable(assets, new Random(finalScoresSeed(m)));
-		float cx = table.w / 2, cy = table.h / 2;
-		tumble.toss(m.trumpCard(), table.trumpX() + table.trumpW() / 2 - cx, table.trumpY() + table.trumpH() / 2 - cy,
-				table.trumpW(), 0, TOSS_TRUMP);
+		float cx = layout.w / 2, cy = layout.h / 2;
+		tumble.toss(m.trumpCard(), layout.trumpX() + layout.trumpW() / 2 - cx, layout.trumpY() + layout.trumpH() / 2 - cy,
+				layout.trumpW(), 0, TOSS_TRUMP);
 		List<Card> played = m.playedThisHand();
 		List<Integer> seats = m.playedThisHandSeats();
 		for (int i = 0; i < played.size(); i++) {
 			int seat = seats.get(i);
-			Vector2 slot = table.trickSlot(seat);
+			Vector2 slot = layout.trickSlot(seat);
 			tumble.toss(played.get(i), slot.x + Assets.CARD_W / 2f - cx, slot.y + Assets.CARD_H / 2f - cy, Assets.CARD_W,
 					TrickView.tilt(played.get(i), seat, m.handIndex()), TOSS_FIRST + i * TOSS_STEP);
 		}
@@ -46,7 +46,7 @@ final class TableToss {
 
 	void update(float dt) {
 		if (tumble != null) {
-			tumble.update(dt, table.w, table.h);
+			tumble.update(dt, layout.w, layout.h);
 		}
 	}
 
@@ -64,7 +64,7 @@ final class TableToss {
 
 	void draw(SpriteBatch batch) {
 		if (tumble != null) {
-			tumble.draw(batch, table.w / 2, table.h / 2);
+			tumble.draw(batch, layout.w / 2, layout.h / 2);
 		}
 	}
 

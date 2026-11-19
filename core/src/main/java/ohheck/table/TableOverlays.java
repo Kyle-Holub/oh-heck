@@ -53,7 +53,7 @@ final class TableOverlays {
 
 	private final Painter paint;
 	private final TableScene scene;
-	private final TableLayout table;
+	private final TableLayout layout;
 	private final CardArt art;
 	private String hint = "";
 	private float hintTime;
@@ -67,11 +67,11 @@ final class TableOverlays {
 		}
 	};
 
-	TableOverlays(Painter paint, TableScene scene, TableLayout table, CardArt art, OverlayTargets targets) {
+	TableOverlays(Painter paint, TableScene scene, TableLayout layout, CardArt art, OverlayTargets targets) {
 		this.targets = targets;
 		this.paint = paint;
 		this.scene = scene;
-		this.table = table;
+		this.layout = layout;
 		this.art = art;
 	}
 
@@ -95,21 +95,21 @@ final class TableOverlays {
 		BitmapFont f = paint.ui(1.15f);
 		paint.glyphs.setText(f, hint);
 		float pw = paint.glyphs.width + 2 * HINT_PAD, ph = HINT_H;
-		float px = (table.w - pw) / 2, py = table.hintY();
+		float px = (layout.w - pw) / 2, py = layout.hintY();
 		paint.frame(paint.assets.panel, px, py, pw, ph);
 		f.setColor(Palette.GOLD);
 		paint.textIn(f, hint, px, py, pw, ph);
 	}
 
 	void drawMenuButton() {
-		Rectangle menuButton = targets.button(OverlayTargets.Button.MENU).set(table.w - TableLayout.EDGE - MENU_BUTTON_W, MENU_BUTTON_Y, MENU_BUTTON_W, MENU_BUTTON_H);
+		Rectangle menuButton = targets.button(OverlayTargets.Button.MENU).set(layout.w - TableLayout.EDGE - MENU_BUTTON_W, MENU_BUTTON_Y, MENU_BUTTON_W, MENU_BUTTON_H);
 		paint.frame(paint.assets.buttonAlt, menuButton.x, menuButton.y, menuButton.width, menuButton.height);
 		BitmapFont f = paint.ui(1.2f, Palette.CREAM);
 		paint.textIn(f, "Menu", menuButton.x, menuButton.y, menuButton.width, menuButton.height);
 	}
 
 	void drawMenu() {
-		float w = table.w, h = table.h;
+		float w = layout.w, h = layout.h;
 		paint.rect(0, 0, w, h, Palette.BACKDROP);
 		float bw = PAUSE_BUTTON_W, bh = PAUSE_BUTTON_H, gap = PAUSE_GAP;
 		MenuItem[] items = MenuItem.ALL;
@@ -131,18 +131,18 @@ final class TableOverlays {
 		float bs = BID_BUTTON, gap = BID_GAP;
 		float rowW = (n + 1) * bs + n * gap;
 		float pw = Math.max(rowW + BID_PANEL_MARGIN, BID_PANEL_MIN_W), ph = BID_PANEL_H;
-		float px = (table.w - pw) / 2, py = table.centreY() - ph / 2;
+		float px = (layout.w - pw) / 2, py = layout.centreY() - ph / 2;
 		paint.frame(paint.assets.panel, px, py, pw, ph);
 
-		art.art(paint.assets.makeBidText, table.w / 2, py + ph - BID_TITLE_DROP, BID_TITLE_SCALE, 1f);
+		art.art(paint.assets.makeBidText, layout.w / 2, py + ph - BID_TITLE_DROP, BID_TITLE_SCALE, 1f);
 		int forbidden = match.forbiddenBid();
 		if (forbidden >= 0) {
 			BitmapFont s = paint.ui(1f, Palette.MUTED);
-			paint.text(s, Wording.dealerCantBid(forbidden), table.w / 2, py + ph - BID_NOTE_DROP, true);
+			paint.text(s, Wording.dealerCantBid(forbidden), layout.w / 2, py + ph - BID_NOTE_DROP, true);
 		}
 
 		targets.bidsUpTo(n);
-		float bx = (table.w - rowW) / 2, by = py + BID_ROW_RISE;
+		float bx = (layout.w - rowW) / 2, by = py + BID_ROW_RISE;
 		for (int b = 0; b <= n; b++) {
 			Rectangle r = targets.bid(b).set(bx + b * (bs + gap), by, bs, bs);
 			boolean ok = match.isLegalBid(b);
@@ -153,11 +153,11 @@ final class TableOverlays {
 
 	void drawHandEnd(float t) {
 		float a = HAND_END_IN.progress(t);
-		art.art(match.madeBid(Seating.YOU) ? paint.assets.bidTricksText : paint.assets.setText, table.centreX(),
-				table.centreY(), HAND_END_SCALE, a);
+		art.art(match.madeBid(Seating.YOU) ? paint.assets.bidTricksText : paint.assets.setText, layout.centreX(),
+				layout.centreY(), HAND_END_SCALE, a);
 		drawHandLabels(0f, a);
 		BitmapFont f = paint.ui(1f, Palette.MUTED);
-		paint.text(f, "Tap for the scores", table.w / 2, table.h / 2 - TAP_NOTE_BELOW, true);
+		paint.text(f, "Tap for the scores", layout.w / 2, layout.h / 2 - TAP_NOTE_BELOW, true);
 	}
 
 	void drawHandLabels(float drop, float alpha) {
@@ -172,11 +172,11 @@ final class TableOverlays {
 				float p = Ease.OUT.apply(drop);
 				BitmapFont f = paint.serif(LABEL_BIG);
 				paint.glyphs.setText(f, s);
-				float sx = table.w / 2 - paint.glyphs.width / 2, sy = table.centreY() + paint.glyphs.height / 2;
+				float sx = layout.w / 2 - paint.glyphs.width / 2, sy = layout.centreY() + paint.glyphs.height / 2;
 				f = paint.serif(LABEL_SMALL);
 				paint.glyphs.setText(f, s);
-				float ex = table.panelX(Seating.YOU) + TableLayout.PANEL_W + LABEL_BESIDE;
-				float ey = table.panelTop(Seating.YOU) - TableLayout.PANEL_H / 2 + paint.glyphs.height / 2;
+				float ex = layout.panelX(Seating.YOU) + TableLayout.PANEL_W + LABEL_BESIDE;
+				float ey = layout.panelTop(Seating.YOU) - TableLayout.PANEL_H / 2 + paint.glyphs.height / 2;
 				scale = MathUtils.lerp(LABEL_BIG, LABEL_SMALL, p);
 				x = MathUtils.lerp(sx, ex, p);
 				y = MathUtils.lerp(sy, ey, p);
@@ -184,7 +184,7 @@ final class TableOverlays {
 			} else {
 				scale = LABEL_OPPONENT;
 				paint.glyphs.setText(paint.serif(scale), s);
-				Vector2 o = table.fanOrigin(seat);
+				Vector2 o = layout.fanOrigin(seat);
 				x = seat == 3 ? o.x - paint.glyphs.width : o.x;
 				y = o.y + TableLayout.backH() / 2 + paint.glyphs.height / 2;
 			}
@@ -199,10 +199,10 @@ final class TableOverlays {
 
 	void drawHandResults() {
 		float pw = RESULTS_W, ph = RESULTS_H;
-		float px = (table.w - pw) / 2, py = table.centreY() - ph / 2;
+		float px = (layout.w - pw) / 2, py = layout.centreY() - ph / 2;
 		paint.frame(paint.assets.panel, px, py, pw, ph);
 		BitmapFont f = paint.ui(1.3f, Palette.CREAM);
-		paint.text(f, Wording.handResults(match.handIndex() + 1), table.w / 2, py + ph - RESULTS_TITLE_DROP, true);
+		paint.text(f, Wording.handResults(match.handIndex() + 1), layout.w / 2, py + ph - RESULTS_TITLE_DROP, true);
 
 		BitmapFont t = paint.ui(1.1f);
 		float[] cols = RESULT_COLS;
@@ -225,7 +225,7 @@ final class TableOverlays {
 			t.draw(paint.batch, Numbers.text(match.score(seat)), px + cols[5], y);
 		}
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
-		paint.text(s, "Tap to continue", table.w / 2, py + RESULTS_TAP_RISE, true);
+		paint.text(s, "Tap to continue", layout.w / 2, py + RESULTS_TAP_RISE, true);
 	}
 
 	private static final float[] RESULT_COLS = { 22, 62, 255, 315, 380, 465 };
@@ -233,13 +233,13 @@ final class TableOverlays {
 
 	void drawGameOver(int newHighScore) {
 		float pw = GAME_OVER_W, ph = GAME_OVER_H;
-		float px = (table.w - pw) / 2, py = table.h / 2 - GAME_OVER_LIFT - ph / 2;
+		float px = (layout.w - pw) / 2, py = layout.h / 2 - GAME_OVER_LIFT - ph / 2;
 		paint.frame(paint.assets.panel, px, py, pw, ph);
-		art.art(paint.assets.gameOverText, table.w / 2, py + ph - GAME_OVER_ART_DROP, GAME_OVER_ART_SCALE, 1f);
+		art.art(paint.assets.gameOverText, layout.w / 2, py + ph - GAME_OVER_ART_DROP, GAME_OVER_ART_SCALE, 1f);
 
 		String result = winnersLine();
 		BitmapFont f = paint.ui(1.5f, Palette.GOLD);
-		paint.text(f, result, table.w / 2, py + ph - GAME_OVER_RESULT_DROP, true);
+		paint.text(f, result, layout.w / 2, py + ph - GAME_OVER_RESULT_DROP, true);
 
 		BitmapFont t = paint.ui(1.2f);
 		float y = py + ph - GAME_OVER_ROWS_DROP;
@@ -256,8 +256,8 @@ final class TableOverlays {
 			y -= GAME_OVER_ROW;
 		}
 		float bw = END_BUTTON_W, bh = END_BUTTON_H, by = py + END_BUTTONS_RISE;
-		paint.button(targets.button(OverlayTargets.Button.PLAY_AGAIN), "Play again", table.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
-		paint.button(targets.button(OverlayTargets.Button.HIGH_SCORES), "High scores", table.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
+		paint.button(targets.button(OverlayTargets.Button.PLAY_AGAIN), "Play again", layout.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
+		paint.button(targets.button(OverlayTargets.Button.HIGH_SCORES), "High scores", layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
 	}
 
 	private String winnersLine() {

@@ -38,10 +38,6 @@ public final class Timeline {
 		return lastT < a && t >= a;
 	}
 
-	public boolean reached(float a) {
-		return t >= a;
-	}
-
 	public int count(float... times) {
 		int n = 0;
 		while (n < times.length && t >= times[n]) {
