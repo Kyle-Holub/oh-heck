@@ -128,7 +128,7 @@ final class CardSprites {
 	 */
 	private float dealt(TableFlow flow, int seat, int j, CardSprite sp, CardSprite.Pose rest, float now) {
 		float since = flow.deal.dealTime() - flow.deal.startOf(seat, j);
-		if (since < 0) {
+		if (flow.deal.isShuffling() || since < 0) {
 			return -1;
 		}
 		if (!sp.visible()) {
@@ -214,9 +214,9 @@ final class CardSprites {
 		}
 		float gatherFrom = TrickView.TRICK_PAUSE - TrickView.COLLECT_TIME;
 		List<Card> cards = m.lastTrick();
-		trick(cards, m.lastTrickSeats(), m, table, now);
 		int winner = m.lastTrickWinner();
-		if (elapsed < gatherFrom) {
+		if (elapsed < gatherFrom) { // on show, in place, the winner's card framed
+			trick(cards, m.lastTrickSeats(), m, table, now);
 			for (int i = 0; i < cards.size(); i++) {
 				if (m.lastTrickSeats().get(i) == winner) {
 					framed = TableView.index(cards.get(i));
@@ -227,8 +227,10 @@ final class CardSprites {
 		Vector2 sink = table.seatAnchor(winner);
 		float cw = Assets.CARD_W, ch = Assets.CARD_H;
 		pose.set(sink.x - cw / 4, sink.y - ch / 4, cw / 2, ch / 2, 0, 1, COLLECT_LIFT);
-		for (Card c : cards) {
-			sprite(c).moveTo(pose, COLLECT, 0, now, elapsed - gatherFrom);
+		for (int i = 0; i < cards.size(); i++) { // gathered in, from their places
+			CardSprite sp = sprite(cards.get(i));
+			place(sp, TRICK, i);
+			sp.moveTo(pose, COLLECT, 0, now, elapsed - gatherFrom);
 		}
 	}
 
