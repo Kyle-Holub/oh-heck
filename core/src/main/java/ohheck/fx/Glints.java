@@ -20,7 +20,7 @@ public final class Glints {
 	/** Each slot's cycle in seconds (a little different per slot), and the share of it spent lit. */
 	private static final float PERIOD = 2.4f, PERIOD_STEP = 0.7f, LIT = 0.28f;
 	/** A glint's arm length, as a share of the card's width, at its brightest. */
-	private static final float SIZE = 0.2f;
+	private static final float SIZE = 0.26f;
 
 	private Glints() {
 	}
@@ -35,7 +35,6 @@ public final class Glints {
 		int id = c.suit().ordinal() * 13 + c.rank().ordinal();
 		float cos = MathUtils.cosDeg(rot), sin = MathUtils.sinDeg(rot);
 		float cx = x + cw / 2, cy = y + ch / 2;
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		for (int slot = 0; slot < SLOTS; slot++) {
 			float period = PERIOD + slot * PERIOD_STEP;
 			float t = time / period + hash01(id * 31 + slot * 7, 0);
@@ -52,21 +51,35 @@ public final class Glints {
 			star(batch, glow, gx, gy, cw * SIZE * (0.6f + 0.4f * glow01), glow01, rot + 15 * slot);
 		}
 		batch.setColor(Color.WHITE);
+	}
+
+	/**
+	 * A four-pointed glint. Light added to a cream card barely shows, so it is drawn in two
+	 * layers: a deep gold cross painted over the card (it reads on a light face), then a soft
+	 * halo, white-gold streaks and a bright core added as light on top.
+	 */
+	private static void star(SpriteBatch batch, Texture glow, float x, float y, float arm, float a, float rot) {
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		batch.setColor(0.78f, 0.47f, 0.06f, 0.8f * a);
+		streaks(batch, glow, x, y, arm * 1.05f, arm * 0.3f, rot);
+		batch.setColor(0.72f, 0.4f, 0.04f, 0.55f * a);
+		batch.draw(glow, x - arm * 0.3f, y - arm * 0.3f, arm * 0.6f, arm * 0.6f);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(1f, 0.8f, 0.45f, 0.35f * a);
+		batch.draw(glow, x - arm * 0.6f, y - arm * 0.6f, arm * 1.2f, arm * 1.2f);
+		batch.setColor(1f, 0.93f, 0.75f, 0.9f * a);
+		streaks(batch, glow, x, y, arm, arm * 0.14f, rot);
+		batch.setColor(1f, 1f, 0.95f, a);
+		batch.draw(glow, x - arm * 0.16f, y - arm * 0.16f, arm * 0.32f, arm * 0.32f);
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
 
-	/** A four-pointed glint: a soft halo, two thin crossed streaks and a bright core. */
-	private static void star(SpriteBatch batch, Texture glow, float x, float y, float arm, float a, float rot) {
-		batch.setColor(1f, 0.8f, 0.45f, 0.35f * a);
-		batch.draw(glow, x - arm * 0.6f, y - arm * 0.6f, arm * 1.2f, arm * 1.2f);
-		float thin = arm * 0.16f;
-		batch.setColor(1f, 0.93f, 0.75f, 0.85f * a);
+	/** Two crossed streaks, arm long either side of (x, y) and thin across. */
+	private static void streaks(SpriteBatch batch, Texture glow, float x, float y, float arm, float thin, float rot) {
 		for (int i = 0; i < 2; i++) {
 			batch.draw(glow, x - arm, y - thin / 2, arm, thin / 2, arm * 2, thin, 1f, 1f, rot + 90 * i, 0, 0,
 					glow.getWidth(), glow.getHeight(), false, false);
 		}
-		batch.setColor(1f, 1f, 0.95f, a);
-		batch.draw(glow, x - arm * 0.18f, y - arm * 0.18f, arm * 0.36f, arm * 0.36f);
 	}
 
 	/** A steady pseudo-random number in [0, 1) for the pair (a, b). */
