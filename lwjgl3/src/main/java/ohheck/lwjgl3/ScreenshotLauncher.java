@@ -33,7 +33,7 @@ public class ScreenshotLauncher {
 
 	/** Prefixes of states to capture, as reported by the screens' stateTag(). */
 	private static final String[] WANTED = { "intro", "title", "highscores", "statistics", "options", "players", "tutorial:1", "tutorial:3", "tutorial:5", "tutorial:6", "tutorial:8", "tutorial:9", "tutorial:10", "tutorial:11", "tutorial:13", "shuffle:1", "deal:3", "bid:3",
-			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:7", "bidding:7", "menu:7", "play:8:",
+			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "play:8:",
 			"tossing", "gameover" };
 
 	/** The wanted states that start with any of the given prefixes, in the usual order. */

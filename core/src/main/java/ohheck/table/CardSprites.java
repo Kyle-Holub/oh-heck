@@ -89,7 +89,7 @@ final class CardSprites {
 		TableLayout table = s.layout();
 		if (flow.state() != TableState.GAME_OVER) { // (at the end the toss takes the cards)
 			if (flow.isDealing()) {
-				Vector2 d = table.seatAnchor(flow.deal.dealer());
+				Vector2 d = table.deckSpot(flow.deal.dealer());
 				dealer.set(d.x - TableLayout.backW() / 2, d.y - TableLayout.backH() / 2, TableLayout.backW(),
 						TableLayout.backH(), 0, 0, DEAL_LIFT);
 			}
