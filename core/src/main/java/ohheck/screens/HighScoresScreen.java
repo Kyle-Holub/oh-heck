@@ -18,22 +18,19 @@ import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 import ohheck.ui.Wording;
 
-/** Your ten best finished games, and (on its second tab) your statistics, by difficulty or for all. */
+/** The high scores and, on a second tab, the statistics. */
 public class HighScoresScreen extends BaseScreen implements TourStop {
 
-	/** The header bar, Back and section headings. */
 	private final MenuChrome chrome = new MenuChrome(paint);
 
 	private final Rectangle backButton = new Rectangle(), scoresTab = new Rectangle(), statsTab = new Rectangle(),
 			resetButton = new Rectangle();
-	/** One per difficulty, then All (indexed like Stats' totals). */
 	private final Rectangle[] filterButtons = new Rectangle[Stats.ALL + 1];
 	{
 		for (int i = 0; i < filterButtons.length; i++) {
 			filterButtons[i] = new Rectangle();
 		}
 	}
-	/** Showing the statistics (not the high scores); which totals (a difficulty, or Stats.ALL). */
 	private boolean showStats;
 
 	@Override
@@ -41,7 +38,6 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		return ScreenshotTour.Stop.HIGH_SCORES;
 	}
 
-	/** The Statistics tab (for the screenshot run, which looks at both). */
 	@Override
 	public void secondHalf(boolean on) {
 		if (on) {
@@ -49,10 +45,8 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		}
 	}
 	private int filter = Stats.ALL;
-	/** The statistics rows shown, and which totals they're for (-1: to be worked out). */
 	private String[][] games, hands;
 	private int rowsFor = -1;
-	/** Seconds left to tap Reset again to confirm, or 0. */
 	private float confirmReset;
 	private final Color highlight = new Color();
 	private List<HighScores.Entry> list;
@@ -62,16 +56,15 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		super(game);
 	}
 
-	/** Picks out the entry at this position (just set), or -1 for none. */
 	public void highlight(int position) {
 		newest = position;
 	}
 
 	@Override
 	public void show() {
-		rowsFor = -1; // a game may have been played since
+		rowsFor = -1;
 		super.show();
-		list = game.records().highScores().entries(); // read once, not every frame
+		list = game.records().highScores().entries();
 		showStats = false;
 		confirmReset = 0;
 	}
@@ -104,10 +97,8 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		batch.end();
 	}
 
-	// the title and tabs, from the top
 	private static final float TITLE_DROP = 40, TABS_DROP = 52, TAB_H = 40;
 	private static final float SCORES_TAB_FROM_RIGHT = 250, SCORES_TAB_W = 130, STATS_TAB_FROM_RIGHT = 98, STATS_TAB_W = 160;
-	// the score table: its panel, rows, and columns (rank, level, score, place from the left; date from the right)
 	private static final float SCORES_W = 480, SCORES_TOP_DROP = 100, SCORES_PAD = 66, SCORE_ROW = 30;
 	private static final float SCORE_HEADS_DROP = 18, EMPTY_NOTE_BELOW = 22, FIRST_ROW_BELOW_HEADS = 40;
 	private static final float[] SCORE_COLS = { 36, 86, 190, 300 };
@@ -133,7 +124,7 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		y -= FIRST_ROW_BELOW_HEADS;
 		float pulse = 0.5f + 0.5f * MathUtils.sin(shownFor * 3f);
 		for (int i = 0; i < list.size(); i++) {
-			if (i == newest) { // the game just finished, picked out
+			if (i == newest) {
 				paint.rect(px + ROW_HIGHLIGHT_INSET, y - rowH + ROW_HIGHLIGHT_RISE, pw - 2 * ROW_HIGHLIGHT_INSET, rowH,
 						highlight.set(0.97f, 0.85f, 0.56f, 0.10f + 0.08f * pulse));
 			}
@@ -142,7 +133,6 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		}
 	}
 
-	/** The score table's columns: rank, level, score, place, date. */
 	private final float[] scoreCols = new float[5];
 
 	private void drawScoreHeads(BitmapFont f, float y) {
@@ -155,7 +145,6 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		paint.text(f, "Date", cols[4], y, false);
 	}
 
-	/** Row i of the table: the newest in light gold, the best in gold. */
 	private void drawScoreRow(BitmapFont f, int i, HighScores.Entry e, float y) {
 		float[] cols = scoreCols;
 		float badge = SCORE_BADGE;
@@ -172,28 +161,22 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		paint.text(f, e.date(), cols[4], y, false);
 	}
 
-
-	// ---- statistics
-
-	// the statistics: the filter buttons (a badge left of each level's name), the two panels, Reset
 	private static final float FILTER_W = 152, FILTER_H = 40, FILTERS_DROP = 116, FILTER_GAP = 12;
 	private static final float FILTER_BADGE = 24, FILTER_BADGE_X = 10, FILTER_BADGE_Y = 8, FILTER_BADGE_SPACE = 28;
 	private static final float STATS_PANEL_W = 430, STATS_GAP = 30, STAT_ROW = 33, PANELS_BELOW_FILTERS = 18;
 	private static final float STAT_PANEL_PAD = 52, STAT_TITLE_DROP = 12, STAT_ROWS_DROP = 50, STAT_INSET = 22;
 	private static final float RESET_Y = 18, RESET_W = 260, RESET_H = 40;
 
-	/** A filter's label: the level's name, or "All". */
 	private static String filterLabel(int which) {
 		return which == Stats.ALL ? "All" : Difficulty.values()[which].label;
 	}
 
 	private void drawStats() {
-		// the filter: one button per difficulty (with its badge), then All
 		float fw = FILTER_W, fh = FILTER_H, fy = h - FILTERS_DROP;
 		int n = filterButtons.length;
 		float fx = w / 2 - (n * fw + (n - 1) * FILTER_GAP) / 2;
 		for (int i = 0; i < n; i++) {
-			int which = i == 0 ? Stats.ALL : i - 1; // All first, then each level
+			int which = i == 0 ? Stats.ALL : i - 1;
 			float cx = fx + i * (fw + FILTER_GAP) + fw / 2;
 			boolean badge = which != Stats.ALL;
 			float space = badge ? FILTER_BADGE_SPACE : 0;
@@ -201,13 +184,13 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 			BitmapFont f = paint.serif(1.5f);
 			f.setColor(Palette.CREAM);
 			paint.textIn(f, filterLabel(which), cx - fw / 2 + space, fy, fw - space, fh);
-			if (badge) { // its level badge, left of the name
+			if (badge) {
 				batch.draw(assets.levelBadge[which], cx - fw / 2 + FILTER_BADGE_X, fy + FILTER_BADGE_Y, FILTER_BADGE, FILTER_BADGE);
 			}
 		}
 
 		Stats.Totals t = game.records().stats().totals(filter);
-		if (rowsFor != filter) { // (worked out when the totals shown change, not every frame)
+		if (rowsFor != filter) {
 			games = Wording.gameRows(t);
 			hands = Wording.handRows(t);
 			rowsFor = filter;
@@ -232,7 +215,7 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 			f.setColor(Palette.CREAM);
 			f.draw(batch, row[0], x + STAT_INSET, y);
 			f.setColor(Palette.GOLD_LIGHT);
-			paint.text(f, row[1], x + STATS_PANEL_W - STAT_INSET, y, false); // right-aligned
+			paint.text(f, row[1], x + STATS_PANEL_W - STAT_INSET, y, false);
 			y -= STAT_ROW;
 		}
 	}
@@ -263,7 +246,6 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		}
 	}
 
-	/** Seconds the reset button waits for its second tap. */
 	private static final float RESET_CONFIRM_TIME = 3f;
 
 	@Override

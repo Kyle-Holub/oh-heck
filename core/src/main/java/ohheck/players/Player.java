@@ -7,9 +7,8 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * One of the twelve computer players you can meet at the table: a name, how well they play,
- * and a habit. Who sits down is drawn at the start of each game, the difficulty setting
- * deciding how likely each seat is to go to an easy, normal or expert player.
+ * One of the twelve computer players. Ids are permanent, since saves and statistics refer to
+ * them: never renumber or reuse one.
  */
 public final class Player {
 
@@ -17,7 +16,6 @@ public final class Player {
 	public final String name;
 	public final Difficulty level;
 	public final Style style;
-	/** A line about them, for the Players screen. */
 	public final String trait;
 
 	private Player(int id, String name, Difficulty level, Style style, String trait) {
@@ -28,7 +26,6 @@ public final class Player {
 		this.trait = trait;
 	}
 
-	/** Everyone (look a player up with {@link #byId(int)}, not by place in this list). */
 	public static final List<Player> ALL = Collections.unmodifiableList(Arrays.asList(
 			new Player(0, "Edmund", Difficulty.EASY, Style.TIMID,
 					"Never trusts his cards: often bids a trick fewer than they're worth."),
@@ -55,11 +52,6 @@ public final class Player {
 			new Player(11, "Percival", Difficulty.HARD, Style.FRONT_RUNNER,
 					"An expert who plays it safe in front and takes his chances from behind.")));
 
-	/**
-	 * The player with this id, or null if there's none (a player since removed). Ids are
-	 * permanent: saves and statistics refer to players by id, so never renumber or reuse one;
-	 * a new player takes the next unused id, and the list's order doesn't matter.
-	 */
 	public static Player byId(int id) {
 		for (Player p : ALL) {
 			if (p.id == id) {
@@ -69,7 +61,6 @@ public final class Player {
 		return null;
 	}
 
-	/** One more than the highest id in use (for per-player counts). */
 	public static int idLimit() {
 		int max = -1;
 		for (Player p : ALL) {
@@ -78,12 +69,10 @@ public final class Player {
 		return max + 1;
 	}
 
-	/** This player's bot; rng drives its randomness. */
 	public Bot bot(Random rng) {
 		return style.bot(level, rng);
 	}
 
-	/** The level a seat goes to, for r drawn evenly from 0 to 1, by the setting's odds. */
 	private static Difficulty pick(Difficulty setting, double r) {
 		Difficulty[] levels = Difficulty.values();
 		double sum = 0;
@@ -96,7 +85,6 @@ public final class Player {
 		return levels[levels.length - 1];
 	}
 
-	/** Different players for each computer seat of a new game at this setting. */
 	public static Seating draw(Difficulty setting, Random rng) {
 		List<Integer> chosen = new ArrayList<Integer>();
 		while (chosen.size() < Seating.OTHERS) {

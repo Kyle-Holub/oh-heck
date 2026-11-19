@@ -24,16 +24,10 @@ import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
-/**
- * What the tutorial's scenes are drawn with: the little table (three seats, a row for the
- * trick, your hand), the scene's clock, cards still or flying, glows, rising numbers and
- * labels, and the sparks and fireworks. {@link TutorialScenes} draws the scenes with these;
- * {@link TutorialScreen} runs the steps around them.
- */
+/** The tutorial's drawing kit: its little table, the scene clock, cards, glows and labels. */
 abstract class TutorialStage {
 
 	static final float CAPTION_H = 92, CW = Assets.CARD_W, CH = Assets.CARD_H;
-	/** "8", the number of hands in a game, for the captions. */
 	static final String HANDS = String.valueOf(Rules.numberOfHands());
 
 	final Painter paint;
@@ -45,10 +39,8 @@ abstract class TutorialStage {
 	final Counters counterArt;
 	final Sparks sparks = new Sparks();
 	final Fireworks fireworks = new Fireworks();
-	/** The scene's clock; t is its time this frame, which every scene draws from. */
 	final Timeline clock = new Timeline();
 	float t;
-	/** The screen's size this frame. */
 	float w = BaseScreen.WORLD_W, h = BaseScreen.WORLD_H;
 	final Color tint = new Color();
 
@@ -62,13 +54,11 @@ abstract class TutorialStage {
 		this.counterArt = new Counters(paint);
 	}
 
-	/** Starts the scene's clock again. */
 	void restart() {
 		clock.restart();
 		t = 0;
 	}
 
-	/** Moves the scene on by dt: a scene of this length, looping (after a hold) or not. */
 	void advance(float dt, float length, boolean loops, float hold) {
 		clock.advance(dt, length, loops, hold);
 		t = clock.t();
@@ -76,14 +66,11 @@ abstract class TutorialStage {
 		fireworks.update(dt);
 	}
 
-	/** The screen's size this frame. */
 	void size(float w, float h) {
 		this.w = w;
 		this.h = h;
 	}
 
-	
-	/** The scene's centre: the middle of the table above the caption. */
 	float cx() {
 		return w / 2;
 	}
@@ -96,9 +83,6 @@ abstract class TutorialStage {
 		return Card.of(r, s);
 	}
 
-	// ---- the seats: three players, for room: you bottom left, Rupert left, Oswald right
-
-	/** The two players at the tutorial's table, by roster id (so a renamed player is renamed here too). */
 	static final String LEFT = Player.byId(4).name, RIGHT = Player.byId(7).name;
 	static final String[] NAMES = { "You", LEFT, "", RIGHT };
 
@@ -127,17 +111,14 @@ abstract class TutorialStage {
 		}
 	}
 
-	/** Draws seat s's panel showing state (its name is filled in). */
 	void seat(int s, SeatState state) {
 		panel.draw(state.named(NAMES[s]), seatX(s), seatTop(s), clock.shown());
 	}
 
-	/** A placard with nothing on it yet. */
 	SeatState plain() {
 		return nextState().plain(true);
 	}
 
-	/** Yet to bid: the hourglass. */
 	SeatState waiting() {
 		return nextState();
 	}
@@ -146,7 +127,6 @@ abstract class TutorialStage {
 		return nextState().bid(bid);
 	}
 
-	/** Placard states, reused round in turn (a scene shows at most a few a frame). */
 	final SeatState[] states = { new SeatState(), new SeatState(), new SeatState(), new SeatState(),
 			new SeatState(), new SeatState(), new SeatState(), new SeatState() };
 	int nextState;
@@ -156,21 +136,15 @@ abstract class TutorialStage {
 		return states[nextState].reset();
 	}
 
-
-	/**
-	 * The trick, laid out as a row (clearer than the table's cross): card i of n. With your
-	 * hand on show it sits above the hand (and the top seat is left out, for room).
-	 */
 	float rowX(int i, int n) {
 		float gap = CW + 16;
 		return cx() - (n * gap - 16) / 2 + i * gap;
 	}
 
 	float rowY(boolean withHand) {
-		return withHand ? handY() + CH + 56 : cy() - CH / 2 - 10; // (a clear gap: the hand isn't part of the trick)
+		return withHand ? handY() + CH + 56 : cy() - CH / 2 - 10;
 	}
 
-	/** Where a seat's card comes from (its panel). */
 	float fromX(int seat) {
 		return seatX(seat) + PlayerPanel.W / 2 - CW / 2;
 	}
@@ -178,8 +152,6 @@ abstract class TutorialStage {
 	float fromY(int seat) {
 		return seatTop(seat) - PlayerPanel.H / 2 - CH / 2;
 	}
-
-	// ---- your hand along the bottom of the scene
 
 	float handX(int i, int n) {
 		float gap = CW + 14;
@@ -190,8 +162,6 @@ abstract class TutorialStage {
 		return CAPTION_H + 12 + 12;
 	}
 
-	// ---- timing
-
 	float at(float a, float b) {
 		return clock.at(a, b);
 	}
@@ -200,9 +170,6 @@ abstract class TutorialStage {
 		return clock.passed(a);
 	}
 
-	// ---- drawing
-
-	/** A face-up card at (x, y), its shadow lifted by lift; brightness 1 normal, less to dim it. */
 	void card(Card c, float x, float y, float lift, float bright, float alpha) {
 		if (alpha <= 0) {
 			return;
@@ -214,7 +181,6 @@ abstract class TutorialStage {
 		batch.setColor(Color.WHITE);
 	}
 
-	/** A card moving from (x0, y0) to (x1, y1) over the scene's a..b. */
 	void flying(Card c, float x0, float y0, float x1, float y1, float a, float b, float bright, float alpha) {
 		if (t < a) {
 			return;
@@ -223,7 +189,6 @@ abstract class TutorialStage {
 		card(c, MathUtils.lerp(x0, x1, k), MathUtils.lerp(y0, y1, k), 6 * (1 - k) + 2, bright, alpha);
 	}
 
-	/** A soft gold glow behind a card (strength 0-1). */
 	void glow(float x, float y, float strength) {
 		if (strength <= 0) {
 			return;
@@ -236,7 +201,6 @@ abstract class TutorialStage {
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
 
-	/** Text rising and fading from (x, y) over a..a+1.4, in colour c. */
 	void floating(String s, float x, float y, float a, Color c) {
 		if (t < a || t > a + 1.6f) {
 			return;
@@ -247,7 +211,6 @@ abstract class TutorialStage {
 		paint.centred(f, s, x, y + 40 * k);
 	}
 
-	/** A label in small gold capitals, centred on x. */
 	void label(String s, float x, float y, float alpha) {
 		if (alpha <= 0) {
 			return;

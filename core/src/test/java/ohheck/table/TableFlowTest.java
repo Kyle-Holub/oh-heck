@@ -19,12 +19,10 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 
-/** The card table's flow, without a screen: states, timing, turns and your moves. */
 public class TableFlowTest {
 
 	private static final float STEP = 1 / 30f;
 
-	/** Records what the flow tells the screen. */
 	static final class Events implements TableFlow.Listener {
 		int deals, saves, shuffleSounds, handsEnded, gamesEnded;
 		final List<Integer> playedBy = new ArrayList<Integer>();
@@ -60,7 +58,6 @@ public class TableFlowTest {
 		}
 	}
 
-	/** Which states may follow which. */
 	private static final Map<TableState, Set<TableState>> NEXT = new EnumMap<TableState, Set<TableState>>(TableState.class);
 	static {
 		NEXT.put(TableState.SHUFFLE, EnumSet.of(TableState.DEAL, TableState.TURN));
@@ -73,7 +70,7 @@ public class TableFlowTest {
 	}
 
 	private final Events events = new Events();
-	private final TableFlow flow = seated(events, Seating.of(4, 5, 6), 1); // three Normal players
+	private final TableFlow flow = seated(events, Seating.of(4, 5, 6), 1);
 
 	private static TableFlow seated(TableFlow.Listener listener, Seating players, long seed) {
 		TableFlow f = new TableFlow(listener);
@@ -87,7 +84,6 @@ public class TableFlowTest {
 		return m;
 	}
 
-	/** Lets time pass until the state changes (or fails after a minute of game time). */
 	private TableState waitForChange() {
 		TableState from = flow.state();
 		for (int i = 0; i < 60 / STEP; i++) {
@@ -129,7 +125,7 @@ public class TableFlowTest {
 		Match m = newGame(3);
 		flow.skip();
 		while (m.currentSeat() == TableFlow.HUMAN) {
-			newGame(m.dealer() + 10); // find a deal where a computer player bids first
+			newGame(m.dealer() + 10);
 			m = flow.match();
 			flow.skip();
 		}
@@ -205,7 +201,6 @@ public class TableFlowTest {
 		assertEquals(8, events.deals);
 		assertEquals(1, events.gamesEnded);
 		assertEquals(Match.Phase.GAME_OVER, m.phase());
-		// 1 + 2 + ... + 8 cards each, four players
 		assertEquals(4 * 36, events.playedBy.size());
 		assertFalse(flow.nextHand());
 	}
@@ -231,12 +226,12 @@ public class TableFlowTest {
 	@Test
 	public void aSavedGameResumesWithoutTheDeal() {
 		Match m = newGame(9);
-		playUntil(TableState.RESULTS); // past hand 1 (a single trick ends it)
+		playUntil(TableState.RESULTS);
 		flow.nextHand();
-		playUntil(TableState.TRICK); // the first of hand 2's two tricks
+		playUntil(TableState.TRICK);
 		assertEquals(Match.Phase.PLAYING, m.phase());
 		Match saved = Match.load(m.save(), new Random(1));
-		TableFlow resumed = seated(new Events(), Seating.of(8, 9, 10), 2); // three experts
+		TableFlow resumed = seated(new Events(), Seating.of(8, 9, 10), 2);
 		resumed.resume(saved);
 		assertEquals(TableState.TURN, resumed.state());
 		assertTrue(resumed.trumpFaceUp());
@@ -247,7 +242,6 @@ public class TableFlowTest {
 		assertEquals(TableState.HAND_END, resumed.state());
 	}
 
-	/** Plays (your seat choosing the first legal move) until the flow reaches the state. */
 	private void playUntil(TableState target) {
 		Match m = flow.match();
 		for (int i = 0; i < 100000 && flow.state() != target; i++) {
@@ -268,7 +262,6 @@ public class TableFlowTest {
 		assertEquals(target, flow.state());
 	}
 
-	/** A thinker that holds each answer back until told to let it go. */
 	static final class SlowThinker implements Thinker {
 		final List<java.util.concurrent.FutureTask<?>> waiting = new ArrayList<java.util.concurrent.FutureTask<?>>();
 
@@ -294,7 +287,7 @@ public class TableFlowTest {
 		Match m = newGame(3);
 		flow.skip();
 		while (m.currentSeat() == TableFlow.HUMAN) {
-			newGame(m.dealer() + 10); // a deal where a computer player bids first
+			newGame(m.dealer() + 10);
 			m = flow.match();
 			flow.skip();
 		}

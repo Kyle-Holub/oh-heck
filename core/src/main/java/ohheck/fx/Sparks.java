@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 
-/** Gold sparks thrown up in a burst when you make your bid or win the game. */
 public final class Sparks extends ParticlePool {
 
 	private static final float GRAVITY = 380f, DRAG = 0.8f;
@@ -37,7 +36,6 @@ public final class Sparks extends ParticlePool {
 		vx[i] *= 1f - DRAG * dt;
 	}
 
-	/** Drawn additively: a soft glow with a bright twinkling core. */
 	public void draw(SpriteBatch batch, Texture glow) {
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		for (int i = 0; i < max; i++) {

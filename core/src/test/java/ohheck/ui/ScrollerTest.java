@@ -24,7 +24,7 @@ public class ScrollerTest {
 	@Test
 	public void aFlingCoastsAndSlows() {
 		Scroller s = new Scroller();
-		s.drag(10); // moving at 600 a second when let go
+		s.drag(10);
 		s.update(0, true, 10000);
 		float before = s.offset();
 		s.update(0.1f, false, 10000);

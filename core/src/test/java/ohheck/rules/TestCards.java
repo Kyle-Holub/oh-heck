@@ -3,7 +3,7 @@ package ohheck.rules;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Short card names for tests: "AS" = ace of spades, "10H" = ten of hearts. */
+/** Short card names for tests: "AS" is the ace of spades, "10H" the ten of hearts. */
 final class TestCards {
 
 	private TestCards() {

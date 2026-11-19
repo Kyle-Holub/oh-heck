@@ -20,23 +20,9 @@ import ohheck.rules.Rank;
 import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 
-/**
- * A shower of playing cards tumbling down the screen in 3D, computed every
- * frame instead of played from a video.
- * <p>
- * Each card has a position, a fall speed, a sideways flutter and a spinning
- * orientation (a quaternion). Its corners are rotated, placed in front of a
- * pinhole camera at the origin looking down +z, and projected onto the
- * screen; the card is drawn as a grid of small textured quads so the
- * perspective barely warps the artwork. The side facing the camera decides
- * whether the face or the back is drawn, and the angle to a warm light shades
- * it, with a glint as it turns towards the light. Cards away from the focus
- * depth fade into pre-blurred copies (depth of field), and gold sparkles
- * drift through the same space.
- */
+/** Playing cards tumbling down the screen in 3D, projected through a pinhole camera each frame. */
 public final class FallingCards {
 
-	/** Focal length: at depth FOCAL, one world unit is one screen unit. */
 	private static final float FOCAL = 700f;
 	private static final float NEAR = 450f, FAR = 2300f;
 	private static final float CARD_W = Assets.CARD_W * 1.6f, CARD_H = Assets.CARD_H * 1.6f;
@@ -50,7 +36,6 @@ public final class FallingCards {
 		final Vector3 axis = new Vector3();
 		float fall, spin, swayAmp, swayFreq, swayPhase, age;
 		Card card;
-		/** A card tossed off the table: thrown with this velocity, falling under gravity after its delay. */
 		boolean tossed;
 		final Vector3 vel = new Vector3();
 		float delay;
@@ -61,11 +46,9 @@ public final class FallingCards {
 	private final List<Flake> flakes = new ArrayList<Flake>();
 	private float time, spawnDebt;
 	private final boolean fromEmpty;
-	/** Only tossed cards, all in focus and evenly lit, with no sparkles: the table at the game's end. */
 	private boolean tableMode;
 	private final float period, phase;
 
-	// scratch space, reused every frame
 	private final Vector3 v = new Vector3(), n = new Vector3(), toCam = new Vector3();
 	private final Quaternion dq = new Quaternion();
 	private final float[] gx = new float[(GRID_X + 1) * (GRID_Y + 1)];
@@ -76,10 +59,6 @@ public final class FallingCards {
 		this(assets, rng, false);
 	}
 
-	/**
-	 * @param fromEmpty start with no cards on screen and a heavy shower, so the
-	 *                  first cards visibly fall in from the top (the opening sequence)
-	 */
 	public FallingCards(Assets assets, Random rng, boolean fromEmpty) {
 		this.fromEmpty = fromEmpty;
 		this.assets = assets;
@@ -88,7 +67,6 @@ public final class FallingCards {
 		this.phase = rng.nextFloat() * MathUtils.PI2;
 	}
 
-	/** For the table at the game's end: nothing falls until cards are {@link #toss tossed}. */
 	public static FallingCards forTable(Assets assets, Random rng) {
 		FallingCards f = new FallingCards(assets, rng, true);
 		f.tableMode = true;
@@ -96,15 +74,9 @@ public final class FallingCards {
 		return f;
 	}
 
-	/** Upward pop, sideways scatter, depth drift and gravity for tossed cards, in screen units. */
 	private static final float TOSS_UP_MIN = 260f, TOSS_UP_MAX = 460f, TOSS_SIDE = 160f, GRAVITY = 1500f,
 			TOSS_SPIN_MIN = 160f, TOSS_SPIN_MAX = 480f, SPIN_UP_TIME = 0.35f;
 
-	/**
-	 * Throws a card off the table: it starts exactly where it lies (centre (x, y) relative to
-	 * the screen centre, w wide, turned rot degrees), and after delay seconds pops up, starts
-	 * tumbling and falls off the bottom of the screen.
-	 */
 	public void toss(Card c, float x, float y, float w, float rot, float delay) {
 		Flake f = new Flake();
 		float z = CARD_W * FOCAL / w, k = z / FOCAL;
@@ -120,12 +92,10 @@ public final class FallingCards {
 		flakes.add(f);
 	}
 
-	/** Whether any card is still on its way off the screen (or waiting to be thrown). */
 	public boolean active() {
 		return !flakes.isEmpty();
 	}
 
-	/** Whether a card has been thrown yet (false while every tossed card is still waiting). */
 	public boolean anyThrown() {
 		for (Flake f : flakes) {
 			if (f.tossed && f.age >= f.delay) {
@@ -135,16 +105,13 @@ public final class FallingCards {
 		return false;
 	}
 
-	/** Cards falling right now; showers ebb and swell over time. */
 	private float spawnRate() {
 		float e = 0.5f + 0.5f * MathUtils.sin(MathUtils.PI2 * time / period + phase);
 		float opening = fromEmpty ? 14f * (float) Math.exp(-fallingFor / 2.5f) : 0f;
 		return 1.5f + 13f * e * e * e + opening;
 	}
 
-	/** Whether new cards appear; until then only the sparkles drift (the opening starts with them alone). */
 	private boolean falling = true;
-	/** Seconds since cards started falling, for the opening shower. */
 	private float fallingFor;
 
 	public void setFalling(boolean falling) {
@@ -167,12 +134,11 @@ public final class FallingCards {
 		for (Iterator<Flake> it = flakes.iterator(); it.hasNext();) {
 			Flake f = it.next();
 			if (move(f, dt) && f.pos.y < -(halfH(f.pos.z, viewH) + CARD_H * 1.5f)) {
-				it.remove(); // fallen out of sight
+				it.remove();
 			}
 		}
 	}
 
-	/** New cards join the shower at its current rate. */
 	private void spawnFalling(float dt, float viewW, float viewH) {
 		fallingFor += dt;
 		spawnDebt += spawnRate() * dt;
@@ -184,16 +150,12 @@ public final class FallingCards {
 		}
 	}
 
-	/**
-	 * One card's flight: tossed cards arc under gravity once their delay is up; shower cards
-	 * drift down, swaying. False while a tossed card still lies on the table.
-	 */
 	private boolean move(Flake f, float dt) {
 		f.age += dt;
 		if (f.tossed) {
 			float t = f.age - f.delay;
 			if (t <= 0) {
-				return false; // still lying on the table
+				return false;
 			}
 			float k = f.pos.z / FOCAL;
 			f.vel.y -= GRAVITY * k * dt;
@@ -207,7 +169,6 @@ public final class FallingCards {
 		f.rot.set(dq.mul(f.rot)).nor();
 		return true;
 	}
-
 
 	private float halfH(float z, float viewH) {
 		return viewH / 2 * z / FOCAL;
@@ -234,9 +195,6 @@ public final class FallingCards {
 		flakes.add(f);
 	}
 
-	// ---- drawing
-
-	/** Depth that is in sharp focus; cards nearer or further are blurred. */
 	private static final float FOCUS = 1050f;
 	private static final float WARM_R = 1f, WARM_G = 0.9f, WARM_B = 0.76f;
 	private static final Vector3 VIEW_LIGHT = new Vector3();
@@ -244,7 +202,6 @@ public final class FallingCards {
 	private final List<Flake> glinting = new ArrayList<Flake>();
 	private final float[] glintStrength = new float[MAX_CARDS + 1];
 
-	/** Draws sparkles and cards with the screen centre at (cx, cy). */
 	public void draw(SpriteBatch batch, float cx, float cy) {
 		Collections.sort(flakes, FAR_FIRST);
 		if (!tableMode) {
@@ -262,31 +219,23 @@ public final class FallingCards {
 		drawGlints(batch, cx, cy);
 	}
 
-	/** How out of focus a depth is: 0 = sharp, 1 = fully blurred. Near cards blur faster than far ones. */
 	private static float defocus(float z) {
 		return MathUtils.clamp(z < FOCUS ? (FOCUS - z) / 420f : (z - FOCUS) / 950f, 0f, 1f);
 	}
 
 	private void drawFlake(SpriteBatch batch, Flake f, float cx, float cy) {
-		// which side faces the camera, and how it is lit
 		n.set(0, 0, -1);
 		f.rot.transform(n);
 		toCam.set(f.pos).scl(-1).nor();
 		boolean front = n.dot(toCam) > 0;
 		float lit = 0.38f + 0.62f * Math.abs(n.dot(LIGHT));
-		// further away is darker, so the shower has depth
 		float depth = (f.pos.z - NEAR) / (FAR - NEAR);
-		// (capped at 1: packed vertex colours overflow into the next channel above that)
-		// (on the table: no depth falloff, and flat cards keep their full brightness)
 		float b = Math.min(0.94f, tableMode ? 0.5f + 0.6f * lit : lit * MathUtils.lerp(1.05f, 0.42f, depth));
 		float d = tableMode ? 0f : defocus(f.pos.z);
-		// the title's warm light; on the table, the cards' own colours (so they don't change as they leave)
 		float warmR = tableMode ? 1f : WARM_R, warmG = tableMode ? 1f : WARM_G, warmB = tableMode ? 1f : WARM_B;
 
-		// a glint when the card turns its face towards the light
 		VIEW_LIGHT.set(LIGHT).add(toCam).nor();
 		float spec = (float) Math.pow(Math.abs(n.dot(VIEW_LIGHT)), 40) * (1 - d);
-		// (none on the table: its cards are lit full bright already, and a glint would wash them out in the bloom)
 		if (!tableMode && spec > 0.04f && glinting.size() < glintStrength.length) {
 			glintStrength[glinting.size()] = spec;
 			glinting.add(f);
@@ -304,7 +253,6 @@ public final class FallingCards {
 		}
 	}
 
-	/** Adds the glints on top, with additive blending so they brighten what is there. */
 	private void drawGlints(SpriteBatch batch, float cx, float cy) {
 		if (glinting.isEmpty()) {
 			return;
@@ -321,7 +269,6 @@ public final class FallingCards {
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
 
-	/** Projects a card-shaped grid of size w x h and draws region across it. */
 	private void drawQuad(SpriteBatch batch, Flake f, float cx, float cy, TextureRegion r, float w, float h, float color) {
 		for (int j = 0; j <= GRID_Y; j++) {
 			for (int i = 0; i <= GRID_X; i++) {
@@ -329,7 +276,7 @@ public final class FallingCards {
 				f.rot.transform(v);
 				v.add(f.pos);
 				if (v.z < 1f) {
-					return; // behind the camera: can't happen with these depths, but never divide by ~0
+					return;
 				}
 				int k = j * (GRID_X + 1) + i;
 				gx[k] = cx + FOCAL * v.x / v.z;
@@ -337,7 +284,6 @@ public final class FallingCards {
 			}
 		}
 
-		// draw each cell as a quad: bottom-left, top-left, top-right, bottom-right
 		float u0 = r.getU(), u1 = r.getU2(), vTop = r.getV(), vBottom = r.getV2();
 		for (int j = 0; j < GRID_Y; j++) {
 			for (int i = 0; i < GRID_X; i++) {
@@ -362,8 +308,6 @@ public final class FallingCards {
 		quad[o + 4] = v;
 	}
 
-	// ---- gold sparkles: glowing specks drifting in the same 3D space as the cards
-
 	private static final int SPARKLES = 230;
 	private final float[] sx = new float[SPARKLES], sy = new float[SPARKLES], sz = new float[SPARKLES];
 	private final float[] sDrift = new float[SPARKLES], sPhase = new float[SPARKLES], sRate = new float[SPARKLES],
@@ -377,7 +321,6 @@ public final class FallingCards {
 		sparklesReady = true;
 	}
 
-	/** Puts sparkle i at a random depth, at height fraction yFrac (-1 bottom .. 1 top). */
 	private void placeSparkle(int i, float viewW, float viewH, float yFrac) {
 		float z = 300f + rng.nextFloat() * (FAR + 400f - 300f);
 		sz[i] = z;
@@ -395,7 +338,7 @@ public final class FallingCards {
 			initSparkles(viewW, viewH);
 		}
 		for (int i = 0; i < SPARKLES; i++) {
-			sy[i] -= sDrift[i] * dt; // a slow fall, like dust in a light beam
+			sy[i] -= sDrift[i] * dt;
 			sx[i] += MathUtils.sin(time * 0.4f + sPhase[i]) * 6f * dt;
 			if (sy[i] < -halfH(sz[i], viewH) * 1.15f) {
 				placeSparkle(i, viewW, viewH, 1.1f);
@@ -411,7 +354,6 @@ public final class FallingCards {
 			}
 			float scale = FOCAL / sz[i];
 			float d = defocus(sz[i]);
-			// out-of-focus sparkles spread into large, faint discs of light (bokeh)
 			float size = sSize[i] * scale * (1f + d * 5f);
 			float twinkle = 0.55f + 0.45f * MathUtils.sin(time * sRate[i] * 2f + sPhase[i]);
 			float a = Math.min(1f, twinkle * MathUtils.lerp(1.2f, 0.3f, d) * MathUtils.clamp(scale * 1.6f, 0.35f, 1f));

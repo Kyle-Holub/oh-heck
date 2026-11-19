@@ -1,8 +1,6 @@
 package ohheck.rules;
 
-/**
- * The four suits. Declaration order matches the rows of the card sheet image.
- */
+/** The suits, in the card sheet's row order. */
 public enum Suit {
 	CLUBS, SPADES, HEARTS, DIAMONDS
 }

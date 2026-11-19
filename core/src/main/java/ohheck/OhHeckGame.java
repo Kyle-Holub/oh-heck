@@ -29,48 +29,32 @@ import ohheck.ui.Tagged;
 import ohheck.ui.Tour;
 import ohheck.util.Log;
 
-/** The libGDX entry point shared by Android and desktop: makes the shared things and the screens, and runs the frames. */
+/** The libGDX entry point for Android and desktop: owns the shared services and the screens. */
 public class OhHeckGame extends Game implements GameHost {
 
 	public static final String VERSION = "alpha-1.0.9";
 
-	// ---- how it was launched (set before create)
-
 	private final GameOptions options;
-	/** The screenshot run's walk through the menus; null in normal play. */
 	private final ScreenshotTour tour;
 
-	// ---- what the screens share (made in create(), so not final)
-
-	/** The CI build ("dev-0042") from assets/build.txt, or "" for a local build. */
 	private String build = "";
-	/** The one sprite batch all screens draw with. */
 	private SpriteBatch batch;
 	private Assets assets;
 	private Settings settings;
 	private Audio audio;
 	private PostProcessor post;
-	/** Statistics, high scores and the saved game. */
 	private Records records;
 
-	// ---- the screens
-
-	/** Which screen is showing, the way back, and the change between them. */
 	private final Screens screens = new Screens(this);
 	private TitleScreen title;
 	private TutorialScreen tutorial;
 	private OptionsScreen optionsScreen;
 	private HighScoresScreen highScoresScreen;
 	private PlayersScreen playersScreen;
-	/** The screens made once and kept for the whole run (all but the table), released together. */
 	private final List<Screen> keptScreens = new ArrayList<Screen>();
-	/** The table, made for each game; null before the first. */
 	private PlayScreen play;
 
-	// ---- the frames
-
 	private final FramePacer pacer = new FramePacer();
-	/** Whether the effects pass is capturing this frame (so the viewport fits its buffer). */
 	private boolean capturing;
 
 	public OhHeckGame() {
@@ -84,7 +68,7 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void create() {
-		Log.to((tag, message, cause) -> { // reports go to the device log
+		Log.to((tag, message, cause) -> {
 			if (cause != null) {
 				Gdx.app.error(tag, message, cause);
 			} else {
@@ -118,13 +102,13 @@ public class OhHeckGame extends Game implements GameHost {
 		pacer.startFrame();
 		boolean effects = settings.effects() && post.begin();
 		capturing = effects;
-		boolean fixed = options.fixedStep > 0; // the screenshot run: fixed time steps
+		boolean fixed = options.fixedStep > 0;
 		float delta = fixed ? options.fixedStep : Gdx.graphics.getDeltaTime();
 		if (getScreen() != null) {
 			getScreen().render(delta);
 		}
-		if (!fixed) { // (the screenshot run captures screens settled, not mid-change)
-			screens.drawChange(batch, assets, delta); // a new screen comes up out of a dark tint
+		if (!fixed) {
+			screens.drawChange(batch, assets, delta);
 		}
 		if (effects) {
 			post.end(delta);
@@ -136,8 +120,6 @@ public class OhHeckGame extends Game implements GameHost {
 			options.frameListener.onFrame(((Tagged) s).stateTag());
 		}
 	}
-
-	// ---- Services
 
 	@Override
 	public String version() {
@@ -189,7 +171,6 @@ public class OhHeckGame extends Game implements GameHost {
 		return tour;
 	}
 
-	/** While the effects pass is capturing a frame, draw into its (smaller) buffer rather than the screen. */
 	@Override
 	public void fitViewportToTarget() {
 		if (capturing) {
@@ -197,9 +178,6 @@ public class OhHeckGame extends Game implements GameHost {
 		}
 	}
 
-	// ---- Navigator
-
-	/** Back to the screen that opened this one, or the title screen. */
 	@Override
 	public void back() {
 		screens.back(title);
@@ -210,14 +188,12 @@ public class OhHeckGame extends Game implements GameHost {
 		screens.replaceAll(title);
 	}
 
-	/** How to play, from Options: the tutorial, with Back. */
 	@Override
 	public void showTutorial() {
 		tutorial.open(false);
 		screens.open(tutorial);
 	}
 
-	/** Play (a new game): the tutorial first if you've never seen it (it then starts the game). */
 	@Override
 	public void play() {
 		if (!settings.tutorialSeen() && !options.autoplayHuman) {

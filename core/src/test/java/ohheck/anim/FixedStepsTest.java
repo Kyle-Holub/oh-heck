@@ -19,7 +19,7 @@ public class FixedStepsTest {
 		FixedSteps s = new FixedSteps(1 / 60f, 0.1f);
 		int total = 0;
 		for (int i = 0; i < 120; i++) {
-			total += s.frame(1 / 120f); // a 120 Hz screen: a step every other frame
+			total += s.frame(1 / 120f);
 		}
 		assertEquals(60, total);
 	}

@@ -9,12 +9,8 @@ import ohheck.rules.Suit;
 import ohheck.rules.TableView;
 
 /**
- * A computer player's habit: a lean on top of how well they play. Most are about bidding
- * (and since every player plays to make whatever they bid, the habit carries through the
- * hand); the trump and ace habits are about which card to play.
- * <p>
- * Each habit is written in its own constant: {@link #bid} for a bidding lean, {@link #play}
- * for a playing one. A new habit is one more constant (and a player who has it).
+ * A player's habit, leaning the bids or cards its level's bot chooses. A new habit is one more
+ * constant.
  */
 public enum Style {
 	STEADY("By the book") {
@@ -35,7 +31,6 @@ public enum Style {
 			return h.leans() ? Math.max(0, bid - 1) : bid;
 		}
 	},
-	/** A hand worth one trick (or, now and then, two) gets bid at zero. */
 	FLUFFER("Fluffs") {
 		@Override
 		int bid(int bid, TableView v, StyledBot h) {
@@ -52,9 +47,7 @@ public enum Style {
 			return bid;
 		}
 	},
-	/** An expert who weighs spoiling the leader's hand more than other experts do (in how it plays). */
 	SPOILER("Spoiler") {
-		/** How much more a spoiler weighs the leader's points than other experts do. */
 		static final double SPOIL = 1.2;
 
 		@Override
@@ -67,7 +60,6 @@ public enum Style {
 			return level == Difficulty.HARD ? new HardBot(rng, SPOIL) : level.bot(rng);
 		}
 	},
-	/** Bolder after making a bid, warier after missing one (made bids score, misses cost). */
 	STREAKY("Streaky") {
 		@Override
 		int bid(int bid, TableView v, StyledBot h) {
@@ -77,7 +69,6 @@ public enum Style {
 			return bid;
 		}
 	},
-	/** Plays safe when ahead in the game, takes risks when behind (most of all near the end). */
 	FRONT_RUNNER("Front-runner") {
 		@Override
 		int bid(int bid, TableView v, StyledBot h) {
@@ -94,7 +85,6 @@ public enum Style {
 			return bid;
 		}
 	},
-	/** Leads its highest trump while the hand is young, to draw everyone else's. */
 	TRUMP_HAPPY("Trump-happy") {
 		@Override
 		Card play(Card card, TableView v, List<Card> legal) {
@@ -105,7 +95,6 @@ public enum Style {
 			return card;
 		}
 	},
-	/** Plays anything but a trump until the last two tricks. */
 	TRUMP_HOARDER("Trump hoarder") {
 		@Override
 		Card play(Card card, TableView v, List<Card> legal) {
@@ -116,7 +105,6 @@ public enum Style {
 			return card;
 		}
 	},
-	/** Leads an ace or king of a plain suit straight away. */
 	ACE_LEADER("Ace leader") {
 		@Override
 		Card play(Card card, TableView v, List<Card> legal) {
@@ -128,40 +116,33 @@ public enum Style {
 		}
 	};
 
-	/** As shown on the Players screen. */
 	public final String label;
 
 	Style(String label) {
 		this.label = label;
 	}
 
-	/** A computer player at this level with this habit; rng drives its randomness. */
 	Bot bot(Difficulty level, Random rng) {
 		Bot base = base(level, rng);
 		return habitual() ? new StyledBot(base, this, level, rng) : base;
 	}
 
-	/** The player under the habit: its level's bot, unless the habit changes how it thinks. */
 	Bot base(Difficulty level, Random rng) {
 		return level.bot(rng);
 	}
 
-	/** Whether the habit leans on the bot's choices (false: it's in how the bot itself thinks, or there's none). */
 	boolean habitual() {
 		return true;
 	}
 
-	/** The bid, leaned this habit's way (h: the player's chances and memory). Unchanged unless overridden. */
 	int bid(int bid, TableView v, StyledBot h) {
 		return bid;
 	}
 
-	/** The card, swapped for this habit's choice (when the habit wins out). Unchanged unless overridden. */
 	Card play(Card card, TableView v, List<Card> legal) {
 		return card;
 	}
 
-	/** The highest legal card of the trump suit (trumps true) or of the other suits, or null. */
 	static Card highest(List<Card> legal, Suit trump, boolean trumps) {
 		Card best = null;
 		for (Card c : legal) {
@@ -172,7 +153,6 @@ public enum Style {
 		return best;
 	}
 
-	/** The lowest legal card that isn't a trump, or null. */
 	static Card lowest(List<Card> legal, Suit trump) {
 		Card best = null;
 		for (Card c : legal) {

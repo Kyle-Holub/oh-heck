@@ -21,75 +21,45 @@ import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 
-/**
- * The card table: you (bottom) against three computer players (left, top,
- * right). The rules live in {@link Match}; this screen runs the table's
- * {@link TableState} machine, runs the computer players and draws it all,
- * with help from:
- * <ul>
- * <li>{@link TableLayout}: where things go
- * <li>{@link DealAnimation} and {@link TrickView}: cards moving
- * <li>{@link TableOverlays}: panels, scores and menus over the table
- * <li>{@link TableInput}: your taps and drags, and the pause menu
- * <li>{@link TableDrawing}, {@link TableToss} and {@link GameEnd}: drawing the table, and the game's end
- * <li>{@link YourSeat}: you, or {@link Autoplay} in the scripted screenshot run
- * </ul>
- * Playing a card: tap it, or drag it up onto the table. Bidding: tap a number.
- */
+/** The card table screen. */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	private static final int HUMAN = Seating.YOU;
 
-
 	private final GameOptions options;
-	/** The random streams for seating, the bots and the deck (kept apart: see TableStreams). */
 	private final TableStreams streams;
 
 	private final TableLayout table = new TableLayout();
 	private final TableOverlays overlays;
-	/** Where the overlays' buttons are, for your taps (and Autoplay's). */
 	private final OverlayTargets targets = new OverlayTargets();
 	private final TableFlow flow;
 	private final CardArt art;
-	/** Draws the table (counters, trump, panels, your hand); the trick, overlays and effects are separate. */
 	private final TableDrawing drawing;
-	/** Every card on the table, each one sprite for the whole game. */
 	private final CardSprites cards = new CardSprites();
 	private final Sparks sparks = new Sparks();
 	private final Fireworks fireworks = new Fireworks();
-	/** At the game's end: the cards thrown off the table, and the order of what follows. */
 	private final TableToss toss;
 	private final GameEnd end = new GameEnd();
-	/** Who plays your seat: you, or Autoplay in the scripted screenshot run. */
 	private final YourSeat you;
 
-	/** Game time, for animations; stops while paused. */
 	private float time;
-	/** Keeps your statistics and high scores as the game goes. */
 	private final GameRecorder recorder;
-	/** The difficulty this game was started at: its high score badge and statistics level. */
 	private Difficulty level;
-	/** Who sits in the other seats. */
 	private Seating players;
 
-	/** Your taps and drags, and the pause menu. */
 	private final TableInput input = new TableInput(this, this, targets);
 
-	/** Your hand in display order, and each card's tap area; rebuilt when drawn. */
 	private final List<Card> handOrder = new ArrayList<Card>();
 	private final List<Rectangle> handRects = new ArrayList<Rectangle>();
 
-	/** A new game, at the difficulty now chosen in Options. */
 	public static PlayScreen fresh(GameHost game) {
 		return new PlayScreen(game, null);
 	}
 
-	/** The saved game, carried on where it was left. */
 	public static PlayScreen resume(GameHost game, SavedGame saved) {
 		return new PlayScreen(game, saved);
 	}
 
-	/** A new game (saved null), or the saved one. */
 	private PlayScreen(GameHost game, SavedGame saved) {
 		super(game);
 		this.options = game.options();
@@ -100,10 +70,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		this.drawing = new TableDrawing(this, paint, art, game.post());
 		this.toss = new TableToss(assets, table);
 		this.recorder = new GameRecorder(game.records());
-		// your seat hears first (the screenshot run plays out the hands it skips before the rest react)
 		this.flow = new TableFlow(you, new Effects(), new TableSounds(game.audio()), recorder);
 		if (!you.thinkAtOnce() && options.fixedStep <= 0) {
-			flow.thinkWith(Thinker.background()); // so a slow Hard player never stalls a frame
+			flow.thinkWith(Thinker.background());
 		}
 		if (saved == null) {
 			startGame();
@@ -112,7 +81,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 	}
 
-	/** This screen's own reactions at the table: the trick, sparks, and the ending. */
 	private final class Effects implements TableFlow.Listener {
 		@Override
 		public void beforeDeal(Match m) {
@@ -133,14 +101,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 		@Override
 		public void gameEnded(Match m) {
-			targets.clearGameOverButtons(); // not tappable until drawn
-			// in turn: the table's cards fall away, then (if you won) fireworks, then the scores
+			targets.clearGameOverButtons();
 			toss.toss(m);
-			end.start(m.leaders().contains(HUMAN)); // you won (or tied for the win)
+			end.start(m.leaders().contains(HUMAN));
 		}
 	}
-
-	// ------------------------------------------------- the table, as TableScene
 
 	@Override
 	public boolean isMenuOpen() {
@@ -156,7 +121,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		return flow.match().phase() == Match.Phase.GAME_OVER;
 	}
 
-	/** Game over and the scores are up (after the cards have fallen, and any fireworks have begun). */
 	@Override
 	public boolean resultsShown() {
 		return flow.state() == TableState.GAME_OVER && end.resultsShown(flow.stateTime());
@@ -202,10 +166,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		return handRects;
 	}
 
-	// ------------------------------------------------------------ the game
-
-
-	/** A new game: a table drawn for the difficulty now chosen in Options. */
 	private void startGame() {
 		level = game.settings().difficulty();
 		seatPlayers(Player.draw(level, streams.seating));
@@ -217,7 +177,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		flow.start(m);
 	}
 
-	/** The saved game, at its own difficulty, with its players (drawn afresh for saves from before the table travelled with it). */
 	private void resumeGame(SavedGame saved) {
 		level = saved.level();
 		seatPlayers(saved.players() != null ? saved.players() : Player.draw(level, streams.seating));
@@ -231,14 +190,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		return !input.menuOpen() && flow.yourTurnToPlay();
 	}
 
-	// ----------------------------------------------------------- update
-
 	@Override
 	protected void update(float step) {
 		advance(step * options.speed * game.settings().speedFactor());
 	}
 
-	/** Moves the table on by dt seconds of game time. */
 	private void advance(float dt) {
 		if (input.menuOpen()) {
 			you.whilePaused(dt);
@@ -250,7 +206,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		sparks.step(dt);
 		fireworks.update(dt);
 		toss.update(dt);
-		if (end.update(flow.stateTime(), toss.allGone())) { // the last card has fallen, and you won
+		if (end.update(flow.stateTime(), toss.allGone())) {
 			sparks.burst(table.w / 2, table.h / 2 + 100, 160);
 			fireworks.show(table.w, table.h);
 		}
@@ -269,15 +225,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || toss.active();
 	}
 
-	// ------------------------------------------------------------ input
-
 	@Override
 	public void show() {
 		super.show();
 		game.audio().startMusic();
 	}
 
-	/** The name shown for a seat: "You", or the computer player sitting there. */
 	@Override
 	public String name(int seat) {
 		return seat == HUMAN ? "You" : players.at(seat).name;
@@ -288,7 +241,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		flow.seat(ids, streams.bots);
 	}
 
-	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */
 	private void save() {
 		if (isGameOver()) {
 			game.records().clearSavedGame();
@@ -301,11 +253,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	public void pause() {
 		save();
 		if (you.menuOnPause()) {
-			input.openMenu(); // leaving the app (home button, a call): come back to the menu
+			input.openMenu();
 		}
 	}
-
-	// touches go to TableInput
 
 	@Override
 	protected void touchDown(float x, float y) {
@@ -321,11 +271,10 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	protected void touchUp(float x, float y) {
 		if (!input.touchUp(x, y)) {
-			super.touchUp(x, y); // a tap, unless it was a swipe
+			super.touchUp(x, y);
 		}
 	}
 
-	/** A tap at world position (x, y). Autoplay taps come through here too. */
 	@Override
 	protected void tap(float x, float y) {
 		input.tap(x, y);
@@ -336,8 +285,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		input.back();
 	}
 
-	// ------------------------------------------- what your taps do, as TableActions
-
 	@Override
 	public boolean bid(int b) {
 		return flow.bid(b);
@@ -346,7 +293,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public void play(Card c) {
 		input.clearTouch();
-		flow.play(c); // (it flies to the trick from wherever its sprite is)
+		flow.play(c);
 	}
 
 	@Override
@@ -384,8 +331,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		game.showTitle();
 	}
 
-	// ------------------------------------------------------------- draw
-
 	@Override
 	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
@@ -393,12 +338,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		table.resize(w, h);
 		batch.draw(assets.table, 0, 0, w, h);
 		drawTable();
-		fireworks.draw(batch, assets.glow); // behind the panels, so the scores stay readable
+		fireworks.draw(batch, assets.glow);
 		if (!input.menuOpen()) {
 			overlays.drawMenuButton();
 			drawOverlay();
 		}
-		toss.draw(batch); // over everything else as the cards fall away (the scores wait until they've gone)
+		toss.draw(batch);
 		sparks.draw(batch, assets.glow);
 		if (input.menuOpen()) {
 			overlays.drawMenu();
@@ -408,7 +353,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		batch.end();
 	}
 
-	/** The counters, trump, players' panels, then every card, and the deck while it's shuffled. */
 	private void drawTable() {
 		drawing.tally();
 		drawing.bidTracker();
@@ -427,14 +371,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 	}
 
-	/** Whatever the moment shows over the table: your bid panel, the hand's end, the scores. */
 	private void drawOverlay() {
 		StateView.of(flow.state()).drawOverlay(this, overlays, recorder.newHighScore());
 	}
-
-
-
-	// ----------------------------------------------------------- helpers
 
 	@Override
 	public String stateTag() {

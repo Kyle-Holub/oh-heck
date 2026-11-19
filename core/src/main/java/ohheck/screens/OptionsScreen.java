@@ -21,33 +21,24 @@ import ohheck.ui.MenuChrome;
 import ohheck.ui.Palette;
 import ohheck.ui.Wording;
 
-/**
- * The settings, saved on the device: the game (difficulty, hand sizes, speed) on the left;
- * sound and display on the right, and under them Learn (How to play, and the Roster of players).
- */
 public class OptionsScreen extends BaseScreen implements TourStop {
 
-	/** The header bar, Back and section headings. */
 	private final MenuChrome chrome = new MenuChrome(paint);
 
 	private static final float COLUMN_W = 440, COLUMN_GAP = 34, SECTION_GAP = 40;
 
 	private final Rectangle backButton = new Rectangle();
-	/** Each setting's note on who you'll meet (from the matchmaking odds), made once rather than every frame. */
 	private final Map<Difficulty, String> notes = new EnumMap<Difficulty, String>(Difficulty.class);
 	{
 		for (Difficulty d : Difficulty.values()) {
 			notes.put(d, Wording.tableDescription(d));
 		}
 	}
-	/** The game speeds' names, {@link Settings#SLOW} to {@link Settings#FASTEST}. */
 	private static final String[] SPEEDS = { "Slow", "Medium", "Fast" };
 
-	/** One setting below the difficulty: its name, its value on a button, and what a tap on the row does. */
 	private static final class Row {
 		final String label;
 		final Supplier<String> value;
-		/** Whether the value is shown lit (on) or greyed (off). */
 		final BooleanSupplier on;
 		final Runnable tap;
 		final Rectangle bounds = new Rectangle();
@@ -59,28 +50,24 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 			this.tap = tap;
 		}
 
-		/** A row that's always lit, like "Game speed" or "How to play". */
 		Row(String label, Supplier<String> value, Runnable tap) {
 			this(label, value, () -> true, tap);
 		}
 
-		/** An On/Off switch. */
 		static Row toggle(String label, BooleanSupplier on, Runnable flip) {
 			return new Row(label, () -> on.getAsBoolean() ? "On" : "Off", on, flip);
 		}
 	}
 
-	/** The game column (under the difficulty), the sound and display column, and Learn under it. */
 	private final List<Row> gameRows = new ArrayList<Row>(), displayRows = new ArrayList<Row>(),
 			learnRows = new ArrayList<Row>();
 	{
 		final Settings s = game.settings();
-		// (both take effect from the next new game)
 		gameRows.add(new Row("Hand progression", () -> s.handOrder().label(), () -> s.setHandOrder(s.handOrder().flipped())));
 		gameRows.add(new Row("Game speed", () -> SPEEDS[s.speed()], () -> s.setSpeed((s.speed() + 1) % SPEEDS.length)));
 		displayRows.add(Row.toggle("Music", s::music, () -> {
 			s.setMusic(!s.music());
-			game.audio().startMusic(); // starts or stops it to match
+			game.audio().startMusic();
 		}));
 		displayRows.add(Row.toggle("Sound effects", s::sound, () -> {
 			s.setSound(!s.sound());
@@ -154,10 +141,7 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 		row.bounds.set(x, y, rw, rh);
 	}
 
-	// ---- difficulty: a slider with three stops, its knob the level's badge
-
 	private static final float ROW_H = 40, ROW_GAP = 6, DIFFICULTY_H = 112, KNOB = 34;
-	/** Who you'll likely meet at each setting, shown under the slider. */
 	private static final Color TRACK = new Color(0.36f, 0.29f, 0.21f, 1f);
 	private final Rectangle slider = new Rectangle();
 	private float stop0, stopStep;
@@ -169,12 +153,11 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 		BitmapFont f = paint.serif(1.6f);
 		f.setColor(Palette.CREAM);
 		f.draw(batch, "Difficulty", x + 24, y + DIFFICULTY_H - 18);
-		// the track, gold up to the chosen stop
 		float x0 = x + 214, x1 = x + rw - 36, ty = y + 84;
 		stop0 = x0;
 		stopStep = (x1 - x0) / (Difficulty.values().length - 1);
 		slider.set(x0 - 30, y + 48, x1 - x0 + 60, DIFFICULTY_H - 48);
-		int level = s.difficulty().ordinal(); // (the slider's stop)
+		int level = s.difficulty().ordinal();
 		float knobX = x0 + level * stopStep;
 		paint.rect(x0, ty - 2, x1 - x0, 4, TRACK);
 		paint.rect(x0, ty - 2, knobX - x0, 4, Palette.GOLD);
@@ -188,7 +171,7 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 		BitmapFont n = paint.ui(0.85f);
 		String note = notes.get(s.difficulty());
 		glyphs.setText(n, note);
-		if (glyphs.width > rw - 48) { // keep it on one line inside the row
+		if (glyphs.width > rw - 48) {
 			n = paint.ui(0.85f * (rw - 48) / glyphs.width);
 		}
 		n.setColor(Palette.MUTED);
@@ -197,7 +180,6 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 		batch.draw(assets.levelBadge[level], knobX - KNOB / 2, ty - KNOB / 2, KNOB, KNOB);
 	}
 
-	/** Moves the slider to the stop nearest x. */
 	private void slideTo(float x) {
 		int n = Difficulty.values().length;
 		Difficulty level = Difficulty.values()[Math.max(0, Math.min(n - 1, Math.round((x - stop0) / stopStep)))];
@@ -241,7 +223,7 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 		}
 		for (List<Row> rows : java.util.Arrays.asList(gameRows, displayRows, learnRows)) {
 			for (Row row : rows) {
-				if (row.bounds.contains(x, y)) { // (empty until drawn)
+				if (row.bounds.contains(x, y)) {
 					row.tap.run();
 					return;
 				}
@@ -251,7 +233,7 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 
 	@Override
 	protected void back() {
-		game.back(); // to the title screen or the paused game, whichever opened it
+		game.back();
 	}
 
 	@Override

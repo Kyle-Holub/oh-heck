@@ -11,9 +11,9 @@ public class GameEndTest {
 	public void aWinIsCardsThenFireworksThenScores() {
 		GameEnd e = new GameEnd();
 		e.start(true);
-		assertFalse(e.update(0.5f, false)); // cards still falling
-		assertFalse(e.resultsShown(5f)); // however long that takes, no scores yet
-		assertTrue(e.update(2.0f, true)); // the last card gone: fireworks, once
+		assertFalse(e.update(0.5f, false));
+		assertFalse(e.resultsShown(5f));
+		assertTrue(e.update(2.0f, true));
 		assertFalse(e.update(2.1f, true));
 		assertFalse(e.resultsShown(2.0f + GameEnd.FIREWORKS_FIRST - 0.01f));
 		assertTrue(e.resultsShown(2.0f + GameEnd.FIREWORKS_FIRST));

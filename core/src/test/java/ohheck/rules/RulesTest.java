@@ -19,8 +19,6 @@ import ohheck.players.Difficulty;
 
 public class RulesTest {
 
-	// ---- Deck ----
-
 	@Test
 	public void deckHas52DistinctCards() {
 		Deck d = Deck.shuffled(new Random(1));
@@ -48,8 +46,6 @@ public class RulesTest {
 		assertEquals("ACE of SPADES", c("AS").toString());
 	}
 
-	// ---- Hands ----
-
 	@Test
 	public void eightHandsOfOneToEightCardsEitherWay() {
 		assertEquals(8, Rules.numberOfHands());
@@ -58,8 +54,6 @@ public class RulesTest {
 			assertEquals(8 - i, HandOrder.DOWN.handSize(i));
 		}
 	}
-
-	// ---- Trick winner ----
 
 	@Test
 	public void highestOfLeadSuitWins() {
@@ -92,8 +86,6 @@ public class RulesTest {
 		assertEquals(1, RuleSet.STANDARD.trickWinner(cards("5C 7C AH"), Suit.CLUBS));
 	}
 
-	// ---- Following suit ----
-
 	@Test
 	public void mustFollowSuitWhenAble() {
 		List<Card> hand = cards("2H KS 9H 4D");
@@ -118,11 +110,8 @@ public class RulesTest {
 		assertFalse(RuleSet.STANDARD.isLegalPlay(cards("2H"), c("3H"), null));
 	}
 
-	// ---- Bidding ----
-
 	@Test
 	public void dealerCannotMakeTotalEqualTricks() {
-		// 5 cards, others bid 3 in total: dealer may not bid 2
 		assertFalse(RuleSet.STANDARD.isLegalBid(2, 5, 3, true));
 		assertTrue(RuleSet.STANDARD.isLegalBid(1, 5, 3, true));
 		assertTrue(RuleSet.STANDARD.isLegalBid(3, 5, 3, true));
@@ -145,8 +134,6 @@ public class RulesTest {
 		}
 	}
 
-	// ---- Scoring ----
-
 	@Test
 	public void makingBidScoresTenPlusTwoPerTrick() {
 		assertEquals(10, Rules.score(0, 0));
@@ -166,7 +153,6 @@ public class RulesTest {
 		assertEquals(Arrays.asList(c("10H"), c("JC")), cards("10H JC"));
 	}
 
-	/** A variant: twice the points for a made bid, and only five hands. Overriding is all it takes. */
 	private static final RuleSet DOUBLE_SHORT = new RuleSet("double-short") {
 		@Override
 		public int numberOfHands() {
@@ -196,7 +182,7 @@ public class RulesTest {
 				m.nextHand();
 			}
 		}
-		assertEquals(5, hands); // (the last nextHand ends the game)
+		assertEquals(5, hands);
 		assertEquals("1 to 8", HandOrder.UP.label());
 		assertEquals("8 to 1", HandOrder.DOWN.label());
 	}

@@ -13,10 +13,9 @@ import ohheck.ui.MenuChrome;
 import ohheck.ui.Palette;
 import ohheck.ui.Scroller;
 
-/** The twelve computer players you can meet: name, level and habit, in a list that scrolls. */
+/** The roster of computer players. */
 public class PlayersScreen extends BaseScreen implements TourStop {
 
-	/** The header bar, Back and section headings. */
 	private final MenuChrome chrome = new MenuChrome(paint);
 
 	private static final float ROW_H = 62, ROW_GAP = 6, COLUMNS_H = 26, BADGE = 26;
@@ -29,7 +28,6 @@ public class PlayersScreen extends BaseScreen implements TourStop {
 		return ScreenshotTour.Stop.ROSTER;
 	}
 
-	/** The end of the list (for the screenshot run, which looks at both ends). */
 	@Override
 	public void secondHalf(boolean on) {
 		scroller.scrollTo(on ? 9999 : 0);
@@ -68,16 +66,15 @@ public class PlayersScreen extends BaseScreen implements TourStop {
 		layoutColumns(x, listW);
 		float y = listTop + scroller.offset();
 		for (Player p : Player.ALL) {
-			if (y - ROW_H < h && y > 0) { // only what's on screen
+			if (y - ROW_H < h && y > 0) {
 				drawRow(p, x, y, listW);
 			}
 			y -= ROW_H + ROW_GAP;
 		}
-		drawColumnHeads(); // drawn last, so the list scrolls under them
+		drawColumnHeads();
 		chrome.header("Roster", backButton, w, h);
 		batch.end();
 	}
-	// the columns: name, level, style, then the habit taking the rest of the row
 	private float colName, colLevel, colStyle, colTrait, traitW;
 
 	private void layoutColumns(float x, float listW) {
@@ -88,7 +85,6 @@ public class PlayersScreen extends BaseScreen implements TourStop {
 		traitW = x + listW - 20 - colTrait;
 	}
 
-	/** One player's row, its top at y. */
 	private void drawRow(Player p, float x, float y, float listW) {
 		paint.frame(assets.panel, x, y - ROW_H, listW, ROW_H);
 		float mid = y - ROW_H / 2;
@@ -110,7 +106,6 @@ public class PlayersScreen extends BaseScreen implements TourStop {
 		t.draw(batch, p.trait, colTrait, mid + glyphs.height / 2, traitW, Align.left, true);
 	}
 
-	/** The bar under the header with the column names. */
 	private void drawColumnHeads() {
 		paint.rect(0, h - MenuChrome.HEADER_H - COLUMNS_H - 8, w, COLUMNS_H + 8, MenuChrome.HEADER);
 		BitmapFont c = paint.ui(0.95f);
@@ -121,7 +116,6 @@ public class PlayersScreen extends BaseScreen implements TourStop {
 		c.draw(batch, "Style", colStyle, cy);
 		c.draw(batch, "Habit", colTrait, cy);
 	}
-
 
 	@Override
 	protected void tap(float x, float y) {

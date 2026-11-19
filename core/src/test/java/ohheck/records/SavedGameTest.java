@@ -28,7 +28,7 @@ public class SavedGameTest {
 
 	@Test
 	public void olderSavesTakeTheTableFromTheirOldKeys() {
-		String old = new Match(4, new Random(3), 1).save(); // just the match, as before
+		String old = new Match(4, new Random(3), 1).save();
 		SavedGame back = SavedGame.decode(old, new Random(1), Difficulty.NORMAL, Seating.of(4, 6, 1));
 		assertEquals(Difficulty.NORMAL, back.level());
 		assertEquals(Seating.of(4, 6, 1), back.players());

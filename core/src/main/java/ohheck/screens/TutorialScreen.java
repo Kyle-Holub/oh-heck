@@ -10,14 +10,9 @@ import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 
-/**
- * How to play, as a tutorial: thirteen short steps, each a little scene at the table that
- * plays out and then loops, with a caption beneath. A tap moves on. It opens the first
- * time you start a game (with Skip), and from Options (with Back).
- */
+/** How to play: a step per scene, each with a caption; a tap moves on. */
 public class TutorialScreen extends BaseScreen implements TourStop {
 
-	/** A step: its heading, caption, its scene, how long that runs, and whether it then plays again. */
 	private static final class Step {
 		final String heading, caption;
 		final Runnable scene;
@@ -40,10 +35,8 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 	private static final String HANDS = TutorialStage.HANDS;
 	private static final float CAPTION_H = TutorialStage.CAPTION_H;
 
-	/** The scenes, and what they're drawn with. */
 	private final TutorialScenes scenes = new TutorialScenes(paint, game.settings());
 
-	/** The steps in order: to add one, write its scene in TutorialScenes and list it here. */
 	private final Step[] steps = {
 			new Step("Welcome", "Oh Heck is about calling your shots: guess how many tricks you'll win, then win exactly that many.",
 					scenes::welcome, 4f, false),
@@ -68,11 +61,9 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 					scenes::scoring, 9f),
 			new Step("Ready", "Highest total after " + HANDS + " hands wins. Good luck!", scenes::ready, 5f, false) };
 
-	/** After a step's scene has run, it holds this long before playing again. */
 	private static final float HOLD = 1.6f;
 
 	private final Rectangle cornerButton = new Rectangle(), doneButton = new Rectangle();
-	/** Opened before your first game (Skip, then the game) or from Options (Back). */
 	private boolean firstRun;
 	private int step;
 	private final StringBuilder sb = new StringBuilder();
@@ -81,7 +72,6 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		super(game);
 	}
 
-	/** Starts from the first step; firstRun if it's before your first game. */
 	public void open(boolean firstRun) {
 		this.firstRun = firstRun;
 		step = 0;
@@ -93,7 +83,7 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		float dt = step * game.options().speed;
 		shownFor += dt;
 		Step s = steps[this.step];
-		scenes.advance(dt, s.length, s.loops, HOLD); // (the first and last play once)
+		scenes.advance(dt, s.length, s.loops, HOLD);
 	}
 
 	@Override
@@ -110,7 +100,6 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		batch.end();
 	}
 
-	/** The tour times each step by its own clock. */
 	@Override
 	protected float tourClock() {
 		return scenes.clock.shown();
@@ -153,7 +142,7 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 	protected void tap(float x, float y) {
 		if (cornerButton.contains(x, y)) {
 			if (firstRun) {
-				finish(); // skip: straight to the game
+				finish();
 			} else {
 				game.back();
 			}
@@ -175,8 +164,6 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 	public String stateTag() {
 		return "tutorial:" + (step + 1);
 	}
-
-	// ------------------------------------------------------------ frame
 
 	private void header() {
 		BitmapFont f = paint.serif(1.3f);

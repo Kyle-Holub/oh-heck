@@ -1,12 +1,8 @@
 package ohheck.table;
 
-/**
- * The pause menu's choices, top to bottom: each one's label and what it does. The first is
- * drawn as the main button. A new choice is one more constant.
- */
+/** The pause menu's choices. */
 enum MenuItem {
 	RESUME("Resume"),
-	/** Options, over the table: the menu is still open when you come back. */
 	OPTIONS("Options") {
 		@Override
 		boolean closesMenu() {
@@ -18,7 +14,6 @@ enum MenuItem {
 			act.showOptions();
 		}
 	},
-	/** A fresh table, at the difficulty now chosen in Options. */
 	NEW_GAME("New game") {
 		@Override
 		void choose(TableActions act) {
@@ -32,7 +27,6 @@ enum MenuItem {
 		}
 	};
 
-	/** Every choice, top to bottom (made once: values() copies the array each call). */
 	static final MenuItem[] ALL = values();
 
 	final String label;
@@ -41,12 +35,10 @@ enum MenuItem {
 		this.label = label;
 	}
 
-	/** Whether choosing it closes the menu (true unless overridden). */
 	boolean closesMenu() {
 		return true;
 	}
 
-	/** What it does beyond closing the menu (nothing, unless overridden). */
 	void choose(TableActions act) {
 	}
 }

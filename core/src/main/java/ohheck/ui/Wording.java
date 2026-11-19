@@ -12,20 +12,14 @@ import ohheck.players.Player;
 import ohheck.records.Stats;
 import ohheck.rules.Suit;
 
-/**
- * The game's sentences, built from what happened: who won, why a tap didn't count, how a hand
- * went, the statistics rows. Kept out of the drawing code so the grammar is in one place and
- * tested (WordingTest). No libGDX.
- */
+/** The game's sentences. */
 public final class Wording {
 
-	/** Shown for a statistic with nothing to show yet. */
 	static final String NONE = "—";
 
 	private Wording() {
 	}
 
-	/** Players at each level, in the Options note: "some experts", "the odd expert", "never an expert". */
 	private static final Map<Difficulty, String[]> LEVEL_WORDS = new EnumMap<Difficulty, String[]>(Difficulty.class);
 	static {
 		LEVEL_WORDS.put(Difficulty.EASY, new String[] { "easy-going players", "easy-going player", "a beginner" });
@@ -33,16 +27,15 @@ public final class Wording {
 		LEVEL_WORDS.put(Difficulty.HARD, new String[] { "experts", "expert", "an expert" });
 		for (Difficulty d : Difficulty.values()) {
 			if (!LEVEL_WORDS.containsKey(d)) {
-				throw new IllegalStateException("No words for " + d); // (a new level needs its words here)
+				throw new IllegalStateException("No words for " + d);
 			}
 		}
 	}
 	private static final int MANY = 0, ODD_ONE = 1, NEVER = 2;
 
-	/** Who you'll meet at this setting, in a line, from the matchmaking odds (the Options note). */
 	public static String tableDescription(Difficulty setting) {
 		List<Difficulty> byChance = new ArrayList<Difficulty>(Arrays.asList(Difficulty.values()));
-		byChance.sort((x, y) -> Double.compare(setting.chanceOf(y), setting.chanceOf(x))); // (stable: ties keep level order)
+		byChance.sort((x, y) -> Double.compare(setting.chanceOf(y), setting.chanceOf(x)));
 		StringBuilder sb = new StringBuilder("Mostly ").append(LEVEL_WORDS.get(byChance.get(0))[MANY]);
 		for (Difficulty l : byChance.subList(1, byChance.size())) {
 			double p = setting.chanceOf(l);
@@ -58,7 +51,6 @@ public final class Wording {
 		return sb.append('.').toString();
 	}
 
-	/** "You win the game!", "Rupert wins the game!", "You and Rupert tie!", "You, Rupert and Oswald tie!" */
 	public static String winners(List<String> names, boolean youAlone) {
 		if (names.size() == 1) {
 			return names.get(0) + (youAlone ? " win the game!" : " wins the game!");
@@ -66,7 +58,6 @@ public final class Wording {
 		return list(names) + " tie!";
 	}
 
-	/** "A", "A and B", "A, B and C". */
 	static String list(List<String> names) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < names.size(); i++) {
@@ -78,27 +69,22 @@ public final class Wording {
 		return sb.toString();
 	}
 
-	/** Under the bid buttons, when you're the dealer. */
 	public static String dealerCantBid(int forbidden) {
 		return "As dealer you can't bid " + forbidden;
 	}
 
-	/** When you tap the forbidden bid. */
 	public static String dealerCantBid(int bid, int tricks) {
 		return "As dealer you can't bid " + bid + ": the bids would add up to " + tricks;
 	}
 
-	/** When you tap a card that doesn't follow suit. */
 	public static String mustFollow(Suit led) {
 		return "You must follow suit: play a " + singular(led);
 	}
 
-	/** By each player at the end of a hand. */
 	public static String handResult(boolean made) {
 		return made ? "Bid tricks!" : "Set!";
 	}
 
-	/** "1st", "2nd", "3rd", "4th"... (made once each: places are drawn every frame). */
 	public static String ordinal(int n) {
 		if (n >= 0 && n < ORDINALS.length) {
 			if (ORDINALS[n] == null) {
@@ -111,7 +97,6 @@ public final class Wording {
 
 	private static final String[] ORDINALS = new String[21];
 
-	/** "Hand 3 results" (made once each). */
 	public static String handResults(int hand) {
 		if (hand >= 0 && hand < HAND_RESULTS.length) {
 			if (HAND_RESULTS[hand] == null) {
@@ -124,7 +109,6 @@ public final class Wording {
 
 	private static final String[] HAND_RESULTS = new String[64];
 
-	/** "heart", "spade"... */
 	static String singular(Suit suit) {
 		String n = suit.name().toLowerCase(Locale.US);
 		return n.substring(0, n.length() - 1);
@@ -134,7 +118,6 @@ public final class Wording {
 		return Math.round(share * 100) + "%";
 	}
 
-	/** The Statistics tab's Games panel: a label and a value per row. */
 	public static String[][] gameRows(Stats.Totals t) {
 		boolean g = t.anyGames();
 		return new String[][] {
@@ -147,7 +130,6 @@ public final class Wording {
 				{ "Nemesis", t.nemesis() >= 0 ? Player.byId(t.nemesis()).name : NONE } };
 	}
 
-	/** The Statistics tab's Hands panel. */
 	public static String[][] handRows(Stats.Totals t) {
 		boolean hd = t.anyHands();
 		int misses = t.over + t.under;

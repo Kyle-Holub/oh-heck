@@ -74,7 +74,7 @@ public class PlayerTest {
 			Random rng = new Random(p.id);
 			Bot[] bots = { p.bot(rng), p.bot(rng), p.bot(rng), p.bot(rng) };
 			Match m = new Match(4, rng, 0);
-			while (m.phase() != Match.Phase.GAME_OVER) { // Match throws on anything illegal
+			while (m.phase() != Match.Phase.GAME_OVER) {
 				int s = m.currentSeat();
 				if (m.phase() == Match.Phase.BIDDING) {
 					m.placeBid(s, bots[s].chooseBid(m.view(s)));

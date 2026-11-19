@@ -16,10 +16,10 @@ public class StatsTest {
 	public void handsCountForTheirLevelAndForAll() {
 		Stats s = new Stats();
 		s.startGame();
-		s.countHand(0, Difficulty.HARD, 1, 1, Rules.score(1, 1)); // made
-		s.countHand(1, Difficulty.HARD, 0, 0, Rules.score(0, 0)); // made zero
-		s.countHand(2, Difficulty.HARD, 2, 3, Rules.score(2, 3)); // over
-		s.countHand(3, Difficulty.HARD, 3, 1, Rules.score(3, 1)); // under
+		s.countHand(0, Difficulty.HARD, 1, 1, Rules.score(1, 1));
+		s.countHand(1, Difficulty.HARD, 0, 0, Rules.score(0, 0));
+		s.countHand(2, Difficulty.HARD, 2, 3, Rules.score(2, 3));
+		s.countHand(3, Difficulty.HARD, 3, 1, Rules.score(3, 1));
 		for (int which : new int[] { Difficulty.HARD.ordinal(), Stats.ALL }) {
 			Stats.Totals t = s.totals(which);
 			assertEquals(4, t.hands);
@@ -61,14 +61,14 @@ public class StatsTest {
 		}
 		Stats.Totals t = s.totals(Stats.ALL);
 		assertEquals(4, t.games);
-		assertEquals(3, t.wins); // a tie for first is a win
+		assertEquals(3, t.wins);
 		assertEquals(1, t.streak);
 		assertEquals(2, t.bestStreak);
 		assertEquals(70, t.bestFinal);
 		assertEquals(20, t.worstFinal);
 		assertEquals(50.0, t.averageFinal(), 1e-9);
 		assertEquals(4, t.perfect);
-		assertEquals(4, t.nemesis()); // players 4 and 9 each finished above you once; the first wins a tie
+		assertEquals(4, t.nemesis());
 		assertEquals(4, Stats.decode(s.encode()).totals(Stats.ALL).nemesis());
 	}
 
@@ -102,7 +102,6 @@ public class StatsTest {
 		assertEquals(1, back.totals(Difficulty.HARD.ordinal()).made);
 		assertEquals(9, back.totals(Stats.ALL).nemesis());
 		assertEquals(saved, back.encode());
-		// a number this build doesn't know (from a newer one) is passed over
 		assertEquals(1, Stats.decode(saved + "all.someday=5\n").totals(Stats.ALL).games);
 	}
 
@@ -110,7 +109,7 @@ public class StatsTest {
 	public void readsTheFirstBuildsNumberedLines() {
 		StringBuilder line = new StringBuilder("3,2,1,2,0,150,60,40,24,15,4,3,5,4,30,20,-10");
 		for (int id = 0; id < 12; id++) {
-			line.append(',').append(id == 7 ? 2 : 0); // Oswald (7) beat you twice
+			line.append(',').append(id == 7 ? 2 : 0);
 		}
 		Stats s = Stats.decode("game=0,0,1\n3=" + line + "\n");
 		Stats.Totals t = s.totals(Stats.ALL);
@@ -118,13 +117,11 @@ public class StatsTest {
 		assertEquals(150 / 3.0, t.averageFinal(), 1e-9);
 		assertEquals(-10, t.worstHand);
 		assertEquals(7, t.nemesis());
-		// the very first, with three counts by seat: the counts are dropped, the rest kept
 		Stats seats = Stats.decode("game=0,0,1\n3=3,2,1,2,0,150,60,40,24,15,4,3,5,4,30,20,-10,1,0,0\n");
 		assertEquals(3, seats.totals(Stats.ALL).games);
 		assertEquals(-1, seats.totals(Stats.ALL).nemesis());
 	}
 
-	/** Every number in Totals is saved, and comes back. */
 	@Test
 	public void everyStatisticIsSavedAndReadBack() throws Exception {
 		java.util.List<String> saved = Stats.fieldNames();

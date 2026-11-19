@@ -14,18 +14,11 @@ import ohheck.rules.Match;
 import ohheck.rules.TableView;
 
 /**
- * Experiments on the computer players, for when changing them: who beats whom, how well
- * each level bids by round, and the learned bidding table.
- * <p>
- * Games are played in duplicate: each deal is played four times with the player under
- * test in a different seat each time, so who got the good cards cancels out and what's
- * left is strategy. With 400 games a win rate is good to about 2 points either way.
- * <p>
- * Run through Gradle (see core/build.gradle), e.g. {@code ./gradlew core:arena -Parena="vs 400"}.
+ * Bots against bots, for measuring AI changes, and the learning that generates BidTable. Deals
+ * are played in duplicate, rotating seats, so luck cancels out.
  */
 public final class Arena {
 
-	/** Makes a fresh computer player (a new one per seat per game). */
 	interface Maker {
 		Bot make(long seed);
 	}
@@ -39,7 +32,6 @@ public final class Arena {
 		};
 	}
 
-	/** What the player under test did. */
 	static final class Stats {
 		long games, hands, exact;
 		double points, miss, wins;
@@ -47,7 +39,6 @@ public final class Arena {
 		final double[] pointsBy = new double[9], expectedBy = new double[9], wonBy = new double[9];
 	}
 
-	/** One game with the tested player in seat {@code seat} and the field everywhere else. */
 	static void game(long deal, int seat, Maker test, Maker field, Stats st) {
 		Bot[] bots = new Bot[4];
 		for (int i = 0; i < 4; i++) {
@@ -97,7 +88,6 @@ public final class Arena {
 		}
 	}
 
-	/** {@code deals} deals, each played with the tested player in all four seats. */
 	static Stats run(int deals, Maker test, Maker field) {
 		Stats st = new Stats();
 		for (int d = 0; d < deals; d++) {
@@ -125,24 +115,15 @@ public final class Arena {
 		}
 	}
 
-	// ---- learning the bidding table
-
-	/** Smoothing: a detailed cell counts as this many games' worth of the coarse estimate. */
 	private static final double PRIOR = 40;
 
-	/**
-	 * Plays {@code games} games with Normal players and counts, for every card dealt, whether
-	 * it took a trick, by: hand size, trump or not, rank, how many cards of its suit its
-	 * holder had (1, 2, 3 or more), and its holder's place in the bidding (first to bid
-	 * leads the first trick). Writes the result to core/src/main/java/ohheck/players/BidTable.java.
-	 */
 	static void learn(int games) throws IOException {
 		double[][][] won = new double[9][2][13], dealt = new double[9][2][13];
 		double[][][][] fineWon = new double[9][2][13][BidTable.CONTEXTS], fineDealt = new double[9][2][13][BidTable.CONTEXTS];
 		Bot bot = Bot.of(Difficulty.NORMAL, new Random(1));
 		for (int g = 0; g < games; g++) {
 			Match m = Match.random(4, new Random(900000 + g));
-			Map<Card, int[]> dealtAs = new HashMap<Card, int[]>(); // card -> {trump?, context}
+			Map<Card, int[]> dealtAs = new HashMap<Card, int[]>();
 			while (m.phase() != Match.Phase.GAME_OVER) {
 				if (m.phase() == Match.Phase.HAND_OVER) {
 					m.nextHand();
@@ -254,7 +235,6 @@ public final class Arena {
 		} else if (what.equals("learn")) {
 			learn(n);
 		} else if (what.equals("players")) {
-			// each of the twelve against three plain Normal players: do the levels still rank, styles and all?
 			for (final Player p : Player.ALL) {
 				report(p.name + " (" + p.level.label + ", " + p.style.label + ") vs 3 Normal", run(n, new Maker() {
 					@Override

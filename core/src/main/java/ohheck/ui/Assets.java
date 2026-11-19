@@ -13,64 +13,37 @@ import com.badlogic.gdx.utils.Disposable;
 import ohheck.players.Difficulty;
 import ohheck.rules.Card;
 
-/** Textures and fonts shared by the screens. */
 public final class Assets implements Disposable {
 
-	/** A card's size in world units (the original game's pixels). */
 	public static final int CARD_W = 73, CARD_H = 98;
-	/** A card's size in the high-resolution sheet drawn by tools/make_art.py (3x). */
 	private static final int SHEET_W = 219, SHEET_H = 294;
-	/**
-	 * Transparent margin around each card in the blurred sheet, in full-size
-	 * sheet pixels (the blurred sheet is stored at half size; only the ratio
-	 * to the card matters).
-	 */
 	public static final int BLUR_PAD = 24;
 
-	/**
-	 * The fonts are baked large (see tools/make_fonts.py) and drawn scaled
-	 * down. Multiply a size factor by these to get the font scale: a factor of
-	 * 1 gives roughly 16 world units.
-	 */
 	public static final float UI_BASE = 16f / 42f, SERIF_BASE = 16f / 52f;
 
 	public final Texture table;
 	public final Texture cardSheet, cardBack, cardSheetBlur, cardBackBlur;
-	/** Soft shadow under a card: the card covers the middle 120x160 of 160x200. */
 	public final Texture shadow;
-	/** A round white glow, tinted when drawn (sparkles). */
 	public final Texture glow;
-	/** Rounded frames: panels, the current player's panel, a panel still waiting to bid, and buttons. */
 	public final NinePatch panel, panelTurn, panelWait, button, buttonAlt, buttonOff;
 	public final Texture titleText;
-	/** Title art from the original game. */
 	public final Texture bidTricksText, setText, trickWonText, makeBidText, gameOverText;
-	/** The bid tracker's cards: a trick not bid on yet, a trick bid, a bid beyond the hand. */
 	public final Texture bidOpen, bidTaken, bidOver;
-	/** Difficulty badges, indexed by Difficulty.ordinal(): one, two or three spades on a chip. */
 	public final Texture[] levelBadge = new Texture[Difficulty.values().length];
-	/** Player bar icons: dealer button, trick, trick over the bid, a bid of zero, no bid yet. */
 	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon, waitingIcon;
-	/** Gold bid numerals 0-9 (the 0 struck through), one strip; see {@link #digit(int)}. */
 	public final Texture bidDigits;
 	private final TextureRegion[] digits = new TextureRegion[10];
-	/** A 1x1 white texture, tinted to draw panels and buttons. */
 	public final Texture white;
-	/** A soft-edged rounded bar, for strokes that stay smooth when rotated (the tally marks). */
 	public final Texture stroke;
-	/** Sans-serif text for the table and panels. */
 	public final BitmapFont font;
-	/** Serif text for titles and menus, like the original game. */
 	public final BitmapFont serif;
 
 	private final TextureRegion[][] faces = new TextureRegion[4][13];
 	private final TextureRegion back, backBlur;
 	private final TextureRegion[][] blurred = new TextureRegion[4][13];
 
-	/** Everything loaded here, released together in {@link #dispose()}: each loader adds what it makes. */
 	private final Array<Disposable> owned = new Array<Disposable>();
 
-	/** Registers something to release with the rest, and hands it back. */
 	private <T extends Disposable> T own(T d) {
 		owned.add(d);
 		return d;
@@ -117,16 +90,13 @@ public final class Assets implements Disposable {
 		font = bitmapFont("ui");
 		serif = bitmapFont("serif");
 	}
-	/** The bid numerals 0-9, side by side in one image. */
 	private void cutDigits() {
 		for (int i = 0; i < 10; i++) {
 			digits[i] = new TextureRegion(bidDigits, i * DIGIT_W, 0, DIGIT_W, DIGIT_H);
 		}
 	}
 
-	/** Each card's face from the sheets, sharp and blurred (rows by suit, columns by rank). */
 	private void cutCards() {
-		// the blurred sheet is stored at reduced size: take its cells from its own dimensions
 		int bw = cardSheetBlur.getWidth() / 13, bh = cardSheetBlur.getHeight() / 4;
 		for (int suit = 0; suit < 4; suit++) {
 			for (int rank = 0; rank < 13; rank++) {
@@ -136,7 +106,6 @@ public final class Assets implements Disposable {
 		}
 	}
 
-	/** A single white pixel, for drawing plain rectangles. */
 	private static Texture whitePixel() {
 		Pixmap p = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
 		p.setColor(Color.WHITE);
@@ -146,16 +115,14 @@ public final class Assets implements Disposable {
 		return t;
 	}
 
-
-	/** A capsule w wide and h tall with anti-aliased edges and a little transparent margin. */
 	private static Texture strokeTexture(int w, int h) {
 		Pixmap p = new Pixmap(w, h, Pixmap.Format.RGBA8888);
 		p.setBlending(Pixmap.Blending.None);
-		float r = w / 2f - 2f; // radius, leaving a 2px clear border so filtering softens the edge
+		float r = w / 2f - 2f;
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
 				float px = x + 0.5f - w / 2f, py = y + 0.5f;
-				float cy = Math.max(r + 2f, Math.min(h - r - 2f, py)); // nearest point on the centre line
+				float cy = Math.max(r + 2f, Math.min(h - r - 2f, py));
 				float d = (float) Math.sqrt(px * px + (py - cy) * (py - cy));
 				float a = Math.max(0f, Math.min(1f, r - d + 0.5f));
 				p.drawPixel(x, y, Color.rgba8888(1f, 1f, 1f, a));
@@ -175,7 +142,6 @@ public final class Assets implements Disposable {
 		return back;
 	}
 
-	/** Blurred versions, with a margin around the card (see {@link #blurMarginX()}). */
 	public TextureRegion blurredFace(Card c) {
 		return blurred[c.suit().ordinal()][c.rank().ordinal()];
 	}
@@ -184,7 +150,6 @@ public final class Assets implements Disposable {
 		return backBlur;
 	}
 
-	/** Fraction of a blurred region's width taken by the margin on each side. */
 	public static float blurMarginX() {
 		return BLUR_PAD / (float) (SHEET_W + 2 * BLUR_PAD);
 	}
@@ -207,10 +172,8 @@ public final class Assets implements Disposable {
 		return f;
 	}
 
-	/** One cell of the bid numerals, in pixels; a numeral is drawn at this aspect. */
 	public static final int DIGIT_W = 64, DIGIT_H = 88;
 
-	/** The bid numeral for 0-9. */
 	public TextureRegion digit(int n) {
 		return digits[n];
 	}

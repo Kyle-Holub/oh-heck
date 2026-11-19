@@ -8,7 +8,7 @@ import com.badlogic.gdx.math.MathUtils;
 
 import ohheck.rules.Card;
 
-/** Drawing helpers for cards on the table: shadows, flips, stacks and the original title art. */
+/** Card drawing helpers: shadows, flips, stacks and title art. */
 public final class CardArt {
 
 	private final SpriteBatch batch;
@@ -19,7 +19,6 @@ public final class CardArt {
 		this.assets = assets;
 	}
 
-	/** A soft shadow under a card; the higher the card is lifted, the further and fainter it falls. */
 	public void shadow(float x, float y, float cw, float ch, float lift) {
 		float sw = cw * 160f / 120f, sh = ch * 200f / 160f;
 		batch.setColor(1f, 1f, 1f, MathUtils.clamp(0.6f - lift * 0.008f, 0.28f, 0.6f));
@@ -27,15 +26,10 @@ public final class CardArt {
 		batch.setColor(Color.WHITE);
 	}
 
-	/**
-	 * A card turning over about its upright centre line: p = 0 face down, 0.5
-	 * edge on, 1 face up. Uses the batch's current tint.
-	 */
 	public void flip(Card c, float x, float y, float cw, float ch, float p) {
 		flip(c, x, y, cw, ch, p, 0f);
 	}
 
-	/** As above, turned by rot degrees about the card's centre. */
 	public void flip(Card c, float x, float y, float cw, float ch, float p, float rot) {
 		float sx = p >= 1f ? 1f : Math.abs(MathUtils.cos(MathUtils.PI * p));
 		TextureRegion r = p < 0.5f ? assets.back() : assets.face(c);
@@ -46,7 +40,6 @@ public final class CardArt {
 		}
 	}
 
-	/** A deck seen from above at an angle: count cards stacked with a slight offset, centred on (cx, cy). */
 	public void stack(float cx, float cy, int count, float cw, float ch, float rotation) {
 		int shown = Math.min(count, 14);
 		for (int i = 0; i < shown; i++) {
@@ -58,7 +51,6 @@ public final class CardArt {
 		}
 	}
 
-	/** One of the original title-art images, centred on (cx, cy). */
 	public void art(Texture t, float cx, float cy, float scale, float alpha) {
 		float aw = t.getWidth() * scale, ah = t.getHeight() * scale;
 		batch.setColor(1f, 1f, 1f, alpha);

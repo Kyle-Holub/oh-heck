@@ -5,20 +5,13 @@ import java.util.Random;
 import ohheck.rules.Card;
 import ohheck.rules.TableView;
 
-/**
- * A computer player with a habit: it asks its level's bot for a bid or a card, then leans
- * it the way its {@link Style} goes, some of the time (experts less often, see
- * {@link Difficulty}). A bid habit carries through the hand, since the bot then plays to
- * make whatever was bid. The habits themselves are written in {@link Style}.
- */
+/** Applies a Style to a level's bot. */
 final class StyledBot implements Bot {
 
 	private final Bot bot;
 	private final Style style;
-	/** How often a bidding habit wins out over the cards, and a playing one. */
 	final double lean, habit;
 	final Random rng;
-	/** Our score when we last bid, and in which hand (-1 before our first bid): for habits with memory. */
 	int scoreAtLastBid, lastBidHand = -1;
 
 	StyledBot(Bot bot, Style style, Difficulty level, Random rng) {
@@ -29,7 +22,6 @@ final class StyledBot implements Bot {
 		this.rng = rng;
 	}
 
-	/** Whether the bidding habit wins out this time. */
 	boolean leans() {
 		return rng.nextDouble() < lean;
 	}

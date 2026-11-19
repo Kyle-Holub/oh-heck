@@ -9,18 +9,11 @@ import java.util.Map;
 import ohheck.players.Difficulty;
 import ohheck.util.Log;
 
-/**
- * Your ten best finished games: final score, where you placed, and the date.
- * Pure Java so it can be tested without libGDX; Settings stores the text form.
- */
+/** The ten best finished games. */
 public final class HighScores {
 
 	static final int KEEP = 10;
 
-	/**
-	 * One finished game: its score, place (1 = won; ties share a place, up to 4), date
-	 * (yyyy-mm-dd) and the difficulty setting (null for games from before there was a choice).
-	 */
 	public record Entry(int score, int place, String date, Difficulty level) {
 	}
 
@@ -30,11 +23,6 @@ public final class HighScores {
 		return Collections.unmodifiableList(entries);
 	}
 
-	/**
-	 * Adds a finished game, keeping the best ten. Earlier games stay ahead of
-	 * later ones on the same score. Returns its position (0 = best), or -1 if
-	 * it didn't make the list.
-	 */
 	int add(Entry e) {
 		int at = 0;
 		while (at < entries.size() && entries.get(at).score() >= e.score()) {
@@ -50,7 +38,6 @@ public final class HighScores {
 		return at;
 	}
 
-	/** "score:72,place:1,date:2026-11-16,level:NORMAL;..." (level "-" for games from before there was a choice) */
 	String encode() {
 		StringBuilder b = new StringBuilder();
 		for (Entry e : entries) {
@@ -64,7 +51,6 @@ public final class HighScores {
 		return b.toString();
 	}
 
-	/** Reads encode()'s form; anything unreadable is skipped. */
 	static HighScores decode(String s) {
 		HighScores h = new HighScores();
 		if (s == null || s.isEmpty()) {
@@ -77,13 +63,12 @@ public final class HighScores {
 					h.add(e);
 				}
 			} catch (RuntimeException e) {
-				Log.warn("HighScores", "Skipped a damaged entry: " + part, e); // (the rest still load)
+				Log.warn("HighScores", "Skipped a damaged entry: " + part, e);
 			}
 		}
 		return h;
 	}
 
-	/** "score:72,place:1,date:...,level:NORMAL" (unknown fields are passed over). */
 	private static Entry named(String part) {
 		Map<String, String> f = new HashMap<String, String>();
 		for (String kv : part.split(",")) {
@@ -100,7 +85,6 @@ public final class HighScores {
 		return new Entry(Integer.parseInt(f.get("score")), Integer.parseInt(f.get("place")), f.get("date"), level);
 	}
 
-	/** The first builds' form: "score,place,date[,level ordinal]". */
 	private static Entry numbered(String part) {
 		String[] f = part.split(",");
 		if (f.length != 3 && f.length != 4) {
@@ -110,7 +94,6 @@ public final class HighScores {
 		return new Entry(Integer.parseInt(f[0].trim()), Integer.parseInt(f[1].trim()), f[2].trim(), level);
 	}
 
-	/** The level the first builds saved by its number, or null for one this build doesn't have. */
 	private static Difficulty byOrdinal(int ordinal) {
 		Difficulty[] all = Difficulty.values();
 		return ordinal >= 0 && ordinal < all.length ? all[ordinal] : null;

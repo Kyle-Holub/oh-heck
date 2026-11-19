@@ -11,21 +11,14 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 
-/**
- * Plays your seat for the automated screenshot run (GameOptions.autoplayHuman),
- * through the same taps a person would make. Not used in normal play.
- */
+/** Plays your seat in the screenshot run, through the same taps a person would make. */
 final class Autoplay implements YourSeat {
 
-	/** Pause before each of your moves; time the scores stay up; time the pause menu stays open. */
 	private static final float MOVE_DELAY = 1.2f, RESULTS_WAIT = 2.2f, MENU_WAIT = 1.5f;
-	/** The hand (0-based) whose bidding opens the pause menu once, to photograph it. */
 	private static final int MENU_DEMO_HAND = 6;
 
 	private final TableScene screen;
-	/** Where its taps go, as yours would. */
 	private final TableInput input;
-	/** Where the buttons it taps are. */
 	private final OverlayTargets targets;
 	private final GameOptions options;
 	private final Bot bot = Bot.of(Difficulty.NORMAL, new Random(7));
@@ -39,7 +32,6 @@ final class Autoplay implements YourSeat {
 		this.options = options;
 	}
 
-	/** Before each deal: plays any hands listed in GameOptions.skipHands instantly, so the run reaches the interesting ones sooner. */
 	@Override
 	public void beforeDeal(Match m) {
 		while (m.phase() == Match.Phase.BIDDING && options.skipHands.contains(m.handIndex() + 1)) {
@@ -65,7 +57,6 @@ final class Autoplay implements YourSeat {
 		return true;
 	}
 
-	/** Your turn: bid or play; the scores: move on. */
 	@Override
 	public void update(float dt) {
 		FlowView flow = screen.flow();
@@ -76,7 +67,6 @@ final class Autoplay implements YourSeat {
 		}
 	}
 
-	/** While the pause menu is open: close it again after a moment. */
 	@Override
 	public void whilePaused(float dt) {
 		timer += dt;
@@ -86,7 +76,6 @@ final class Autoplay implements YourSeat {
 		}
 	}
 
-	/** Your turn to bid or play: wait a moment, then tap what the bot would choose. */
 	private void yourTurn(float dt) {
 		Match m = screen.match();
 		timer += dt;
@@ -110,7 +99,6 @@ final class Autoplay implements YourSeat {
 		}
 	}
 
-	/** The score table is up: move on after a while. */
 	private void onResults(float shownFor) {
 		if (shownFor >= RESULTS_WAIT) {
 			input.tap(screen.layout().w / 2, screen.layout().h / 2);
@@ -118,9 +106,8 @@ final class Autoplay implements YourSeat {
 	}
 
 	private void tapCentre(Rectangle r) {
-		if (r != null && r.width > 0) { // (a button not drawn yet has no area)
+		if (r != null && r.width > 0) {
 			input.tap(r.x + Math.min(r.width, 30) / 2, r.y + r.height / 2);
 		}
 	}
-
 }

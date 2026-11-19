@@ -27,7 +27,6 @@ public class MatchTest {
 		}
 	}
 
-	/** Plays a 4-bot game, checking the rules at every step. */
 	private void playWholeGame(Random rng) {
 		Match m = Match.random(4, rng);
 		int[] expectedScores = new int[4];
@@ -38,7 +37,6 @@ public class MatchTest {
 			assertEquals(Match.Phase.BIDDING, m.phase());
 			assertEquals("deal moves clockwise", expectedDealer, m.dealer());
 
-			// a fresh deal: no repeats, trump card not in anyone's hand
 			Set<Card> seen = new HashSet<Card>();
 			for (int s = 0; s < 4; s++) {
 				assertEquals(hand + 1, m.hand(s).size());
@@ -48,7 +46,6 @@ public class MatchTest {
 			assertTrue(seen.add(m.trumpCard()));
 			assertEquals(4 * (hand + 1) + 1, seen.size());
 
-			// bidding: left of dealer first, dealer last
 			for (int i = 1; i <= 4; i++) {
 				int seat = (m.dealer() + i) % 4;
 				assertEquals(seat, m.currentSeat());
@@ -60,7 +57,6 @@ public class MatchTest {
 			assertEquals(Match.Phase.PLAYING, m.phase());
 			assertEquals("left of dealer leads", (m.dealer() + 1) % 4, m.currentSeat());
 
-			// tricks
 			for (int t = 0; t <= hand; t++) {
 				int leader = m.currentSeat();
 				List<Card> plays = new ArrayList<Card>();
@@ -81,7 +77,6 @@ public class MatchTest {
 				}
 			}
 
-			// hand over: tricks add up, scores follow the table
 			assertEquals(Match.Phase.HAND_OVER, m.phase());
 			int totalTricks = 0;
 			for (int s = 0; s < 4; s++) {
@@ -135,8 +130,6 @@ public class MatchTest {
 		return sb.toString();
 	}
 
-	// ---- Illegal moves are refused and change nothing ----
-
 	@Test
 	public void refusesOutOfTurnBid() {
 		Match m = new Match(4, new Random(1), 0);
@@ -154,7 +147,6 @@ public class MatchTest {
 		m.placeBid(1, 1);
 		m.placeBid(2, 0);
 		m.placeBid(3, 0);
-		// 1 card each, 1 bid so far: dealer may not bid 0
 		assertEquals(0, m.forbiddenBid());
 		assertFalse(m.isLegalBid(0));
 		try {
@@ -168,7 +160,6 @@ public class MatchTest {
 
 	@Test
 	public void refusesCardNotFollowingSuit() {
-		// find a deal in hand 2 where seat 2 holds the lead suit and something else
 		for (long seed = 0; seed < 500; seed++) {
 			Match m = new Match(4, new Random(seed), 0);
 			bidAll(m);
@@ -183,7 +174,6 @@ public class MatchTest {
 			m.playCard(leader, lead);
 			int next = m.currentSeat();
 			List<Card> hand = m.hand(next);
-			// exactly one of the two cards follows suit
 			if (hand.get(0).is(lead.suit()) != hand.get(1).is(lead.suit())) {
 				Card offSuit = hand.get(0).is(lead.suit()) ? hand.get(1) : hand.get(0);
 				try {
@@ -237,7 +227,6 @@ public class MatchTest {
 		Match back = Match.load(m.save(), new Random(1));
 		assertEquals(HandOrder.DOWN, back.handOrder());
 		assertEquals(8, back.handSize());
-		// a game saved before the option existed ran upwards
 		String old = new Match(4, new Random(3), 2).save().replaceAll("order=UP\n", "");
 		assertEquals(HandOrder.UP, Match.load(old, new Random(1)).handOrder());
 	}

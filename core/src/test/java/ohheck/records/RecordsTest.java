@@ -15,7 +15,6 @@ import ohheck.rules.Match;
 
 public class RecordsTest {
 
-	/** The device's storage, in memory. */
 	static final class MemoryStore implements Records.Store {
 		String stats = "", highScores = "", saved = "";
 
@@ -63,7 +62,7 @@ public class RecordsTest {
 		r.saveGame(new SavedGame(m, Difficulty.EASY, Seating.of(0, 1, 2)));
 		assertTrue(r.hasSavedGame());
 		assertEquals(Difficulty.EASY, r.savedGame(new Random(2)).level());
-		r.clearSavedGame(); // the game finished
+		r.clearSavedGame();
 		assertFalse(r.hasSavedGame());
 	}
 

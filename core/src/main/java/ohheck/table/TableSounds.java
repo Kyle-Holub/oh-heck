@@ -5,7 +5,6 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 
-/** The table's sounds: the riffle, each card played, and how your hand went. */
 final class TableSounds implements TableFlow.Listener {
 
 	private final Audio audio;

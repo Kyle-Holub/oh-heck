@@ -5,16 +5,10 @@ import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Wording;
 
-/**
- * What your taps and drags do at the table: playing a card (tap it, or drag it up onto
- * the table), bidding (tap a number), moving the table on, and the pause menu.
- * PlayScreen passes its touches here; this reads the table ({@link TableScene}), finds
- * what was tapped in the {@link OverlayTargets}, and acts through {@link TableActions}.
- */
+/** Turns touches at the table into actions. */
 final class TableInput {
 
 	private static final int HUMAN = Seating.YOU;
-	/** How far a finger moves on a card before it counts as dragging it. */
 	private static final float DRAG_START = 12f;
 
 	private final TableScene s;
@@ -22,7 +16,6 @@ final class TableInput {
 	private final OverlayTargets targets;
 
 	private boolean menuOpen;
-	// the card under your finger, and whether it's being dragged
 	private Card pressed;
 	private boolean dragging;
 	private float dragX, dragY;
@@ -53,8 +46,6 @@ final class TableInput {
 		return dragY;
 	}
 
-	// ---------------------------------------------------------- touches
-
 	void touchDown(float x, float y) {
 		clearTouch();
 		if (!s.humanCanPlay()) {
@@ -68,7 +59,6 @@ final class TableInput {
 		}
 	}
 
-	/** moved: how far the finger has gone since it went down. */
 	void touchDragged(float x, float y, float moved) {
 		if (pressed == null) {
 			return;
@@ -80,7 +70,6 @@ final class TableInput {
 		dragY = y;
 	}
 
-	/** Ends a drag; true if this touch was one (so it isn't a tap as well). */
 	boolean touchUp(float x, float y) {
 		if (!dragging) {
 			pressed = null;
@@ -90,12 +79,11 @@ final class TableInput {
 		clearTouch();
 		float handTop = s.handRects().isEmpty() ? 150 : s.handRects().get(0).y + s.handRects().get(0).height;
 		if (y > handTop + 10 && s.humanCanPlay()) {
-			act.play(c); // dropped on the table: it flies to the trick from where it was let go
+			act.play(c);
 		}
-		return true; // otherwise it drops back into your hand
+		return true;
 	}
 
-	/** A tap at world position (x, y). Autoplay taps come through here too. */
 	void tap(float x, float y) {
 		if (menuOpen) {
 			MenuItem item = targets.menuItemAt(x, y);
@@ -109,22 +97,18 @@ final class TableInput {
 		}
 	}
 
-	/** What a tap does depends on the moment (see StateView). */
 	private void tapTable(float x, float y) {
 		StateView.of(s.state()).tap(this, x, y);
 	}
 
-	/** Hurries the shuffle and deal, or the hand-end message, along. */
 	void skip() {
 		act.skip();
 	}
 
-	/** On from the hand's scores. */
 	void nextHand() {
 		act.nextHand();
 	}
 
-	/** Your bid or your card, if it's your turn. */
 	void tapTurn(float x, float y) {
 		Match m = s.match();
 		if (m.currentSeat() != HUMAN) {
@@ -137,15 +121,13 @@ final class TableInput {
 		}
 	}
 
-	/** Only the buttons: a stray tap mustn't throw away the final scores. */
 	void tapGameOver(float x, float y) {
 		if (targets.hit(OverlayTargets.Button.HIGH_SCORES, x, y)) {
 			act.showHighScores();
 		} else if (targets.hit(OverlayTargets.Button.PLAY_AGAIN, x, y)) {
-			act.newGame(); // a fresh table, at the difficulty now chosen in Options
+			act.newGame();
 		}
 	}
-
 
 	private void tapBid(float x, float y) {
 		int b = targets.bidAt(x, y);
@@ -168,7 +150,6 @@ final class TableInput {
 	}
 
 	private int cardAt(float x, float y) {
-		// topmost first: later cards are drawn over earlier ones
 		for (int i = s.handRects().size() - 1; i >= 0; i--) {
 			if (s.handRects().get(i).contains(x, y)) {
 				return i;
@@ -182,9 +163,6 @@ final class TableInput {
 		dragging = false;
 	}
 
-	// ------------------------------------------------------------- menu
-
-	/** The back button: opens the menu, or closes it. */
 	void back() {
 		if (menuOpen) {
 			menuOpen = false;
@@ -193,7 +171,6 @@ final class TableInput {
 		}
 	}
 
-	/** Leaving the app (home button, a call): come back to the menu. */
 	void openMenu() {
 		menuOpen = true;
 		clearTouch();
@@ -205,5 +182,4 @@ final class TableInput {
 		}
 		item.choose(act);
 	}
-
 }

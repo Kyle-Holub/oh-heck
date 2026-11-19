@@ -5,18 +5,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
- * A {@link Match} as text, for saving: "key=value" lines under a format line. Reads its
- * older format too (cards as numbers); the tests in SaveTest cover both.
- */
+/** A Match as "key=value" text, reading the first format (cards as numbers) too. */
 final class MatchCodec {
 
 	private MatchCodec() {
 	}
 
-	/** Cards written as text ("AS", "10H"). */
 	private static final String FORMAT = "oh-heck-match-2";
-	/** The first format, which wrote cards as numbers from the enums' declaration order; still read. */
 	private static final String FORMAT_1 = "oh-heck-match-1";
 
 	static String encode(Match m) {
@@ -50,7 +45,6 @@ final class MatchCodec {
 		return sb.toString();
 	}
 
-	/** @throws IllegalArgumentException if the text is not a valid saved game */
 	static Match decode(String saved, Random rng) {
 		try {
 			String[] lines = saved.split("\n");
@@ -60,7 +54,6 @@ final class MatchCodec {
 			}
 			boolean legacy = format.equals(FORMAT_1);
 			java.util.Map<String, String> v = keyValues(lines);
-			// (games saved before there were rule sets were all standard)
 			RuleSet rules = v.containsKey("rules") ? RuleSet.named(v.get("rules")) : RuleSet.STANDARD;
 			Match m = new Match(Integer.parseInt(req(v, "players")), rng, rules);
 			readHand(m, v, legacy);
@@ -73,7 +66,6 @@ final class MatchCodec {
 		}
 	}
 
-	/** "key=value" lines after the format line. */
 	private static java.util.Map<String, String> keyValues(String[] lines) {
 		java.util.Map<String, String> v = new java.util.HashMap<String, String>();
 		for (int i = 1; i < lines.length; i++) {
@@ -85,18 +77,15 @@ final class MatchCodec {
 		return v;
 	}
 
-	/** Where the game is: phase, which hand and which way they run, dealer, whose turn, trump. */
 	private static void readHand(Match m, java.util.Map<String, String> v, boolean legacy) {
 		m.phase = Match.Phase.valueOf(req(v, "phase"));
 		m.handIndex = Integer.parseInt(req(v, "hand"));
-		// (games saved before the hands could run downwards always ran up)
 		m.order = v.containsKey("order") ? HandOrder.valueOf(v.get("order")) : HandOrder.UP;
 		m.dealer = Integer.parseInt(req(v, "dealer"));
 		m.current = Integer.parseInt(req(v, "current"));
 		m.trumpCard = card(req(v, "trump"), legacy);
 	}
 
-	/** Each seat's cards, bid, tricks, score and last hand's points. */
 	private static void readSeats(Match m, java.util.Map<String, String> v, boolean legacy) {
 		for (int s = 0; s < m.players; s++) {
 			m.hands.set(s, parseCards(req(v, "hand" + s), legacy));
@@ -112,20 +101,17 @@ final class MatchCodec {
 		}
 	}
 
-	/** The trick in progress, the last one taken, and the hand's history. */
 	private static void readTricks(Match m, java.util.Map<String, String> v, boolean legacy) {
 		m.trick.cards.addAll(parseCards(req(v, "trick"), legacy));
 		m.trick.seats.addAll(parseSeats(req(v, "trickSeats")));
 		m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last"), legacy));
 		m.lastTrickSeats = Collections.unmodifiableList(parseSeats(req(v, "lastSeats")));
 		m.lastTrickWinner = Integer.parseInt(req(v, "lastWinner"));
-		// (games saved before alpha-1.0.8's smarter players have no history: they just start forgetful)
 		if (v.containsKey("history") && v.containsKey("historySeats")) {
 			m.history.addAll(parseCards(v.get("history"), legacy));
 			m.historySeats.addAll(parseSeats(v.get("historySeats")));
 		}
 	}
-
 
 	private static void line(StringBuilder sb, String key, String value) {
 		sb.append(key).append('=').append(value).append('\n');
@@ -139,11 +125,9 @@ final class MatchCodec {
 		return s;
 	}
 
-	// Card codes: rank then suit letter, e.g. "AS", "10H", "QD". Independent of the enums' order.
 	private static final String[] RANK_CODES = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
 	private static final String SUIT_CODES = "CDHS";
 	private static final Suit[] SUITS_BY_CODE = { Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES };
-	// The first format's numbering: suit * 13 + rank, in these orders
 	private static final Rank[] LEGACY_RANKS = { Rank.ACE, Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX,
 			Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING };
 	private static final Suit[] LEGACY_SUITS = { Suit.CLUBS, Suit.SPADES, Suit.HEARTS, Suit.DIAMONDS };

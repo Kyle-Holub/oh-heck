@@ -25,6 +25,12 @@ the screenshot run, CI, the arena and the art tools.
   timing goes in `update`, so it runs in fixed steps. Name each movement as a `Tween`
   (`ohheck.anim`), and move table cards by setting `CardSprites` targets. Don't make new
   strings or objects every frame: use `Numbers` and cached lines.
+- **Comments:** only one `/** */` block at the top of a class, saying plainly what the
+  class is for, and only when its name doesn't already say it. No comments inside a
+  class: no javadoc on members, no `//` notes, no section dividers, no commented-out
+  code. If code seems to need a comment, rename or restructure it until it doesn't; a
+  rule the code can't show (a saved format's order, a platform limit) goes in the class
+  comment. Generated files (`BidTable.java`) are exempt.
 - **Text and spacing:** the game font has no Unicode minus sign. Use "-".
 - **Generated files:** `BidTable.java` comes from the arena's `learn`; the images, fonts and
   launcher icons come from `python3 tools/build_art.py` (`--check` to compare). Regenerate

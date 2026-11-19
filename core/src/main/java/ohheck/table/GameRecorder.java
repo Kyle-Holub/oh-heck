@@ -5,10 +5,7 @@ import ohheck.players.Seating;
 import ohheck.records.Records;
 import ohheck.rules.Match;
 
-/**
- * Keeps your records as a game goes: each hand and each finished game in the statistics,
- * and a finished game in the high scores. No libGDX.
- */
+/** Records each hand and finished game in the statistics and high scores. */
 final class GameRecorder implements TableFlow.Listener {
 
 	private static final int HUMAN = Seating.YOU;
@@ -22,7 +19,6 @@ final class GameRecorder implements TableFlow.Listener {
 		this.records = records;
 	}
 
-	/** The table being played: its difficulty setting and who sits where. fresh: a new game, not a resumed one. */
 	void table(Difficulty level, Seating players, boolean fresh) {
 		this.level = level;
 		this.players = players;
@@ -33,7 +29,6 @@ final class GameRecorder implements TableFlow.Listener {
 		}
 	}
 
-	/** Where the finished game went in the high scores (0 = best), or -1. */
 	int newHighScore() {
 		return newHighScore;
 	}

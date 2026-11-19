@@ -13,7 +13,7 @@ public class TimelineTest {
 		Timeline tl = new Timeline();
 		tl.restart();
 		int fired = 0;
-		for (int i = 0; i < 60; i++) { // 6 s of a 2 s scene with a 1 s pause: twice round, and into a third
+		for (int i = 0; i < 60; i++) {
 			tl.advance(0.1f, 2f, true, 1f);
 			if (tl.passed(0.5f)) {
 				fired++;
