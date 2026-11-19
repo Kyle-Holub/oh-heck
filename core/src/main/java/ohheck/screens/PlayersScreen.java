@@ -9,11 +9,15 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import ohheck.players.Player;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
+import ohheck.ui.MenuChrome;
 import ohheck.ui.Palette;
 import ohheck.ui.Scroller;
 
 /** The twelve computer players you can meet: name, level and habit, in a list that scrolls. */
 public class PlayersScreen extends BaseScreen {
+
+	/** The header bar, Back and section headings. */
+	private final MenuChrome chrome = new MenuChrome(paint);
 
 	private static final float ROW_H = 62, ROW_GAP = 6, COLUMNS_H = 26, BADGE = 26;
 
@@ -55,7 +59,7 @@ public class PlayersScreen extends BaseScreen {
 		batch.draw(assets.table, 0, 0, w, h);
 
 		float listW = Math.min(w - 60, 980), x = (w - listW) / 2;
-		float listTop = h - HEADER_H - COLUMNS_H - 8;
+		float listTop = h - MenuChrome.HEADER_H - COLUMNS_H - 8;
 		float content = Player.ALL.size() * (ROW_H + ROW_GAP);
 		scroller.update(frameDelta(), Gdx.input.isTouched(), content - listTop + 14);
 		layoutColumns(x, listW);
@@ -67,7 +71,7 @@ public class PlayersScreen extends BaseScreen {
 			y -= ROW_H + ROW_GAP;
 		}
 		drawColumnHeads(); // drawn last, so the list scrolls under them
-		header("Roster", backButton);
+		chrome.header("Roster", backButton, w, h);
 		batch.end();
 	}
 	// the columns: name, level, style, then the habit taking the rest of the row
@@ -83,21 +87,21 @@ public class PlayersScreen extends BaseScreen {
 
 	/** One player's row, its top at y. */
 	private void drawRow(Player p, float x, float y, float listW) {
-		frame(assets.panel, x, y - ROW_H, listW, ROW_H);
+		paint.frame(assets.panel, x, y - ROW_H, listW, ROW_H);
 		float mid = y - ROW_H / 2;
-		BitmapFont n = serif(1.45f);
+		BitmapFont n = paint.serif(1.45f);
 		n.setColor(Palette.CREAM);
 		glyphs.setText(n, p.name);
 		n.draw(batch, p.name, colName, mid + glyphs.height / 2);
 		batch.draw(assets.levelBadge[p.level.ordinal()], colLevel, mid - BADGE / 2, BADGE, BADGE);
-		BitmapFont f = ui(1.1f);
+		BitmapFont f = paint.ui(1.1f);
 		f.setColor(Palette.CREAM);
 		glyphs.setText(f, p.level.label);
 		f.draw(batch, p.level.label, colLevel + BADGE + 8, mid + glyphs.height / 2);
 		f.setColor(Palette.GOLD_LIGHT);
 		glyphs.setText(f, p.style.label);
 		f.draw(batch, p.style.label, colStyle, mid + glyphs.height / 2);
-		BitmapFont t = ui(0.95f);
+		BitmapFont t = paint.ui(0.95f);
 		t.setColor(Palette.MUTED);
 		glyphs.setText(t, p.trait, Palette.MUTED, traitW, Align.left, true);
 		t.draw(batch, p.trait, colTrait, mid + glyphs.height / 2, traitW, Align.left, true);
@@ -105,10 +109,10 @@ public class PlayersScreen extends BaseScreen {
 
 	/** The bar under the header with the column names. */
 	private void drawColumnHeads() {
-		rect(0, h - HEADER_H - COLUMNS_H - 8, w, COLUMNS_H + 8, HEADER);
-		BitmapFont c = ui(0.95f);
+		paint.rect(0, h - MenuChrome.HEADER_H - COLUMNS_H - 8, w, COLUMNS_H + 8, MenuChrome.HEADER);
+		BitmapFont c = paint.ui(0.95f);
 		c.setColor(Palette.MUTED);
-		float cy = h - HEADER_H - 10;
+		float cy = h - MenuChrome.HEADER_H - 10;
 		c.draw(batch, "Player", colName, cy);
 		c.draw(batch, "Level", colLevel, cy);
 		c.draw(batch, "Style", colStyle, cy);

@@ -15,6 +15,7 @@ import ohheck.platform.Settings;
 import ohheck.players.Difficulty;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
+import ohheck.ui.MenuChrome;
 import ohheck.ui.Palette;
 import ohheck.ui.Wording;
 
@@ -23,6 +24,9 @@ import ohheck.ui.Wording;
  * sound and display on the right, and under them Learn (How to play, and the Roster of players).
  */
 public class OptionsScreen extends BaseScreen {
+
+	/** The header bar, Back and section headings. */
+	private final MenuChrome chrome = new MenuChrome(paint);
 
 	private static final float COLUMN_W = 440, COLUMN_GAP = 34, SECTION_GAP = 40;
 
@@ -96,10 +100,10 @@ public class OptionsScreen extends BaseScreen {
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 
-		float rh = ROW_H, top = h - HEADER_H - 46;
+		float rh = ROW_H, top = h - MenuChrome.HEADER_H - 46;
 		float left = (w - 2 * COLUMN_W - COLUMN_GAP) / 2, right = left + COLUMN_W + COLUMN_GAP;
-		heading("Game", left, top + 30);
-		heading("Sound & display", right, top + 30);
+		chrome.heading("Game", left, top + 30);
+		chrome.heading("Sound & display", right, top + 30);
 		float y = top - DIFFICULTY_H;
 		drawDifficulty(left, y, COLUMN_W);
 		for (Row row : gameRows) {
@@ -113,29 +117,29 @@ public class OptionsScreen extends BaseScreen {
 			y -= ROW_GAP;
 		}
 		y -= SECTION_GAP;
-		heading("Learn", right, y + 30);
+		chrome.heading("Learn", right, y + 30);
 		for (Row row : learnRows) {
 			y -= rh;
 			drawRow(row, right, y, COLUMN_W, rh);
 			y -= ROW_GAP;
 		}
 
-		header("Options", backButton);
+		chrome.header("Options", backButton, w, h);
 		batch.end();
 	}
 
 	private void drawRow(Row row, float x, float y, float rw, float rh) {
-		frame(assets.panel, x, y, rw, rh);
-		BitmapFont f = serif(1.6f);
+		paint.frame(assets.panel, x, y, rw, rh);
+		BitmapFont f = paint.serif(1.6f);
 		f.setColor(Palette.CREAM);
 		glyphs.setText(f, row.label);
 		f.draw(batch, row.label, x + 24, y + rh / 2 + glyphs.height / 2);
 		float vw = 140;
 		boolean on = row.on.getAsBoolean();
-		frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 7, vw, rh - 14);
-		BitmapFont v = ui(1.4f);
+		paint.frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 7, vw, rh - 14);
+		BitmapFont v = paint.ui(1.4f);
 		v.setColor(on ? Palette.CREAM : Palette.MUTED);
-		textIn(v, row.value.get(), x + rw - vw - 14, y, vw, rh);
+		paint.textIn(v, row.value.get(), x + rw - vw - 14, y, vw, rh);
 		row.bounds.set(x, y, rw, rh);
 	}
 
@@ -150,8 +154,8 @@ public class OptionsScreen extends BaseScreen {
 
 	private void drawDifficulty(float x, float y, float rw) {
 		Settings s = game.settings();
-		frame(assets.panel, x, y, rw, DIFFICULTY_H);
-		BitmapFont f = serif(1.6f);
+		paint.frame(assets.panel, x, y, rw, DIFFICULTY_H);
+		BitmapFont f = paint.serif(1.6f);
 		f.setColor(Palette.CREAM);
 		f.draw(batch, "Difficulty", x + 24, y + DIFFICULTY_H - 18);
 		// the track, gold up to the chosen stop
@@ -161,20 +165,20 @@ public class OptionsScreen extends BaseScreen {
 		slider.set(x0 - 30, y + 48, x1 - x0 + 60, DIFFICULTY_H - 48);
 		int level = s.difficulty().ordinal(); // (the slider's stop)
 		float knobX = x0 + level * stopStep;
-		rect(x0, ty - 2, x1 - x0, 4, TRACK);
-		rect(x0, ty - 2, knobX - x0, 4, GOLD);
-		BitmapFont l = ui(0.9f);
+		paint.rect(x0, ty - 2, x1 - x0, 4, TRACK);
+		paint.rect(x0, ty - 2, knobX - x0, 4, Palette.GOLD);
+		BitmapFont l = paint.ui(0.9f);
 		for (int i = 0; i < Difficulty.values().length; i++) {
 			float sx = x0 + i * stopStep;
-			rect(sx - 1.5f, ty - 7, 3, 14, i <= level ? GOLD : TRACK);
+			paint.rect(sx - 1.5f, ty - 7, 3, 14, i <= level ? Palette.GOLD : TRACK);
 			l.setColor(i == level ? Palette.GOLD_LIGHT : Palette.MUTED);
-			text(l, Difficulty.values()[i].label, sx, y + 60, true);
+			paint.text(l, Difficulty.values()[i].label, sx, y + 60, true);
 		}
-		BitmapFont n = ui(0.85f);
+		BitmapFont n = paint.ui(0.85f);
 		String note = Wording.tableDescription(s.difficulty()); // (from the matchmaking odds)
 		glyphs.setText(n, note);
 		if (glyphs.width > rw - 48) { // keep it on one line inside the row
-			n = ui(0.85f * (rw - 48) / glyphs.width);
+			n = paint.ui(0.85f * (rw - 48) / glyphs.width);
 		}
 		n.setColor(Palette.MUTED);
 		n.draw(batch, note, x + 24, y + 38);

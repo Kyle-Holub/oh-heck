@@ -197,30 +197,30 @@ public class TutorialScreen extends BaseScreen {
 	// ------------------------------------------------------------ frame
 
 	private void header() {
-		BitmapFont f = serif(1.3f);
-		f.setColor(GOLD);
+		BitmapFont f = paint.serif(1.3f);
+		f.setColor(Palette.GOLD);
 		f.draw(batch, "How to play", 22, h - 18);
-		button(cornerButton, firstRun ? "Skip tutorial" : "Back", w - 110, h - 52, 190, 40, assets.buttonAlt);
+		paint.button(cornerButton, firstRun ? "Skip tutorial" : "Back", w - 110, h - 52, 190, 40, assets.buttonAlt);
 	}
 
 	private void caption(Step s) {
 		float cw = Math.min(w - 60, 860), x = (w - cw) / 2, y = 12;
-		frame(assets.panel, x, y, cw, CAPTION_H);
-		BitmapFont hd = serif(1.35f);
-		hd.setColor(GOLD);
+		paint.frame(assets.panel, x, y, cw, CAPTION_H);
+		BitmapFont hd = paint.serif(1.35f);
+		hd.setColor(Palette.GOLD);
 		hd.draw(batch, s.heading, x + 22, y + CAPTION_H - 12);
-		BitmapFont c = ui(1.1f);
+		BitmapFont c = paint.ui(1.1f);
 		c.setColor(Palette.CREAM);
 		c.draw(batch, s.caption, x + 22, y + CAPTION_H - 44, cw - 44, Align.left, true);
-		BitmapFont m = ui(0.9f);
+		BitmapFont m = paint.ui(0.9f);
 		m.setColor(Palette.MUTED);
 		sb.setLength(0);
 		sb.append(step + 1).append(" / ").append(steps.length);
-		text(m, sb.toString(), x + cw - 20, y + CAPTION_H - 14, false);
+		paint.text(m, sb.toString(), x + cw - 20, y + CAPTION_H - 14, false);
 		if (step == steps.length - 1) {
-			button(doneButton, "Ready to play", w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
+			paint.button(doneButton, "Ready to play", w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
 		} else {
-			text(m, "Tap to continue", x + cw - 20, y + 22, false);
+			paint.text(m, "Tap to continue", x + cw - 20, y + 22, false);
 		}
 	}
 
@@ -381,9 +381,9 @@ public class TutorialScreen extends BaseScreen {
 			return;
 		}
 		float k = (t - a) / 1.6f;
-		BitmapFont f = serif(1.8f);
+		BitmapFont f = paint.serif(1.8f);
 		f.setColor(c.r, c.g, c.b, 1 - k * k);
-		centred(f, s, x, y + 40 * k);
+		paint.centred(f, s, x, y + 40 * k);
 	}
 
 	/** A label in small gold capitals, centred on x. */
@@ -391,9 +391,9 @@ public class TutorialScreen extends BaseScreen {
 		if (alpha <= 0) {
 			return;
 		}
-		BitmapFont f = ui(1f);
+		BitmapFont f = paint.ui(1f);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, alpha);
-		centred(f, s, x, y);
+		paint.centred(f, s, x, y);
 	}
 
 	// ---- 1. welcome: the title, and the four aces fanned out beneath it, sparkling
@@ -590,9 +590,9 @@ public class TutorialScreen extends BaseScreen {
 			if (t < a || t >= end) {
 				continue;
 			}
-			BitmapFont f = serif(1.6f);
-			f.setColor(GOLD.r, GOLD.g, GOLD.b, at(a, a + 0.3f) * (1 - at(5.0f, 5.3f)));
-			centred(f, DEAL_LINES[n], cx(), h - 70);
+			BitmapFont f = paint.serif(1.6f);
+			f.setColor(Palette.GOLD.r, Palette.GOLD.g, Palette.GOLD.b, at(a, a + 0.3f) * (1 - at(5.0f, 5.3f)));
+			paint.centred(f, DEAL_LINES[n], cx(), h - 70);
 			for (int k = 0; k < n * 2; k++) {
 				int who = k % 2, j = k / 2; // you first (left of the dealer), then Oswald
 				float ka = a + k * 0.12f;
@@ -606,9 +606,9 @@ public class TutorialScreen extends BaseScreen {
 				batch.draw(assets.back(), x, y, dw, dh);
 			}
 		}
-		BitmapFont f = serif(1.6f);
-		f.setColor(GOLD.r, GOLD.g, GOLD.b, at(5.2f, 5.6f));
-		centred(f, "\u2026 and so on, up to " + HANDS, cx(), h - 70);
+		BitmapFont f = paint.serif(1.6f);
+		f.setColor(Palette.GOLD.r, Palette.GOLD.g, Palette.GOLD.b, at(5.2f, 5.6f));
+		paint.centred(f, "\u2026 and so on, up to " + HANDS, cx(), h - 70);
 	}
 
 	// ---- the bid panel, as at the table: 0..n, one picked, some barred
@@ -620,11 +620,11 @@ public class TutorialScreen extends BaseScreen {
 		float bs = 46, gap = 8, pw = (n + 1) * (bs + gap) - gap + 36, ph = bs + 30;
 		float px = x - pw / 2;
 		batch.setColor(1, 1, 1, alpha);
-		frame(assets.panel, px, y, pw, ph);
+		paint.frame(assets.panel, px, y, pw, ph);
 		for (int b = 0; b <= n; b++) {
 			float bx = px + 18 + b * (bs + gap), by = y + 15;
-			frame(b == barred ? assets.buttonOff : b == picked ? assets.button : assets.buttonAlt, bx, by, bs, bs);
-			numeral(b, bx + bs / 2, by + bs / 2, bs * 0.62f, b == barred ? NUMERAL_OFF : Color.WHITE);
+			paint.frame(b == barred ? assets.buttonOff : b == picked ? assets.button : assets.buttonAlt, bx, by, bs, bs);
+			paint.numeral(b, bx + bs / 2, by + bs / 2, bs * 0.62f, b == barred ? NUMERAL_OFF : Color.WHITE);
 			if (b == barred) {
 				float k = at(2.2f, 2.5f);
 				batch.setColor(Palette.RED.r, Palette.RED.g, Palette.RED.b, alpha);
@@ -655,10 +655,10 @@ public class TutorialScreen extends BaseScreen {
 			glow(x, y, g);
 			card(hand[i], x, y, 2, i == 2 ? 1 - 0.4f * at(0.5f, 0.9f) * counting : 1, 1);
 			if (i < 2 && g > 0) { // counting them: 1, 2
-				numeral(i + 1, x + CW / 2, y + CH + 22, 30, tint.set(1, 1, 1, g));
+				paint.numeral(i + 1, x + CW / 2, y + CH + 22, 30, tint.set(1, 1, 1, g));
 			}
 		}
-		BitmapFont f = ui(1.05f);
+		BitmapFont f = paint.ui(1.05f);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(1.8f, 2.2f)); // stays up
 		f.draw(batch, "The Ace of trumps and a King:\ntwo likely winners, so bid 2", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
 		bidPanel(cx(), handY() + CH + 12, 3, t >= 5.2f ? 2 : -1, -1, at(4.4f, 4.8f) * (1 - at(6.2f, 6.4f)));
@@ -702,11 +702,11 @@ public class TutorialScreen extends BaseScreen {
 		seat(3, (t >= 0.8f ? bidOf(1) : waiting()).cards(3));
 		seat(0, waiting().turn(true).dealer(true).cards(3));
 		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
-		BitmapFont f = ui(1.15f);
+		BitmapFont f = paint.ui(1.15f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
-		centred(f, BIDS_LINE, cx(), cy() - 46);
+		paint.centred(f, BIDS_LINE, cx(), cy() - 46);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(3.2f, 3.6f));
-		centred(f, "The total of the bids can't be 3, so you can't bid 1.", cx(), cy() - 74);
+		paint.centred(f, "The total of the bids can't be 3, so you can't bid 1.", cx(), cy() - 74);
 	}
 
 	// ---- 11. the counters: the tally fills to the 4th hand; the tracker fills as bids come in, then a red one
@@ -715,7 +715,7 @@ public class TutorialScreen extends BaseScreen {
 		float scale = 1.6f, left = cx() - 250, top = h - 80;
 		int done = clock.count(0.5f, 1.0f, 1.5f);
 		counterArt.tally(left, top, Rules.numberOfHands(), done, Counters.pulse(clock.shown()), scale);
-		BitmapFont f = ui(1.05f);
+		BitmapFont f = paint.ui(1.05f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(1.6f, 2.0f));
 		f.draw(batch, "Hands: three played, the 4th glowing (of 8)", left + 150 * scale, top - 12);
 		// a hand of 4 tricks: the bids come in, 1 + 2 + 1, then 1 more: one too many
@@ -752,11 +752,11 @@ public class TutorialScreen extends BaseScreen {
 			art.art(assets.setText, hx, seatTop(3) - PlayerPanel.H - 34, 0.5f, at(6.2f, 6.5f));
 		}
 		floating(Numbers.text(Rules.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
-		BitmapFont f = ui(1.1f);
+		BitmapFont f = paint.ui(1.1f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
-		centred(f, MADE_LINE, cx(), cy() + 36);
+		paint.centred(f, MADE_LINE, cx(), cy() + 36);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(6.6f, 7.0f));
-		centred(f, SET_LINE, cx(), cy() - 4);
+		paint.centred(f, SET_LINE, cx(), cy() - 4);
 	}
 
 	// ---- 13. ready: the title (eased in once and kept), a few fireworks

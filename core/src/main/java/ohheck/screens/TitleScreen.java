@@ -123,10 +123,10 @@ public class TitleScreen extends BaseScreen {
 		batch.draw(assets.table, 0, 0, w, h);
 		batch.setColor(Color.WHITE);
 		cards.draw(batch, w / 2, h / 2);
-		rect(0, 0, w, h, Palette.SHADE);
+		paint.rect(0, 0, w, h, Palette.SHADE);
 		float dark = 1f - SCENE_IN.progress(introT);
 		if (dark > 0) {
-			rect(0, 0, w, h, black.set(0, 0, 0, dark));
+			paint.rect(0, 0, w, h, black.set(0, 0, 0, dark));
 		}
 	}
 
@@ -149,10 +149,10 @@ public class TitleScreen extends BaseScreen {
 		float bw = 270, bh = 46, gap = 10;
 		float y = titleY - 18 - bh + (1 - paint.fade()) * -12;
 		for (int i = 0; i < items.size(); i++) {
-			button(hits.get(i), items.get(i), w / 2, y, bw, bh, i == 0 ? assets.button : assets.buttonAlt);
+			paint.button(hits.get(i), items.get(i), w / 2, y, bw, bh, i == 0 ? assets.button : assets.buttonAlt);
 			y -= bh + gap;
 		}
-		BitmapFont f = ui(0.9f);
+		BitmapFont f = paint.ui(0.9f);
 		f.setColor(Palette.MUTED.r, Palette.MUTED.g, Palette.MUTED.b, paint.fade());
 		if (versionLine == null) {
 			versionLine = game.build().isEmpty() ? game.version() : game.version() + "  (" + game.build() + ")";
