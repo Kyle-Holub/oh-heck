@@ -99,6 +99,9 @@ public abstract class BaseScreen extends ScreenAdapter implements GameHost.Tagge
 		frameDelta = Math.min(delta, MAX_FRAME);
 		for (int n = steps.frame(delta); n > 0; n--) {
 			update(STEP);
+			if (!hidden && game.tour() != null) {
+				game.tour().step(this, tourClock()); // (the screenshot run: may go on to another screen)
+			}
 			if (hidden) {
 				return; // gone to another screen
 			}
@@ -111,6 +114,11 @@ public abstract class BaseScreen extends ScreenAdapter implements GameHost.Tagge
 
 	/** The screen as it is now. */
 	protected abstract void draw();
+
+	/** How long the screenshot tour counts this screen as shown, at game speed (time since shown, unless overridden). */
+	protected float tourClock() {
+		return shownFor;
+	}
 
 	/** This frame's real length (for things tied to frames rather than steps, like a finger's fling). */
 	protected float frameDelta() {

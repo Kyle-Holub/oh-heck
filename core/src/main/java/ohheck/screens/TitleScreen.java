@@ -19,7 +19,7 @@ import ohheck.ui.Palette;
 import ohheck.ui.TapAreas;
 
 /** The main menu, over a shower of falling cards. */
-public class TitleScreen extends BaseScreen {
+public class TitleScreen extends BaseScreen implements TourStop {
 
 
 	private final FallingCards cards;
@@ -101,8 +101,8 @@ public class TitleScreen extends BaseScreen {
 		batch.end();
 	}
 
-	/** Moves the intro on; true if the screenshot run has gone on to another screen. */
-	private boolean advance(float dt) {
+	/** Moves the intro on. */
+	private void advance(float dt) {
 		introT += dt;
 		if (introT >= SCENE_START) {
 			cards.setFalling(introT >= CARDS_START);
@@ -114,7 +114,11 @@ public class TitleScreen extends BaseScreen {
 		if (introT >= INTRO_END) {
 			shownFor += dt;
 		}
-		return game.tour() != null && game.tour().step(this, shownFor);
+	}
+
+	@Override
+	public ScreenshotTour.Stop tourStop() {
+		return ScreenshotTour.Stop.TITLE;
 	}
 
 	/** A dim spotlit backdrop behind the shower, rising out of black. */

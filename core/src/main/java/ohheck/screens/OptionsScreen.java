@@ -23,7 +23,7 @@ import ohheck.ui.Wording;
  * The settings, saved on the device: the game (difficulty, hand sizes, speed) on the left;
  * sound and display on the right, and under them Learn (How to play, and the Roster of players).
  */
-public class OptionsScreen extends BaseScreen {
+public class OptionsScreen extends BaseScreen implements TourStop {
 
 	/** The header bar, Back and section headings. */
 	private final MenuChrome chrome = new MenuChrome(paint);
@@ -87,11 +87,13 @@ public class OptionsScreen extends BaseScreen {
 	}
 
 	@Override
+	public ScreenshotTour.Stop tourStop() {
+		return ScreenshotTour.Stop.OPTIONS;
+	}
+
+	@Override
 	protected void update(float step) {
 		shownFor += step * game.options().speed;
-		if (game.tour() != null) {
-			game.tour().step(this, shownFor);
-		}
 	}
 
 	@Override

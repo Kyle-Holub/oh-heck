@@ -19,7 +19,7 @@ import ohheck.ui.Palette;
 import ohheck.ui.Wording;
 
 /** Your ten best finished games, and (on its second tab) your statistics, by difficulty or for all. */
-public class HighScoresScreen extends BaseScreen {
+public class HighScoresScreen extends BaseScreen implements TourStop {
 
 	/** The header bar, Back and section headings. */
 	private final MenuChrome chrome = new MenuChrome(paint);
@@ -36,9 +36,17 @@ public class HighScoresScreen extends BaseScreen {
 	/** Showing the statistics (not the high scores); which totals (a difficulty, or Stats.ALL). */
 	private boolean showStats;
 
+	@Override
+	public ScreenshotTour.Stop tourStop() {
+		return ScreenshotTour.Stop.HIGH_SCORES;
+	}
+
 	/** The Statistics tab (for the screenshot run, which looks at both). */
-	void showStatistics() {
-		showStats = true;
+	@Override
+	public void secondHalf(boolean on) {
+		if (on) {
+			showStats = true;
+		}
 	}
 	private int filter = Stats.ALL;
 	/** The statistics rows shown, and which totals they're for (-1: to be worked out). */
@@ -72,9 +80,6 @@ public class HighScoresScreen extends BaseScreen {
 	protected void update(float step) {
 		shownFor += step * game.options().speed;
 		confirmReset = Math.max(0, confirmReset - step);
-		if (game.tour() != null) {
-			game.tour().step(this, shownFor);
-		}
 	}
 
 	@Override

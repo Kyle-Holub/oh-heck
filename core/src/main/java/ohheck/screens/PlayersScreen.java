@@ -14,7 +14,7 @@ import ohheck.ui.Palette;
 import ohheck.ui.Scroller;
 
 /** The twelve computer players you can meet: name, level and habit, in a list that scrolls. */
-public class PlayersScreen extends BaseScreen {
+public class PlayersScreen extends BaseScreen implements TourStop {
 
 	/** The header bar, Back and section headings. */
 	private final MenuChrome chrome = new MenuChrome(paint);
@@ -25,8 +25,15 @@ public class PlayersScreen extends BaseScreen {
 	private final Scroller scroller = new Scroller();
 
 	/** Shows the end of the list, or the top (for the screenshot run). */
-	void scrollToEnd(boolean end) {
-		scroller.scrollTo(end ? 9999 : 0);
+	@Override
+	public ScreenshotTour.Stop tourStop() {
+		return ScreenshotTour.Stop.ROSTER;
+	}
+
+	/** The end of the list (for the screenshot run, which looks at both ends). */
+	@Override
+	public void secondHalf(boolean on) {
+		scroller.scrollTo(on ? 9999 : 0);
 	}
 
 	public PlayersScreen(GameHost game) {
@@ -47,9 +54,6 @@ public class PlayersScreen extends BaseScreen {
 	@Override
 	protected void update(float step) {
 		shownFor += step * game.options().speed;
-		if (game.tour() != null) {
-			game.tour().step(this, shownFor);
-		}
 	}
 
 	@Override

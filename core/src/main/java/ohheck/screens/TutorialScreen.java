@@ -32,7 +32,7 @@ import ohheck.ui.Palette;
  * plays out and then loops, with a caption beneath. A tap moves on. It opens the first
  * time you start a game (with Skip), and from Options (with Back).
  */
-public class TutorialScreen extends BaseScreen {
+public class TutorialScreen extends BaseScreen implements TourStop {
 
 	/** A step: its heading, caption, its scene, how long that runs, and whether it then plays again. */
 	private static final class Step {
@@ -126,9 +126,6 @@ public class TutorialScreen extends BaseScreen {
 		t = clock.t();
 		sparks.step(dt);
 		fireworks.update(dt);
-		if (game.tour() != null) {
-			game.tour().step(this, clock.shown()); // (the tour times each step)
-		}
 	}
 
 	@Override
@@ -144,8 +141,25 @@ public class TutorialScreen extends BaseScreen {
 		batch.end();
 	}
 
-	boolean lastStep() {
+	/** The tour times each step by its own clock. */
+	@Override
+	protected float tourClock() {
+		return clock.shown();
+	}
+
+	@Override
+	public ScreenshotTour.Stop tourStop() {
+		return ScreenshotTour.Stop.TUTORIAL;
+	}
+
+	@Override
+	public boolean lastStep() {
 		return step == steps.length - 1;
+	}
+
+	@Override
+	public void nextStep() {
+		next();
 	}
 
 	void next() {
