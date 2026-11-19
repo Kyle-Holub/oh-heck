@@ -36,6 +36,6 @@ interface FlowView {
 
 		float startOf(int seat, int j);
 
-		void drawShuffle(SpriteBatch batch, Assets assets, CardArt art, TableLayout layout);
+		void drawDeck(SpriteBatch batch, Assets assets, CardArt art, TableLayout layout);
 	}
 }

@@ -49,6 +49,10 @@ the screenshot run, CI, the arena and the art tools.
 
 ## Checking changes
 
+**Ship every finished change without asking:** once a request's change is verified, merge
+it into the current `develop/` and publish the dev build (the `ship` skill), then report
+the build number.
+
 Use the `verify` skill after every change and the `ship` skill to merge; the scripts are in
 `tools/dev` (see "Developer tools" in `ARCHITECTURE.md`):
 

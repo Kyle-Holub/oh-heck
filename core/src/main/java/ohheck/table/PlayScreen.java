@@ -365,7 +365,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		cards.update(this, time);
 		cards.draw(batch, assets, art, match(), flow.trumpFaceUp(), time, paint.fade());
 		if (flow.isDealing()) {
-			flow.deal().drawShuffle(batch, assets, art, layout);
+			flow.deal().drawDeck(batch, assets, art, layout);
 		}
 	}
 
