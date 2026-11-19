@@ -21,7 +21,6 @@ import ohheck.players.Difficulty;
 import ohheck.players.Player;
 import ohheck.records.Stats;
 import ohheck.rules.Match;
-import ohheck.rules.Rules;
 
 /**
  * Plays a seeded game with the bot in every seat, saving a screenshot the
@@ -159,7 +158,7 @@ public class ScreenshotLauncher {
 				} else if (m.phase() == Match.Phase.PLAYING) {
 					m.playCard(s, bots[s].choosePlay(m.view(s)));
 				} else {
-					stats.countHand(m.handIndex(), level, m.bid(0), m.tricksWon(0));
+					stats.countHand(m.handIndex(), level, m.bid(0), m.tricksWon(0), m.lastHandPoints(0));
 					m.nextHand();
 				}
 			}
@@ -167,7 +166,7 @@ public class ScreenshotLauncher {
 			for (int s = 0; s < 4; s++) {
 				finals[s] = m.score(s);
 			}
-			stats.countGame(level, finals, Rules.numberOfHands(), players);
+			stats.countGame(level, finals, m.rules().numberOfHands(), players);
 		}
 		return stats;
 	}

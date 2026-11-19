@@ -1,5 +1,7 @@
 package ohheck.records;
 
+import java.util.Calendar;
+import java.util.Locale;
 import java.util.Random;
 
 import ohheck.players.Difficulty;
@@ -49,9 +51,9 @@ public final class Records {
 		return stats;
 	}
 
-	/** Saves the statistics after a change (for convenience, when changed is true). */
-	public void saveStats(boolean changed) {
-		if (changed && persist) {
+	/** Saves the statistics after a change. */
+	public void saveStats() {
+		if (persist) {
 			store.setStats(stats.encode());
 		}
 	}
@@ -59,7 +61,7 @@ public final class Records {
 	/** Starts the statistics afresh. */
 	public void resetStats() {
 		stats = new Stats();
-		saveStats(true);
+		saveStats();
 	}
 
 	// ---- high scores
@@ -74,7 +76,7 @@ public final class Records {
 			return -1;
 		}
 		HighScores h = highScores();
-		int at = h.add(new HighScores.Entry(score, place, date, level.ordinal()));
+		int at = h.add(new HighScores.Entry(score, place, date, level));
 		if (at >= 0) {
 			store.setHighScores(h.encode());
 		}
@@ -83,9 +85,9 @@ public final class Records {
 
 	/** Today as yyyy-mm-dd, for a high score. */
 	public static String today() {
-		java.util.Calendar c = java.util.Calendar.getInstance();
-		return String.format(java.util.Locale.US, "%04d-%02d-%02d", c.get(java.util.Calendar.YEAR),
-				c.get(java.util.Calendar.MONTH) + 1, c.get(java.util.Calendar.DAY_OF_MONTH));
+		Calendar c = Calendar.getInstance(); // (not java.time: Android 5 doesn't have it)
+		return String.format(Locale.US, "%04d-%02d-%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1,
+				c.get(Calendar.DAY_OF_MONTH));
 	}
 
 	// ---- the game in progress
@@ -108,15 +110,17 @@ public final class Records {
 		}
 	}
 
-	/** Keeps the game in progress so it survives the app closing; a finished one is forgotten. */
-	public void saveGame(SavedGame game, boolean over) {
-		if (!persist) {
-			return;
-		}
-		if (over) {
-			store.clearSavedGame();
-		} else {
+	/** Keeps the game in progress so it survives the app closing. */
+	public void saveGame(SavedGame game) {
+		if (persist) {
 			store.saveGame(game);
+		}
+	}
+
+	/** Forgets the saved game (it has finished). */
+	public void clearSavedGame() {
+		if (persist) {
+			store.clearSavedGame();
 		}
 	}
 }

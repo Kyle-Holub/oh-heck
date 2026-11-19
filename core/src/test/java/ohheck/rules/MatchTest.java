@@ -75,7 +75,7 @@ public class MatchTest {
 					assertEquals(i < 3 ? -1 : winner, winner);
 				}
 				assertEquals(plays, m.lastTrick());
-				assertEquals((leader + Rules.trickWinner(plays, m.trump())) % 4, winner);
+				assertEquals((leader + m.rules().trickWinner(plays, m.trump())) % 4, winner);
 				if (t < hand) {
 					assertEquals("winner leads next", winner, m.currentSeat());
 				}
@@ -87,7 +87,7 @@ public class MatchTest {
 			for (int s = 0; s < 4; s++) {
 				totalTricks += m.tricksWon(s);
 				assertTrue(m.hand(s).isEmpty());
-				int pts = Rules.score(m.bid(s), m.tricksWon(s));
+				int pts = m.rules().score(m.bid(s), m.tricksWon(s));
 				assertEquals(pts, m.lastHandPoints(s));
 				assertEquals(m.bid(s) == m.tricksWon(s), m.madeBid(s));
 				expectedScores[s] += pts;

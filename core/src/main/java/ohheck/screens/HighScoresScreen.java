@@ -153,8 +153,8 @@ public class HighScoresScreen extends BaseScreen {
 		Color c = i == newest ? Palette.GOLD_LIGHT : i == 0 ? GOLD : Palette.CREAM;
 		f.setColor(c);
 		text(f, Numbers.text(i + 1), cols[0], y, true);
-		if (e.level() >= 0 && e.level() < assets.levelBadge.length) {
-			batch.draw(assets.levelBadge[e.level()], cols[1] - badge / 2, y - SCORE_BADGE_DROP, badge, badge);
+		if (e.level() != null) {
+			batch.draw(assets.levelBadge[e.level().ordinal()], cols[1] - badge / 2, y - SCORE_BADGE_DROP, badge, badge);
 		}
 		text(f, Numbers.text(e.score()), cols[2], y, true);
 		f.setColor(e.place() == 1 ? GOLD : c);

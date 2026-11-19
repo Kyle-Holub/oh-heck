@@ -303,7 +303,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */
 	private void save() {
-		game.records().saveGame(isGameOver() ? null : new SavedGame(match(), level, players), isGameOver());
+		if (isGameOver()) {
+			game.records().clearSavedGame();
+		} else {
+			game.records().saveGame(new SavedGame(match(), level, players));
+		}
 	}
 
 	@Override

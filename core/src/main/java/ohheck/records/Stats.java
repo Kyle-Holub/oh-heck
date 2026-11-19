@@ -10,7 +10,6 @@ import java.util.function.ToLongFunction;
 
 import ohheck.players.Difficulty;
 import ohheck.players.Player;
-import ohheck.rules.Rules;
 import ohheck.util.Log;
 
 /**
@@ -96,14 +95,9 @@ public final class Stats {
 	}
 
 	/**
-	 * Counts your hand, just ended (once: false if it was already counted, as when a game is
-	 * resumed at the end of a hand).
+	 * Counts your hand, just ended, and the points it scored by the game's own rules (once:
+	 * false if it was already counted, as when a game is resumed at the end of a hand).
 	 */
-	public boolean countHand(int handIndex, Difficulty level, int bid, int won) {
-		return countHand(handIndex, level, bid, won, Rules.score(bid, won));
-	}
-
-	/** As above, with the points the hand scored (by the game's own rules). */
 	public boolean countHand(int handIndex, Difficulty level, int bid, int won, int points) {
 		if (handIndex < handsCounted) {
 			return false;
