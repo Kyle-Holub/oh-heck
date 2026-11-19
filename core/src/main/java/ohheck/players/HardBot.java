@@ -13,7 +13,7 @@ import ohheck.rules.Suit;
 import ohheck.rules.TableView;
 import ohheck.rules.Trick;
 
-/**
+/*
  * Monte Carlo search: each option is played out on many imagined deals of the unseen cards,
  * weighted by how well they explain the bids, with everyone playing as NormalBot. It scores
  * its own points less half a rival's, and in the last hand plays to win. The tuning constants

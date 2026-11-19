@@ -10,7 +10,7 @@ import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 
-/** How to play: a step per scene, each with a caption; a tap moves on. */
+/* How to play: a step per scene, each with a caption; a tap moves on. */
 public class TutorialScreen extends BaseScreen implements TourStop {
 
 	private static final class Step {

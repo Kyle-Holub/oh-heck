@@ -13,7 +13,7 @@ import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.TableView;
 
-/**
+/*
  * Bots against bots, for measuring AI changes, and the learning that generates BidTable. Deals
  * are played in duplicate, rotating seats, so luck cancels out.
  */

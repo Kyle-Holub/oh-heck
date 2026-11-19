@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 
-/** Rockets that rise and burst into sparks when you win. */
+/* Rockets that rise and burst into sparks when you win. */
 public final class Fireworks {
 
 	private static final float[][] PALETTE = { { 0.95f, 0.16f, 0.14f }, { 1f, 0.24f, 0.2f },

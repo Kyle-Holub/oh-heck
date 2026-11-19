@@ -1,6 +1,6 @@
 package ohheck.table;
 
-/** Orders the game's end: the cards fall, then fireworks if you won, then the scores. */
+/* Orders the game's end: the cards fall, then fireworks if you won, then the scores. */
 final class GameEnd {
 
 	static final float FIREWORKS_FIRST = 1.4f, SCORES_AFTER_CARDS = 0.3f;

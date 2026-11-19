@@ -18,7 +18,7 @@ import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 import ohheck.ui.Wording;
 
-/** The high scores and, on a second tab, the statistics. */
+/* The high scores and, on a second tab, the statistics. */
 public class HighScoresScreen extends BaseScreen implements TourStop {
 
 	private final MenuChrome chrome = new MenuChrome(paint);

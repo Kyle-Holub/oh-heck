@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-/** What one player can see at the table; all a bot gets. */
+/* What one player can see at the table; all a bot gets. */
 public final class TableView {
 
 	private int seat, handIndex, handSize, dealer, numberOfHands;

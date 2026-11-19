@@ -3,7 +3,7 @@ package ohheck.table;
 import ohheck.players.Seating;
 import ohheck.rules.Match;
 
-/** The table's moments and how each behaves on entry, over time and on a skip. */
+/* The table's moments and how each behaves on entry, over time and on a skip. */
 enum TableState {
 	SHUFFLE {
 		@Override

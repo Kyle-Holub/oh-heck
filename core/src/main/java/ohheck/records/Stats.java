@@ -13,7 +13,7 @@ import ohheck.players.Player;
 import ohheck.players.Seating;
 import ohheck.util.Log;
 
-/** Statistics per difficulty and overall. */
+/* Statistics per difficulty and overall. */
 public final class Stats {
 
 	public static final class Totals {

@@ -12,7 +12,7 @@ import ohheck.players.Player;
 import ohheck.records.Stats;
 import ohheck.rules.Suit;
 
-/** The game's sentences. */
+/* The game's sentences. */
 public final class Wording {
 
 	static final String NONE = "—";

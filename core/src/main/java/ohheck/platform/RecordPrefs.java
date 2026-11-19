@@ -9,7 +9,7 @@ import ohheck.players.Seating;
 import ohheck.records.Records;
 import ohheck.records.SavedGame;
 
-/**
+/*
  * Records.Store on the device's preferences, including the keys older builds saved the game
  * under.
  */

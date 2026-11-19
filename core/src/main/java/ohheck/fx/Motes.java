@@ -8,7 +8,7 @@ import com.badlogic.gdx.math.MathUtils;
 
 import ohheck.ui.Palette;
 
-/** Gold motes rising off the trump card. */
+/* Gold motes rising off the trump card. */
 public final class Motes extends ParticlePool {
 
 	private static final float RATE = 6f;

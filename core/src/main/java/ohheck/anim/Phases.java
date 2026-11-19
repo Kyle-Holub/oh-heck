@@ -1,6 +1,6 @@
 package ohheck.anim;
 
-/** Consecutive stages of fixed lengths, such as the shuffle's gather, riffles and return. */
+/* Consecutive stages of fixed lengths, such as the shuffle's gather, riffles and return. */
 public final class Phases {
 
 	private final float[] lengths;

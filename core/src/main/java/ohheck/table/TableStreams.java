@@ -2,7 +2,7 @@ package ohheck.table;
 
 import java.util.Random;
 
-/**
+/*
  * Separate random streams for seating, the bots and the deck, so drawing more from one leaves
  * the screenshot run's seeded game unchanged.
  */

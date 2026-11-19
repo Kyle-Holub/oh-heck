@@ -1,6 +1,6 @@
 package ohheck.screens;
 
-/** A screen the screenshot tour stops at. */
+/* A screen the screenshot tour stops at. */
 interface TourStop {
 
 	ScreenshotTour.Stop tourStop();

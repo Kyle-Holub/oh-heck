@@ -17,7 +17,7 @@ import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Palette;
 
-/**
+/*
  * Every card on the table: sets each sprite's target from the game each frame, then draws them
  * back to front.
  */

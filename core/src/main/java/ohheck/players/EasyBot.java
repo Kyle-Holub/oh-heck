@@ -6,7 +6,7 @@ import java.util.Random;
 import ohheck.rules.Card;
 import ohheck.rules.TableView;
 
-/** A Normal player that misjudges its bid and plays a random card some of the time. */
+/* A Normal player that misjudges its bid and plays a random card some of the time. */
 final class EasyBot implements Bot {
 
 	private static final double BID_SLIP = 0.6, PLAY_SLIP = 0.5;

@@ -23,7 +23,7 @@ import ohheck.players.Seating;
 import ohheck.records.Stats;
 import ohheck.rules.Match;
 
-/**
+/*
  * Plays a seeded game with a bot in your seat at fixed time steps, saving a screenshot the
  * first time each wanted state appears. CI runs it under Xvfb.
  */

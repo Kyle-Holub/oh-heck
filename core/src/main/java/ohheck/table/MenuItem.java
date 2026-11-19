@@ -1,6 +1,6 @@
 package ohheck.table;
 
-/** The pause menu's choices. */
+/* The pause menu's choices. */
 enum MenuItem {
 	RESUME("Resume"),
 	OPTIONS("Options") {

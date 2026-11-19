@@ -1,6 +1,6 @@
 package ohheck.rules;
 
-/** A bid or a card played, as a value. */
+/* A bid or a card played, as a value. */
 public interface Move {
 
 	int seat();

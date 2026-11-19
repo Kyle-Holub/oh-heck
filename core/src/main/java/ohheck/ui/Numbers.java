@@ -1,6 +1,6 @@
 package ohheck.ui;
 
-/** Numbers as cached strings, so drawing them makes no garbage. */
+/* Numbers as cached strings, so drawing them makes no garbage. */
 public final class Numbers {
 
 	private static final int LOW = -999, HIGH = 9999;

@@ -7,7 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 
-/** The table as its parts read it. */
+/* The table as its parts read it. */
 interface TableScene {
 
 	FlowView flow();

@@ -6,7 +6,7 @@ import ohheck.rules.Match;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 
-/** A read-only view of TableFlow. */
+/* A read-only view of TableFlow. */
 interface FlowView {
 
 	Match match();

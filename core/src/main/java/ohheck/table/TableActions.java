@@ -2,7 +2,7 @@ package ohheck.table;
 
 import ohheck.rules.Card;
 
-/** What taps at the table can do. */
+/* What taps at the table can do. */
 interface TableActions {
 
 	boolean bid(int b);

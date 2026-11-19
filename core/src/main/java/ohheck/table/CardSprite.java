@@ -4,7 +4,7 @@ import ohheck.anim.Ease;
 import ohheck.anim.Tween;
 import ohheck.rules.Card;
 
-/** One card's pose on the table, gliding to each new target. */
+/* One card's pose on the table, gliding to each new target. */
 final class CardSprite {
 
 	static final class Pose {

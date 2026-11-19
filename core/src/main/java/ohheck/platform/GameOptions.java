@@ -1,6 +1,6 @@
 package ohheck.platform;
 
-/** How a launcher runs the game; the defaults are normal play. */
+/* How a launcher runs the game; the defaults are normal play. */
 public final class GameOptions {
 
 	public Long seed = null;

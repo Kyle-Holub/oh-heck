@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Rectangle;
 
-/** The menu screens' header bar, Back button and section headings. */
+/* The menu screens' header bar, Back button and section headings. */
 public final class MenuChrome {
 
 	public static final float HEADER_H = 56;

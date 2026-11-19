@@ -10,7 +10,7 @@ import com.badlogic.gdx.math.Matrix4;
 
 import ohheck.ui.Assets;
 
-/** The back stack of screens, and the short dark fade each new screen rises out of. */
+/* The back stack of screens, and the short dark fade each new screen rises out of. */
 final class Screens {
 
 	static final float FADE = 0.2f, FADE_FROM = 0.55f;

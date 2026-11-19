@@ -6,7 +6,7 @@ import ohheck.rules.Card;
 import ohheck.rules.Move;
 import ohheck.rules.TableView;
 
-/**
+/*
  * A computer player. It decides from a TableView, so it knows only what a person in its seat
  * would.
  */

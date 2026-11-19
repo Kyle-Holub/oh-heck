@@ -1,6 +1,6 @@
 package ohheck.anim;
 
-/**
+/*
  * A tutorial scene's clock: seconds into a scene that loops after a pause or plays once and
  * holds.
  */

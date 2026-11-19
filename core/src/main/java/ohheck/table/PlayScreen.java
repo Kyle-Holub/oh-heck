@@ -21,7 +21,7 @@ import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 
-/** The card table screen. */
+/* The card table screen. */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	private final GameOptions options;

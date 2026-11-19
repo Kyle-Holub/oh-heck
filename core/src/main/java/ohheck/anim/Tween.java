@@ -1,6 +1,6 @@
 package ohheck.anim;
 
-/**
+/*
  * A movement over a time window: a delay, a length and an ease, asked for its progress at any
  * time.
  */

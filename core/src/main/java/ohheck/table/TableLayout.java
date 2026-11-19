@@ -6,7 +6,7 @@ import ohheck.players.Seating;
 import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
 
-/**
+/*
  * Where everything sits on the table for the current screen size. Seat 0 is you at the bottom,
  * then left, top and right.
  */

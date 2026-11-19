@@ -3,7 +3,7 @@ package ohheck.players;
 import java.util.Random;
 import java.util.function.Function;
 
-/**
+/*
  * A level of play: a player's skill, and as the Options setting, the odds of meeting each
  * level. A new level is one more constant.
  */

@@ -3,7 +3,7 @@ package ohheck.util;
 import java.util.Calendar;
 import java.util.Locale;
 
-/** Dates as text. Uses Calendar because Android 5 has no java.time. */
+/* Dates as text. Uses Calendar because Android 5 has no java.time. */
 public final class Dates {
 
 	private Dates() {

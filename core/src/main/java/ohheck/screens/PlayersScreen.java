@@ -13,7 +13,7 @@ import ohheck.ui.MenuChrome;
 import ohheck.ui.Palette;
 import ohheck.ui.Scroller;
 
-/** The roster of computer players. */
+/* The roster of computer players. */
 public class PlayersScreen extends BaseScreen implements TourStop {
 
 	private final MenuChrome chrome = new MenuChrome(paint);

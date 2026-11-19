@@ -1,6 +1,6 @@
 package ohheck.util;
 
-/**
+/*
  * Where code reports trouble it recovered from: the device log in the game, standard error
  * elsewhere.
  */

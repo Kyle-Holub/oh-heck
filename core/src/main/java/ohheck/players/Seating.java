@@ -2,7 +2,7 @@ package ohheck.players;
 
 import java.util.Arrays;
 
-/** Who sits in each computer seat, by player id. */
+/* Who sits in each computer seat, by player id. */
 public final class Seating {
 
 	public static final int YOU = 0, SEATS = 4;

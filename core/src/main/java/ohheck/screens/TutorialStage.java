@@ -24,7 +24,7 @@ import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
-/** The tutorial's drawing kit: its little table, the scene clock, cards, glows and labels. */
+/* The tutorial's drawing kit: its little table, the scene clock, cards, glows and labels. */
 abstract class TutorialStage {
 
 	static final float CAPTION_H = 92, CW = Assets.CARD_W, CH = Assets.CARD_H;

@@ -20,7 +20,7 @@ import ohheck.rules.Rank;
 import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 
-/** Playing cards tumbling down the screen in 3D, projected through a pinhole camera each frame. */
+/* Playing cards tumbling down the screen in 3D, projected through a pinhole camera each frame. */
 public final class FallingCards {
 
 	private static final float FOCAL = 700f;

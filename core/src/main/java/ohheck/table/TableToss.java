@@ -11,7 +11,7 @@ import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Assets;
 
-/** Throws the last hand's cards off the table at the game's end. */
+/* Throws the last hand's cards off the table at the game's end. */
 final class TableToss {
 
 	private static final float TOSS_TRUMP = 0.15f, TOSS_FIRST = 0.35f, TOSS_STEP = 0.025f;

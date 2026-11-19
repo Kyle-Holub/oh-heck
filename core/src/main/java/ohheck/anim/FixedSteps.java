@@ -1,6 +1,6 @@
 package ohheck.anim;
 
-/**
+/*
  * Turns variable frame times into whole fixed-length steps, carrying the remainder, so the
  * game plays out the same at any frame rate.
  */

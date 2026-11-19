@@ -8,7 +8,7 @@ import com.badlogic.gdx.math.MathUtils;
 
 import ohheck.rules.Card;
 
-/**
+/*
  * Four-pointed sparkles on trump cards, derived from the card and the clock rather than
  * stored.
  */

@@ -1,6 +1,6 @@
 package ohheck.anim;
 
-/** Easing curves over progress 0 to 1; the same numbers as libGDX's Interpolation. */
+/* Easing curves over progress 0 to 1; the same numbers as libGDX's Interpolation. */
 public enum Ease {
 	LINEAR {
 		@Override

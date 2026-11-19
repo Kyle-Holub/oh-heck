@@ -5,7 +5,7 @@ import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Wording;
 
-/** Turns touches at the table into actions. */
+/* Turns touches at the table into actions. */
 final class TableInput {
 
 	private static final float DRAG_START = 12f;

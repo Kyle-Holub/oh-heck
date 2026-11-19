@@ -1,6 +1,6 @@
 package ohheck;
 
-/** Drops the frame rate to 30 fps while nothing on screen is moving. */
+/* Drops the frame rate to 30 fps while nothing on screen is moving. */
 final class FramePacer {
 
 	private static final long IDLE_FRAME_NS = 1000000000L / 30;

@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 
-/** Fonts, text, frames and buttons. The two fonts are shared, so each call to ui() or serif() sets their size and colour afresh. */
+/* Fonts, text, frames and buttons. The two fonts are shared, so each call to ui() or serif() sets their size and colour afresh. */
 public final class Painter {
 
 	public final SpriteBatch batch;

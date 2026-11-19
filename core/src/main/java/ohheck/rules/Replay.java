@@ -2,7 +2,7 @@ package ohheck.rules;
 
 import java.util.List;
 
-/** Applies a log of moves to a game. */
+/* Applies a log of moves to a game. */
 public final class Replay {
 
 	private Replay() {

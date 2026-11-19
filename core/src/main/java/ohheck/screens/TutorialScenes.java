@@ -16,7 +16,7 @@ import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
-/** The tutorial's scenes, drawn from the scene's clock. */
+/* The tutorial's scenes, drawn from the scene's clock. */
 final class TutorialScenes extends TutorialStage {
 
 	private static final String BIDS_LINE = LEFT + " bid 1.  " + RIGHT + " bid 1.";

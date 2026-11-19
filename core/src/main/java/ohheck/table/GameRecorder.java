@@ -6,7 +6,7 @@ import ohheck.records.Records;
 import ohheck.rules.Match;
 import ohheck.util.Dates;
 
-/** Records each hand and finished game in the statistics and high scores. */
+/* Records each hand and finished game in the statistics and high scores. */
 final class GameRecorder implements TableFlow.Listener {
 
 	private final Records records;

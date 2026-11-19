@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
+/*
  * The rules a game is played by. A variant overrides what it changes and is listed in ALL. Its
  * name is written into saves, so it never changes once shipped.
  */

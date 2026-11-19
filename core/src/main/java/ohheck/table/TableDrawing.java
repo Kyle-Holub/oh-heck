@@ -22,7 +22,7 @@ import ohheck.ui.Painter;
 import ohheck.ui.PostProcessor;
 import ohheck.ui.TapAreas;
 
-/** Draws the counters, the trump card, the placards and your hand's layout. */
+/* Draws the counters, the trump card, the placards and your hand's layout. */
 final class TableDrawing {
 
 	private static final float TRUMP_LIFT = 4, TRUMP_GLOW_IN = 0.6f, TRUMP_GLOW_W = 1.9f, TRUMP_GLOW_H = 1.6f;

@@ -1,6 +1,6 @@
 package ohheck.rules;
 
-/** A playing card; one instance per suit and rank, so == compares. */
+/* A playing card; one instance per suit and rank, so == compares. */
 public final class Card {
 
 	public static final int COUNT = 52;

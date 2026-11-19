@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-/**
+/*
  * One game from the first deal to the final scores. Seats run clockwise from 0; the deal moves
  * one seat each hand; the player after the dealer leads, and the dealer bids last.
  */

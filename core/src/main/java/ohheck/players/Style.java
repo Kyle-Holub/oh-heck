@@ -8,7 +8,7 @@ import ohheck.rules.Rank;
 import ohheck.rules.Suit;
 import ohheck.rules.TableView;
 
-/**
+/*
  * A player's habit, leaning the bids or cards its level's bot chooses. A new habit is one more
  * constant.
  */

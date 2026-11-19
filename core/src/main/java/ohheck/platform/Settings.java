@@ -7,7 +7,7 @@ import ohheck.players.Difficulty;
 import ohheck.records.Records;
 import ohheck.rules.HandOrder;
 
-/** The player's options, in the device's preferences. */
+/* The player's options, in the device's preferences. */
 public final class Settings {
 
 	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", SPEED = "speed", LEVEL = "level",

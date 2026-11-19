@@ -7,7 +7,7 @@ import ohheck.rules.Rank;
 import ohheck.rules.Suit;
 import ohheck.rules.TableView;
 
-/**
+/*
  * Bids the best expected score from BidTable's per-card odds, adjusted for the bids before it.
  * Plays with card memory: cashes winners and trumps in when it wants tricks, ducks and sheds
  * high cards when it doesn't. The tuning constants were measured in the arena.

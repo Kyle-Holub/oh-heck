@@ -9,7 +9,7 @@ import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
-/** A player's placard: name, score, dealer mark, and the bid and tricks. */
+/* A player's placard: name, score, dealer mark, and the bid and tricks. */
 public final class PlayerPanel {
 
 	public static final float W = 214, H = 80;

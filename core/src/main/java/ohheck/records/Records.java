@@ -5,7 +5,7 @@ import java.util.Random;
 import ohheck.players.Difficulty;
 import ohheck.util.Log;
 
-/** Statistics, high scores and the saved game, written to a Store only when persisting. */
+/* Statistics, high scores and the saved game, written to a Store only when persisting. */
 public final class Records {
 
 	public interface Store {

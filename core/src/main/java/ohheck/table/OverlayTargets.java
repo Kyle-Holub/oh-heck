@@ -7,7 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 
 import ohheck.ui.TapAreas;
 
-/** Where the overlays' buttons were drawn, for taps to find. An undrawn button has no area. */
+/* Where the overlays' buttons were drawn, for taps to find. An undrawn button has no area. */
 final class OverlayTargets {
 
 	enum Button {

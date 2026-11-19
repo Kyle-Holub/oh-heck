@@ -15,7 +15,7 @@ import ohheck.rules.Match;
 import ohheck.rules.Move;
 import ohheck.rules.TableView;
 
-/** The table's state machine and timing; asks the bots and tells its listeners what happens. */
+/* The table's state machine and timing; asks the bots and tells its listeners what happens. */
 final class TableFlow implements FlowView {
 
 	interface Listener {

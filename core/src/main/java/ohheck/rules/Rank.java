@@ -1,6 +1,6 @@
 package ohheck.rules;
 
-/**
+/*
  * Card ranks, aces high. Declaration order follows the card sheet's columns; compare by
  * strength().
  */

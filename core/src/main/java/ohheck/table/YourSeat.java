@@ -1,6 +1,6 @@
 package ohheck.table;
 
-/** Who plays your seat: you, or Autoplay. */
+/* Who plays your seat: you, or Autoplay. */
 interface YourSeat extends TableFlow.Listener {
 
 	YourSeat PERSON = new YourSeat() {

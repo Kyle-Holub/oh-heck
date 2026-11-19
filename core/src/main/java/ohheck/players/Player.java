@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
+/*
  * One of the twelve computer players. Ids are permanent, since saves and statistics refer to
  * them: never renumber or reuse one.
  */

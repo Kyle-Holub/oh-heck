@@ -8,7 +8,7 @@ import com.badlogic.gdx.math.MathUtils;
 
 import ohheck.rules.Card;
 
-/** Card drawing helpers: shadows, flips, stacks and title art. */
+/* Card drawing helpers: shadows, flips, stacks and title art. */
 public final class CardArt {
 
 	private final SpriteBatch batch;

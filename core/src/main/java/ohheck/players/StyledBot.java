@@ -5,7 +5,7 @@ import java.util.Random;
 import ohheck.rules.Card;
 import ohheck.rules.TableView;
 
-/** Applies a Style to a level's bot. */
+/* Applies a Style to a level's bot. */
 final class StyledBot implements Bot {
 
 	private final Bot bot;

@@ -18,7 +18,7 @@ import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 import ohheck.ui.TapAreas;
 
-/** The main menu, over falling cards. */
+/* The main menu, over falling cards. */
 public class TitleScreen extends BaseScreen implements TourStop {
 
 	private final FallingCards cards;

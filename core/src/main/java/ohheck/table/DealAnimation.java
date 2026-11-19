@@ -10,7 +10,7 @@ import ohheck.anim.Tween;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 
-/** The shuffle and the deal's timing. */
+/* The shuffle and the deal's timing. */
 final class DealAnimation implements FlowView.Deal {
 
 	static final float FLIP_TIME = 0.32f;

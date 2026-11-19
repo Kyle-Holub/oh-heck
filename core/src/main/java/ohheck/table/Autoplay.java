@@ -11,7 +11,7 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 
-/** Plays your seat in the screenshot run, through the same taps a person would make. */
+/* Plays your seat in the screenshot run, through the same taps a person would make. */
 final class Autoplay implements YourSeat {
 
 	private static final float MOVE_DELAY = 1.2f, RESULTS_WAIT = 2.2f, MENU_WAIT = 1.5f;

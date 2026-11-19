@@ -12,7 +12,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import ohheck.anim.FixedSteps;
 
-/** The base of every screen: fixed-step updates, the viewport and touches. */
+/* The base of every screen: fixed-step updates, the viewport and touches. */
 public abstract class BaseScreen extends ScreenAdapter implements Tagged {
 
 	public static final float WORLD_W = 800, WORLD_H = 480;

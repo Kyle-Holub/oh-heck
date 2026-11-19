@@ -7,7 +7,7 @@ import ohheck.players.Seating;
 import ohheck.rules.Match;
 import ohheck.util.Log;
 
-/** A game in progress with its difficulty and seating, saved as one text. */
+/* A game in progress with its difficulty and seating, saved as one text. */
 public record SavedGame(Match match, Difficulty level, Seating players) {
 
 	public String encode() {

@@ -5,7 +5,7 @@ import ohheck.anim.Tween;
 import ohheck.players.Seating;
 import ohheck.rules.Match;
 
-/** How each TableState looks and answers taps. */
+/* How each TableState looks and answers taps. */
 enum StateView {
 	SHUFFLE {
 		@Override

@@ -1,6 +1,6 @@
 package ohheck.rules;
 
-/** Which way the hand sizes run: up from one card, or down to it. */
+/* Which way the hand sizes run: up from one card, or down to it. */
 public enum HandOrder {
 	UP, DOWN;
 

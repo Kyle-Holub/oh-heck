@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/** A Match as "key=value" text, reading the first format (cards as numbers) too. */
+/* A Match as "key=value" text, reading the first format (cards as numbers) too. */
 final class MatchCodec {
 
 	private MatchCodec() {

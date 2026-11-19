@@ -4,7 +4,7 @@ import ohheck.ui.Navigator;
 import ohheck.ui.Tagged;
 import ohheck.ui.Tour;
 
-/** The screenshot run's route through the menus and into a game. */
+/* The screenshot run's route through the menus and into a game. */
 public final class ScreenshotTour implements Tour {
 
 	static final float TITLE = 3.5f, OPTIONS = 1.5f;

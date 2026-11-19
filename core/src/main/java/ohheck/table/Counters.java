@@ -8,7 +8,7 @@ import com.badlogic.gdx.math.MathUtils;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
-/** The hand tally and the bid tracker. */
+/* The hand tally and the bid tracker. */
 public final class Counters {
 
 	public static final float TALLY_H = 36f, TALLY_W = 6f, TALLY_STEP = 12f;

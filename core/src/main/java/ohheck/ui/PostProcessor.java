@@ -13,7 +13,7 @@ import com.badlogic.gdx.utils.Disposable;
 
 import ohheck.util.Log;
 
-/**
+/*
  * A full-screen pass: bloom, colour grading, vignette and grain, drawn from a reduced-size
  * buffer.
  */

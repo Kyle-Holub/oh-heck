@@ -8,7 +8,7 @@ import ohheck.rules.Match;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 
-/** The trick's timings and the "Trick Won!" glow. */
+/* The trick's timings and the "Trick Won!" glow. */
 final class TrickView {
 
 	static final float PLAY_FLIGHT = 0.25f;

@@ -9,7 +9,7 @@ import java.util.Map;
 import ohheck.players.Difficulty;
 import ohheck.util.Log;
 
-/** The ten best finished games. */
+/* The ten best finished games. */
 public final class HighScores {
 
 	static final int KEEP = 10;

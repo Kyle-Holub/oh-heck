@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** The trick in progress, shared by Match and the Hard bot's simulations. */
+/* The trick in progress, shared by Match and the Hard bot's simulations. */
 public final class Trick {
 
 	private final int players;

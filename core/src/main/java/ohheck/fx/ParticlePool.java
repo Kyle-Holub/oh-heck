@@ -1,6 +1,6 @@
 package ohheck.fx;
 
-/** A fixed pool of particles shared by Sparks and Motes; nothing is allocated after creation. */
+/* A fixed pool of particles shared by Sparks and Motes; nothing is allocated after creation. */
 abstract class ParticlePool {
 
 	final int max;

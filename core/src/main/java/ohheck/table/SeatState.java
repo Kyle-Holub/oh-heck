@@ -1,6 +1,6 @@
 package ohheck.table;
 
-/** What a placard shows. */
+/* What a placard shows. */
 public final class SeatState {
 
 	static final int NO_BID = ohheck.rules.Match.NO_BID;

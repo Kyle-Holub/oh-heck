@@ -1,6 +1,6 @@
 package ohheck.rules;
 
-/** The standard rules' numbers, for code without a game in hand. */
+/* The standard rules' numbers, for code without a game in hand. */
 public final class Rules {
 
 	private Rules() {

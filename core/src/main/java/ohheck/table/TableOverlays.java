@@ -21,7 +21,7 @@ import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 import ohheck.ui.Wording;
 
-/** Panels and buttons drawn over the table. */
+/* Panels and buttons drawn over the table. */
 final class TableOverlays {
 
 	private static final float HINT_TIME = 2.2f;
