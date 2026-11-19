@@ -13,10 +13,7 @@ import ohheck.players.Player;
 import ohheck.players.Seating;
 import ohheck.util.Log;
 
-/**
- * Statistics per difficulty and overall. FIELDS is in the order the first builds' numbered
- * format wrote, so new statistics go at the end.
- */
+/** Statistics per difficulty and overall. */
 public final class Stats {
 
 	public static final class Totals {
@@ -259,6 +256,9 @@ public final class Stats {
 	}
 
 	private static final int LEGACY_PLAYERS = 12;
+	private static final List<String> NUMBERED_FORMAT = Arrays.asList("games", "wins", "streak", "bestStreak",
+			"perfect", "finalScores", "bestFinal", "worstFinal", "hands", "made", "zeroBids", "zeroMade", "over", "under",
+			"tricks", "bestHand", "worstHand");
 
 	private static Stats decodeNumbered(Map<String, String> lines) {
 		Stats s = new Stats();
@@ -266,7 +266,7 @@ public final class Stats {
 		s.handsCounted = Integer.parseInt(g[0]);
 		s.gameCounted = g[1].equals("1");
 		s.perfectSoFar = g[2].equals("1");
-		String[] names = fieldNames().toArray(new String[0]);
+		String[] names = NUMBERED_FORMAT.toArray(new String[0]);
 		for (int i = 0; i < s.totals.length; i++) {
 			String line = lines.get(String.valueOf(i));
 			if (line == null) {

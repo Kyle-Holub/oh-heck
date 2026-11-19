@@ -1,16 +1,11 @@
 package ohheck.records;
 
-import java.util.Calendar;
-import java.util.Locale;
 import java.util.Random;
 
 import ohheck.players.Difficulty;
 import ohheck.util.Log;
 
-/**
- * Statistics, high scores and the saved game, written to a Store only when persisting. Dates
- * use Calendar because Android 5 has no java.time.
- */
+/** Statistics, high scores and the saved game, written to a Store only when persisting. */
 public final class Records {
 
 	public interface Store {
@@ -70,12 +65,6 @@ public final class Records {
 			store.setHighScores(h.encode());
 		}
 		return at;
-	}
-
-	public static String today() {
-		Calendar c = Calendar.getInstance();
-		return String.format(Locale.US, "%04d-%02d-%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1,
-				c.get(Calendar.DAY_OF_MONTH));
 	}
 
 	public boolean hasSavedGame() {

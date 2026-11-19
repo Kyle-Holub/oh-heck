@@ -7,10 +7,7 @@ import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 
-/**
- * Fonts, text, frames and buttons. The fonts are shared, so get one through ui() or serif()
- * and set its colour each time.
- */
+/** Fonts, text, frames and buttons. The two fonts are shared, so each call to ui() or serif() sets their size and colour afresh. */
 public final class Painter {
 
 	public final SpriteBatch batch;
@@ -32,15 +29,38 @@ public final class Painter {
 	}
 
 	public BitmapFont ui(float size) {
-		assets.font.getData().setScale(size * Assets.UI_BASE);
-		assets.font.setColor(Color.WHITE);
-		return assets.font;
+		return ui(size, Color.WHITE);
+	}
+
+	public BitmapFont ui(float size, Color color) {
+		return sized(assets.font, size * Assets.UI_BASE, color);
+	}
+
+	public BitmapFont ui(float size, Color color, float alpha) {
+		return faded(ui(size, color), color, alpha);
 	}
 
 	public BitmapFont serif(float size) {
-		assets.serif.getData().setScale(size * Assets.SERIF_BASE);
-		assets.serif.setColor(Color.WHITE);
-		return assets.serif;
+		return serif(size, Color.WHITE);
+	}
+
+	public BitmapFont serif(float size, Color color) {
+		return sized(assets.serif, size * Assets.SERIF_BASE, color);
+	}
+
+	public BitmapFont serif(float size, Color color, float alpha) {
+		return faded(serif(size, color), color, alpha);
+	}
+
+	private static BitmapFont faded(BitmapFont font, Color color, float alpha) {
+		font.setColor(color.r, color.g, color.b, alpha);
+		return font;
+	}
+
+	private static BitmapFont sized(BitmapFont font, float scale, Color color) {
+		font.getData().setScale(scale);
+		font.setColor(color);
+		return font;
 	}
 
 	public void centred(BitmapFont f, String s, float x, float y) {

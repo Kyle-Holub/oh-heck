@@ -166,8 +166,7 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 	}
 
 	private void header() {
-		BitmapFont f = paint.serif(1.3f);
-		f.setColor(Palette.GOLD);
+		BitmapFont f = paint.serif(1.3f, Palette.GOLD);
 		f.draw(batch, "How to play", 22, h - 18);
 		paint.button(cornerButton, firstRun ? "Skip tutorial" : "Back", w - 110, h - 52, 190, 40, assets.buttonAlt);
 	}
@@ -175,14 +174,11 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 	private void caption(Step s) {
 		float cw = Math.min(w - 60, 860), x = (w - cw) / 2, y = 12;
 		paint.frame(assets.panel, x, y, cw, CAPTION_H);
-		BitmapFont hd = paint.serif(1.35f);
-		hd.setColor(Palette.GOLD);
+		BitmapFont hd = paint.serif(1.35f, Palette.GOLD);
 		hd.draw(batch, s.heading, x + 22, y + CAPTION_H - 12);
-		BitmapFont c = paint.ui(1.1f);
-		c.setColor(Palette.CREAM);
+		BitmapFont c = paint.ui(1.1f, Palette.CREAM);
 		c.draw(batch, s.caption, x + 22, y + CAPTION_H - 44, cw - 44, Align.left, true);
-		BitmapFont m = paint.ui(0.9f);
-		m.setColor(Palette.MUTED);
+		BitmapFont m = paint.ui(0.9f, Palette.MUTED);
 		sb.setLength(0);
 		sb.append(step + 1).append(" / ").append(steps.length);
 		paint.text(m, sb.toString(), x + cw - 20, y + CAPTION_H - 14, false);

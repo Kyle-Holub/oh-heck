@@ -104,8 +104,7 @@ final class TableOverlays {
 	void drawMenuButton() {
 		Rectangle menuButton = targets.button(OverlayTargets.Button.MENU).set(table.w - TableLayout.EDGE - MENU_BUTTON_W, MENU_BUTTON_Y, MENU_BUTTON_W, MENU_BUTTON_H);
 		paint.frame(paint.assets.buttonAlt, menuButton.x, menuButton.y, menuButton.width, menuButton.height);
-		BitmapFont f = paint.ui(1.2f);
-		f.setColor(Palette.CREAM);
+		BitmapFont f = paint.ui(1.2f, Palette.CREAM);
 		paint.textIn(f, "Menu", menuButton.x, menuButton.y, menuButton.width, menuButton.height);
 	}
 
@@ -116,8 +115,7 @@ final class TableOverlays {
 		MenuItem[] items = MenuItem.ALL;
 		float total = items.length * bh + (items.length - 1) * gap;
 		float top = h / 2 + total / 2 + PAUSE_LIFT;
-		BitmapFont title = paint.ui(1.5f);
-		title.setColor(Palette.GOLD);
+		BitmapFont title = paint.ui(1.5f, Palette.GOLD);
 		paint.text(title, "Paused", w / 2, top + PAUSED_TITLE_RISE, true);
 		BitmapFont f = paint.ui(1.4f);
 		for (int i = 0; i < items.length; i++) {
@@ -139,8 +137,7 @@ final class TableOverlays {
 		art.art(paint.assets.makeBidText, table.w / 2, py + ph - BID_TITLE_DROP, BID_TITLE_SCALE, 1f);
 		int forbidden = match.forbiddenBid();
 		if (forbidden >= 0) {
-			BitmapFont s = paint.ui(1f);
-			s.setColor(Palette.MUTED);
+			BitmapFont s = paint.ui(1f, Palette.MUTED);
 			paint.text(s, Wording.dealerCantBid(forbidden), table.w / 2, py + ph - BID_NOTE_DROP, true);
 		}
 
@@ -159,8 +156,7 @@ final class TableOverlays {
 		art.art(match.madeBid(Seating.YOU) ? paint.assets.bidTricksText : paint.assets.setText, table.centreX(),
 				table.centreY(), HAND_END_SCALE, a);
 		drawHandLabels(0f, a);
-		BitmapFont f = paint.ui(1f);
-		f.setColor(Palette.MUTED);
+		BitmapFont f = paint.ui(1f, Palette.MUTED);
 		paint.text(f, "Tap for the scores", table.w / 2, table.h / 2 - TAP_NOTE_BELOW, true);
 	}
 
@@ -205,8 +201,7 @@ final class TableOverlays {
 		float pw = RESULTS_W, ph = RESULTS_H;
 		float px = (table.w - pw) / 2, py = table.centreY() - ph / 2;
 		paint.frame(paint.assets.panel, px, py, pw, ph);
-		BitmapFont f = paint.ui(1.3f);
-		f.setColor(Palette.CREAM);
+		BitmapFont f = paint.ui(1.3f, Palette.CREAM);
 		paint.text(f, Wording.handResults(match.handIndex() + 1), table.w / 2, py + ph - RESULTS_TITLE_DROP, true);
 
 		BitmapFont t = paint.ui(1.1f);
@@ -229,8 +224,7 @@ final class TableOverlays {
 			t.setColor(place(seat) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, Numbers.text(match.score(seat)), px + cols[5], y);
 		}
-		BitmapFont s = paint.ui(1f);
-		s.setColor(Palette.GOLD);
+		BitmapFont s = paint.ui(1f, Palette.GOLD);
 		paint.text(s, "Tap to continue", table.w / 2, py + RESULTS_TAP_RISE, true);
 	}
 
@@ -244,8 +238,7 @@ final class TableOverlays {
 		art.art(paint.assets.gameOverText, table.w / 2, py + ph - GAME_OVER_ART_DROP, GAME_OVER_ART_SCALE, 1f);
 
 		String result = winnersLine();
-		BitmapFont f = paint.ui(1.5f);
-		f.setColor(Palette.GOLD);
+		BitmapFont f = paint.ui(1.5f, Palette.GOLD);
 		paint.text(f, result, table.w / 2, py + ph - GAME_OVER_RESULT_DROP, true);
 
 		BitmapFont t = paint.ui(1.2f);
@@ -257,8 +250,7 @@ final class TableOverlays {
 			t.draw(paint.batch, scene.name(s), px + GAME_OVER_NAME_X, y);
 			paint.text(t, Numbers.text(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
 			if (s == Seating.YOU && newHighScore == 0) {
-				BitmapFont n = paint.ui(0.95f);
-				n.setColor(Palette.GOLD_LIGHT);
+				BitmapFont n = paint.ui(0.95f, Palette.GOLD_LIGHT);
 				n.draw(paint.batch, "New best!", px + pw - NEW_BEST_FROM_RIGHT, y - 2);
 			}
 			y -= GAME_OVER_ROW;

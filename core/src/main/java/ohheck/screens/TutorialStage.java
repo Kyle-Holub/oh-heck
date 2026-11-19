@@ -206,8 +206,7 @@ abstract class TutorialStage {
 			return;
 		}
 		float k = (t - a) / 1.6f;
-		BitmapFont f = paint.serif(1.8f);
-		f.setColor(c.r, c.g, c.b, 1 - k * k);
+		BitmapFont f = paint.serif(1.8f, c, 1 - k * k);
 		paint.centred(f, s, x, y + 40 * k);
 	}
 
@@ -215,8 +214,7 @@ abstract class TutorialStage {
 		if (alpha <= 0) {
 			return;
 		}
-		BitmapFont f = paint.ui(1f);
-		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, alpha);
+		BitmapFont f = paint.ui(1f, Palette.GOLD_LIGHT, alpha);
 		paint.centred(f, s, x, y);
 	}
 }

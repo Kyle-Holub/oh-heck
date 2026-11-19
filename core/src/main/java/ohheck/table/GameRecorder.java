@@ -4,6 +4,7 @@ import ohheck.players.Difficulty;
 import ohheck.players.Seating;
 import ohheck.records.Records;
 import ohheck.rules.Match;
+import ohheck.util.Dates;
 
 /** Records each hand and finished game in the statistics and high scores. */
 final class GameRecorder implements TableFlow.Listener {
@@ -42,7 +43,7 @@ final class GameRecorder implements TableFlow.Listener {
 
 	@Override
 	public void gameEnded(Match m) {
-		newHighScore = records.recordHighScore(m.score(HUMAN), m.placeOf(HUMAN), level, Records.today());
+		newHighScore = records.recordHighScore(m.score(HUMAN), m.placeOf(HUMAN), level, Dates.today());
 		int[] finals = new int[m.players()];
 		for (int s = 0; s < finals.length; s++) {
 			finals[s] = m.score(s);

@@ -81,8 +81,7 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 
-		BitmapFont t = paint.serif(2.2f);
-		t.setColor(Palette.GOLD);
+		BitmapFont t = paint.serif(2.2f, Palette.GOLD);
 		paint.centred(t, showStats ? "Statistics" : "High scores", w / 2, h - TITLE_DROP);
 		paint.button(scoresTab, "Scores", w - SCORES_TAB_FROM_RIGHT, h - TABS_DROP, SCORES_TAB_W, TAB_H,
 				showStats ? assets.buttonAlt : assets.button);
@@ -181,8 +180,7 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 			boolean badge = which != Stats.ALL;
 			float space = badge ? FILTER_BADGE_SPACE : 0;
 			paint.button(filterButtons[which], "", cx, fy, fw, fh, which == filter ? assets.button : assets.buttonAlt);
-			BitmapFont f = paint.serif(1.5f);
-			f.setColor(Palette.CREAM);
+			BitmapFont f = paint.serif(1.5f, Palette.CREAM);
 			paint.textIn(f, filterLabel(which), cx - fw / 2 + space, fy, fw - space, fh);
 			if (badge) {
 				batch.draw(assets.levelBadge[which], cx - fw / 2 + FILTER_BADGE_X, fy + FILTER_BADGE_Y, FILTER_BADGE, FILTER_BADGE);
@@ -206,8 +204,7 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 	private void statPanel(String title, String[][] rows, float x, float top) {
 		float ph = STAT_PANEL_PAD + rows.length * STAT_ROW;
 		paint.frame(assets.panel, x, top - ph, STATS_PANEL_W, ph);
-		BitmapFont head = paint.serif(1.5f);
-		head.setColor(Palette.GOLD);
+		BitmapFont head = paint.serif(1.5f, Palette.GOLD);
 		head.draw(batch, title, x + STAT_INSET, top - STAT_TITLE_DROP);
 		BitmapFont f = paint.ui(1.15f);
 		float y = top - STAT_ROWS_DROP;

@@ -49,8 +49,7 @@ public final class PlayerPanel {
 
 	private void drawNameAndScore(SeatState seat, float x, float top) {
 		boolean waiting = seat.waiting();
-		BitmapFont f = paint.ui(1.3f);
-		f.setColor(seat.turn ? Palette.GOLD_LIGHT : waiting ? WAIT_TEXT : Palette.CREAM);
+		BitmapFont f = paint.ui(1.3f, seat.turn ? Palette.GOLD_LIGHT : waiting ? WAIT_TEXT : Palette.CREAM);
 		paint.glyphs.setText(f, seat.name);
 		float nameW = paint.glyphs.width, nameH = paint.glyphs.height;
 		f.draw(paint.batch, seat.name, x + 10, top - 9);

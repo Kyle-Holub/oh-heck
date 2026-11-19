@@ -196,8 +196,7 @@ final class TutorialScenes extends TutorialStage {
 			if (t < a || t >= end) {
 				continue;
 			}
-			BitmapFont f = paint.serif(1.6f);
-			f.setColor(Palette.GOLD.r, Palette.GOLD.g, Palette.GOLD.b, at(a, a + 0.3f) * (1 - at(5.0f, 5.3f)));
+			BitmapFont f = paint.serif(1.6f, Palette.GOLD, at(a, a + 0.3f) * (1 - at(5.0f, 5.3f)));
 			paint.centred(f, DEAL_LINES[n], cx(), h - 70);
 			for (int k = 0; k < n * 2; k++) {
 				int who = k % 2, j = k / 2;
@@ -212,8 +211,7 @@ final class TutorialScenes extends TutorialStage {
 				batch.draw(assets.back(), x, y, dw, dh);
 			}
 		}
-		BitmapFont f = paint.serif(1.6f);
-		f.setColor(Palette.GOLD.r, Palette.GOLD.g, Palette.GOLD.b, at(5.2f, 5.6f));
+		BitmapFont f = paint.serif(1.6f, Palette.GOLD, at(5.2f, 5.6f));
 		paint.centred(f, "\u2026 and so on, up to " + HANDS, cx(), h - 70);
 	}
 
@@ -259,8 +257,7 @@ final class TutorialScenes extends TutorialStage {
 				paint.numeral(i + 1, x + CW / 2, y + CH + 22, 30, tint.set(1, 1, 1, g));
 			}
 		}
-		BitmapFont f = paint.ui(1.05f);
-		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(1.8f, 2.2f));
+		BitmapFont f = paint.ui(1.05f, Palette.GOLD_LIGHT, at(1.8f, 2.2f));
 		f.draw(batch, "The Ace of trumps and a King:\ntwo likely winners, so bid 2", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
 		bidPanel(cx(), handY() + CH + 12, 3, t >= 5.2f ? 2 : -1, -1, at(4.4f, 4.8f) * (1 - at(6.2f, 6.4f)));
 	}
@@ -298,8 +295,7 @@ final class TutorialScenes extends TutorialStage {
 		seat(3, (t >= 0.8f ? bidOf(1) : waiting()).cards(3));
 		seat(0, waiting().turn(true).dealer(true).cards(3));
 		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
-		BitmapFont f = paint.ui(1.15f);
-		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
+		BitmapFont f = paint.ui(1.15f, Palette.CREAM, at(2.4f, 2.8f));
 		paint.centred(f, BIDS_LINE, cx(), cy() - 46);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(3.2f, 3.6f));
 		paint.centred(f, "The total of the bids can't be 3, so you can't bid 1.", cx(), cy() - 74);
@@ -309,8 +305,7 @@ final class TutorialScenes extends TutorialStage {
 		float scale = 1.6f, left = cx() - 250, top = h - 80;
 		int done = clock.count(0.5f, 1.0f, 1.5f);
 		counterArt.tally(left, top, Rules.numberOfHands(), done, Counters.pulse(clock.shown()), scale);
-		BitmapFont f = paint.ui(1.05f);
-		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(1.6f, 2.0f));
+		BitmapFont f = paint.ui(1.05f, Palette.CREAM, at(1.6f, 2.0f));
 		f.draw(batch, "Hands: three played, the 4th glowing (of 8)", left + 150 * scale, top - 12);
 		int[] totals = { 0, 1, 3, 4, 5 };
 		float[] when = { 0, 3.4f, 4.2f, 5.0f, 5.8f };
@@ -343,8 +338,7 @@ final class TutorialScenes extends TutorialStage {
 			art.art(assets.setText, hx, seatTop(3) - PlayerPanel.H - 34, 0.5f, at(6.2f, 6.5f));
 		}
 		floating(Numbers.text(Rules.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
-		BitmapFont f = paint.ui(1.1f);
-		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
+		BitmapFont f = paint.ui(1.1f, Palette.CREAM, at(2.4f, 2.8f));
 		paint.centred(f, MADE_LINE, cx(), cy() + 36);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(6.6f, 7.0f));
 		paint.centred(f, SET_LINE, cx(), cy() - 4);

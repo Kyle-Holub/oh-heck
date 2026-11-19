@@ -20,8 +20,7 @@ public final class MenuChrome {
 	public void header(String title, Rectangle back, float w, float h) {
 		paint.rect(0, h - HEADER_H, w, HEADER_H, HEADER);
 		paint.rect(0, h - HEADER_H - 2, w, 2, Palette.GOLD);
-		BitmapFont t = paint.serif(1.6f);
-		t.setColor(Palette.GOLD);
+		BitmapFont t = paint.serif(1.6f, Palette.GOLD);
 		paint.centred(t, title, w / 2, h - 16);
 		backButton(back, h - HEADER_H + (HEADER_H - BACK_H) / 2);
 	}
@@ -31,8 +30,7 @@ public final class MenuChrome {
 	}
 
 	public void heading(String name, float x, float y) {
-		BitmapFont f = paint.serif(1.35f);
-		f.setColor(Palette.GOLD);
+		BitmapFont f = paint.serif(1.35f, Palette.GOLD);
 		f.draw(paint.batch, name, x + 6, y);
 	}
 }

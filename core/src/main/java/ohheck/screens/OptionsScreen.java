@@ -128,15 +128,13 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 
 	private void drawRow(Row row, float x, float y, float rw, float rh) {
 		paint.frame(assets.panel, x, y, rw, rh);
-		BitmapFont f = paint.serif(1.6f);
-		f.setColor(Palette.CREAM);
+		BitmapFont f = paint.serif(1.6f, Palette.CREAM);
 		glyphs.setText(f, row.label);
 		f.draw(batch, row.label, x + 24, y + rh / 2 + glyphs.height / 2);
 		float vw = 140;
 		boolean on = row.on.getAsBoolean();
 		paint.frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 7, vw, rh - 14);
-		BitmapFont v = paint.ui(1.4f);
-		v.setColor(on ? Palette.CREAM : Palette.MUTED);
+		BitmapFont v = paint.ui(1.4f, on ? Palette.CREAM : Palette.MUTED);
 		paint.textIn(v, row.value.get(), x + rw - vw - 14, y, vw, rh);
 		row.bounds.set(x, y, rw, rh);
 	}
@@ -150,8 +148,7 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 	private void drawDifficulty(float x, float y, float rw) {
 		Settings s = game.settings();
 		paint.frame(assets.panel, x, y, rw, DIFFICULTY_H);
-		BitmapFont f = paint.serif(1.6f);
-		f.setColor(Palette.CREAM);
+		BitmapFont f = paint.serif(1.6f, Palette.CREAM);
 		f.draw(batch, "Difficulty", x + 24, y + DIFFICULTY_H - 18);
 		float x0 = x + 214, x1 = x + rw - 36, ty = y + 84;
 		stop0 = x0;

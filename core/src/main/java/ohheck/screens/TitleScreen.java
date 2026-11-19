@@ -142,8 +142,7 @@ public class TitleScreen extends BaseScreen implements TourStop {
 			paint.button(hits.get(i), items.get(i), w / 2, y, bw, bh, i == 0 ? assets.button : assets.buttonAlt);
 			y -= bh + gap;
 		}
-		BitmapFont f = paint.ui(0.9f);
-		f.setColor(Palette.MUTED.r, Palette.MUTED.g, Palette.MUTED.b, paint.fade());
+		BitmapFont f = paint.ui(0.9f, Palette.MUTED, paint.fade());
 		if (versionLine == null) {
 			versionLine = game.build().isEmpty() ? game.version() : game.version() + "  (" + game.build() + ")";
 		}
