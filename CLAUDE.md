@@ -9,8 +9,8 @@ the screenshot run, CI, the arena and the art tools.
   merge into the current `develop/alpha-X.Y.Z` (CI publishes a dev build). Don't commit
   straight to `develop/` or `main`.
 - **Packages:** follow the map in `ARCHITECTURE.md`. A package may use those below it,
-  never one above (no cycles). `ohheck.rules`, `ohheck.players`, `ohheck.records` and
-  `ohheck.util` stay libGDX-free, so they run in plain JUnit. Put new game logic and timing
+  never one above (no cycles). `ohheck.rules`, `ohheck.players`, `ohheck.records`,
+  `ohheck.util` and `ohheck.anim` stay libGDX-free, so they run in plain JUnit. Put new game logic and timing
   there, or in small gdx-free classes like `GameEnd`, and test it.
 - **Screens depend on `GameHost`**, not `OhHeckGame`; helpers that draw take a `Painter`,
   not a screen; table parts read `TableScene` and act through `TableActions`.
@@ -20,6 +20,10 @@ the screenshot run, CI, the arena and the art tools.
   next unused id.
 - **AI changes:** measure them in the arena (`players`, `levels`) before and after, and
   keep each level's win rate in its band. Don't make Easy harder.
+- **Game loop and motion:** screens implement `update(step)` and `draw()`, never `render`;
+  timing goes in `update`, so it runs in fixed steps. Name each movement as a `Tween`
+  (`ohheck.anim`), and move table cards by setting `CardSprites` targets. Don't make new
+  strings or objects every frame: use `Numbers` and cached lines.
 - **Text and spacing:** the game font has no Unicode minus sign. Use "-".
 - **Generated files:** `BidTable.java` comes from the arena's `learn`; the images, fonts and
   launcher icons come from `python3 tools/build_art.py` (`--check` to compare). Regenerate
@@ -28,7 +32,8 @@ the screenshot run, CI, the arena and the art tools.
   and the roster, not copied text.
 - **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
   constant, a rules variant a `RuleSet` subclass listed in `RuleSet.ALL`, and a new reaction
-  to table events a `TableFlow.Listener`. Code playing a game asks `match.rules()`, not
+  to table events a `TableFlow.Listener`, a new table state a `TableState` constant with
+  its `StateView`. Code playing a game asks `match.rules()`, not
   `Rules`.
 
 ## Checking changes
