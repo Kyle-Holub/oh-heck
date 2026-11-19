@@ -38,11 +38,16 @@ the screenshot run, CI, the arena and the art tools.
 
 ## Checking changes
 
-- All tests run locally with plain `javac` and JUnit: compile `core/src/main`, `core/src/test`
-  and `core/src/arena` against the JUnit jars plus libGDX, which you can take from the desktop
-  jar a dev build publishes (its `com/` and `org/` folders). The arena then runs as
-  `java ohheck.players.Arena players 60`.
-- UI changes: push a feature branch and look at the preview's screenshots. For a quick
-  look, add a commit-message line like `[shots: options,tutorial]`.
+Use the `verify` skill after every change and the `ship` skill to merge; the scripts are in
+`tools/dev` (see "Developer tools" in `ARCHITECTURE.md`):
+
+- `tools/dev/test.sh` compiles and runs the tests, no Gradle needed.
+- `tools/dev/arena.sh` compares the bots with develop's: identical unless you meant to
+  change them.
+- UI changes: push a feature branch, wait for its Preview, then
+  `python3 tools/dev/shots.py review`. Look at every `CHANGED` shot and at `phone-view.png`.
+  For a quick run, add a commit-message line like `[shots: options,tutorial]`.
+- A merge into `develop/` is gated by a hook (tests, plus a screenshot report with nothing
+  unreviewed). Add `[shots-reviewed]` to the merge message only after looking.
 - If a change alters the scripted game, the screenshot seed may need replacing (see
   "Randomness" in `ARCHITECTURE.md`).

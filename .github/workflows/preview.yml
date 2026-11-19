@@ -4,6 +4,11 @@ name: Preview
 # its screenshots on a draft release (drafts are private, so Obtainium never
 # sees them). Nothing is published; merge into a develop/ branch for that.
 #
+# Each preview is compared with the newest dev build's screenshots (tools/dev/shots.py):
+# compare.txt lists every shot as same / random / CHANGED, CHANGED ones get before/after
+# pictures, and phone-view.png shows the table shots at a phone's size. The merge gate
+# (tools/dev/hooks/merge_gate.sh) reads compare.txt.
+#
 # For a quicker check, add a line to the commit message that starts with
 # [shots: options,tutorial] (any state prefixes): only those are captured, and the run
 # stops once it has them.
@@ -36,12 +41,29 @@ jobs:
             xvfb-run -a -s "-screen 0 1600x800x24" ./gradlew lwjgl3:screenshots ${SHOTS:+-Pshots=$SHOTS} --stacktrace
           ls -l build/screenshots
 
+      - name: Compare with the newest dev build, and make the phone view
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pip install -q -r tools/dev/requirements.txt
+          python3 tools/dev/shots.py fetch "$(gh api 'repos/${{ github.repository }}/releases?per_page=30' \
+            --jq '[.[] | select(.draft|not) | select(.tag_name|startswith("dev-"))][0].tag_name')" build/base
+          mkdir -p build/report
+          python3 tools/dev/shots.py phone build/screenshots build/report/phone-view.png
+          python3 tools/dev/shots.py compare build/base build/screenshots --out build/report \
+            --report build/report/compare.txt || true
+          {
+            echo "### Screenshots against the newest dev build"
+            echo '```'; cat build/report/compare.txt; echo '```'
+            echo "CHANGED shots have before/after pictures (compare-*.png) on the draft release; phone-view.png shows the table at a phone's size."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Attach screenshots to a draft release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="preview-${{ github.run_number }}"
-          gh release create "$TAG" build/screenshots/*.png --draft --target "$GITHUB_SHA" \
+          gh release create "$TAG" build/screenshots/*.png build/report/* --draft --target "$GITHUB_SHA" \
             --title "Preview ${{ github.run_number }} (${GITHUB_REF_NAME})" --notes "$(git log -1 --pretty=%s)"
           # keep only the newest three previews
           gh release list --limit 100 --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName' \
