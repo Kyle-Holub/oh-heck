@@ -79,7 +79,7 @@ public final class Painter {
 	 * plain gold). A lone 0 is struck through, like the zero-bid icon.
 	 */
 	public void numeral(int n, float cx, float cy, float h, Color c) {
-		String s = String.valueOf(n);
+		String s = Numbers.text(n);
 		float w = h * Assets.DIGIT_W / Assets.DIGIT_H, step = w * 0.74f;
 		float x = cx - (w + step * (s.length() - 1)) / 2;
 		batch.setColor(c.r, c.g, c.b, c.a * fade);

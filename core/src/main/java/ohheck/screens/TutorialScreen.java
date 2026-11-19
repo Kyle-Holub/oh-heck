@@ -23,6 +23,7 @@ import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
+import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 
 /**
@@ -239,6 +240,13 @@ public class TutorialScreen extends BaseScreen {
 	/** The two players at the tutorial's table, by roster id (so a renamed player is renamed here too). */
 	private static final String LEFT = Player.byId(4).name, RIGHT = Player.byId(7).name;
 	private static final String[] NAMES = { "You", LEFT, "", RIGHT };
+	// the scenes' sentences, made once
+	private static final String BIDS_LINE = LEFT + " bid 1.  " + RIGHT + " bid 1.";
+	private static final String MADE_LINE = "You bid 2 and won 2: made it. " + Rules.MADE + " + " + Rules.PER_TRICK_BID + " + "
+			+ Rules.PER_TRICK_BID + " = " + Rules.score(2, 2) + " points";
+	private static final String SET_LINE = RIGHT + " bid 1 and won 2: one trick over, so " + Rules.score(1, 2);
+	/** "Hand 2: 2 cards each", by hand. */
+	private static final String[] DEAL_LINES = { "", "Hand 1: 1 card each", "Hand 2: 2 cards each", "Hand 3: 3 cards each" };
 
 	private float seatX(int seat) {
 		switch (seat) {
@@ -271,17 +279,27 @@ public class TutorialScreen extends BaseScreen {
 	}
 
 	/** A placard with nothing on it yet. */
-	private static SeatState plain() {
-		return new SeatState().plain(true);
+	private SeatState plain() {
+		return nextState().plain(true);
 	}
 
 	/** Yet to bid: the hourglass. */
-	private static SeatState waiting() {
-		return new SeatState();
+	private SeatState waiting() {
+		return nextState();
 	}
 
-	private static SeatState bidOf(int bid) {
-		return new SeatState().bid(bid);
+	private SeatState bidOf(int bid) {
+		return nextState().bid(bid);
+	}
+
+	/** Placard states, reused round in turn (a scene shows at most a few a frame). */
+	private final SeatState[] states = { new SeatState(), new SeatState(), new SeatState(), new SeatState(),
+			new SeatState(), new SeatState(), new SeatState(), new SeatState() };
+	private int nextState;
+
+	private SeatState nextState() {
+		nextState = (nextState + 1) % states.length;
+		return states[nextState].reset();
 	}
 
 
@@ -570,7 +588,7 @@ public class TutorialScreen extends BaseScreen {
 			}
 			BitmapFont f = serif(1.6f);
 			f.setColor(GOLD.r, GOLD.g, GOLD.b, at(a, a + 0.3f) * (1 - at(5.0f, 5.3f)));
-			centred(f, "Hand " + n + ": " + n + (n == 1 ? " card each" : " cards each"), cx(), h - 70);
+			centred(f, DEAL_LINES[n], cx(), h - 70);
 			for (int k = 0; k < n * 2; k++) {
 				int who = k % 2, j = k / 2; // you first (left of the dealer), then Oswald
 				float ka = a + k * 0.12f;
@@ -682,7 +700,7 @@ public class TutorialScreen extends BaseScreen {
 		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
 		BitmapFont f = ui(1.15f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
-		centred(f, LEFT + " bid 1.  " + RIGHT + " bid 1.", cx(), cy() - 46);
+		centred(f, BIDS_LINE, cx(), cy() - 46);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(3.2f, 3.6f));
 		centred(f, "The total of the bids can't be 3, so you can't bid 1.", cx(), cy() - 74);
 	}
@@ -724,18 +742,17 @@ public class TutorialScreen extends BaseScreen {
 		if (passed(2.2f)) {
 			sparks.burst(yx, yy - PlayerPanel.H / 2, 70);
 		}
-		floating("+" + Rules.score(2, 2), yx, yy, 2.2f, Palette.GOLD_LIGHT);
+		floating(Numbers.signed(Rules.score(2, 2)), yx, yy, 2.2f, Palette.GOLD_LIGHT);
 		float hx = seatX(3) + PlayerPanel.W / 2;
 		if (t >= 6.2f) {
 			art.art(assets.setText, hx, seatTop(3) - PlayerPanel.H - 34, 0.5f, at(6.2f, 6.5f));
 		}
-		floating(String.valueOf(Rules.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
+		floating(Numbers.text(Rules.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
 		BitmapFont f = ui(1.1f);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
-		centred(f, "You bid 2 and won 2: made it. " + Rules.MADE + " + " + Rules.PER_TRICK_BID + " + " + Rules.PER_TRICK_BID
-				+ " = " + Rules.score(2, 2) + " points", cx(), cy() + 36);
+		centred(f, MADE_LINE, cx(), cy() + 36);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(6.6f, 7.0f));
-		centred(f, RIGHT + " bid 1 and won 2: one trick over, so " + Rules.score(1, 2), cx(), cy() - 4);
+		centred(f, SET_LINE, cx(), cy() - 4);
 	}
 
 	// ---- 13. ready: the title (eased in once and kept), a few fireworks

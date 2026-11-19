@@ -13,6 +13,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 import ohheck.rules.Match;
+import ohheck.ui.Numbers;
 import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
@@ -238,7 +239,7 @@ final class TableOverlays {
 		paint.frame(paint.assets.panel, px, py, pw, ph);
 		BitmapFont f = paint.ui(1.3f);
 		f.setColor(Palette.CREAM);
-		paint.text(f, "Hand " + (match.handIndex() + 1) + " results", table.w / 2, py + ph - RESULTS_TITLE_DROP, true);
+		paint.text(f, Wording.handResults(match.handIndex() + 1), table.w / 2, py + ph - RESULTS_TITLE_DROP, true);
 
 		BitmapFont t = paint.ui(1.1f);
 		float[] cols = RESULT_COLS;
@@ -255,10 +256,10 @@ final class TableOverlays {
 			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
 			t.draw(paint.batch, scene.name(seat) + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
 			paint.numeral(match.bid(seat), px + cols[2] + RESULT_NUMERAL_X, y - RESULT_NUMERAL_Y, RESULT_NUMERAL_H, Color.WHITE);
-			t.draw(paint.batch, String.valueOf(match.tricksWon(seat)), px + cols[3], y);
-			t.draw(paint.batch, (pts > 0 ? "+" : "") + pts, px + cols[4], y);
+			t.draw(paint.batch, Numbers.text(match.tricksWon(seat)), px + cols[3], y);
+			t.draw(paint.batch, Numbers.signed(pts), px + cols[4], y);
 			t.setColor(place(seat) == 1 ? Palette.GOLD : Palette.CREAM);
-			t.draw(paint.batch, String.valueOf(match.score(seat)), px + cols[5], y);
+			t.draw(paint.batch, Numbers.text(match.score(seat)), px + cols[5], y);
 		}
 		BitmapFont s = paint.ui(1f);
 		s.setColor(Palette.GOLD);
@@ -277,12 +278,7 @@ final class TableOverlays {
 		paint.frame(paint.assets.panel, px, py, pw, ph);
 		art.art(paint.assets.gameOverText, table.w / 2, py + ph - GAME_OVER_ART_DROP, GAME_OVER_ART_SCALE, 1f);
 
-		List<Integer> leaders = match.leaders();
-		List<String> names = new ArrayList<String>();
-		for (int seat : leaders) {
-			names.add(scene.name(seat));
-		}
-		String result = Wording.winners(names, leaders.size() == 1 && leaders.get(0) == TableLayout.HUMAN);
+		String result = winnersLine();
 		BitmapFont f = paint.ui(1.5f);
 		f.setColor(Palette.GOLD);
 		paint.text(f, result, table.w / 2, py + ph - GAME_OVER_RESULT_DROP, true);
@@ -294,7 +290,7 @@ final class TableOverlays {
 			t.draw(paint.batch, Wording.ordinal(place(s)), px + GAME_OVER_PLACE_X, y);
 			t.setColor(place(s) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, scene.name(s), px + GAME_OVER_NAME_X, y);
-			paint.text(t, String.valueOf(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
+			paint.text(t, Numbers.text(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
 			if (s == TableLayout.HUMAN && newHighScore == 0) { // only a score that tops the table
 				BitmapFont n = paint.ui(0.95f);
 				n.setColor(Palette.GOLD_LIGHT);
@@ -306,6 +302,23 @@ final class TableOverlays {
 		paint.button(playAgainButton, "Play again", table.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
 		paint.button(highScoresButton, "High scores", table.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
 	}
+
+	/** "You win the game!" and the like: worked out once per finished game, not every frame. */
+	private String winnersLine() {
+		if (winners == null || winnersOf != match) {
+			List<Integer> leaders = match.leaders();
+			List<String> names = new ArrayList<String>();
+			for (int seat : leaders) {
+				names.add(scene.name(seat));
+			}
+			winners = Wording.winners(names, leaders.size() == 1 && leaders.get(0) == TableLayout.HUMAN);
+			winnersOf = match;
+		}
+		return winners;
+	}
+
+	private String winners;
+	private Match winnersOf;
 
 	// ---- standings
 

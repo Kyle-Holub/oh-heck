@@ -134,6 +134,9 @@ public class TitleScreen extends BaseScreen {
 		return titleY;
 	}
 
+	/** "alpha-1.0.9  (dev-0042)", made the first time it's drawn. */
+	private String versionLine;
+
 	/** The menu buttons under the title, the version and the copyright, all at the current fade. */
 	private void drawMenu(float titleY) {
 		float bw = 270, bh = 46, gap = 10;
@@ -144,7 +147,10 @@ public class TitleScreen extends BaseScreen {
 		}
 		BitmapFont f = ui(0.9f);
 		f.setColor(Palette.MUTED.r, Palette.MUTED.g, Palette.MUTED.b, paint.fade());
-		f.draw(batch, game.build().isEmpty() ? game.version() : game.version() + "  (" + game.build() + ")", 10, 22);
+		if (versionLine == null) {
+			versionLine = game.build().isEmpty() ? game.version() : game.version() + "  (" + game.build() + ")";
+		}
+		f.draw(batch, versionLine, 10, 22);
 		String c = "\u00a92026 Kyle Holub";
 		glyphs.setText(f, c);
 		f.draw(batch, c, w - 10 - glyphs.width, 22);
