@@ -66,12 +66,12 @@ final class CardSprites {
 	void update(TableScene s, float now) {
 		Arrays.fill(seen, false);
 		framed = -1;
-		TableFlow flow = s.flow();
+		FlowView flow = s.flow();
 		Match m = s.match();
 		TableLayout table = s.layout();
 		if (flow.state() != TableState.GAME_OVER) { // (at the end the toss takes the cards)
 			if (flow.isDealing()) {
-				Vector2 d = table.deckSpot(flow.deal.dealer());
+				Vector2 d = table.deckSpot(flow.deal().dealer());
 				dealer.set(d.x - TableLayout.backW() / 2, d.y - TableLayout.backH() / 2, TableLayout.backW(),
 						TableLayout.backH(), 0, 0, DEAL_LIFT);
 			}
@@ -108,9 +108,9 @@ final class CardSprites {
 	 * face down to rest (backdated to when it left); if it's yours, turning face up once it
 	 * lands. rest is its place face down. Returns seconds since it left, or -1 if it hasn't.
 	 */
-	private float dealt(TableFlow flow, int seat, int j, CardSprite sp, CardSprite.Pose rest, float now) {
-		float since = flow.deal.dealTime() - flow.deal.startOf(seat, j);
-		if (flow.deal.isShuffling() || since < 0) {
+	private float dealt(FlowView flow, int seat, int j, CardSprite sp, CardSprite.Pose rest, float now) {
+		float since = flow.deal().dealTime() - flow.deal().startOf(seat, j);
+		if (flow.deal().isShuffling() || since < 0) {
 			return -1;
 		}
 		if (!sp.visible()) {
@@ -126,7 +126,7 @@ final class CardSprites {
 		return since;
 	}
 
-	private void fan(TableFlow flow, Match m, TableLayout table, int seat, float now) {
+	private void fan(FlowView flow, Match m, TableLayout table, int seat, float now) {
 		List<Card> hand = m.hand(seat);
 		int total = hand.size();
 		float y = table.fanOrigin(seat).y;
@@ -142,7 +142,7 @@ final class CardSprites {
 		}
 	}
 
-	private void hand(TableScene s, TableFlow flow, Match m, TableLayout table, float now) {
+	private void hand(TableScene s, FlowView flow, Match m, TableLayout table, float now) {
 		List<Card> order = s.handOrder();
 		int n = order.size();
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();

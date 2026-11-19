@@ -52,6 +52,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	private final TableLayout table = new TableLayout();
 	private final TableOverlays overlays;
+	/** Where the overlays' buttons are, for your taps (and Autoplay's). */
+	private final OverlayTargets targets = new OverlayTargets();
 	private final TableFlow flow;
 	private final CardArt art;
 	/** Draws the table (counters, trump, panels, your hand); the trick, overlays and effects are separate. */
@@ -76,7 +78,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private Seating players;
 
 	/** Your taps and drags, and the pause menu. */
-	private final TableInput input = new TableInput(this, this);
+	private final TableInput input = new TableInput(this, this, targets);
 
 	/** Your hand in display order, and each card's tap area; rebuilt when drawn. */
 	private final List<Card> handOrder = new ArrayList<Card>();
@@ -93,8 +95,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		bots = stream(options.seed, 0xB075L);
 		deck = stream(options.seed, 0xDEC4L);
 		this.art = new CardArt(batch, assets);
-		this.overlays = new TableOverlays(paint, this, table, art);
-		this.autoplay = options.autoplayHuman ? new Autoplay(this, input, options) : null;
+		this.overlays = new TableOverlays(paint, this, table, art, targets);
+		this.autoplay = options.autoplayHuman ? new Autoplay(this, input, targets, options) : null;
 		this.drawing = new TableDrawing(this, paint, art, game.post());
 		this.toss = new TableToss(assets, table);
 		recorder = new GameRecorder(game.records());
@@ -137,8 +139,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 		@Override
 		public void gameEnded(Match m) {
-			overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
-			overlays.highScoresButton.set(0, 0, 0, 0);
+			targets.clearGameOverButtons(); // not tappable until drawn
 			// in turn: the table's cards fall away, then (if you won) fireworks, then the scores
 			toss.toss(m);
 			end.start(m.leaders().contains(HUMAN)); // you won (or tied for the win)
@@ -168,7 +169,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
-	public TableFlow flow() {
+	public FlowView flow() {
 		return flow;
 	}
 
@@ -195,11 +196,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public TableLayout layout() {
 		return table;
-	}
-
-	@Override
-	public TableOverlays overlays() {
-		return overlays;
 	}
 
 	@Override
@@ -353,9 +349,29 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	// ------------------------------------------- what your taps do, as TableActions
 
 	@Override
-	public void humanPlay(Card c, float fromX, float fromY) {
+	public boolean bid(int b) {
+		return flow.bid(b);
+	}
+
+	@Override
+	public void play(Card c) {
 		input.clearTouch();
 		flow.play(c); // (it flies to the trick from wherever its sprite is)
+	}
+
+	@Override
+	public boolean skip() {
+		return flow.skip();
+	}
+
+	@Override
+	public boolean nextHand() {
+		return flow.nextHand();
+	}
+
+	@Override
+	public void hint(String s) {
+		overlays.hint(s);
 	}
 
 	@Override
@@ -417,13 +433,13 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		cards.update(this, time);
 		cards.draw(batch, assets, art, match(), flow.trumpFaceUp(), time, paint.fade());
 		if (flow.isDealing()) {
-			flow.deal.drawShuffle(batch, assets, art, table);
+			flow.deal().drawShuffle(batch, assets, art, table);
 		}
 	}
 
 	/** Whatever the moment shows over the table: your bid panel, the hand's end, the scores. */
 	private void drawOverlay() {
-		StateView.of(flow.state()).drawOverlay(this, recorder.newHighScore());
+		StateView.of(flow.state()).drawOverlay(this, overlays, recorder.newHighScore());
 	}
 
 

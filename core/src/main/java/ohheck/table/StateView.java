@@ -45,9 +45,9 @@ enum StateView {
 	},
 	TURN {
 		@Override
-		void drawOverlay(TableScene s, int newHighScore) {
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 			if (s.flow().yourTurnToBid()) {
-				s.overlays().drawBidPanel();
+				o.drawBidPanel();
 			}
 		}
 
@@ -86,8 +86,8 @@ enum StateView {
 	},
 	HAND_END {
 		@Override
-		void drawOverlay(TableScene s, int newHighScore) {
-			s.overlays().drawHandEnd(s.stateTime());
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
+			o.drawHandEnd(s.stateTime());
 		}
 
 		@Override
@@ -107,9 +107,9 @@ enum StateView {
 	},
 	RESULTS {
 		@Override
-		void drawOverlay(TableScene s, int newHighScore) {
-			s.overlays().drawHandResults();
-			s.overlays().drawHandLabels(LABELS_DROP.progress(s.stateTime()), 1f);
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
+			o.drawHandResults();
+			o.drawHandLabels(LABELS_DROP.progress(s.stateTime()), 1f);
 		}
 
 		@Override
@@ -129,9 +129,9 @@ enum StateView {
 	},
 	GAME_OVER {
 		@Override
-		void drawOverlay(TableScene s, int newHighScore) {
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 			if (s.resultsShown()) {
-				s.overlays().drawGameOver(newHighScore);
+				o.drawGameOver(newHighScore);
 			}
 		}
 
@@ -164,7 +164,7 @@ enum StateView {
 	}
 
 	/** What the moment shows over the table (nothing, unless overridden). */
-	void drawOverlay(TableScene s, int newHighScore) {
+	void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 	}
 
 	/** A tap anywhere but the menu button (nothing, unless overridden). */

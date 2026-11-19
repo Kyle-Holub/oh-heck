@@ -16,6 +16,7 @@ import ohheck.rules.Card;
 import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
 import ohheck.rules.RuleSet;
+import ohheck.ui.Wording;
 
 /** What your taps do at the table, against a table with no screen. */
 public class TableInputTest {
@@ -24,8 +25,8 @@ public class TableInputTest {
 	static final class FakeTable implements TableScene, TableActions {
 		final TableFlow flow = new TableFlow();
 		final TableLayout layout = new TableLayout();
-		final TableOverlays overlays = new TableOverlays(null, this, layout, null);
-		final TableInput input = new TableInput(this, this);
+		final OverlayTargets targets = new OverlayTargets();
+		final TableInput input = new TableInput(this, this, targets);
 		final List<Card> handOrder = new ArrayList<Card>();
 		final List<Rectangle> handRects = new ArrayList<Rectangle>();
 		final List<String> did = new ArrayList<String>();
@@ -59,11 +60,6 @@ public class TableInputTest {
 		@Override
 		public TableLayout layout() {
 			return layout;
-		}
-
-		@Override
-		public TableOverlays overlays() {
-			return overlays;
 		}
 
 		@Override
@@ -112,9 +108,29 @@ public class TableInputTest {
 		}
 
 		@Override
-		public void humanPlay(Card c, float fromX, float fromY) {
+		public boolean bid(int b) {
+			return flow.bid(b);
+		}
+
+		@Override
+		public void play(Card c) {
 			did.add("play " + c);
 			flow.play(c);
+		}
+
+		@Override
+		public boolean skip() {
+			return flow.skip();
+		}
+
+		@Override
+		public boolean nextHand() {
+			return flow.nextHand();
+		}
+
+		@Override
+		public void hint(String s) {
+			did.add("hint " + s);
 		}
 
 		@Override
@@ -143,11 +159,11 @@ public class TableInputTest {
 	@Test
 	public void theMenuOpensAndGoesWhereItSays() {
 		t.flow.start(Match.random(4, new Random(2)));
-		t.overlays.menuButton.set(700, 0, 80, 40);
+		t.targets.button(OverlayTargets.Button.MENU).set(700, 0, 80, 40);
 		t.input.tap(740, 20);
 		assertTrue(t.input.menuOpen());
-		for (int i = 0; i < TableOverlays.MENU.length; i++) {
-			t.overlays.menuItems.add(new Rectangle(300, 300 - i * 60, 200, 50));
+		for (MenuItem item : MenuItem.values()) {
+			t.targets.menuItem(item).set(300, 300 - item.ordinal() * 60, 200, 50);
 		}
 		t.input.tap(400, 260); // Options
 		assertEquals("options", t.did.get(0));
@@ -164,8 +180,8 @@ public class TableInputTest {
 	public void atGameOverOnlyTheButtonsCount() {
 		t.flow.start(Match.random(4, new Random(3)));
 		t.pretend = TableState.GAME_OVER;
-		t.overlays.playAgainButton.set(200, 50, 170, 42);
-		t.overlays.highScoresButton.set(400, 50, 170, 42);
+		t.targets.button(OverlayTargets.Button.PLAY_AGAIN).set(200, 50, 170, 42);
+		t.targets.button(OverlayTargets.Button.HIGH_SCORES).set(400, 50, 170, 42);
 		t.input.tap(100, 300); // a stray tap: the scores stay up
 		assertTrue(t.did.isEmpty());
 		t.input.tap(250, 70);
@@ -179,8 +195,9 @@ public class TableInputTest {
 		t.flow.start(m);
 		t.flow.skip(); // past the shuffle and deal
 		assertEquals(TableState.TURN, t.flow.state());
+		t.targets.bidsUpTo(m.handSize());
 		for (int b = 0; b <= m.handSize(); b++) {
-			t.overlays.bidButtons.add(new Rectangle(100 + b * 70, 100, 58, 58));
+			t.targets.bid(b).set(100 + b * 70, 100, 58, 58);
 		}
 		t.input.tap(105, 105); // the 0
 		assertTrue(m.hasBid(Seating.YOU));
@@ -192,7 +209,8 @@ public class TableInputTest {
 		Match m = new Match(4, new Random(5), 3, HandOrder.UP, RuleSet.STANDARD);
 		t.flow.start(m);
 		t.flow.skip();
-		t.overlays.bidButtons.add(new Rectangle(100, 100, 58, 58));
+		t.targets.bidsUpTo(m.handSize());
+		t.targets.bid(0).set(100, 100, 58, 58);
 		t.input.tap(105, 105); // bid 0
 		while (!t.flow.yourTurnToPlay()) {
 			t.flow.update(1 / 30f); // the others bid; you lead
@@ -205,5 +223,43 @@ public class TableInputTest {
 		assertTrue(t.input.dragging());
 		assertTrue(t.input.touchUp(340, 260));
 		assertEquals("play " + c, t.did.get(0));
+	}
+
+	@Test
+	public void aButtonNotYetDrawnCantBeHit() {
+		t.flow.start(Match.random(4, new Random(2)));
+		t.input.tap(0, 0); // the menu button hasn't been placed
+		assertFalse(t.input.menuOpen());
+		t.targets.clearGameOverButtons();
+		t.pretend = TableState.GAME_OVER;
+		t.input.tap(0, 0);
+		assertTrue(t.did.isEmpty());
+	}
+
+	@Test
+	public void aCardThatDoesntFollowSuitGivesAHint() {
+		for (long seed = 1; seed < 50; seed++) { // a deal where you hold a card you may not play
+			FakeTable f = new FakeTable();
+			Match m = new Match(4, new Random(seed), 2, HandOrder.DOWN, RuleSet.STANDARD); // 8 cards; seat 3 leads
+			f.flow.start(m);
+			f.flow.skip();
+			while (!f.flow.yourTurnToPlay()) {
+				if (f.flow.yourTurnToBid()) {
+					f.flow.bid(m.isLegalBid(0) ? 0 : 1);
+				}
+				f.flow.update(1 / 30f);
+			}
+			for (Card c : m.hand(Seating.YOU)) {
+				if (!m.legalPlays(Seating.YOU).contains(c)) {
+					f.handOrder.add(c);
+					f.handRects.add(new Rectangle(300, 10, 80, 110));
+					f.input.tap(340, 60);
+					assertEquals("[hint " + Wording.mustFollow(m.leadSuit()) + "]", f.did.toString());
+					assertTrue("the card is still yours", m.hand(Seating.YOU).contains(c));
+					return;
+				}
+			}
+		}
+		assertTrue("no deal with a card that can't follow", false);
 	}
 }
