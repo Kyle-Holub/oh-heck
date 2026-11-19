@@ -43,6 +43,11 @@ SPARKLE_SHARE = 0.015
 RANDOM_AREAS = [(0.89, 0.0, 1.0, 0.24)]
 TABLE = ("shuffle", "deal", "bid", "trick", "collect", "handend", "handover", "menu", "play", "tossing")
 
+
+def is_table(st):
+    """A table shot: 'deal-3', 'play-8-3', 'tossing' (not 'players')."""
+    return st.split("-")[0] in TABLE + ("trickwon", "bidding")
+
 # The phone view: a 6.3-inch phone held sideways shows the game about 5.8 inches wide;
 # at a desktop monitor's 110 pixels per inch that's 640 pixels.
 PHONE_W = 640
@@ -78,7 +83,7 @@ def classify(st, a, b):
         return "random", total, box
     if st.startswith(SPARKLY) and total <= SPARKLE_SHARE * m.size:
         return "random", total, box
-    if st.startswith(TABLE):
+    if is_table(st):
         h, w = m.shape
         for x0, y0, x1, y1 in RANDOM_AREAS:
             m[int(y0 * h):int(y1 * h), int(x0 * w):int(x1 * w)] = False
@@ -129,7 +134,7 @@ def compare(base_dir, new_dir, out_dir=None, report=None):
 def phone(d, out):
     """The table shots at a phone's size, two to a row, labelled."""
     from PIL import ImageDraw
-    shots = [(st, p) for st, p in shots_in(d).items() if st.startswith(TABLE)]
+    shots = [(st, p) for st, p in shots_in(d).items() if is_table(st)]
     if not shots:
         print("no table shots in", d)
         return
