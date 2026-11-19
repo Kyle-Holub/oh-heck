@@ -24,8 +24,6 @@ import ohheck.ui.Palette;
 /** The card table screen. */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
-	private static final int HUMAN = Seating.YOU;
-
 	private final GameOptions options;
 	private final TableStreams streams;
 
@@ -88,13 +86,13 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 
 		@Override
-		public void save(Match m) {
+		public void changed(Match m) {
 			PlayScreen.this.save();
 		}
 
 		@Override
 		public void handEnded(Match m) {
-			if (m.madeBid(HUMAN)) {
+			if (m.madeBid(Seating.YOU)) {
 				sparks.burst(table.centreX(), table.centreY(), 110);
 			}
 		}
@@ -103,7 +101,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		public void gameEnded(Match m) {
 			targets.clearGameOverButtons();
 			toss.toss(m);
-			end.start(m.leaders().contains(HUMAN));
+			end.start(m.leaders().contains(Seating.YOU));
 		}
 	}
 
@@ -233,7 +231,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	public String name(int seat) {
-		return seat == HUMAN ? "You" : players.at(seat).name;
+		return seat == Seating.YOU ? "You" : players.at(seat).name;
 	}
 
 	private void seatPlayers(Seating ids) {

@@ -12,8 +12,6 @@ import ohheck.ui.BaseScreen;
  */
 final class TableLayout {
 
-	private static final int HUMAN = Seating.YOU;
-
 	static final float HAND_SCALE = 1.2f, BACK_SCALE = 0.55f, TRUMP_SCALE = 0.95f;
 	static final float PANEL_W = PlayerPanel.W, PANEL_H = PlayerPanel.H;
 	static final float EDGE = 12;
@@ -55,11 +53,11 @@ final class TableLayout {
 	}
 
 	float panelX(int seat) {
-		return seat == HUMAN || seat == 1 ? EDGE : seat == 2 ? w / 2 - PANEL_W / 2 : w - EDGE - PANEL_W;
+		return seat == Seating.YOU || seat == 1 ? EDGE : seat == 2 ? w / 2 - PANEL_W / 2 : w - EDGE - PANEL_W;
 	}
 
 	float panelTop(int seat) {
-		return seat == HUMAN ? EDGE + PANEL_H : seat == 2 ? h - TOP_PANEL_INSET : h / 2 + SIDE_PANEL_RAISE;
+		return seat == Seating.YOU ? EDGE + PANEL_H : seat == 2 ? h - TOP_PANEL_INSET : h / 2 + SIDE_PANEL_RAISE;
 	}
 
 	Vector2 fanOrigin(int seat) {
@@ -83,7 +81,7 @@ final class TableLayout {
 	}
 
 	Vector2 seatAnchor(int seat) {
-		if (seat == HUMAN) {
+		if (seat == Seating.YOU) {
 			return anchor.set(w / 2, HAND_ANCHOR_Y);
 		}
 		Vector2 f = fanOrigin(seat);
@@ -91,8 +89,8 @@ final class TableLayout {
 	}
 
 	Vector2 deckSpot(int seat) {
-		if (seat == HUMAN) {
-			return anchor.set(panelX(HUMAN) + PANEL_W - backW(), panelTop(HUMAN) + FAN_DROP + backH() / 2);
+		if (seat == Seating.YOU) {
+			return anchor.set(panelX(Seating.YOU) + PANEL_W - backW(), panelTop(Seating.YOU) + FAN_DROP + backH() / 2);
 		}
 		return seatAnchor(seat);
 	}
@@ -108,7 +106,7 @@ final class TableLayout {
 	Vector2 trickSlot(int seat) {
 		float cx = w / 2, cy = h / 2 + TRICK_RAISE;
 		float x = cx - Assets.CARD_W / 2f + (seat == 1 ? -TRICK_DX : seat == 3 ? TRICK_DX : 0);
-		float y = cy - Assets.CARD_H / 2f + (seat == HUMAN ? -TRICK_DY : seat == 2 ? TRICK_DY : 0);
+		float y = cy - Assets.CARD_H / 2f + (seat == Seating.YOU ? -TRICK_DY : seat == 2 ? TRICK_DY : 0);
 		return slot.set(x, y);
 	}
 

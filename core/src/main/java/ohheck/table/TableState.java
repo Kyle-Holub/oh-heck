@@ -1,13 +1,14 @@
 package ohheck.table;
 
+import ohheck.players.Seating;
 import ohheck.rules.Match;
 
 /** The table's moments and how each behaves on entry, over time and on a skip. */
 enum TableState {
 	SHUFFLE {
 		@Override
-		void update(TableFlow f) {
-			f.dealing();
+		void update(TableFlow f, float dt) {
+			f.dealing(dt);
 		}
 
 		@Override
@@ -18,8 +19,8 @@ enum TableState {
 	},
 	DEAL {
 		@Override
-		void update(TableFlow f) {
-			f.dealing();
+		void update(TableFlow f, float dt) {
+			f.dealing(dt);
 		}
 
 		@Override
@@ -30,15 +31,15 @@ enum TableState {
 	},
 	TURN {
 		@Override
-		void update(TableFlow f) {
+		void update(TableFlow f, float dt) {
 			f.computerTurn();
 		}
 	},
 	TRICK {
 		@Override
-		void update(TableFlow f) {
+		void update(TableFlow f, float dt) {
 			Match m = f.match();
-			if (f.stateTime() >= TrickView.showLength(m.lastTrickWinner() == TableFlow.HUMAN)) {
+			if (f.stateTime() >= TrickView.showLength(m.lastTrickWinner() == Seating.YOU)) {
 				f.enter(m.phase() == Match.Phase.HAND_OVER ? HAND_END : TURN);
 			}
 		}
@@ -50,7 +51,7 @@ enum TableState {
 		}
 
 		@Override
-		void update(TableFlow f) {
+		void update(TableFlow f, float dt) {
 			if (f.stateTime() >= TableFlow.HAND_END_SHOW) {
 				f.enter(RESULTS);
 			}
@@ -73,7 +74,7 @@ enum TableState {
 	void entered(TableFlow f) {
 	}
 
-	void update(TableFlow f) {
+	void update(TableFlow f, float dt) {
 	}
 
 	boolean skip(TableFlow f) {

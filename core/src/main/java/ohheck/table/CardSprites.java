@@ -23,7 +23,6 @@ import ohheck.ui.Palette;
  */
 final class CardSprites {
 
-	private static final int HUMAN = Seating.YOU;
 	private static final Tween PLAYED = Tween.over(TrickView.PLAY_FLIGHT, Ease.OUT), SETTLE = Tween.over(0.15f, Ease.OUT);
 	private static final float PLAY_ARC = 30;
 	private static final Tween DEALT = Tween.over(DealAnimation.DEAL_FLIGHT, Ease.OUT),
@@ -99,13 +98,13 @@ final class CardSprites {
 		if (!sp.visible()) {
 			sp.snap(dealer);
 		}
-		if (seat == HUMAN && since >= DealAnimation.DEAL_FLIGHT) {
+		if (seat == Seating.YOU && since >= DealAnimation.DEAL_FLIGHT) {
 			rest.flip = 1;
 			sp.moveTo(rest, TURNING, 0, now, since - DealAnimation.DEAL_FLIGHT);
 		} else {
 			sp.moveTo(rest, DEALT, 0, now, since);
 		}
-		place(sp, since < DealAnimation.DEAL_FLIGHT ? DEALING : seat == HUMAN ? HAND : FAN, j);
+		place(sp, since < DealAnimation.DEAL_FLIGHT ? DEALING : seat == Seating.YOU ? HAND : FAN, j);
 		return since;
 	}
 
@@ -130,7 +129,7 @@ final class CardSprites {
 		int n = order.size();
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
 		boolean myTurn = s.humanCanPlay();
-		List<Card> legal = myTurn ? m.legalPlays(HUMAN) : java.util.Collections.<Card>emptyList();
+		List<Card> legal = myTurn ? m.legalPlays(Seating.YOU) : java.util.Collections.<Card>emptyList();
 		for (int i = 0; i < n; i++) {
 			Card c = order.get(i);
 			CardSprite sp = sprite(c);
@@ -147,7 +146,7 @@ final class CardSprites {
 			if (flow.isDealing()) {
 				pose.flip = 0;
 				pose.lift = HAND_LIFT;
-				if (dealt(flow, HUMAN, i, sp, pose, now) < 0) {
+				if (dealt(flow, Seating.YOU, i, sp, pose, now) < 0) {
 					continue;
 				}
 			} else {

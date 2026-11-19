@@ -7,7 +7,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 
 import ohheck.fx.FallingCards;
-import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Assets;
@@ -27,7 +26,7 @@ final class TableToss {
 	}
 
 	void toss(Match m) {
-		tumble = FallingCards.forTable(assets, new Random(m.score(Seating.YOU) * 31L + m.score(0)));
+		tumble = FallingCards.forTable(assets, new Random(finalScoresSeed(m)));
 		float cx = table.w / 2, cy = table.h / 2;
 		tumble.toss(m.trumpCard(), table.trumpX() + table.trumpW() / 2 - cx, table.trumpY() + table.trumpH() / 2 - cy,
 				table.trumpW(), 0, TOSS_TRUMP);
@@ -67,5 +66,13 @@ final class TableToss {
 		if (tumble != null) {
 			tumble.draw(batch, table.w / 2, table.h / 2);
 		}
+	}
+
+	private static long finalScoresSeed(Match m) {
+		long seed = 0;
+		for (int s = 0; s < m.players(); s++) {
+			seed = seed * 31 + m.score(s);
+		}
+		return seed;
 	}
 }

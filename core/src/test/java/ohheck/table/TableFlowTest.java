@@ -33,7 +33,7 @@ public class TableFlowTest {
 		}
 
 		@Override
-		public void save(Match m) {
+		public void changed(Match m) {
 			saves++;
 		}
 
@@ -124,7 +124,7 @@ public class TableFlowTest {
 	public void computerPlayersTakeTheirTime() {
 		Match m = newGame(3);
 		flow.skip();
-		while (m.currentSeat() == TableFlow.HUMAN) {
+		while (m.currentSeat() == Seating.YOU) {
 			newGame(m.dealer() + 10);
 			m = flow.match();
 			flow.skip();
@@ -141,7 +141,7 @@ public class TableFlowTest {
 	public void yourMovesAreCheckedFirst() {
 		Match m = newGame(4);
 		flow.skip();
-		assertFalse("not your turn to play", flow.play(m.hand(TableFlow.HUMAN).get(0)));
+		assertFalse("not your turn to play", flow.play(m.hand(Seating.YOU).get(0)));
 		while (!flow.yourTurnToBid()) {
 			flow.update(STEP);
 		}
@@ -166,7 +166,7 @@ public class TableFlowTest {
 			flow.update(STEP);
 			shown += STEP;
 		}
-		boolean youWon = m.lastTrickWinner() == TableFlow.HUMAN;
+		boolean youWon = m.lastTrickWinner() == Seating.YOU;
 		assertEquals(TrickView.showLength(youWon), shown, 2 * STEP);
 		assertEquals(hand, m.handIndex());
 		assertTrue(flow.state() == TableState.TURN || flow.state() == TableState.HAND_END);
@@ -185,7 +185,7 @@ public class TableFlowTest {
 				}
 				assertTrue(flow.bid(b));
 			} else if (flow.yourTurnToPlay()) {
-				assertTrue(flow.play(m.legalPlays(TableFlow.HUMAN).get(0)));
+				assertTrue(flow.play(m.legalPlays(Seating.YOU).get(0)));
 			} else if (s == TableState.RESULTS) {
 				results++;
 				assertTrue(flow.nextHand());
@@ -252,7 +252,7 @@ public class TableFlowTest {
 				}
 				flow.bid(b);
 			} else if (flow.yourTurnToPlay()) {
-				flow.play(m.legalPlays(TableFlow.HUMAN).get(0));
+				flow.play(m.legalPlays(Seating.YOU).get(0));
 			} else if (flow.state() == TableState.RESULTS) {
 				flow.nextHand();
 			} else {
@@ -286,7 +286,7 @@ public class TableFlowTest {
 		flow.thinkWith(slow);
 		Match m = newGame(3);
 		flow.skip();
-		while (m.currentSeat() == TableFlow.HUMAN) {
+		while (m.currentSeat() == Seating.YOU) {
 			newGame(m.dealer() + 10);
 			m = flow.match();
 			flow.skip();

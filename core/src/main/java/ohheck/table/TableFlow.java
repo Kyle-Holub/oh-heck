@@ -22,7 +22,7 @@ final class TableFlow implements FlowView {
 		default void beforeDeal(Match m) {
 		}
 
-		default void save(Match m) {
+		default void changed(Match m) {
 		}
 
 		default void shuffling() {
@@ -38,7 +38,6 @@ final class TableFlow implements FlowView {
 		}
 	}
 
-	static final int HUMAN = Seating.YOU;
 	static final float AI_DELAY = 0.8f, HAND_END_SHOW = 2.4f, TRUMP_FLIP_TIME = 0.45f;
 
 	private final DealAnimation deal = new DealAnimation();
@@ -47,9 +46,8 @@ final class TableFlow implements FlowView {
 
 	private Match match;
 	private TableState state = TableState.TURN;
-	private float stateT;
-	private float trumpT;
-	private float dt;
+	private float stateTime;
+	private float trumpTime;
 
 	private Thinker thinker = Thinker.AT_ONCE;
 	private Future<Move> thinking;
@@ -70,7 +68,7 @@ final class TableFlow implements FlowView {
 
 	void seat(Seating players, Random rng) {
 		for (int s = 0; s < bots.length; s++) {
-			if (s != HUMAN) {
+			if (s != Seating.YOU) {
 				bots[s] = players.at(s).bot(new Random(rng.nextLong()));
 			}
 		}
@@ -79,14 +77,14 @@ final class TableFlow implements FlowView {
 	void start(Match m) {
 		stopThinking();
 		match = m;
-		tell(l -> l.save(m));
+		tell(l -> l.changed(m));
 		startHand();
 	}
 
 	void resume(Match m) {
 		stopThinking();
 		match = m;
-		trumpT = TRUMP_FLIP_TIME;
+		trumpTime = TRUMP_FLIP_TIME;
 		enter(m.phase() == Match.Phase.HAND_OVER ? TableState.HAND_END : TableState.TURN);
 	}
 
@@ -102,12 +100,12 @@ final class TableFlow implements FlowView {
 
 	@Override
 	public float stateTime() {
-		return stateT;
+		return stateTime;
 	}
 
 	@Override
 	public float trumpTime() {
-		return trumpT;
+		return trumpTime;
 	}
 
 	@Override
@@ -117,7 +115,7 @@ final class TableFlow implements FlowView {
 
 	@Override
 	public boolean trumpFaceUp() {
-		return !isDealing() && trumpT >= TRUMP_FLIP_TIME;
+		return !isDealing() && trumpTime >= TRUMP_FLIP_TIME;
 	}
 
 	@Override
@@ -127,12 +125,12 @@ final class TableFlow implements FlowView {
 
 	@Override
 	public boolean yourTurnToBid() {
-		return state == TableState.TURN && match.phase() == Match.Phase.BIDDING && match.currentSeat() == HUMAN;
+		return state == TableState.TURN && match.phase() == Match.Phase.BIDDING && match.currentSeat() == Seating.YOU;
 	}
 
 	@Override
 	public boolean yourTurnToPlay() {
-		return state == TableState.TURN && match.phase() == Match.Phase.PLAYING && match.currentSeat() == HUMAN;
+		return state == TableState.TURN && match.phase() == Match.Phase.PLAYING && match.currentSeat() == Seating.YOU;
 	}
 
 	boolean isTurnOf(int seat) {
@@ -140,12 +138,11 @@ final class TableFlow implements FlowView {
 	}
 
 	void update(float dt) {
-		this.dt = dt;
-		stateT += dt;
+		stateTime += dt;
 		if (!isDealing()) {
-			trumpT += dt;
+			trumpTime += dt;
 		}
-		state.update(this);
+		state.update(this, dt);
 	}
 
 	boolean skip() {
@@ -156,15 +153,15 @@ final class TableFlow implements FlowView {
 		if (!yourTurnToBid() || !match.isLegalBid(b)) {
 			return false;
 		}
-		make(new Move.Bid(HUMAN, b));
+		make(new Move.Bid(Seating.YOU, b));
 		return true;
 	}
 
 	boolean play(Card c) {
-		if (!yourTurnToPlay() || !match.legalPlays(HUMAN).contains(c)) {
+		if (!yourTurnToPlay() || !match.legalPlays(Seating.YOU).contains(c)) {
 			return false;
 		}
-		make(new Move.Play(HUMAN, c));
+		make(new Move.Play(Seating.YOU, c));
 		return true;
 	}
 
@@ -173,7 +170,7 @@ final class TableFlow implements FlowView {
 			return false;
 		}
 		match.nextHand();
-		tell(l -> l.save(match));
+		tell(l -> l.changed(match));
 		if (match.phase() == Match.Phase.GAME_OVER) {
 			enter(TableState.GAME_OVER);
 		} else {
@@ -188,7 +185,7 @@ final class TableFlow implements FlowView {
 			enter(TableState.GAME_OVER);
 			return;
 		}
-		trumpT = 0;
+		trumpTime = 0;
 		deal.start(match.handSize(), match.dealer(), match.handIndex() == 0);
 		enter(TableState.SHUFFLE);
 	}
@@ -202,7 +199,7 @@ final class TableFlow implements FlowView {
 
 	void enter(TableState s) {
 		state = s;
-		stateT = 0;
+		stateTime = 0;
 		stopThinking();
 		s.entered(this);
 	}
@@ -215,7 +212,7 @@ final class TableFlow implements FlowView {
 		tell(l -> l.gameEnded(match));
 	}
 
-	void dealing() {
+	void dealing(float dt) {
 		if (deal.update(dt)) {
 			tell(Listener::shuffling);
 		}
@@ -227,13 +224,13 @@ final class TableFlow implements FlowView {
 	}
 
 	void computerTurn() {
-		if (match.currentSeat() == HUMAN) {
+		if (match.currentSeat() == Seating.YOU) {
 			return;
 		}
 		if (thinking == null) {
 			thinking = startThinking(match.currentSeat());
 		}
-		if (stateT >= AI_DELAY && thinking.isDone()) {
+		if (stateTime >= AI_DELAY && thinking.isDone()) {
 			botMove(match.currentSeat());
 		}
 	}
@@ -260,7 +257,7 @@ final class TableFlow implements FlowView {
 
 	private void make(Move move) {
 		int winner = match.apply(move);
-		tell(l -> l.save(match));
+		tell(l -> l.changed(match));
 		if (move instanceof Move.Play) {
 			Card c = ((Move.Play) move).card();
 			tell(l -> l.played(match, move.seat(), c));
