@@ -179,7 +179,9 @@ public class OhHeckGame extends Game implements GameHost {
 		if (getScreen() != null) {
 			getScreen().render(delta);
 		}
-		screens.drawChange(batch, assets, delta); // a new screen comes up out of a dark tint
+		if (options.fixedStep <= 0) { // (the screenshot run captures screens settled, not mid-change)
+			screens.drawChange(batch, assets, delta); // a new screen comes up out of a dark tint
+		}
 		if (effects) {
 			post.end(delta);
 		}
