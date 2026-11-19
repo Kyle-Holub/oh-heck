@@ -21,30 +21,30 @@ public enum Style {
 	},
 	BOLD("Overbids") {
 		@Override
-		int bid(int bid, TableView v, StyledBot h) {
-			return h.leans() ? Math.min(v.handSize(), bid + 1) : bid;
+		int bid(int bid, TableView v, StyledBot player) {
+			return player.leans() ? up(bid, v) : bid;
 		}
 	},
 	TIMID("Underbids") {
 		@Override
-		int bid(int bid, TableView v, StyledBot h) {
-			return h.leans() ? Math.max(0, bid - 1) : bid;
+		int bid(int bid, TableView v, StyledBot player) {
+			return player.leans() ? down(bid) : bid;
 		}
 	},
 	FLUFFER("Fluffs") {
 		@Override
-		int bid(int bid, TableView v, StyledBot h) {
-			double r = h.rng.nextDouble();
-			return (bid == 1 && r < 2 * h.lean) || (bid == 2 && r < h.lean / 2) ? 0 : bid;
+		int bid(int bid, TableView v, StyledBot player) {
+			double strength = bid == 1 ? 2 : bid == 2 ? 0.5 : 0;
+			return player.leans(strength) ? 0 : bid;
 		}
 	},
 	GAMBLER("Unpredictable") {
 		@Override
-		int bid(int bid, TableView v, StyledBot h) {
-			if (h.leans()) {
-				return Math.max(0, Math.min(v.handSize(), bid + (h.rng.nextBoolean() ? 1 : -1)));
+		int bid(int bid, TableView v, StyledBot player) {
+			if (!player.leans()) {
+				return bid;
 			}
-			return bid;
+			return player.coinFlip() ? up(bid, v) : down(bid);
 		}
 	},
 	SPOILER("Spoiler") {
@@ -62,25 +62,19 @@ public enum Style {
 	},
 	STREAKY("Streaky") {
 		@Override
-		int bid(int bid, TableView v, StyledBot h) {
-			if (h.lastBidHand >= 0 && h.lastBidHand < v.handIndex() && h.leans()) {
-				return v.score(v.seat()) > h.scoreAtLastBid ? Math.min(v.handSize(), bid + 1) : Math.max(0, bid - 1);
+		int bid(int bid, TableView v, StyledBot player) {
+			if (player.hasBidBeforeThisHand(v) && player.leans()) {
+				return player.scoreRoseSinceLastBid(v) ? up(bid, v) : down(bid);
 			}
 			return bid;
 		}
 	},
 	FRONT_RUNNER("Front-runner") {
 		@Override
-		int bid(int bid, TableView v, StyledBot h) {
-			int best = Integer.MIN_VALUE;
-			for (int s = 0; s < v.players(); s++) {
-				if (s != v.seat()) {
-					best = Math.max(best, v.score(s));
-				}
-			}
-			boolean late = v.handIndex() >= v.numberOfHands() - 3;
-			if (v.handIndex() > 0 && h.rng.nextDouble() < h.lean * (late ? 3 : 1)) {
-				return v.score(v.seat()) > best ? Math.max(0, bid - 1) : Math.min(v.handSize(), bid + 1);
+		int bid(int bid, TableView v, StyledBot player) {
+			boolean late = v.handIndex() >= v.numberOfHands() - LATE_HANDS;
+			if (v.handIndex() > 0 && player.leans(late ? LATE_STRENGTH : 1)) {
+				return v.score(v.seat()) > bestOtherScore(v) ? down(bid) : up(bid, v);
 			}
 			return bid;
 		}
@@ -135,12 +129,32 @@ public enum Style {
 		return true;
 	}
 
-	int bid(int bid, TableView v, StyledBot h) {
+	int bid(int bid, TableView v, StyledBot player) {
 		return bid;
 	}
 
 	Card play(Card card, TableView v, List<Card> legal) {
 		return card;
+	}
+
+	private static final int LATE_HANDS = 3, LATE_STRENGTH = 3;
+
+	static int up(int bid, TableView v) {
+		return Math.min(v.handSize(), bid + 1);
+	}
+
+	static int down(int bid) {
+		return Math.max(0, bid - 1);
+	}
+
+	static int bestOtherScore(TableView v) {
+		int best = Integer.MIN_VALUE;
+		for (int s = 0; s < v.players(); s++) {
+			if (s != v.seat()) {
+				best = Math.max(best, v.score(s));
+			}
+		}
+		return best;
 	}
 
 	static Card highest(List<Card> legal, Suit trump, boolean trumps) {

@@ -310,36 +310,13 @@ public final class Match {
 	}
 
 	public TableView view(int seat) {
-		TableView v = new TableView(players);
-		v.seat = seat;
-		v.handIndex = handIndex;
-		v.handSize = handSize();
-		v.dealer = dealer;
-		v.numberOfHands = rules.numberOfHands();
-		v.rules = rules;
-		v.trumpCard = trumpCard;
-		v.hand.addAll(hands.get(seat));
+		TableView.Builder v = new TableView.Builder(players).seat(seat)
+				.hand(handIndex, rules.numberOfHands(), handSize(), dealer, trumpCard, rules).cards(hands.get(seat))
+				.trick(trick.cards(), trick.seats()).history(history, historySeats);
 		for (int s = 0; s < players; s++) {
-			v.bids[s] = bids[s];
-			v.tricksWon[s] = tricks[s];
-			v.scores[s] = scores[s];
-			v.cardsLeft[s] = hands.get(s).size();
+			v.seatState(s, bids[s], tricks[s], scores[s], hands.get(s).size());
 		}
-		v.trick.addAll(trick.cards);
-		v.trickSeats.addAll(trick.seats);
-		v.history.addAll(history);
-		v.historySeats.addAll(historySeats);
-		Suit lead = null;
-		for (int i = 0; i < history.size(); i++) {
-			Card c = history.get(i);
-			v.played[c.index()] = true;
-			if (i % players == 0) {
-				lead = c.suit();
-			} else if (c.suit() != lead) {
-				v.voids[historySeats.get(i)][lead.ordinal()] = true;
-			}
-		}
-		return v;
+		return v.view();
 	}
 
 	public String save() {

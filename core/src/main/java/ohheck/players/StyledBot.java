@@ -10,20 +10,36 @@ final class StyledBot implements Bot {
 
 	private final Bot bot;
 	private final Style style;
-	final double lean, habit;
-	final Random rng;
-	int scoreAtLastBid, lastBidHand = -1;
+	private final double bidLean, playLean;
+	private final Random rng;
+	private int scoreAtLastBid, lastBidHand = -1;
 
 	StyledBot(Bot bot, Style style, Difficulty level, Random rng) {
 		this.bot = bot;
 		this.style = style;
-		this.lean = level.styleLean;
-		this.habit = level.playHabit;
+		this.bidLean = level.bidLean;
+		this.playLean = level.playLean;
 		this.rng = rng;
 	}
 
 	boolean leans() {
-		return rng.nextDouble() < lean;
+		return leans(1);
+	}
+
+	boolean leans(double strength) {
+		return rng.nextDouble() < bidLean * strength;
+	}
+
+	boolean coinFlip() {
+		return rng.nextBoolean();
+	}
+
+	boolean hasBidBeforeThisHand(TableView v) {
+		return lastBidHand >= 0 && lastBidHand < v.handIndex();
+	}
+
+	boolean scoreRoseSinceLastBid(TableView v) {
+		return v.score(v.seat()) > scoreAtLastBid;
 	}
 
 	@Override
@@ -38,7 +54,7 @@ final class StyledBot implements Bot {
 	@Override
 	public Card choosePlay(TableView v) {
 		Card card = bot.choosePlay(v);
-		if (rng.nextDouble() >= habit) {
+		if (rng.nextDouble() >= playLean) {
 			return card;
 		}
 		return style.play(card, v, v.legalPlays());

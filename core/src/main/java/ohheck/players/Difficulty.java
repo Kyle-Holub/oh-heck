@@ -8,22 +8,29 @@ import java.util.function.Function;
  * level. A new level is one more constant.
  */
 public enum Difficulty {
-	EASY("Easy", EasyBot::new, new double[] { 0.65, 0.35, 0 }, 0.6, 0.8),
-	NORMAL("Normal", rng -> new NormalBot(), new double[] { 0.25, 0.5, 0.25 }, 0.2, 0.6),
-	HARD("Hard", HardBot::new, new double[] { 0, 0.35, 0.65 }, 0.12, 0.4);
+	EASY("Easy", EasyBot::new, meets(0.65, 0.35, 0), leans(0.6, 0.8)),
+	NORMAL("Normal", rng -> new NormalBot(), meets(0.25, 0.5, 0.25), leans(0.2, 0.6)),
+	HARD("Hard", HardBot::new, meets(0, 0.35, 0.65), leans(0.12, 0.4));
 
 	public final String label;
 	private final Function<Random, Bot> bot;
-	private final double[] seatOdds;
-	final double styleLean;
-	final double playHabit;
+	private final double[] chanceOfMeeting;
+	final double bidLean, playLean;
 
-	Difficulty(String label, Function<Random, Bot> bot, double[] seatOdds, double styleLean, double playHabit) {
+	Difficulty(String label, Function<Random, Bot> bot, double[] chanceOfMeeting, double[] leans) {
 		this.label = label;
 		this.bot = bot;
-		this.seatOdds = seatOdds;
-		this.styleLean = styleLean;
-		this.playHabit = playHabit;
+		this.chanceOfMeeting = chanceOfMeeting;
+		this.bidLean = leans[0];
+		this.playLean = leans[1];
+	}
+
+	private static double[] meets(double easy, double normal, double hard) {
+		return new double[] { easy, normal, hard };
+	}
+
+	private static double[] leans(double bid, double play) {
+		return new double[] { bid, play };
 	}
 
 	public Bot bot(Random rng) {
@@ -31,7 +38,7 @@ public enum Difficulty {
 	}
 
 	public double chanceOf(Difficulty playerLevel) {
-		return seatOdds[playerLevel.ordinal()];
+		return chanceOfMeeting[playerLevel.ordinal()];
 	}
 
 	public String key() {

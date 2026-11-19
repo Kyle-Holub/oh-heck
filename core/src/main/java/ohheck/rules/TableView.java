@@ -1,35 +1,38 @@
 package ohheck.rules;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 /** What one player can see at the table; all a bot gets. */
 public final class TableView {
 
-	int seat, players, handIndex, handSize, dealer, numberOfHands;
-	RuleSet rules = RuleSet.STANDARD;
-	Card trumpCard;
-	final List<Card> hand = new ArrayList<Card>();
-	final int[] bids;
-	final int[] tricksWon, scores;
-	final int[] cardsLeft;
-	final List<Card> trick = new ArrayList<Card>();
-	final List<Integer> trickSeats = new ArrayList<Integer>();
-	final List<Card> history = new ArrayList<Card>();
-	final List<Integer> historySeats = new ArrayList<Integer>();
-	final boolean[] played = new boolean[Card.COUNT];
-	final boolean[][] voids;
+	private int seat, handIndex, handSize, dealer, numberOfHands;
+	private final int players;
+	private RuleSet rules = RuleSet.STANDARD;
+	private Card trumpCard;
+	private final List<Card> hand = new ArrayList<Card>();
+	private final int[] bids;
+	private final int[] tricksWon, scores;
+	private final int[] cardsLeft;
+	private final List<Card> trick = new ArrayList<Card>();
+	private final List<Integer> trickSeats = new ArrayList<Integer>();
+	private final List<Card> history = new ArrayList<Card>();
+	private final List<Integer> historySeats = new ArrayList<Integer>();
+	private final boolean[] played = new boolean[Card.COUNT];
+	private final boolean[][] voids;
 
 	private final List<Card> handView = Collections.unmodifiableList(hand), trickView = Collections.unmodifiableList(trick),
 			historyView = Collections.unmodifiableList(history);
 	private final List<Integer> trickSeatsView = Collections.unmodifiableList(trickSeats),
 			historySeatsView = Collections.unmodifiableList(historySeats);
 
-	TableView(int players) {
+	private TableView(int players) {
 		this.players = players;
 		bids = new int[players];
-		java.util.Arrays.fill(bids, Match.NO_BID);
+		Arrays.fill(bids, Match.NO_BID);
 		tricksWon = new int[players];
 		scores = new int[players];
 		cardsLeft = new int[players];
@@ -174,7 +177,7 @@ public final class TableView {
 			return this;
 		}
 
-		public Builder cards(java.util.Collection<Card> cards) {
+		public Builder cards(Collection<Card> cards) {
 			v.hand.clear();
 			v.hand.addAll(cards);
 			return this;
@@ -203,6 +206,24 @@ public final class TableView {
 			v.trick.addAll(cards);
 			v.trickSeats.clear();
 			v.trickSeats.addAll(seats);
+			return this;
+		}
+
+		public Builder history(List<Card> cards, List<Integer> seats) {
+			v.history.clear();
+			v.history.addAll(cards);
+			v.historySeats.clear();
+			v.historySeats.addAll(seats);
+			Suit lead = null;
+			for (int i = 0; i < cards.size(); i++) {
+				Card c = cards.get(i);
+				v.played[c.index()] = true;
+				if (i % v.players == 0) {
+					lead = c.suit();
+				} else if (c.suit() != lead) {
+					v.voids[seats.get(i)][lead.ordinal()] = true;
+				}
+			}
 			return this;
 		}
 
