@@ -1,7 +1,9 @@
 package ohheck.screens;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -31,6 +33,13 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 	private static final float COLUMN_W = 440, COLUMN_GAP = 34, SECTION_GAP = 40;
 
 	private final Rectangle backButton = new Rectangle();
+	/** Each setting's note on who you'll meet (from the matchmaking odds), made once rather than every frame. */
+	private final Map<Difficulty, String> notes = new EnumMap<Difficulty, String>(Difficulty.class);
+	{
+		for (Difficulty d : Difficulty.values()) {
+			notes.put(d, Wording.tableDescription(d));
+		}
+	}
 	/** The game speeds' names, {@link Settings#SLOW} to {@link Settings#FASTEST}. */
 	private static final String[] SPEEDS = { "Slow", "Medium", "Fast" };
 
@@ -177,7 +186,7 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 			paint.text(l, Difficulty.values()[i].label, sx, y + 60, true);
 		}
 		BitmapFont n = paint.ui(0.85f);
-		String note = Wording.tableDescription(s.difficulty()); // (from the matchmaking odds)
+		String note = notes.get(s.difficulty());
 		glyphs.setText(n, note);
 		if (glyphs.width > rw - 48) { // keep it on one line inside the row
 			n = paint.ui(0.85f * (rw - 48) / glyphs.width);

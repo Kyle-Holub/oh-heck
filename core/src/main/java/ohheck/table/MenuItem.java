@@ -32,6 +32,9 @@ enum MenuItem {
 		}
 	};
 
+	/** Every choice, top to bottom (made once: values() copies the array each call). */
+	static final MenuItem[] ALL = values();
+
 	final String label;
 
 	MenuItem(String label) {

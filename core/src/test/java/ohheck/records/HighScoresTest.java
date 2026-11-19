@@ -49,5 +49,9 @@ public class HighScoresTest {
 		HighScores numbered = HighScores.decode("55,2,2026-11-10,2");
 		assertEquals(Difficulty.HARD, numbered.entries().get(0).level());
 		assertEquals("score:55,place:2,date:2026-11-10,level:HARD", numbered.encode());
+		// a level number this build doesn't have reads as none, and is written as none
+		HighScores unknown = HighScores.decode("55,2,2026-11-10,7");
+		assertNull(unknown.entries().get(0).level());
+		assertEquals("score:55,place:2,date:2026-11-10,level:-", unknown.encode());
 	}
 }

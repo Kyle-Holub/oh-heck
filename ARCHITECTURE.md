@@ -15,8 +15,9 @@ where things live, how they connect, and the tools around them.
 
 ## Packages (`core/src/main/java/ohheck`)
 
-Each package depends only on those below it in this list, never on one above; there are
-no cycles. The first five have no libGDX and test in plain JUnit.
+Each package uses only those above it in this list, never one below, so there are no
+cycles; `ohheck.util` and `ohheck.anim` depend on nothing, and anything may use them. The
+first five have no libGDX and test in plain JUnit.
 
 | Package | What's in it |
 |---|---|
@@ -26,7 +27,7 @@ no cycles. The first five have no libGDX and test in plain JUnit.
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
 | `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Timeline`, and `FixedSteps` (the game loop's clock) |
 | `ohheck.platform` | The device: `Settings` (preferences) and `RecordPrefs` (where the records are kept), `Audio`, `GameOptions` (how a launcher runs the game) |
-| `ohheck.ui` | What every screen shares: `BaseScreen`, `Painter`, `MenuChrome`, `Assets`, `Palette`, `CardArt`, `PostProcessor`, `Wording`, `Numbers`, `Scroller`, `TapAreas`, and `GameHost` (`Services` and `Navigator`) |
+| `ohheck.ui` | What every screen shares: `BaseScreen`, `Painter`, `MenuChrome`, `Assets`, `Palette`, `CardArt`, `PostProcessor`, `Wording`, `Numbers`, `Scroller`, `TapAreas`, and `GameHost` (`Services` and `Navigator`; the screenshot run's `Tour` and `Tagged`) |
 | `ohheck.fx` | Effects: `Sparks`, `Fireworks`, `Motes`, `Glints`, `FallingCards` |
 | `ohheck.table` | The table screen and its parts |
 | `ohheck.screens` | Title, Options, Roster, High scores, the tutorial, and the screenshot tour |
@@ -47,7 +48,7 @@ no cycles. The first five have no libGDX and test in plain JUnit.
   saved games (which record `rules=<name>`) can find it. Turn order is `RuleSet.nextSeat`, and
   `Trick` decides when a trick is complete and who takes it, for `Match` and for the Hard
   bot's imagined games alike. `Rules` holds the standard rules' numbers (scores, hands), for
-  code without a game in hand (the tutorial's captions, the screenshot run's history);
+  code without a game in hand (the tutorial's captions and its little table);
   anything else without a game asks `RuleSet.STANDARD`.
   `HandOrder` says which way the hands run. `BidTable` is learned for the standard rules.
 - `TableView` is what a player may know at a moment (`Match.view(seat)`). Bots decide from

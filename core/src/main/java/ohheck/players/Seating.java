@@ -2,8 +2,6 @@ package ohheck.players;
 
 import java.util.Arrays;
 
-import ohheck.util.Log;
-
 /**
  * Who sits at the table: you in seat {@link #YOU}, and a computer player (by its permanent
  * {@link Player} id) in each of the other seats. A value: it never changes once made.
@@ -15,14 +13,14 @@ public final class Seating {
 	/** The computer players' seats. */
 	public static final int OTHERS = SEATS - 1;
 
-	/** ids[s - 1] sits in seat s. */
+	/** The other seats' players, in seat order, yours left out. */
 	private final int[] ids;
 
 	private Seating(int[] ids) {
 		this.ids = ids;
 	}
 
-	/** The players with these ids in seats 1, 2, 3... */
+	/** The players with these ids in the other seats, in order (seats 1, 2, 3). */
 	public static Seating of(int... ids) {
 		if (ids.length != OTHERS) {
 			throw new IllegalArgumentException("A table seats " + OTHERS + " computer players, not " + ids.length);
@@ -30,12 +28,15 @@ public final class Seating {
 		return new Seating(ids.clone());
 	}
 
-	/** The id of the computer player in this seat (1 on). */
+	/** The id of the computer player in this seat (any seat but {@link #YOU}). */
 	public int idAt(int seat) {
-		return ids[seat - 1];
+		if (seat == YOU || seat < 0 || seat >= SEATS) {
+			throw new IllegalArgumentException("No computer player in seat " + seat);
+		}
+		return ids[seat < YOU ? seat : seat - 1]; // (the others' seats, in order, skipping yours)
 	}
 
-	/** The computer player in this seat (1 on). */
+	/** The computer player in this seat (any seat but {@link #YOU}). */
 	public Player at(int seat) {
 		return Player.byId(idAt(seat));
 	}
@@ -77,7 +78,6 @@ public final class Seating {
 			}
 			return new Seating(ids);
 		} catch (NumberFormatException e) {
-			Log.warn("Seating", "Unreadable table " + s + "; seating a new one", e);
 			return null;
 		}
 	}

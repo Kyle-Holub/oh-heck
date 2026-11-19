@@ -43,6 +43,9 @@ public record SavedGame(Match match, Difficulty level, Seating players) {
 			}
 		}
 		Seating table = players != null ? Seating.parse(players) : legacyPlayers;
+		if (players != null && table == null) {
+			Log.warn("SavedGame", "Unreadable table " + players + "; seating a new one", null);
+		}
 		return new SavedGame(m, d, table != null && table.onRoster() ? table : null);
 	}
 

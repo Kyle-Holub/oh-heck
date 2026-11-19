@@ -10,8 +10,8 @@ import org.junit.Test;
 
 import ohheck.screens.ScreenshotTour.Move;
 import ohheck.screens.ScreenshotTour.Stop;
-import ohheck.ui.GameHost;
 import ohheck.ui.Navigator;
+import ohheck.ui.Tagged;
 
 /** The screenshot run's route and timing (what CI's screenshots rely on). */
 public class ScreenshotTourTest {
@@ -47,7 +47,7 @@ public class ScreenshotTourTest {
 	}
 
 	/** A stop with nothing behind it: it writes down what it's asked. */
-	private static final class FakeStop implements TourStop, GameHost.Tagged {
+	private static final class FakeStop implements TourStop, Tagged {
 		final Stop stop;
 		final StringBuilder did = new StringBuilder();
 		boolean last;

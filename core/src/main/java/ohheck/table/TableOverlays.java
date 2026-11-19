@@ -135,7 +135,7 @@ final class TableOverlays {
 		float w = table.w, h = table.h;
 		paint.rect(0, 0, w, h, Palette.BACKDROP);
 		float bw = PAUSE_BUTTON_W, bh = PAUSE_BUTTON_H, gap = PAUSE_GAP;
-		MenuItem[] items = MenuItem.values();
+		MenuItem[] items = MenuItem.ALL;
 		float total = items.length * bh + (items.length - 1) * gap;
 		float top = h / 2 + total / 2 + PAUSE_LIFT;
 		BitmapFont title = paint.ui(1.5f);

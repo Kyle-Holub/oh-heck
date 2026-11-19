@@ -69,7 +69,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final GameRecorder recorder;
 	/** The difficulty this game was started at: its high score badge and statistics level. */
 	private Difficulty level;
-	/** Who sits in seats 1-3 ({@link Player} ids). */
+	/** Who sits in the other seats. */
 	private Seating players;
 
 	/** Your taps and drags, and the pause menu. */

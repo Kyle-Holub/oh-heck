@@ -8,8 +8,8 @@ the screenshot run, CI, the arena and the art tools.
 - **Branches:** work on `feature/…` or `refactor/…` (CI previews the screenshots), then
   merge into the current `develop/alpha-X.Y.Z` (CI publishes a dev build). Don't commit
   straight to `develop/` or `main`.
-- **Packages:** follow the map in `ARCHITECTURE.md`. A package may use those below it,
-  never one above (no cycles). `ohheck.rules`, `ohheck.players`, `ohheck.records`,
+- **Packages:** follow the map in `ARCHITECTURE.md`. A package may use those above it in
+  the map, never one below (no cycles); anything may use `ohheck.util` and `ohheck.anim`. `ohheck.rules`, `ohheck.players`, `ohheck.records`,
   `ohheck.util` and `ohheck.anim` stay libGDX-free, so they run in plain JUnit. Put new game logic and timing
   there, or in small gdx-free classes like `GameEnd`, and test it.
 - **Screens depend on `GameHost`** (`Services` and `Navigator`), not `OhHeckGame`; helpers

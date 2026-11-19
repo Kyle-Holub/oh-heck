@@ -29,6 +29,11 @@ public class SeatingTest {
 		}
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void yourSeatHasNoComputerPlayer() {
+		Seating.of(4, 10, 1).idAt(Seating.YOU);
+	}
+
 	@Test
 	public void knowsWhenSomeoneHasLeftTheRoster() {
 		assertTrue(Seating.of(4, 10, 1).onRoster());

@@ -24,7 +24,6 @@ public class PlayersScreen extends BaseScreen implements TourStop {
 	private final Rectangle backButton = new Rectangle();
 	private final Scroller scroller = new Scroller();
 
-	/** Shows the end of the list, or the top (for the screenshot run). */
 	@Override
 	public ScreenshotTour.Stop tourStop() {
 		return ScreenshotTour.Stop.ROSTER;

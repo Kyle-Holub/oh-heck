@@ -10,7 +10,7 @@ import com.badlogic.gdx.math.Rectangle;
  */
 public final class MenuChrome {
 
-	/** The bar across the top: its height and colour. */
+	/** The bar across the top: its height and colour (shared: read it, don't change it). */
 	public static final float HEADER_H = 56;
 	public static final Color HEADER = new Color(0.06f, 0.04f, 0.03f, 0.97f);
 	/** The Back button: centre x, size. */

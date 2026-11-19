@@ -6,18 +6,4 @@ package ohheck.ui;
  * this, not on it, and a helper that needs only one half takes only that.
  */
 public interface GameHost extends Services, Navigator {
-
-	/** The screenshot run's walk through the menus: called once a step for the screen showing. */
-	interface Tour {
-		/**
-		 * Moves the tour along, for a screen shown this long (at game speed); true if it has
-		 * gone on to another screen (so this one stops).
-		 */
-		boolean step(Tagged screen, float shown);
-	}
-
-	/** A screen that can describe itself for automated screenshots. */
-	interface Tagged {
-		String stateTag();
-	}
 }

@@ -2,7 +2,7 @@ package ohheck.rules;
 
 /**
  * The standard rules' numbers ({@link RuleSet#STANDARD}), for code that isn't holding a game:
- * the tutorial's captions and the screenshot run's made-up history. Anything playing a
+ * the tutorial's captions and its little table. Anything playing a
  * {@link Match} asks the match's own {@link Match#rules()} instead, so it follows a variant
  * too; anything else asks {@link RuleSet#STANDARD} directly.
  */

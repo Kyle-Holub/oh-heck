@@ -37,5 +37,5 @@ public interface Services {
 	void fitViewportToTarget();
 
 	/** The screenshot run's walk through the menus; null in normal play. */
-	GameHost.Tour tour();
+	Tour tour();
 }

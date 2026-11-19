@@ -14,7 +14,7 @@ import ohheck.util.Log;
  */
 public final class Records {
 
-	/** Where the records are written: Settings on the device, a map in the tests. */
+	/** Where the records are written: the device's preferences (RecordPrefs), a map in the tests. */
 	public interface Store {
 		String stats();
 

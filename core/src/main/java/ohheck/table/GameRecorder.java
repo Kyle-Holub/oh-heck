@@ -22,7 +22,7 @@ final class GameRecorder implements TableFlow.Listener {
 		this.records = records;
 	}
 
-	/** The table being played: its difficulty setting and players . fresh: a new game, not a resumed one. */
+	/** The table being played: its difficulty setting and who sits where. fresh: a new game, not a resumed one. */
 	void table(Difficulty level, Seating players, boolean fresh) {
 		this.level = level;
 		this.players = players;

@@ -13,7 +13,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import ohheck.anim.FixedSteps;
 
 /** What every screen shares: the game loop in fixed steps, the viewport, touches, and the drawing tools. */
-public abstract class BaseScreen extends ScreenAdapter implements GameHost.Tagged {
+public abstract class BaseScreen extends ScreenAdapter implements Tagged {
 
 	public static final float WORLD_W = 800, WORLD_H = 480;
 

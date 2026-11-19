@@ -10,8 +10,10 @@ import ohheck.rules.Match;
 /**
  * The table as its helpers read it ({@link TableDrawing}, {@link CardSprites},
  * {@link TableOverlays}, {@link TableInput}, {@link Autoplay}): the game and its timing,
- * who's who, your hand's layout and what your finger is doing. Nothing here changes the
- * table; that goes through {@link TableActions}. {@link PlayScreen} is the table.
+ * who's who, your hand's layout and what your finger is doing. Moves and the table's flow
+ * go through {@link TableActions}, never through here (the match itself is handed out for
+ * reading; only {@link TableDrawing} fills in your hand's layout). {@link PlayScreen} is the
+ * table.
  */
 interface TableScene {
 

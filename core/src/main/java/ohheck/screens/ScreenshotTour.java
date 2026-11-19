@@ -1,7 +1,8 @@
 package ohheck.screens;
 
-import ohheck.ui.GameHost;
 import ohheck.ui.Navigator;
+import ohheck.ui.Tagged;
+import ohheck.ui.Tour;
 
 /**
  * The screenshot run's walk through the menus, all in one place: Title, High scores
@@ -14,7 +15,7 @@ import ohheck.ui.Navigator;
  * ScreenshotTourTest); {@link #step} carries it out at the screen showing.
  * Times are seconds the screen has been shown, at game speed.
  */
-public final class ScreenshotTour implements GameHost.Tour {
+public final class ScreenshotTour implements Tour {
 
 	static final float TITLE = 3.5f, OPTIONS = 1.5f;
 	/** High scores: the Statistics tab from, and on to Options after. */
@@ -72,7 +73,7 @@ public final class ScreenshotTour implements GameHost.Tour {
 
 	/** Moves the tour along; true if it has gone on to another screen (so this one stops drawing). */
 	@Override
-	public boolean step(GameHost.Tagged screen, float shown) {
+	public boolean step(Tagged screen, float shown) {
 		if (!(screen instanceof TourStop)) {
 			return false; // (the table: Autoplay takes over there)
 		}

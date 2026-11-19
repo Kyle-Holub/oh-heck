@@ -25,6 +25,8 @@ import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.PostProcessor;
+import ohheck.ui.Tagged;
+import ohheck.ui.Tour;
 import ohheck.util.Log;
 
 /** The libGDX entry point shared by Android and desktop: makes the shared things and the screens, and runs the frames. */
@@ -130,8 +132,8 @@ public class OhHeckGame extends Game implements GameHost {
 		capturing = false;
 		Screen s = getScreen();
 		pacer.endFrame(!fixed && !screens.changing() && s instanceof BaseScreen && !((BaseScreen) s).animating());
-		if (options.frameListener != null && s instanceof GameHost.Tagged) {
-			options.frameListener.onFrame(((GameHost.Tagged) s).stateTag());
+		if (options.frameListener != null && s instanceof Tagged) {
+			options.frameListener.onFrame(((Tagged) s).stateTag());
 		}
 	}
 
@@ -183,7 +185,7 @@ public class OhHeckGame extends Game implements GameHost {
 	}
 
 	@Override
-	public GameHost.Tour tour() {
+	public Tour tour() {
 		return tour;
 	}
 

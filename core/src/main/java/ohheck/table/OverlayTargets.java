@@ -10,8 +10,9 @@ import ohheck.ui.TapAreas;
 /**
  * Where the buttons drawn over the table are, for taps to find: the menu button, the pause
  * menu's choices, the bid numbers and the game-over buttons. {@link TableOverlays} places
- * each one as it draws it (tests place them by hand); {@link TableInput} and
- * {@link Autoplay} only ask. A button not drawn this game has no area, so it can't be hit.
+ * each one as it draws it (tests place them by hand); {@link TableInput} asks what a tap hit,
+ * and {@link Autoplay} where to tap. A button not drawn this game has no area, so it can't
+ * be hit.
  */
 final class OverlayTargets {
 
@@ -21,7 +22,7 @@ final class OverlayTargets {
 	}
 
 	private final Rectangle[] buttons = new Rectangle[Button.values().length];
-	private final Rectangle[] menuItems = new Rectangle[MenuItem.values().length];
+	private final Rectangle[] menuItems = new Rectangle[MenuItem.ALL.length];
 	private final List<Rectangle> bids = new ArrayList<Rectangle>();
 
 	OverlayTargets() {
@@ -69,7 +70,7 @@ final class OverlayTargets {
 
 	/** The menu choice at (x, y), or null. */
 	MenuItem menuItemAt(float x, float y) {
-		for (MenuItem item : MenuItem.values()) {
+		for (MenuItem item : MenuItem.ALL) {
 			if (hits(menuItem(item), x, y)) {
 				return item;
 			}
