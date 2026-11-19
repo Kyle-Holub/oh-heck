@@ -12,6 +12,7 @@ import ohheck.players.Bot;
 import ohheck.players.Player;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Move;
 import ohheck.rules.TableView;
 
 /**
@@ -73,7 +74,7 @@ final class TableFlow {
 	/** Where the computer players think; at once unless told otherwise. */
 	private Thinker thinker = Thinker.AT_ONCE;
 	/** The computer player's decision being worked out this turn (a bid or a card), or null. */
-	private Future<?> thinking;
+	private Future<Move> thinking;
 
 	/** Lets the computer players think on the given thinker (in play: in the background). */
 	void thinkWith(Thinker t) {
@@ -179,7 +180,7 @@ final class TableFlow {
 		if (!yourTurnToBid() || !match.isLegalBid(b)) {
 			return false;
 		}
-		placeBid(HUMAN, b);
+		make(new Move.Bid(HUMAN, b));
 		return true;
 	}
 
@@ -188,7 +189,7 @@ final class TableFlow {
 		if (!yourTurnToPlay() || !match.legalPlays(HUMAN).contains(c)) {
 			return false;
 		}
-		playCard(HUMAN, c);
+		make(new Move.Play(HUMAN, c));
 		return true;
 	}
 
@@ -270,18 +271,15 @@ final class TableFlow {
 	}
 
 	/** Sets the seat's computer player thinking about its move, from a snapshot of the table. */
-	private Future<?> startThinking(int seat) {
+	private Future<Move> startThinking(int seat) {
 		Bot bot = bots[seat];
 		TableView view = match.view(seat);
-		if (match.phase() == Match.Phase.BIDDING) {
-			return thinker.think(() -> bot.chooseBid(view));
-		}
-		return thinker.think(() -> bot.choosePlay(view));
+		return thinker.think(() -> bot.chooseMove(view));
 	}
 
 	/** Plays the move the seat's computer player decided on. */
 	private void botMove(int seat) {
-		Object move;
+		Move move;
 		try {
 			move = thinking.get();
 		} catch (InterruptedException e) {
@@ -291,24 +289,19 @@ final class TableFlow {
 			throw new IllegalStateException("A computer player failed to decide", e.getCause());
 		}
 		thinking = null;
-		if (match.phase() == Match.Phase.BIDDING) {
-			placeBid(seat, (Integer) move);
-		} else {
-			playCard(seat, (Card) move);
+		make(move);
+	}
+
+
+	/** Makes a move (yours or a computer player's), saves, and moves the table on. */
+	private void make(Move move) {
+		int winner = match.apply(move);
+		tell(l -> l.save(match));
+		if (move instanceof Move.Play) {
+			Card c = ((Move.Play) move).card();
+			tell(l -> l.played(match, move.seat(), c));
 		}
-	}
-
-
-	private void placeBid(int seat, int bid) {
-		match.placeBid(seat, bid);
-		tell(l -> l.save(match));
-		enter(TableState.TURN);
-	}
-
-	private void playCard(int seat, Card c) {
-		int winner = match.playCard(seat, c);
-		tell(l -> l.save(match));
-		tell(l -> l.played(match, seat, c));
 		enter(winner >= 0 ? TableState.TRICK : TableState.TURN);
 	}
+
 }

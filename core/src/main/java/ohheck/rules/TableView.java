@@ -74,6 +74,11 @@ public final class TableView {
 		return t;
 	}
 
+	/** Whether this player, on their turn, is choosing a bid (they haven't bid this hand) rather than a card. */
+	public boolean bidding() {
+		return !hasBid(seat);
+	}
+
 	public boolean hasBid(int seat) {
 		return bids[seat] != Match.NO_BID;
 	}
