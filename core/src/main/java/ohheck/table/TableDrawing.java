@@ -7,8 +7,9 @@ import java.util.List;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.MathUtils;
 
+import ohheck.anim.Ease;
+import ohheck.anim.Tween;
 import ohheck.fx.Glints;
 import ohheck.fx.Motes;
 import ohheck.rules.Card;
@@ -32,6 +33,9 @@ final class TableDrawing {
 	/** The trump card's shadow lift; its warm glow, how long it takes to light, and its size against the card. */
 	private static final float TRUMP_LIFT = 4, TRUMP_GLOW_IN = 0.6f, TRUMP_GLOW_W = 1.9f, TRUMP_GLOW_H = 1.6f;
 	private static final Color TRUMP_GLOW = new Color(1f, 0.78f, 0.4f, 0.22f);
+	/** The trump card turns over once the deal is done, then its glow comes up. */
+	private static final Tween TRUMP_TURNING = Tween.over(TableFlow.TRUMP_FLIP_TIME, Ease.LINEAR),
+			TRUMP_LIGHTING = Tween.over(TRUMP_GLOW_IN, Ease.LINEAR).after(TableFlow.TRUMP_FLIP_TIME);
 	/** The tally's first mark: in from the left, down from the top. */
 	private static final float TALLY_X = 22, TALLY_DROP = 12;
 	/** Your cards' shadow lift, on top of how far a card is raised. */
@@ -94,9 +98,9 @@ final class TableDrawing {
 		}
 		float x = table.trumpX(), y = table.trumpY(), cw = table.trumpW(), ch = table.trumpH();
 		art.shadow(x, y, cw, ch, TRUMP_LIFT);
-		float p = flow.isDealing() ? 0 : MathUtils.clamp(flow.trumpTime() / TableFlow.TRUMP_FLIP_TIME, 0, 1);
+		float p = flow.isDealing() ? 0 : TRUMP_TURNING.progress(flow.trumpTime());
 		// face up, the trump is lit: a warm glow behind it, and the card itself brightened
-		float lit = MathUtils.clamp((flow.trumpTime() - TableFlow.TRUMP_FLIP_TIME) / TRUMP_GLOW_IN, 0, 1);
+		float lit = TRUMP_LIGHTING.progress(flow.trumpTime());
 		if (p >= 1 && lit > 0) {
 			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 			float gw = cw * TRUMP_GLOW_W, gh = ch * TRUMP_GLOW_H;

@@ -7,11 +7,12 @@ import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
+import ohheck.anim.Ease;
+import ohheck.anim.Tween;
 import ohheck.rules.Match;
 import ohheck.ui.CardArt;
 import ohheck.ui.Numbers;
@@ -52,6 +53,7 @@ final class TableOverlays {
 			BID_PANEL_MARGIN = 40, BID_NUMERAL_OF_BUTTON = 0.66f;
 	/** The hand's end: the art fades in over this long, at this scale; the tap note sits below centre. */
 	private static final float HAND_END_FADE = 0.3f, HAND_END_SCALE = 0.95f, TAP_NOTE_BELOW = 40;
+	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	/** "Bid tricks!"/"Set!" labels: yours big, then small beside your panel; the opponents' size; the shadow. */
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
@@ -182,7 +184,7 @@ final class TableOverlays {
 
 	/** "Bid Tricks!" or "You got set!", t seconds in, with how each opponent did. */
 	void drawHandEnd(float t) {
-		float a = MathUtils.clamp(t / HAND_END_FADE, 0, 1);
+		float a = HAND_END_IN.progress(t);
 		art.art(match.madeBid(TableLayout.HUMAN) ? paint.assets.bidTricksText : paint.assets.setText, table.centreX(),
 				table.centreY(), HAND_END_SCALE, a);
 		drawHandLabels(0f, a);
@@ -205,7 +207,7 @@ final class TableOverlays {
 			String s = Wording.handResult(made);
 			float scale, x, y, a = alpha;
 			if (seat == TableLayout.HUMAN) {
-				float p = Interpolation.pow2Out.apply(drop);
+				float p = Ease.OUT.apply(drop);
 				BitmapFont f = paint.serif(LABEL_BIG);
 				paint.glyphs.setText(f, s);
 				float sx = table.w / 2 - paint.glyphs.width / 2, sy = table.centreY() + paint.glyphs.height / 2;

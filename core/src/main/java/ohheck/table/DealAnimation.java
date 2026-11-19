@@ -1,10 +1,12 @@
 package ohheck.table;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
+import ohheck.anim.Ease;
+import ohheck.anim.Phases;
+import ohheck.anim.Tween;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 
@@ -28,6 +30,15 @@ final class DealAnimation {
 	private static final float DROP = 0.15f;
 	private static final float DECK_SCALE = 0.85f, HALF_GAP = 52f;
 
+	/** The deck coming to the middle; the halves parting; the deck going home; a card dealt; your card turning. */
+	private static final Tween GATHERING = Tween.over(GATHER, Ease.OUT), SPLITTING = Tween.over(SPLIT, Ease.OUT),
+			GOING_HOME = Tween.over(HOME, Ease.IN), DEALT = Tween.over(DEAL_FLIGHT, Ease.OUT),
+			TURNING = Tween.over(FLIP_TIME, Ease.LINEAR);
+	/** One riffle pass: split, riffle, settle. */
+	private static final Phases PASS_STAGES = new Phases(SPLIT, RIFFLE, SETTLE);
+	/** The shuffle before the deck goes home: gather, then the passes (set for each hand). */
+	private Phases shuffle = new Phases(GATHER, PASS);
+
 	private int handSize, dealer, passes, soundsPlayed;
 	private final int[] reached = new int[4];
 	private float t, shuffleLength, length;
@@ -37,6 +48,7 @@ final class DealAnimation {
 		this.handSize = handSize;
 		this.dealer = dealer;
 		passes = newGame ? 2 : 1;
+		shuffle = new Phases(GATHER, passes * PASS);
 		shuffleLength = GATHER + passes * PASS + HOME;
 		length = shuffleLength + 4 * handSize * DEAL_INTERVAL + DEAL_FLIGHT + FLIP_TIME + 0.1f;
 		t = 0;
@@ -81,7 +93,7 @@ final class DealAnimation {
 		int count = 0;
 		for (int k = 0; k < 4 * handSize; k++) {
 			if ((dealer + 1 + k) % 4 == TableLayout.HUMAN && count++ == n) {
-				return MathUtils.clamp((dealT() - (k * DEAL_INTERVAL + DEAL_FLIGHT)) / FLIP_TIME, 0, 1);
+				return TURNING.progress(dealT() - (k * DEAL_INTERVAL + DEAL_FLIGHT));
 			}
 		}
 		return 1;
@@ -119,7 +131,7 @@ final class DealAnimation {
 				tx = table.fanCardX(seat, j, handSize);
 				ty = table.fanOrigin(seat).y;
 			}
-			float p = Interpolation.pow2Out.apply((dealT - start) / DEAL_FLIGHT);
+			float p = DEALT.progress(dealT - start);
 			float cw = MathUtils.lerp(fromW, tw, p), ch = MathUtils.lerp(fromH, th, p);
 			float x = MathUtils.lerp(fromX - fromW / 2, tx, p), y = MathUtils.lerp(fromY - fromH / 2, ty, p);
 			art.shadow(x, y, cw, ch, 26 * (1 - p) + 4);
@@ -132,40 +144,29 @@ final class DealAnimation {
 		float cx = table.centreX(), cy = table.centreY();
 		Vector2 d = table.seatAnchor(dealer);
 		float dx = d.x, dy = d.y;
-		float t = this.t;
-
-		// gather: the deck comes from the dealer to the middle of the table
-		if (t < GATHER) {
-			float p = Interpolation.pow2Out.apply(t / GATHER);
+		int stage = shuffle.at(t);
+		float u = shuffle.into(t);
+		if (stage == 0) { // gather: the deck comes from the dealer to the middle of the table
+			float p = GATHERING.progress(u);
 			art.stack(MathUtils.lerp(dx, cx, p), MathUtils.lerp(dy, cy, p), 52, cw, ch, 0);
-			return;
-		}
-		t -= GATHER;
-
-		// riffle passes: split into two halves, then cards fall alternately from each onto one pile
-		if (t < passes * PASS) {
-			t %= PASS;
-			if (t < SPLIT) {
-				float p = Interpolation.pow2Out.apply(t / SPLIT);
+		} else if (stage == 1) { // riffle passes: split into halves, cards fall from each onto one pile, settle
+			u %= PASS;
+			int step = PASS_STAGES.at(u);
+			float v = PASS_STAGES.into(u);
+			if (step == 0) {
+				float p = SPLITTING.progress(v);
 				art.stack(cx - HALF_GAP * p, cy, 26, cw, ch, 8 * p);
 				art.stack(cx + HALF_GAP * p, cy, 26, cw, ch, -8 * p);
-				return;
+			} else if (step == 1) {
+				drawRiffle(batch, assets, art, v, cx, cy, cw, ch);
+			} else {
+				art.stack(cx, cy, 52, cw, ch, 0); // squared up
 			}
-			t -= SPLIT;
-			if (t < RIFFLE) {
-				drawRiffle(batch, assets, art, t, cx, cy, cw, ch);
-				return;
-			}
-			// settle: the deck is squared up
-			art.stack(cx, cy, 52, cw, ch, 0);
-			return;
+		} else { // home: the deck goes back to the dealer, ready to deal
+			float p = GOING_HOME.progress(u);
+			float s = MathUtils.lerp(1f, TableLayout.BACK_SCALE / DECK_SCALE, p);
+			art.stack(MathUtils.lerp(cx, dx, p), MathUtils.lerp(cy, dy, p), 52, cw * s, ch * s, 0);
 		}
-		t -= passes * PASS;
-
-		// home: the deck goes back to the dealer, ready to deal
-		float p = Interpolation.pow2In.apply(MathUtils.clamp(t / HOME, 0, 1));
-		float s = MathUtils.lerp(1f, TableLayout.BACK_SCALE / DECK_SCALE, p);
-		art.stack(MathUtils.lerp(cx, dx, p), MathUtils.lerp(cy, dy, p), 52, cw * s, ch * s, 0);
 	}
 	/** t seconds into a riffle: cards fall alternately from the two halves onto one pile in the middle. */
 	private void drawRiffle(SpriteBatch batch, Assets assets, CardArt art, float t, float cx, float cy, float cw, float ch) {

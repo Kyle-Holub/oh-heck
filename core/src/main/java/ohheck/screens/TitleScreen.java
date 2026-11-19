@@ -10,6 +10,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import ohheck.anim.Ease;
+import ohheck.anim.Tween;
 import ohheck.fx.FallingCards;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
@@ -32,6 +34,10 @@ public class TitleScreen extends BaseScreen {
 	private static final float SCENE_START = 0.4f, SCENE_FADE = 0.9f, TITLE_START = 1.0f, TITLE_FADE = 1.6f,
 			CARDS_START = TITLE_START + TITLE_FADE, MENU_START = 5.0f, MENU_FADE = 0.8f,
 			INTRO_END = MENU_START + MENU_FADE;
+	/** The scene rises out of black, the title fades in, then the menu. */
+	private static final Tween SCENE_IN = Tween.over(SCENE_FADE, Ease.LINEAR).after(SCENE_START),
+			TITLE_IN = Tween.over(TITLE_FADE, Ease.SMOOTH).after(TITLE_START),
+			MENU_IN = Tween.over(MENU_FADE, Ease.SMOOTH).after(MENU_START);
 	private float introT;
 	private final List<String> items = new ArrayList<String>();
 	private final List<Rectangle> hits = new ArrayList<Rectangle>();
@@ -85,7 +91,7 @@ public class TitleScreen extends BaseScreen {
 			drawScene();
 		}
 		float titleY = drawTitle();
-		paint.fade(smooth(ramp(introT, MENU_START, MENU_FADE)));
+		paint.fade(MENU_IN.progress(introT));
 		TapAreas.sizeTo(hits, items.size());
 		if (paint.fade() > 0) {
 			drawMenu(titleY);
@@ -117,7 +123,7 @@ public class TitleScreen extends BaseScreen {
 		batch.setColor(Color.WHITE);
 		cards.draw(batch, w / 2, h / 2);
 		rect(0, 0, w, h, Palette.SHADE);
-		float dark = 1f - ramp(introT, SCENE_START, SCENE_FADE);
+		float dark = 1f - SCENE_IN.progress(introT);
 		if (dark > 0) {
 			rect(0, 0, w, h, black.set(0, 0, 0, dark));
 		}
@@ -127,7 +133,7 @@ public class TitleScreen extends BaseScreen {
 	private float drawTitle() {
 		float tw = assets.titleText.getWidth() * 0.85f, th = assets.titleText.getHeight() * 0.85f;
 		float titleY = h - 30 - th;
-		float titleA = smooth(ramp(introT, TITLE_START, TITLE_FADE));
+		float titleA = TITLE_IN.progress(introT);
 		batch.setColor(1f, 1f, 1f, titleA);
 		batch.draw(assets.titleText, (w - tw) / 2, titleY, tw, th);
 		batch.setColor(Color.WHITE);
@@ -158,13 +164,9 @@ public class TitleScreen extends BaseScreen {
 
 
 	/** 0 before start, rising to 1 over length. */
-	private static float ramp(float t, float start, float length) {
-		return Math.max(0f, Math.min(1f, (t - start) / length));
-	}
 
-	private static float smooth(float x) {
-		return x * x * (3 - 2 * x);
-	}
+
+
 
 	@Override
 	protected void tap(float x, float y) {

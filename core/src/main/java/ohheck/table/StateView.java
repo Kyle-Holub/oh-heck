@@ -1,7 +1,7 @@
 package ohheck.table;
 
-import com.badlogic.gdx.math.MathUtils;
-
+import ohheck.anim.Ease;
+import ohheck.anim.Tween;
 import ohheck.rules.Match;
 
 /**
@@ -108,7 +108,7 @@ enum StateView {
 		@Override
 		void drawOverlay(TableScene s, int newHighScore) {
 			s.overlays().drawHandResults();
-			s.overlays().drawHandLabels(MathUtils.clamp(s.stateTime() / LABEL_DROP, 0, 1), 1f);
+			s.overlays().drawHandLabels(LABELS_DROP.progress(s.stateTime()), 1f);
 		}
 
 		@Override
@@ -148,6 +148,7 @@ enum StateView {
 
 	/** Your "Bid tricks!"/"Set!" takes this long to glide beside your panel. */
 	static final float LABEL_DROP = 0.6f;
+	private static final Tween LABELS_DROP = Tween.over(LABEL_DROP, Ease.LINEAR);
 
 	private static final StateView[] BY_STATE = new StateView[TableState.values().length];
 	static {

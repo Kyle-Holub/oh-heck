@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import ohheck.anim.Timeline;
 import ohheck.fx.Fireworks;
 import ohheck.fx.Glints;
 import ohheck.fx.Sparks;

@@ -6,10 +6,11 @@ import java.util.Map;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
+import ohheck.anim.Ease;
+import ohheck.anim.Tween;
 import ohheck.fx.Glints;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
@@ -30,6 +31,13 @@ final class TrickView {
 	private static final float TRICK_WON_SHOW = 0.9f;
 	private static final float MAX_TILT = 9f;
 
+	/** A card played flies in to its place, settling as it lands (from the moment it's played). */
+	private static final Tween FLIGHT = Tween.over(PLAY_FLIGHT, Ease.OUT);
+	/** A completed trick is gathered in by the winner over the end of its pause... */
+	private static final Tween COLLECT = Tween.over(COLLECT_TIME, Ease.IN).after(TRICK_PAUSE - COLLECT_TIME);
+	/** ...and "Trick Won!" fades in halfway through, if it's yours. */
+	private static final Tween TRICK_WON = Tween.over(0.3f, Ease.LINEAR).after(TRICK_PAUSE - COLLECT_TIME / 2);
+
 	/** Per card in flight: start x, start y, start time. */
 	private final Map<Card, float[]> flights = new HashMap<Card, float[]>();
 
@@ -44,7 +52,7 @@ final class TrickView {
 
 	boolean anyInFlight(float now) {
 		for (float[] f : flights.values()) {
-			if (now - f[2] < PLAY_FLIGHT) {
+			if (!FLIGHT.done(now - f[2])) {
 				return true;
 			}
 		}
@@ -70,10 +78,9 @@ final class TrickView {
 			cards = match.lastTrick();
 			seats = match.lastTrickSeats();
 			winner = match.lastTrickWinner();
-			collect = MathUtils.clamp((elapsed - (TRICK_PAUSE - COLLECT_TIME)) / COLLECT_TIME, 0, 1);
-			if (winner == TableLayout.HUMAN && elapsed > TRICK_PAUSE - COLLECT_TIME / 2) {
-				float a = MathUtils.clamp((elapsed - (TRICK_PAUSE - COLLECT_TIME / 2)) / 0.3f, 0, 1);
-				art.art(assets.trickWonText, table.centreX(), table.centreY(), 0.8f, a);
+			collect = COLLECT.raw(elapsed);
+			if (winner == TableLayout.HUMAN && elapsed > TRICK_WON.start()) {
+				art.art(assets.trickWonText, table.centreX(), table.centreY(), 0.8f, TRICK_WON.progress(elapsed));
 			}
 			if (elapsed >= TRICK_PAUSE) {
 				return; // the cards have gone to the winner
@@ -97,10 +104,9 @@ final class TrickView {
 			float rot = tilt(c, seat, match.handIndex());
 			float[] f = flights.get(c);
 			if (f != null) {
-				float raw = MathUtils.clamp((now - f[2]) / PLAY_FLIGHT, 0, 1);
-				float p = Interpolation.pow2Out.apply(raw);
-				x = MathUtils.lerp(f[0], slot.x, p);
-				y = MathUtils.lerp(f[1], slot.y, p);
+				float raw = FLIGHT.raw(now - f[2]), p = FLIGHT.progress(now - f[2]);
+				x = Ease.lerp(f[0], slot.x, p);
+				y = Ease.lerp(f[1], slot.y, p);
 				lift += (1 - raw) * 30;
 				rot *= p; // settles into its tilt as it lands
 				if (seat != TableLayout.HUMAN) {
@@ -108,10 +114,10 @@ final class TrickView {
 				}
 			}
 			if (collect > 0) {
-				float p = Interpolation.pow2In.apply(collect);
-				x = MathUtils.lerp(x, sinkX - cw / 4, p);
-				y = MathUtils.lerp(y, sinkY - ch / 4, p);
-				scale = MathUtils.lerp(1f, 0.5f, p);
+				float p = COLLECT.progress(elapsed);
+				x = Ease.lerp(x, sinkX - cw / 4, p);
+				y = Ease.lerp(y, sinkY - ch / 4, p);
+				scale = Ease.lerp(1f, 0.5f, p);
 				lift += p * 18;
 				rot *= 1 - p;
 			}
