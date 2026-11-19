@@ -215,13 +215,13 @@ final class TableOverlays {
 			y -= RESULTS_ROW;
 			int pts = match.lastHandPoints(seat);
 			t.setColor(Palette.MUTED);
-			t.draw(paint.batch, Wording.ordinal(place(seat)), px + cols[0], y);
+			t.draw(paint.batch, Wording.ordinal(match.placeOf(seat)), px + cols[0], y);
 			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
 			t.draw(paint.batch, scene.name(seat) + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
 			paint.numeral(match.bid(seat), px + cols[2] + RESULT_NUMERAL_X, y - RESULT_NUMERAL_Y, RESULT_NUMERAL_H, Color.WHITE);
 			t.draw(paint.batch, Numbers.text(match.tricksWon(seat)), px + cols[3], y);
 			t.draw(paint.batch, Numbers.signed(pts), px + cols[4], y);
-			t.setColor(place(seat) == 1 ? Palette.GOLD : Palette.CREAM);
+			t.setColor(match.placeOf(seat) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, Numbers.text(match.score(seat)), px + cols[5], y);
 		}
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
@@ -245,8 +245,8 @@ final class TableOverlays {
 		float y = py + ph - GAME_OVER_ROWS_DROP;
 		for (int s : ranked()) {
 			t.setColor(Palette.MUTED);
-			t.draw(paint.batch, Wording.ordinal(place(s)), px + GAME_OVER_PLACE_X, y);
-			t.setColor(place(s) == 1 ? Palette.GOLD : Palette.CREAM);
+			t.draw(paint.batch, Wording.ordinal(match.placeOf(s)), px + GAME_OVER_PLACE_X, y);
+			t.setColor(match.placeOf(s) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, scene.name(s), px + GAME_OVER_NAME_X, y);
 			paint.text(t, Numbers.text(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
 			if (s == Seating.YOU && newHighScore == 0) {
@@ -283,9 +283,5 @@ final class TableOverlays {
 		}
 		Collections.sort(ranked, byScore);
 		return ranked;
-	}
-
-	int place(int seat) {
-		return match.placeOf(seat);
 	}
 }

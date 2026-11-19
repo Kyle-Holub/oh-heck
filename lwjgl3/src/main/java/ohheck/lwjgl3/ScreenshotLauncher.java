@@ -79,18 +79,20 @@ public class ScreenshotLauncher {
 	}
 
 	public static void main(String[] args) {
-		final String outDir = args.length > 0 ? args[0] : "screenshots";
-		final String[] list = args.length > 1 && !args[1].trim().isEmpty() ? only(args[1].split(",")) : WANTED;
+		String outDir = args.length > 0 ? args[0] : "screenshots";
+		String[] list = args.length > 1 && !args[1].trim().isEmpty() ? only(args[1].split(",")) : WANTED;
 		if (list.length == 0) {
 			System.err.println("No screenshot states start with \"" + args[1] + "\". They are: " + Arrays.toString(WANTED));
 			System.exit(1);
 		}
-		final Set<String> wanted = new HashSet<String>(Arrays.asList(list));
-		final int[] frames = { 0 };
-		final String[] seen = { "" };
-		final int[] inState = { 0 };
-		final long start = System.nanoTime();
+		Lwjgl3ApplicationConfiguration config = Lwjgl3Launcher.config(1560, 720);
+		config.disableAudio(true);
+		config.useVsync(false);
+		config.setForegroundFPS(0);
+		new Lwjgl3Application(new OhHeckGame(scriptedRun(new Capture(outDir, list))), config);
+	}
 
+	private static GameOptions scriptedRun(GameOptions.FrameListener capture) {
 		GameOptions o = new GameOptions();
 		o.seed = 20261166L;
 		o.autoplayHuman = true;
@@ -99,36 +101,53 @@ public class ScreenshotLauncher {
 		o.fixedStep = STEP;
 		o.skipHands.addAll(Arrays.asList(SKIP));
 		o.stats = someStats();
-		o.frameListener = new GameOptions.FrameListener() {
-			@Override
-			public void onFrame(String state) {
-				frames[0]++;
-				if (!state.equals(seen[0])) {
-					seen[0] = state;
-					inState[0] = 0;
-				}
-				inState[0]++;
-				if (inState[0] == settleFrames(state)) {
-					for (String w : list) {
-						if (state.startsWith(w) && wanted.remove(w)) {
-							save(outDir + "/" + String.format("%02d-", list.length - wanted.size()) + state.replace(':', '-') + ".png");
-							break;
-						}
-					}
-				}
-				boolean finished = wanted.isEmpty() || (state.equals("gameover") && inState[0] > settleFrames(state));
-				if (finished || frames[0] > 20000) {
-					System.out.printf("Screenshots: %d frames in %.1f s, %d states not seen: %s%n", frames[0],
-							(System.nanoTime() - start) / 1e9, wanted.size(), wanted);
-					Gdx.app.exit();
+		o.frameListener = capture;
+		return o;
+	}
+
+	private static final class Capture implements GameOptions.FrameListener {
+		private static final int MAX_FRAMES = 20000;
+
+		private final String outDir;
+		private final String[] list;
+		private final Set<String> wanted;
+		private final long start = System.nanoTime();
+		private int frames, framesInState;
+		private String state = "";
+
+		Capture(String outDir, String[] list) {
+			this.outDir = outDir;
+			this.list = list;
+			this.wanted = new HashSet<String>(Arrays.asList(list));
+		}
+
+		@Override
+		public void onFrame(String now) {
+			frames++;
+			if (!now.equals(state)) {
+				state = now;
+				framesInState = 0;
+			}
+			framesInState++;
+			if (framesInState == settleFrames(state)) {
+				captureIfWanted();
+			}
+			boolean finished = wanted.isEmpty() || (state.equals("gameover") && framesInState > settleFrames(state));
+			if (finished || frames > MAX_FRAMES) {
+				System.out.printf("Screenshots: %d frames in %.1f s, %d states not seen: %s%n", frames,
+						(System.nanoTime() - start) / 1e9, wanted.size(), wanted);
+				Gdx.app.exit();
+			}
+		}
+
+		private void captureIfWanted() {
+			for (String w : list) {
+				if (state.startsWith(w) && wanted.remove(w)) {
+					save(outDir + "/" + String.format("%02d-", list.length - wanted.size()) + state.replace(':', '-') + ".png");
+					return;
 				}
 			}
-		};
-		Lwjgl3ApplicationConfiguration config = Lwjgl3Launcher.config(1560, 720);
-		config.disableAudio(true);
-		config.useVsync(false);
-		config.setForegroundFPS(0);
-		new Lwjgl3Application(new OhHeckGame(o), config);
+		}
 	}
 
 	private static Stats someStats() {
