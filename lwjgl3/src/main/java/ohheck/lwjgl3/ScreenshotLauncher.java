@@ -19,9 +19,9 @@ import ohheck.platform.GameOptions;
 import ohheck.players.Bot;
 import ohheck.players.Difficulty;
 import ohheck.players.Player;
+import ohheck.players.Seating;
 import ohheck.records.Stats;
 import ohheck.rules.Match;
-import ohheck.rules.Rules;
 
 /**
  * Plays a seeded game with the bot in every seat, saving a screenshot the
@@ -101,7 +101,7 @@ public class ScreenshotLauncher {
 
 		GameOptions o = new GameOptions();
 		// a game the scripted player wins (75 to 47, against Cornelius, Oswald and Horatio), to show the
-		// fireworks; found by replaying the rules with the table's random streams (see PlayScreen.stream)
+		// fireworks; found by replaying the rules with the table's random streams (see TableStreams)
 		o.seed = 20261166L;
 		o.autoplayHuman = true;
 		o.persist = false;
@@ -147,9 +147,9 @@ public class ScreenshotLauncher {
 		Random rng = new Random(7);
 		for (int g = 0; g < 12; g++) {
 			Difficulty level = Difficulty.values()[g % 3];
-			int[] players = Player.draw(level, rng);
-			Bot[] bots = { Bot.of(Difficulty.NORMAL, rng), Player.byId(players[0]).bot(rng),
-					Player.byId(players[1]).bot(rng), Player.byId(players[2]).bot(rng) };
+			Seating players = Player.draw(level, rng);
+			Bot[] bots = { Bot.of(Difficulty.NORMAL, rng), players.at(1).bot(rng), players.at(2).bot(rng),
+					players.at(3).bot(rng) };
 			Match m = new Match(4, rng, rng.nextInt(4));
 			stats.startGame();
 			while (m.phase() != Match.Phase.GAME_OVER) {
@@ -159,7 +159,7 @@ public class ScreenshotLauncher {
 				} else if (m.phase() == Match.Phase.PLAYING) {
 					m.playCard(s, bots[s].choosePlay(m.view(s)));
 				} else {
-					stats.countHand(m.handIndex(), level, m.bid(0), m.tricksWon(0));
+					stats.countHand(m.handIndex(), level, m.bid(0), m.tricksWon(0), m.lastHandPoints(0));
 					m.nextHand();
 				}
 			}
@@ -167,7 +167,7 @@ public class ScreenshotLauncher {
 			for (int s = 0; s < 4; s++) {
 				finals[s] = m.score(s);
 			}
-			stats.countGame(level, finals, Rules.numberOfHands(), players);
+			stats.countGame(level, finals, m.rules().numberOfHands(), players);
 		}
 		return stats;
 	}

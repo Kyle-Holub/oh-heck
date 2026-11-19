@@ -1,9 +1,10 @@
 package ohheck.util;
 
 /**
- * Where the code without a screen reports trouble it recovered from: a damaged save thrown
- * away, a high score that wouldn't read. The game sends it to the device log; anywhere else
- * (tests, the arena) it goes to standard error.
+ * Where the game reports trouble it recovered from: a damaged save thrown away, a high
+ * score that wouldn't read, a sound that wouldn't load, effects the device can't draw.
+ * The game sends it to the device log; anywhere else (tests, the arena) it goes to
+ * standard error.
  */
 public final class Log {
 

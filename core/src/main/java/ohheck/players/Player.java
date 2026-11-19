@@ -83,25 +83,6 @@ public final class Player {
 		return style.bot(level, rng);
 	}
 
-	/** Who you'll meet at this setting, in a line, from the odds (for the Options screen). */
-	public static String tableDescription(Difficulty setting) {
-		List<Difficulty> byChance = new ArrayList<Difficulty>(java.util.Arrays.asList(Difficulty.values()));
-		byChance.sort((x, y) -> Double.compare(setting.chanceOf(y), setting.chanceOf(x))); // (stable: ties keep level order)
-		StringBuilder sb = new StringBuilder("Mostly ").append(byChance.get(0).many);
-		for (Difficulty l : byChance.subList(1, byChance.size())) {
-			double p = setting.chanceOf(l);
-			if (p > 0) {
-				sb.append(p < 0.2 ? ", the odd " + l.oddOne : ", some " + l.many);
-			}
-		}
-		for (Difficulty l : Difficulty.values()) {
-			if (setting.chanceOf(l) == 0) {
-				sb.append("; never ").append(l.never);
-			}
-		}
-		return sb.append('.').toString();
-	}
-
 	/** The level a seat goes to, for r drawn evenly from 0 to 1, by the setting's odds. */
 	private static Difficulty pick(Difficulty setting, double r) {
 		Difficulty[] levels = Difficulty.values();
@@ -115,10 +96,10 @@ public final class Player {
 		return levels[levels.length - 1];
 	}
 
-	/** Three different players for a new game at this setting (their ids, for seats 1-3). */
-	public static int[] draw(Difficulty setting, Random rng) {
+	/** Different players for each computer seat of a new game at this setting. */
+	public static Seating draw(Difficulty setting, Random rng) {
 		List<Integer> chosen = new ArrayList<Integer>();
-		while (chosen.size() < 3) {
+		while (chosen.size() < Seating.OTHERS) {
 			Difficulty level = pick(setting, rng.nextDouble());
 			List<Integer> free = new ArrayList<Integer>();
 			for (Player p : ALL) {
@@ -130,6 +111,10 @@ public final class Player {
 				chosen.add(free.get(rng.nextInt(free.size())));
 			}
 		}
-		return new int[] { chosen.get(0), chosen.get(1), chosen.get(2) };
+		int[] ids = new int[chosen.size()];
+		for (int i = 0; i < ids.length; i++) {
+			ids[i] = chosen.get(i);
+		}
+		return Seating.of(ids);
 	}
 }

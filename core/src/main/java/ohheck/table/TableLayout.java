@@ -2,6 +2,7 @@ package ohheck.table;
 
 import com.badlogic.gdx.math.Vector2;
 
+import ohheck.players.Seating;
 import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
 
@@ -14,9 +15,8 @@ import ohheck.ui.BaseScreen;
  */
 final class TableLayout {
 
-	static final int HUMAN = 0;
-	/** The seats this table is laid out for: you, left, top, right. */
-	static final int SEATS = 4;
+	/** Your seat; the others are left, top and right. */
+	private static final int HUMAN = Seating.YOU;
 
 	static final float HAND_SCALE = 1.2f, BACK_SCALE = 0.55f, TRUMP_SCALE = 0.95f;
 	static final float PANEL_W = PlayerPanel.W, PANEL_H = PlayerPanel.H;

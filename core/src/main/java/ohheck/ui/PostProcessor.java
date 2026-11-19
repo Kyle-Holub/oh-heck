@@ -11,6 +11,8 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Disposable;
 
+import ohheck.util.Log;
+
 /**
  * A finishing pass over the whole screen: a soft bloom on bright highlights,
  * warm colour grading, a dark vignette and fine film grain.
@@ -106,7 +108,7 @@ public final class PostProcessor implements Disposable {
 		combine = new ShaderProgram(VERTEX, COMBINE);
 		ok = bright.isCompiled() && blur.isCompiled() && combine.isCompiled();
 		if (!ok) {
-			Gdx.app.error("PostProcessor", "Effects disabled: " + bright.getLog() + blur.getLog() + combine.getLog());
+			Log.warn("PostProcessor", "Effects disabled: " + bright.getLog() + blur.getLog() + combine.getLog(), null);
 		}
 		batch.getProjectionMatrix().setToOrtho2D(0, 0, 1, 1);
 		Pixmap p = new Pixmap(NOISE_SIZE, NOISE_SIZE, Pixmap.Format.RGBA8888);
@@ -158,7 +160,7 @@ public final class PostProcessor implements Disposable {
 			try {
 				allocate(w, h);
 			} catch (RuntimeException e) {
-				Gdx.app.error("PostProcessor", "Effects disabled: no frame buffers", e);
+				Log.warn("PostProcessor", "Effects disabled: no frame buffers", e);
 				ok = false;
 				return false;
 			}

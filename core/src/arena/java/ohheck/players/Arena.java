@@ -11,7 +11,6 @@ import java.util.Random;
 import ohheck.records.Stats;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
-import ohheck.rules.Rules;
 import ohheck.rules.TableView;
 
 /**
@@ -70,8 +69,8 @@ public final class Arena {
 					st.underBy[n]++;
 				}
 				st.miss += Math.abs(b - w);
-				st.points += Rules.score(b, w);
-				st.pointsBy[n] += Rules.score(b, w);
+				st.points += m.rules().score(b, w);
+				st.pointsBy[n] += m.rules().score(b, w);
 				st.expectedBy[n] += expected;
 				st.wonBy[n] += w;
 				m.nextHand();
@@ -165,7 +164,7 @@ public final class Arena {
 					Card c = bot.choosePlay(m.view(s));
 					if (m.playCard(s, c) >= 0) {
 						List<Card> t = m.lastTrick();
-						Card winner = t.get(Rules.trickWinner(t, m.trump()));
+						Card winner = t.get(m.rules().trickWinner(t, m.trump()));
 						int n = m.handSize();
 						for (Card x : t) {
 							int[] k = dealtAs.get(x);

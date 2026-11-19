@@ -19,7 +19,7 @@ import ohheck.ui.CardArt;
  * One clock runs through both parts: shuffling until {@link #shuffleLength},
  * dealing after that.
  */
-final class DealAnimation {
+final class DealAnimation implements FlowView.Deal {
 
 	static final float FLIP_TIME = 0.32f;
 	static final float DEAL_INTERVAL = 0.09f, DEAL_FLIGHT = 0.4f;
@@ -63,7 +63,8 @@ final class DealAnimation {
 		return false;
 	}
 
-	boolean isShuffling() {
+	@Override
+	public boolean isShuffling() {
 		return t < shuffleLength;
 	}
 
@@ -72,17 +73,20 @@ final class DealAnimation {
 	}
 
 	/** Seconds into the deal itself (0 while shuffling). */
-	float dealTime() {
+	@Override
+	public float dealTime() {
 		return dealT();
 	}
 
 	/** When (in deal time) the j-th card to this seat leaves the dealer. */
-	float startOf(int seat, int j) {
+	@Override
+	public float startOf(int seat, int j) {
 		int k = ((seat - dealer - 1) % 4 + 4) % 4 + 4 * j;
 		return k * DEAL_INTERVAL;
 	}
 
-	int dealer() {
+	@Override
+	public int dealer() {
 		return dealer;
 	}
 
@@ -91,7 +95,8 @@ final class DealAnimation {
 	}
 
 	/** The deck being gathered, riffled and taken home (the dealt cards are CardSprites). */
-	void drawShuffle(SpriteBatch batch, Assets assets, CardArt art, TableLayout table) {
+	@Override
+	public void drawShuffle(SpriteBatch batch, Assets assets, CardArt art, TableLayout table) {
 		float cw = Assets.CARD_W * DECK_SCALE, ch = Assets.CARD_H * DECK_SCALE;
 		float cx = table.centreX(), cy = table.centreY();
 		Vector2 d = table.deckSpot(dealer);

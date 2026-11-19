@@ -11,6 +11,7 @@ import ohheck.rules.Rank;
 import ohheck.rules.RuleSet;
 import ohheck.rules.Suit;
 import ohheck.rules.TableView;
+import ohheck.rules.Trick;
 
 /**
  * Looks ahead. For each bid or card it could make, it deals out the cards it
@@ -301,7 +302,8 @@ final class HardBot implements Bot {
 		for (int k = 0; k < v.players(); k++) {
 			t.seatState(k, Match.NO_BID, 0, v.score(k), v.handSize());
 		}
-		for (int k = (v.dealer() + 1) % v.players(); k != s; k = (k + 1) % v.players()) {
+		RuleSet rules = v.rules();
+		for (int k = rules.nextSeat(v.dealer(), v.players()); k != s; k = rules.nextSeat(k, v.players())) {
 			t.seatState(k, v.bid(k), 0, v.score(k), v.handSize());
 		}
 		return t.view();
@@ -348,9 +350,8 @@ final class HardBot implements Bot {
 		private final Card trumpCard;
 		private final List<Card>[] hands;
 		private final int[] bids, tricks, scores;
-		private final List<Card> trick = new ArrayList<Card>();
-		private final List<Integer> trickSeats = new ArrayList<Integer>();
-		private final boolean[] played = new boolean[52];
+		private final Trick trick;
+		private final boolean[] played = new boolean[Card.COUNT];
 		private final boolean[][] voids;
 		private int current;
 		private final TableView.Builder view;
@@ -378,9 +379,9 @@ final class HardBot implements Bot {
 					voids[s][suit.ordinal()] = v.isVoid(s, suit);
 				}
 			}
-			trick.addAll(v.trick());
-			trickSeats.addAll(v.trickSeats());
-			for (int i = 0; i < 52; i++) {
+			trick = new Trick(players, rules);
+			trick.set(v.trick(), v.trickSeats());
+			for (int i = 0; i < Card.COUNT; i++) {
 				played[i] = v.played(i);
 			}
 			current = v.seat();
@@ -398,7 +399,7 @@ final class HardBot implements Bot {
 
 		void bid(int seat, int b) {
 			bids[seat] = b;
-			current = (seat + 1) % players;
+			current = rules.nextSeat(seat, players);
 		}
 
 		/** The players after us bid as Normal players would. */
@@ -406,25 +407,22 @@ final class HardBot implements Bot {
 			while (bids[dealer] < 0) {
 				bid(current, policy.chooseBid(viewFor(current)));
 			}
-			current = (dealer + 1) % players;
+			current = rules.nextSeat(dealer, players);
 		}
 
 		void play(int seat, Card c) {
-			if (!trick.isEmpty() && c.suit() != trick.get(0).suit()) {
-				voids[seat][trick.get(0).suit().ordinal()] = true;
+			if (trick.revealsVoid(c)) {
+				voids[seat][trick.leadSuit().ordinal()] = true;
 			}
 			hands[seat].remove(c);
-			played[TableView.index(c)] = true;
-			trick.add(c);
-			trickSeats.add(seat);
-			if (trick.size() < players) {
-				current = (seat + 1) % players;
+			played[c.index()] = true;
+			int winner = trick.add(seat, c, trumpCard.suit());
+			if (winner < 0) {
+				current = rules.nextSeat(seat, players);
 				return;
 			}
-			int winner = trickSeats.get(rules.trickWinner(trick, trumpCard.suit()));
 			tricks[winner]++;
 			trick.clear();
-			trickSeats.clear();
 			current = winner;
 		}
 
@@ -468,7 +466,7 @@ final class HardBot implements Bot {
 			for (int s = 0; s < players; s++) {
 				v.seatState(s, bids[s], tricks[s], scores[s], hands[s].size()).voids(s, voids[s]);
 			}
-			return v.trick(trick, trickSeats).played(played).view();
+			return v.trick(trick.cards(), trick.seats()).played(played).view();
 		}
 	}
 }

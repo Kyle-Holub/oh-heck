@@ -13,12 +13,16 @@ import ohheck.records.HighScores;
 import ohheck.records.Stats;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
+import ohheck.ui.MenuChrome;
 import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 import ohheck.ui.Wording;
 
 /** Your ten best finished games, and (on its second tab) your statistics, by difficulty or for all. */
-public class HighScoresScreen extends BaseScreen {
+public class HighScoresScreen extends BaseScreen implements TourStop {
+
+	/** The header bar, Back and section headings. */
+	private final MenuChrome chrome = new MenuChrome(paint);
 
 	private final Rectangle backButton = new Rectangle(), scoresTab = new Rectangle(), statsTab = new Rectangle(),
 			resetButton = new Rectangle();
@@ -32,9 +36,17 @@ public class HighScoresScreen extends BaseScreen {
 	/** Showing the statistics (not the high scores); which totals (a difficulty, or Stats.ALL). */
 	private boolean showStats;
 
+	@Override
+	public ScreenshotTour.Stop tourStop() {
+		return ScreenshotTour.Stop.HIGH_SCORES;
+	}
+
 	/** The Statistics tab (for the screenshot run, which looks at both). */
-	void showStatistics() {
-		showStats = true;
+	@Override
+	public void secondHalf(boolean on) {
+		if (on) {
+			showStats = true;
+		}
 	}
 	private int filter = Stats.ALL;
 	/** The statistics rows shown, and which totals they're for (-1: to be worked out). */
@@ -68,9 +80,6 @@ public class HighScoresScreen extends BaseScreen {
 	protected void update(float step) {
 		shownFor += step * game.options().speed;
 		confirmReset = Math.max(0, confirmReset - step);
-		if (game.tour() != null) {
-			game.tour().step(this, shownFor);
-		}
 	}
 
 	@Override
@@ -79,14 +88,14 @@ public class HighScoresScreen extends BaseScreen {
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 
-		BitmapFont t = serif(2.2f);
-		t.setColor(GOLD);
-		centred(t, showStats ? "Statistics" : "High scores", w / 2, h - TITLE_DROP);
-		button(scoresTab, "Scores", w - SCORES_TAB_FROM_RIGHT, h - TABS_DROP, SCORES_TAB_W, TAB_H,
+		BitmapFont t = paint.serif(2.2f);
+		t.setColor(Palette.GOLD);
+		paint.centred(t, showStats ? "Statistics" : "High scores", w / 2, h - TITLE_DROP);
+		paint.button(scoresTab, "Scores", w - SCORES_TAB_FROM_RIGHT, h - TABS_DROP, SCORES_TAB_W, TAB_H,
 				showStats ? assets.buttonAlt : assets.button);
-		button(statsTab, "Statistics", w - STATS_TAB_FROM_RIGHT, h - TABS_DROP, STATS_TAB_W, TAB_H,
+		paint.button(statsTab, "Statistics", w - STATS_TAB_FROM_RIGHT, h - TABS_DROP, STATS_TAB_W, TAB_H,
 				showStats ? assets.button : assets.buttonAlt);
-		backButton(backButton, h - TABS_DROP);
+		chrome.backButton(backButton, h - TABS_DROP);
 		if (showStats) {
 			drawStats();
 		} else {
@@ -108,12 +117,12 @@ public class HighScoresScreen extends BaseScreen {
 	private void drawScores() {
 		float pw = SCORES_W, rowH = SCORE_ROW, ph = SCORES_PAD + Math.max(1, list.size()) * rowH;
 		float px = (w - pw) / 2, top = h - SCORES_TOP_DROP;
-		frame(assets.panel, px, top - ph, pw, ph);
-		BitmapFont f = ui(1.15f);
+		paint.frame(assets.panel, px, top - ph, pw, ph);
+		BitmapFont f = paint.ui(1.15f);
 		float y = top - SCORE_HEADS_DROP;
 		if (list.isEmpty()) {
 			f.setColor(Palette.MUTED);
-			centred(f, "Finish a game to set your first high score", w / 2, y - EMPTY_NOTE_BELOW);
+			paint.centred(f, "Finish a game to set your first high score", w / 2, y - EMPTY_NOTE_BELOW);
 			return;
 		}
 		for (int c = 0; c < SCORE_COLS.length; c++) {
@@ -125,7 +134,7 @@ public class HighScoresScreen extends BaseScreen {
 		float pulse = 0.5f + 0.5f * MathUtils.sin(shownFor * 3f);
 		for (int i = 0; i < list.size(); i++) {
 			if (i == newest) { // the game just finished, picked out
-				rect(px + ROW_HIGHLIGHT_INSET, y - rowH + ROW_HIGHLIGHT_RISE, pw - 2 * ROW_HIGHLIGHT_INSET, rowH,
+				paint.rect(px + ROW_HIGHLIGHT_INSET, y - rowH + ROW_HIGHLIGHT_RISE, pw - 2 * ROW_HIGHLIGHT_INSET, rowH,
 						highlight.set(0.97f, 0.85f, 0.56f, 0.10f + 0.08f * pulse));
 			}
 			drawScoreRow(f, i, list.get(i), y);
@@ -139,28 +148,28 @@ public class HighScoresScreen extends BaseScreen {
 	private void drawScoreHeads(BitmapFont f, float y) {
 		float[] cols = scoreCols;
 		f.setColor(Palette.MUTED);
-		text(f, "#", cols[0], y, true);
-		text(f, "Level", cols[1], y, true);
-		text(f, "Score", cols[2], y, true);
-		text(f, "Finished", cols[3], y, true);
-		text(f, "Date", cols[4], y, false);
+		paint.text(f, "#", cols[0], y, true);
+		paint.text(f, "Level", cols[1], y, true);
+		paint.text(f, "Score", cols[2], y, true);
+		paint.text(f, "Finished", cols[3], y, true);
+		paint.text(f, "Date", cols[4], y, false);
 	}
 
 	/** Row i of the table: the newest in light gold, the best in gold. */
 	private void drawScoreRow(BitmapFont f, int i, HighScores.Entry e, float y) {
 		float[] cols = scoreCols;
 		float badge = SCORE_BADGE;
-		Color c = i == newest ? Palette.GOLD_LIGHT : i == 0 ? GOLD : Palette.CREAM;
+		Color c = i == newest ? Palette.GOLD_LIGHT : i == 0 ? Palette.GOLD : Palette.CREAM;
 		f.setColor(c);
-		text(f, Numbers.text(i + 1), cols[0], y, true);
-		if (e.level() >= 0 && e.level() < assets.levelBadge.length) {
-			batch.draw(assets.levelBadge[e.level()], cols[1] - badge / 2, y - SCORE_BADGE_DROP, badge, badge);
+		paint.text(f, Numbers.text(i + 1), cols[0], y, true);
+		if (e.level() != null) {
+			batch.draw(assets.levelBadge[e.level().ordinal()], cols[1] - badge / 2, y - SCORE_BADGE_DROP, badge, badge);
 		}
-		text(f, Numbers.text(e.score()), cols[2], y, true);
-		f.setColor(e.place() == 1 ? GOLD : c);
-		text(f, e.place() == 1 ? "Won" : Wording.ordinal(e.place()), cols[3], y, true);
+		paint.text(f, Numbers.text(e.score()), cols[2], y, true);
+		f.setColor(e.place() == 1 ? Palette.GOLD : c);
+		paint.text(f, e.place() == 1 ? "Won" : Wording.ordinal(e.place()), cols[3], y, true);
 		f.setColor(i == newest ? Palette.GOLD_LIGHT : Palette.MUTED);
-		text(f, e.date(), cols[4], y, false);
+		paint.text(f, e.date(), cols[4], y, false);
 	}
 
 
@@ -188,10 +197,10 @@ public class HighScoresScreen extends BaseScreen {
 			float cx = fx + i * (fw + FILTER_GAP) + fw / 2;
 			boolean badge = which != Stats.ALL;
 			float space = badge ? FILTER_BADGE_SPACE : 0;
-			button(filterButtons[which], "", cx, fy, fw, fh, which == filter ? assets.button : assets.buttonAlt);
-			BitmapFont f = serif(1.5f);
+			paint.button(filterButtons[which], "", cx, fy, fw, fh, which == filter ? assets.button : assets.buttonAlt);
+			BitmapFont f = paint.serif(1.5f);
 			f.setColor(Palette.CREAM);
-			textIn(f, filterLabel(which), cx - fw / 2 + space, fy, fw - space, fh);
+			paint.textIn(f, filterLabel(which), cx - fw / 2 + space, fy, fw - space, fh);
 			if (badge) { // its level badge, left of the name
 				batch.draw(assets.levelBadge[which], cx - fw / 2 + FILTER_BADGE_X, fy + FILTER_BADGE_Y, FILTER_BADGE, FILTER_BADGE);
 			}
@@ -207,23 +216,23 @@ public class HighScoresScreen extends BaseScreen {
 		statPanel("Games", games, x0, top);
 		statPanel("Hands", hands, x0 + STATS_PANEL_W + STATS_GAP, top);
 
-		button(resetButton, confirmReset > 0 ? "Tap again to reset" : "Reset statistics", w / 2, RESET_Y, RESET_W, RESET_H,
+		paint.button(resetButton, confirmReset > 0 ? "Tap again to reset" : "Reset statistics", w / 2, RESET_Y, RESET_W, RESET_H,
 				confirmReset > 0 ? assets.button : assets.buttonAlt);
 	}
 
 	private void statPanel(String title, String[][] rows, float x, float top) {
 		float ph = STAT_PANEL_PAD + rows.length * STAT_ROW;
-		frame(assets.panel, x, top - ph, STATS_PANEL_W, ph);
-		BitmapFont head = serif(1.5f);
-		head.setColor(GOLD);
+		paint.frame(assets.panel, x, top - ph, STATS_PANEL_W, ph);
+		BitmapFont head = paint.serif(1.5f);
+		head.setColor(Palette.GOLD);
 		head.draw(batch, title, x + STAT_INSET, top - STAT_TITLE_DROP);
-		BitmapFont f = ui(1.15f);
+		BitmapFont f = paint.ui(1.15f);
 		float y = top - STAT_ROWS_DROP;
 		for (String[] row : rows) {
 			f.setColor(Palette.CREAM);
 			f.draw(batch, row[0], x + STAT_INSET, y);
 			f.setColor(Palette.GOLD_LIGHT);
-			text(f, row[1], x + STATS_PANEL_W - STAT_INSET, y, false); // right-aligned
+			paint.text(f, row[1], x + STATS_PANEL_W - STAT_INSET, y, false); // right-aligned
 			y -= STAT_ROW;
 		}
 	}

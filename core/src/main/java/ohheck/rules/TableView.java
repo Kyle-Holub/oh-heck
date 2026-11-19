@@ -30,8 +30,8 @@ public final class TableView {
 	/** Every card played so far this hand, in order, and who played it. */
 	final List<Card> history = new ArrayList<Card>();
 	final List<Integer> historySeats = new ArrayList<Integer>();
-	/** Cards played so far this hand (including the trick in progress), by {@link #index}. */
-	final boolean[] played = new boolean[52];
+	/** Cards played so far this hand (including the trick in progress), by {@link Card#index}. */
+	final boolean[] played = new boolean[Card.COUNT];
 	/** voids[seat][suit]: that player failed to follow that suit this hand, so holds none of it. */
 	final boolean[][] voids;
 
@@ -51,11 +51,6 @@ public final class TableView {
 		voids = new boolean[players][4];
 	}
 
-	/** A number from 0 to 51 for each card. */
-	public static int index(Card c) {
-		return c.suit().ordinal() * 13 + c.rank().strength();
-	}
-
 	public Suit trump() {
 		return trumpCard.suit();
 	}
@@ -65,13 +60,7 @@ public final class TableView {
 	}
 
 	public int bidsSoFar() {
-		int t = 0;
-		for (int s = 0; s < players; s++) {
-			if (hasBid(s)) {
-				t += bids[s];
-			}
-		}
-		return t;
+		return Match.total(bids);
 	}
 
 	/** Whether this player, on their turn, is choosing a bid (they haven't bid this hand) rather than a card. */
@@ -176,7 +165,7 @@ public final class TableView {
 
 	/** Whether this card has been played this hand (including the trick in progress). */
 	public boolean played(Card c) {
-		return played[index(c)];
+		return played[c.index()];
 	}
 
 	/** Whether the seat has shown it holds none of this suit (it didn't follow it). */
@@ -184,7 +173,7 @@ public final class TableView {
 		return voids[seat][suit.ordinal()];
 	}
 
-	/** Whether the card with this {@link #index} has been played this hand. */
+	/** Whether the card with this {@link Card#index} has been played this hand. */
 	public boolean played(int index) {
 		return played[index];
 	}
@@ -257,9 +246,9 @@ public final class TableView {
 			return this;
 		}
 
-		/** Which cards have been played, by {@link TableView#index}. */
+		/** Which cards have been played, by {@link Card#index}. */
 		public Builder played(boolean[] byIndex) {
-			System.arraycopy(byIndex, 0, v.played, 0, 52);
+			System.arraycopy(byIndex, 0, v.played, 0, Card.COUNT);
 			return this;
 		}
 	}

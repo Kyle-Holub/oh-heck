@@ -50,6 +50,13 @@ public class RuleSet {
 		return order.handSize(handIndex, numberOfHands());
 	}
 
+	// ---- Turns ----
+
+	/** Who moves after this seat: the next one clockwise. */
+	public int nextSeat(int seat, int players) {
+		return (seat + 1) % players;
+	}
+
 	// ---- Tricks ----
 
 	/**

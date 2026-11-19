@@ -13,23 +13,22 @@ import com.badlogic.gdx.math.Vector2;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
+import ohheck.players.Seating;
 import ohheck.rules.Match;
 import ohheck.ui.CardArt;
 import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
-import ohheck.ui.TapAreas;
 import ohheck.ui.Wording;
 
 /**
  * Everything drawn over the card table: the bid panel, the end-of-hand
  * message and score table, the final scores, the pause menu and its button,
- * and short hints. Each draw method also sets the tap areas it shows, which
- * {@link PlayScreen} checks.
+ * and short hints. Each draw method also places the tap areas it shows in its
+ * {@link OverlayTargets}, which taps are checked against.
  */
 final class TableOverlays {
 
-	static final String[] MENU = { "Resume", "Options", "New game", "Main menu" };
 	private static final float HINT_TIME = 2.2f;
 
 	// sizes of the panels and buttons drawn over the table
@@ -65,10 +64,8 @@ final class TableOverlays {
 			GAME_OVER_RESULT_DROP = 94, GAME_OVER_ROWS_DROP = 130, GAME_OVER_PLACE_X = 60, GAME_OVER_NAME_X = 120,
 			GAME_OVER_SCORE_FROM_RIGHT = 140, NEW_BEST_FROM_RIGHT = 128, END_BUTTONS_RISE = 16, END_BUTTONS_GAP = 16;
 
-	final Rectangle menuButton = new Rectangle();
-	final List<Rectangle> bidButtons = new ArrayList<Rectangle>();
-	final List<Rectangle> menuItems = new ArrayList<Rectangle>();
-	final Rectangle playAgainButton = new Rectangle(), highScoresButton = new Rectangle();
+	/** Where each button was drawn, for taps to find. */
+	private final OverlayTargets targets;
 
 	/** For its drawing tools: batch, fonts, frames, buttons. */
 	private final Painter paint;
@@ -88,7 +85,8 @@ final class TableOverlays {
 		}
 	};
 
-	TableOverlays(Painter paint, TableScene scene, TableLayout table, CardArt art) {
+	TableOverlays(Painter paint, TableScene scene, TableLayout table, CardArt art, OverlayTargets targets) {
+		this.targets = targets;
 		this.paint = paint;
 		this.scene = scene;
 		this.table = table;
@@ -126,7 +124,7 @@ final class TableOverlays {
 	// ---- the pause menu and its button
 
 	void drawMenuButton() {
-		menuButton.set(table.w - TableLayout.EDGE - MENU_BUTTON_W, MENU_BUTTON_Y, MENU_BUTTON_W, MENU_BUTTON_H);
+		Rectangle menuButton = targets.button(OverlayTargets.Button.MENU).set(table.w - TableLayout.EDGE - MENU_BUTTON_W, MENU_BUTTON_Y, MENU_BUTTON_W, MENU_BUTTON_H);
 		paint.frame(paint.assets.buttonAlt, menuButton.x, menuButton.y, menuButton.width, menuButton.height);
 		BitmapFont f = paint.ui(1.2f);
 		f.setColor(Palette.CREAM);
@@ -137,18 +135,18 @@ final class TableOverlays {
 		float w = table.w, h = table.h;
 		paint.rect(0, 0, w, h, Palette.BACKDROP);
 		float bw = PAUSE_BUTTON_W, bh = PAUSE_BUTTON_H, gap = PAUSE_GAP;
-		float total = MENU.length * bh + (MENU.length - 1) * gap;
+		MenuItem[] items = MenuItem.ALL;
+		float total = items.length * bh + (items.length - 1) * gap;
 		float top = h / 2 + total / 2 + PAUSE_LIFT;
 		BitmapFont title = paint.ui(1.5f);
 		title.setColor(Palette.GOLD);
 		paint.text(title, "Paused", w / 2, top + PAUSED_TITLE_RISE, true);
-		TapAreas.sizeTo(menuItems, MENU.length);
 		BitmapFont f = paint.ui(1.4f);
-		for (int i = 0; i < MENU.length; i++) {
-			Rectangle r = menuItems.get(i).set((w - bw) / 2, top - (i + 1) * bh - i * gap, bw, bh);
+		for (int i = 0; i < items.length; i++) {
+			Rectangle r = targets.menuItem(items[i]).set((w - bw) / 2, top - (i + 1) * bh - i * gap, bw, bh);
 			paint.frame(i == 0 ? paint.assets.button : paint.assets.buttonAlt, r.x, r.y, r.width, r.height);
 			f.setColor(Palette.CREAM);
-			paint.textIn(f, MENU[i], r.x, r.y, r.width, r.height);
+			paint.textIn(f, items[i].label, r.x, r.y, r.width, r.height);
 		}
 	}
 
@@ -170,10 +168,10 @@ final class TableOverlays {
 			paint.text(s, Wording.dealerCantBid(forbidden), table.w / 2, py + ph - BID_NOTE_DROP, true);
 		}
 
-		TapAreas.sizeTo(bidButtons, n + 1);
+		targets.bidsUpTo(n);
 		float bx = (table.w - rowW) / 2, by = py + BID_ROW_RISE;
 		for (int b = 0; b <= n; b++) {
-			Rectangle r = bidButtons.get(b).set(bx + b * (bs + gap), by, bs, bs);
+			Rectangle r = targets.bid(b).set(bx + b * (bs + gap), by, bs, bs);
 			boolean ok = match.isLegalBid(b);
 			paint.frame(ok ? paint.assets.button : paint.assets.buttonOff, r.x, r.y, r.width, r.height);
 			paint.numeral(b, r.x + r.width / 2, r.y + r.height / 2, bs * BID_NUMERAL_OF_BUTTON, ok ? Color.WHITE : NUMERAL_OFF);
@@ -185,7 +183,7 @@ final class TableOverlays {
 	/** "Bid Tricks!" or "You got set!", t seconds in, with how each opponent did. */
 	void drawHandEnd(float t) {
 		float a = HAND_END_IN.progress(t);
-		art.art(match.madeBid(TableLayout.HUMAN) ? paint.assets.bidTricksText : paint.assets.setText, table.centreX(),
+		art.art(match.madeBid(Seating.YOU) ? paint.assets.bidTricksText : paint.assets.setText, table.centreX(),
 				table.centreY(), HAND_END_SCALE, a);
 		drawHandLabels(0f, a);
 		BitmapFont f = paint.ui(1f);
@@ -200,21 +198,21 @@ final class TableOverlays {
 	 */
 	void drawHandLabels(float drop, float alpha) {
 		for (int seat = 0; seat < match.players(); seat++) {
-			if (seat == TableLayout.HUMAN && drop <= 0) {
+			if (seat == Seating.YOU && drop <= 0) {
 				continue;
 			}
 			boolean made = match.madeBid(seat);
 			String s = Wording.handResult(made);
 			float scale, x, y, a = alpha;
-			if (seat == TableLayout.HUMAN) {
+			if (seat == Seating.YOU) {
 				float p = Ease.OUT.apply(drop);
 				BitmapFont f = paint.serif(LABEL_BIG);
 				paint.glyphs.setText(f, s);
 				float sx = table.w / 2 - paint.glyphs.width / 2, sy = table.centreY() + paint.glyphs.height / 2;
 				f = paint.serif(LABEL_SMALL);
 				paint.glyphs.setText(f, s);
-				float ex = table.panelX(TableLayout.HUMAN) + TableLayout.PANEL_W + LABEL_BESIDE;
-				float ey = table.panelTop(TableLayout.HUMAN) - TableLayout.PANEL_H / 2 + paint.glyphs.height / 2;
+				float ex = table.panelX(Seating.YOU) + TableLayout.PANEL_W + LABEL_BESIDE;
+				float ey = table.panelTop(Seating.YOU) - TableLayout.PANEL_H / 2 + paint.glyphs.height / 2;
 				scale = MathUtils.lerp(LABEL_BIG, LABEL_SMALL, p);
 				x = MathUtils.lerp(sx, ex, p);
 				y = MathUtils.lerp(sy, ey, p);
@@ -293,7 +291,7 @@ final class TableOverlays {
 			t.setColor(place(s) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, scene.name(s), px + GAME_OVER_NAME_X, y);
 			paint.text(t, Numbers.text(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
-			if (s == TableLayout.HUMAN && newHighScore == 0) { // only a score that tops the table
+			if (s == Seating.YOU && newHighScore == 0) { // only a score that tops the table
 				BitmapFont n = paint.ui(0.95f);
 				n.setColor(Palette.GOLD_LIGHT);
 				n.draw(paint.batch, "New best!", px + pw - NEW_BEST_FROM_RIGHT, y - 2);
@@ -301,8 +299,8 @@ final class TableOverlays {
 			y -= GAME_OVER_ROW;
 		}
 		float bw = END_BUTTON_W, bh = END_BUTTON_H, by = py + END_BUTTONS_RISE;
-		paint.button(playAgainButton, "Play again", table.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
-		paint.button(highScoresButton, "High scores", table.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
+		paint.button(targets.button(OverlayTargets.Button.PLAY_AGAIN), "Play again", table.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
+		paint.button(targets.button(OverlayTargets.Button.HIGH_SCORES), "High scores", table.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
 	}
 
 	/** "You win the game!" and the like: worked out once per finished game, not every frame. */
@@ -313,7 +311,7 @@ final class TableOverlays {
 			for (int seat : leaders) {
 				names.add(scene.name(seat));
 			}
-			winners = Wording.winners(names, leaders.size() == 1 && leaders.get(0) == TableLayout.HUMAN);
+			winners = Wording.winners(names, leaders.size() == 1 && leaders.get(0) == Seating.YOU);
 			winnersOf = match;
 		}
 		return winners;

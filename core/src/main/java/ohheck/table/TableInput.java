@@ -1,9 +1,6 @@
 package ohheck.table;
 
-import java.util.List;
-
-import com.badlogic.gdx.math.Rectangle;
-
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Wording;
@@ -11,17 +8,18 @@ import ohheck.ui.Wording;
 /**
  * What your taps and drags do at the table: playing a card (tap it, or drag it up onto
  * the table), bidding (tap a number), moving the table on, and the pause menu.
- * PlayScreen passes its touches here; this reads the table ({@link TableScene}) and acts
- * through {@link TableActions}.
+ * PlayScreen passes its touches here; this reads the table ({@link TableScene}), finds
+ * what was tapped in the {@link OverlayTargets}, and acts through {@link TableActions}.
  */
 final class TableInput {
 
-	private static final int HUMAN = TableLayout.HUMAN;
+	private static final int HUMAN = Seating.YOU;
 	/** How far a finger moves on a card before it counts as dragging it. */
 	private static final float DRAG_START = 12f;
 
 	private final TableScene s;
 	private final TableActions act;
+	private final OverlayTargets targets;
 
 	private boolean menuOpen;
 	// the card under your finger, and whether it's being dragged
@@ -29,9 +27,10 @@ final class TableInput {
 	private boolean dragging;
 	private float dragX, dragY;
 
-	TableInput(TableScene scene, TableActions actions) {
+	TableInput(TableScene scene, TableActions actions, OverlayTargets targets) {
 		s = scene;
 		act = actions;
+		this.targets = targets;
 	}
 
 	boolean menuOpen() {
@@ -91,31 +90,22 @@ final class TableInput {
 		clearTouch();
 		float handTop = s.handRects().isEmpty() ? 150 : s.handRects().get(0).y + s.handRects().get(0).height;
 		if (y > handTop + 10 && s.humanCanPlay()) {
-			// dropped on the table: play it from where it was let go
-			act.humanPlay(c, x - TableLayout.handCardW() / 2, y - TableLayout.handCardH() / 2);
+			act.play(c); // dropped on the table: it flies to the trick from where it was let go
 		}
 		return true; // otherwise it drops back into your hand
 	}
 
 	/** A tap at world position (x, y). Autoplay taps come through here too. */
 	void tap(float x, float y) {
-		TableOverlays o = s.overlays();
 		if (menuOpen) {
-			tapMenu(x, y);
-		} else if (o.menuButton.contains(x, y)) {
+			MenuItem item = targets.menuItemAt(x, y);
+			if (item != null) {
+				choose(item);
+			}
+		} else if (targets.hit(OverlayTargets.Button.MENU, x, y)) {
 			openMenu();
 		} else {
 			tapTable(x, y);
-		}
-	}
-
-	private void tapMenu(float x, float y) {
-		List<Rectangle> items = s.overlays().menuItems;
-		for (int i = 0; i < items.size(); i++) {
-			if (items.get(i).contains(x, y)) {
-				menuChoice(i);
-				return;
-			}
 		}
 	}
 
@@ -126,12 +116,12 @@ final class TableInput {
 
 	/** Hurries the shuffle and deal, or the hand-end message, along. */
 	void skip() {
-		s.flow().skip();
+		act.skip();
 	}
 
 	/** On from the hand's scores. */
 	void nextHand() {
-		s.flow().nextHand();
+		act.nextHand();
 	}
 
 	/** Your bid or your card, if it's your turn. */
@@ -149,23 +139,18 @@ final class TableInput {
 
 	/** Only the buttons: a stray tap mustn't throw away the final scores. */
 	void tapGameOver(float x, float y) {
-		TableOverlays o = s.overlays();
-		if (o.highScoresButton.contains(x, y)) {
+		if (targets.hit(OverlayTargets.Button.HIGH_SCORES, x, y)) {
 			act.showHighScores();
-		} else if (o.playAgainButton.contains(x, y)) {
+		} else if (targets.hit(OverlayTargets.Button.PLAY_AGAIN, x, y)) {
 			act.newGame(); // a fresh table, at the difficulty now chosen in Options
 		}
 	}
 
 
 	private void tapBid(float x, float y) {
-		for (int b = 0; b < s.overlays().bidButtons.size(); b++) {
-			if (s.overlays().bidButtons.get(b).contains(x, y)) {
-				if (!s.flow().bid(b)) {
-					s.overlays().hint(Wording.dealerCantBid(b, s.match().handSize()));
-				}
-				return;
-			}
+		int b = targets.bidAt(x, y);
+		if (b >= 0 && !act.bid(b)) {
+			act.hint(Wording.dealerCantBid(b, s.match().handSize()));
 		}
 	}
 
@@ -176,11 +161,10 @@ final class TableInput {
 		}
 		Card c = s.handOrder().get(i);
 		if (!s.match().legalPlays(HUMAN).contains(c)) {
-			s.overlays().hint(Wording.mustFollow(s.match().leadSuit()));
+			act.hint(Wording.mustFollow(s.match().leadSuit()));
 			return;
 		}
-		Rectangle r = s.handRects().get(i);
-		act.humanPlay(c, r.x, r.y);
+		act.play(c);
 	}
 
 	private int cardAt(float x, float y) {
@@ -215,17 +199,11 @@ final class TableInput {
 		clearTouch();
 	}
 
-	private void menuChoice(int i) {
-		if (i == 1) {
-			act.showOptions(); // the menu is still open when you come back
-			return;
+	private void choose(MenuItem item) {
+		if (item.closesMenu()) {
+			menuOpen = false;
 		}
-		menuOpen = false;
-		if (i == 2) {
-			act.newGame(); // a fresh table, at the difficulty now chosen in Options
-		} else if (i == 3) {
-			act.showTitle();
-		}
+		item.choose(act);
 	}
 
 }

@@ -2,7 +2,6 @@ package ohheck.table;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -12,9 +11,11 @@ import ohheck.fx.Sparks;
 import ohheck.platform.GameOptions;
 import ohheck.players.Difficulty;
 import ohheck.players.Player;
+import ohheck.players.Seating;
 import ohheck.records.SavedGame;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.RuleSet;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
@@ -31,25 +32,23 @@ import ohheck.ui.Palette;
  * <li>{@link TableOverlays}: panels, scores and menus over the table
  * <li>{@link TableInput}: your taps and drags, and the pause menu
  * <li>{@link TableDrawing}, {@link TableToss} and {@link GameEnd}: drawing the table, and the game's end
- * <li>{@link Autoplay}: the scripted screenshot run (not normal play)
+ * <li>{@link YourSeat}: you, or {@link Autoplay} in the scripted screenshot run
  * </ul>
  * Playing a card: tap it, or drag it up onto the table. Bidding: tap a number.
  */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
-	private static final int HUMAN = TableLayout.HUMAN;
+	private static final int HUMAN = Seating.YOU;
 
 
 	private final GameOptions options;
-	/**
-	 * Separate random streams for who sits down, the bots' own randomness and the deck, so a
-	 * change that draws on one (a new player, a new habit) doesn't reshuffle the others: the
-	 * screenshot run's seeded game stays the same game.
-	 */
-	private final Random seating, bots, deck;
+	/** The random streams for seating, the bots and the deck (kept apart: see TableStreams). */
+	private final TableStreams streams;
 
 	private final TableLayout table = new TableLayout();
 	private final TableOverlays overlays;
+	/** Where the overlays' buttons are, for your taps (and Autoplay's). */
+	private final OverlayTargets targets = new OverlayTargets();
 	private final TableFlow flow;
 	private final CardArt art;
 	/** Draws the table (counters, trump, panels, your hand); the trick, overlays and effects are separate. */
@@ -61,8 +60,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	/** At the game's end: the cards thrown off the table, and the order of what follows. */
 	private final TableToss toss;
 	private final GameEnd end = new GameEnd();
-	/** Drives your seat in scripted screenshot runs; null in normal play. */
-	private final Autoplay autoplay;
+	/** Who plays your seat: you, or Autoplay in the scripted screenshot run. */
+	private final YourSeat you;
 
 	/** Game time, for animations; stops while paused. */
 	private float time;
@@ -70,47 +69,46 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final GameRecorder recorder;
 	/** The difficulty this game was started at: its high score badge and statistics level. */
 	private Difficulty level;
-	/** Who sits in seats 1-3 ({@link Player} ids). */
-	private int[] players;
+	/** Who sits in the other seats. */
+	private Seating players;
 
 	/** Your taps and drags, and the pause menu. */
-	private final TableInput input = new TableInput(this, this);
+	private final TableInput input = new TableInput(this, this, targets);
 
 	/** Your hand in display order, and each card's tap area; rebuilt when drawn. */
 	private final List<Card> handOrder = new ArrayList<Card>();
 	private final List<Rectangle> handRects = new ArrayList<Rectangle>();
 
-	/**
-	 * A new game (restored null), or the saved game restored, started at the given difficulty
-	 * with the given players seated (drawn afresh if null, as for saves from before the pool).
-	 */
-	public PlayScreen(GameHost game, Match restored, Difficulty savedLevel, int[] savedPlayers) {
+	/** A new game, at the difficulty now chosen in Options. */
+	public static PlayScreen fresh(GameHost game) {
+		return new PlayScreen(game, null);
+	}
+
+	/** The saved game, carried on where it was left. */
+	public static PlayScreen resume(GameHost game, SavedGame saved) {
+		return new PlayScreen(game, saved);
+	}
+
+	/** A new game (saved null), or the saved one. */
+	private PlayScreen(GameHost game, SavedGame saved) {
 		super(game);
 		this.options = game.options();
-		seating = stream(options.seed, 0x5EA7L);
-		bots = stream(options.seed, 0xB075L);
-		deck = stream(options.seed, 0xDEC4L);
+		this.streams = TableStreams.of(options.seed);
 		this.art = new CardArt(batch, assets);
-		this.overlays = new TableOverlays(paint, this, table, art);
-		this.autoplay = options.autoplayHuman ? new Autoplay(this, input, options) : null;
+		this.overlays = new TableOverlays(paint, this, table, art, targets);
+		this.you = options.autoplayHuman ? new Autoplay(this, input, targets, options) : YourSeat.PERSON;
 		this.drawing = new TableDrawing(this, paint, art, game.post());
 		this.toss = new TableToss(assets, table);
-		recorder = new GameRecorder(game.records());
-
-		TableFlow.Listener effects = new Effects(), sounds = new TableSounds(game.audio());
-		this.flow = autoplay != null ? new TableFlow(autoplay, effects, sounds, recorder)
-				: new TableFlow(effects, sounds, recorder);
-		if (autoplay == null && options.fixedStep <= 0) {
-			flow.thinkWith(Thinker.background()); // in play; the screenshot run thinks at once, to repeat exactly
+		this.recorder = new GameRecorder(game.records());
+		// your seat hears first (the screenshot run plays out the hands it skips before the rest react)
+		this.flow = new TableFlow(you, new Effects(), new TableSounds(game.audio()), recorder);
+		if (!you.thinkAtOnce() && options.fixedStep <= 0) {
+			flow.thinkWith(Thinker.background()); // so a slow Hard player never stalls a frame
 		}
-		if (restored == null) {
+		if (saved == null) {
 			startGame();
 		} else {
-			level = savedLevel;
-			seatPlayers(savedPlayers != null ? savedPlayers : Player.draw(level, seating));
-			recorder.table(level, players, false);
-			overlays.setMatch(restored);
-			flow.resume(restored);
+			resumeGame(saved);
 		}
 	}
 
@@ -135,8 +133,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 		@Override
 		public void gameEnded(Match m) {
-			overlays.playAgainButton.set(0, 0, 0, 0); // not tappable until drawn
-			overlays.highScoresButton.set(0, 0, 0, 0);
+			targets.clearGameOverButtons(); // not tappable until drawn
 			// in turn: the table's cards fall away, then (if you won) fireworks, then the scores
 			toss.toss(m);
 			end.start(m.leaders().contains(HUMAN)); // you won (or tied for the win)
@@ -166,7 +163,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
-	public TableFlow flow() {
+	public FlowView flow() {
 		return flow;
 	}
 
@@ -196,11 +193,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
-	public TableOverlays overlays() {
-		return overlays;
-	}
-
-	@Override
 	public List<Card> handOrder() {
 		return handOrder;
 	}
@@ -216,13 +208,22 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	/** A new game: a table drawn for the difficulty now chosen in Options. */
 	private void startGame() {
 		level = game.settings().difficulty();
-		seatPlayers(Player.draw(level, seating));
+		seatPlayers(Player.draw(level, streams.seating));
 		toss.clear();
 		end.reset();
-		Match m = Match.random(TableLayout.SEATS, deck, game.settings().handOrder());
+		Match m = Match.random(Seating.SEATS, streams.deck, game.settings().handOrder(), RuleSet.STANDARD);
 		overlays.setMatch(m);
 		recorder.table(level, players, true);
 		flow.start(m);
+	}
+
+	/** The saved game, at its own difficulty, with its players (drawn afresh for saves from before the table travelled with it). */
+	private void resumeGame(SavedGame saved) {
+		level = saved.level();
+		seatPlayers(saved.players() != null ? saved.players() : Player.draw(level, streams.seating));
+		recorder.table(level, players, false);
+		overlays.setMatch(saved.match());
+		flow.resume(saved.match());
 	}
 
 	@Override
@@ -240,9 +241,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	/** Moves the table on by dt seconds of game time. */
 	private void advance(float dt) {
 		if (input.menuOpen()) {
-			if (autoplay != null) {
-				autoplay.whilePaused(dt);
-			}
+			you.whilePaused(dt);
 			return;
 		}
 		time += dt;
@@ -256,13 +255,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			fireworks.show(table.w, table.h);
 		}
 		drawing.updateMotes(dt, flow.trumpFaceUp() && !toss.trumpGone());
-		if (autoplay != null) {
-			if (flow.yourTurnToBid() || flow.yourTurnToPlay()) {
-				autoplay.yourTurn(dt);
-			} else if (flow.state() == TableState.RESULTS) {
-				autoplay.onResults(flow.stateTime());
-			}
-		}
+		you.update(dt);
 	}
 
 	@Override
@@ -284,31 +277,30 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		game.audio().startMusic();
 	}
 
-	/** A random stream: unseeded normally; from the run's seed and a salt for the screenshot run. */
-	static Random stream(Long seed, long salt) {
-		return seed == null ? new Random() : new Random(seed * 0x9E3779B97F4A7C15L ^ salt);
-	}
-
 	/** The name shown for a seat: "You", or the computer player sitting there. */
 	@Override
 	public String name(int seat) {
-		return seat == HUMAN ? "You" : Player.byId(players[seat - 1]).name;
+		return seat == HUMAN ? "You" : players.at(seat).name;
 	}
 
-	private void seatPlayers(int[] ids) {
+	private void seatPlayers(Seating ids) {
 		players = ids;
-		flow.seat(ids, bots);
+		flow.seat(ids, streams.bots);
 	}
 
 	/** Saves the game so it survives Android closing the app; a finished game is forgotten. */
 	private void save() {
-		game.records().saveGame(isGameOver() ? null : new SavedGame(match(), level, players), isGameOver());
+		if (isGameOver()) {
+			game.records().clearSavedGame();
+		} else {
+			game.records().saveGame(new SavedGame(match(), level, players));
+		}
 	}
 
 	@Override
 	public void pause() {
 		save();
-		if (autoplay == null) {
+		if (you.menuOnPause()) {
 			input.openMenu(); // leaving the app (home button, a call): come back to the menu
 		}
 	}
@@ -347,9 +339,29 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	// ------------------------------------------- what your taps do, as TableActions
 
 	@Override
-	public void humanPlay(Card c, float fromX, float fromY) {
+	public boolean bid(int b) {
+		return flow.bid(b);
+	}
+
+	@Override
+	public void play(Card c) {
 		input.clearTouch();
 		flow.play(c); // (it flies to the trick from wherever its sprite is)
+	}
+
+	@Override
+	public boolean skip() {
+		return flow.skip();
+	}
+
+	@Override
+	public boolean nextHand() {
+		return flow.nextHand();
+	}
+
+	@Override
+	public void hint(String s) {
+		overlays.hint(s);
 	}
 
 	@Override
@@ -411,13 +423,13 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		cards.update(this, time);
 		cards.draw(batch, assets, art, match(), flow.trumpFaceUp(), time, paint.fade());
 		if (flow.isDealing()) {
-			flow.deal.drawShuffle(batch, assets, art, table);
+			flow.deal().drawShuffle(batch, assets, art, table);
 		}
 	}
 
 	/** Whatever the moment shows over the table: your bid panel, the hand's end, the scores. */
 	private void drawOverlay() {
-		StateView.of(flow.state()).drawOverlay(this, recorder.newHighScore());
+		StateView.of(flow.state()).drawOverlay(this, overlays, recorder.newHighScore());
 	}
 
 
@@ -426,6 +438,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	public String stateTag() {
-		return Autoplay.describe(this);
+		return StateView.describe(this);
 	}
 }

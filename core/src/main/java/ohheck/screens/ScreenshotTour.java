@@ -1,19 +1,21 @@
 package ohheck.screens;
 
-import ohheck.ui.BaseScreen;
-import ohheck.ui.GameHost;
+import ohheck.ui.Navigator;
+import ohheck.ui.Tagged;
+import ohheck.ui.Tour;
 
 /**
  * The screenshot run's walk through the menus, all in one place: Title, High scores
  * (both tabs), Options, Roster (top, then the end of the list), each step of How to
- * play, and on into a game, where Autoplay takes your seat. Each menu screen calls
- * {@link #step} once a frame; normal play has no tour.
+ * play, and on into a game, where Autoplay takes your seat. Each screen it stops at is a
+ * {@link TourStop}; {@link #step} is called once a step for whatever screen is showing.
+ * Normal play has no tour.
  * <p>
  * {@link #plan} decides what happens at each stop (plain logic, tested in
- * ScreenshotTourTest); {@link #step} works out which stop a screen is and carries it out.
+ * ScreenshotTourTest); {@link #step} carries it out at the screen showing.
  * Times are seconds the screen has been shown, at game speed.
  */
-public final class ScreenshotTour implements GameHost.Tour {
+public final class ScreenshotTour implements Tour {
 
 	static final float TITLE = 3.5f, OPTIONS = 1.5f;
 	/** High scores: the Statistics tab from, and on to Options after. */
@@ -40,9 +42,9 @@ public final class ScreenshotTour implements GameHost.Tour {
 		LEAVE
 	}
 
-	private final GameHost game;
+	private final Navigator game;
 
-	public ScreenshotTour(GameHost game) {
+	public ScreenshotTour(Navigator game) {
 		this.game = game;
 	}
 
@@ -71,20 +73,16 @@ public final class ScreenshotTour implements GameHost.Tour {
 
 	/** Moves the tour along; true if it has gone on to another screen (so this one stops drawing). */
 	@Override
-	public boolean step(BaseScreen screen, float shown) {
-		Stop stop = stopOf(screen);
-		if (stop == null) {
-			return false;
+	public boolean step(Tagged screen, float shown) {
+		if (!(screen instanceof TourStop)) {
+			return false; // (the table: Autoplay takes over there)
 		}
-		Move move = plan(stop, shown, stop == Stop.TUTORIAL && ((TutorialScreen) screen).lastStep());
-		if (stop == Stop.HIGH_SCORES && move != Move.STAY) {
-			((HighScoresScreen) screen).showStatistics();
-		}
-		if (stop == Stop.ROSTER) {
-			((PlayersScreen) screen).scrollToEnd(move != Move.STAY);
-		}
+		TourStop at = (TourStop) screen;
+		Stop stop = at.tourStop();
+		Move move = plan(stop, shown, at.lastStep());
+		at.secondHalf(move == Move.SECOND_HALF || move == Move.LEAVE); // (and kept there as it leaves)
 		if (move == Move.NEXT_STEP) {
-			((TutorialScreen) screen).next();
+			at.nextStep();
 		}
 		if (move != Move.LEAVE) {
 			return false;
@@ -93,24 +91,6 @@ public final class ScreenshotTour implements GameHost.Tour {
 		return true;
 	}
 
-	private static Stop stopOf(BaseScreen screen) {
-		if (screen instanceof TitleScreen) {
-			return Stop.TITLE;
-		}
-		if (screen instanceof HighScoresScreen) {
-			return Stop.HIGH_SCORES;
-		}
-		if (screen instanceof OptionsScreen) {
-			return Stop.OPTIONS;
-		}
-		if (screen instanceof PlayersScreen) {
-			return Stop.ROSTER;
-		}
-		if (screen instanceof TutorialScreen) {
-			return Stop.TUTORIAL;
-		}
-		return null;
-	}
 
 	private void go(Stop to) {
 		switch (to) {

@@ -75,7 +75,7 @@ public class MatchTest {
 					assertEquals(i < 3 ? -1 : winner, winner);
 				}
 				assertEquals(plays, m.lastTrick());
-				assertEquals((leader + Rules.trickWinner(plays, m.trump())) % 4, winner);
+				assertEquals((leader + m.rules().trickWinner(plays, m.trump())) % 4, winner);
 				if (t < hand) {
 					assertEquals("winner leads next", winner, m.currentSeat());
 				}
@@ -87,7 +87,7 @@ public class MatchTest {
 			for (int s = 0; s < 4; s++) {
 				totalTricks += m.tricksWon(s);
 				assertTrue(m.hand(s).isEmpty());
-				int pts = Rules.score(m.bid(s), m.tricksWon(s));
+				int pts = m.rules().score(m.bid(s), m.tricksWon(s));
 				assertEquals(pts, m.lastHandPoints(s));
 				assertEquals(m.bid(s) == m.tricksWon(s), m.madeBid(s));
 				expectedScores[s] += pts;
@@ -216,7 +216,7 @@ public class MatchTest {
 
 	@Test
 	public void handsCanCountDownFromEight() {
-		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN);
+		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
 		assertEquals(8, m.handSize());
 		for (int s = 0; s < 4; s++) {
 			assertEquals(8, m.hand(s).size());
@@ -233,7 +233,7 @@ public class MatchTest {
 
 	@Test
 	public void theHandOrderIsSaved() {
-		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN);
+		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
 		Match back = Match.load(m.save(), new Random(1));
 		assertEquals(HandOrder.DOWN, back.handOrder());
 		assertEquals(8, back.handSize());

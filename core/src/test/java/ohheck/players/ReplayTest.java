@@ -12,13 +12,14 @@ import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
 import ohheck.rules.Move;
 import ohheck.rules.Replay;
+import ohheck.rules.RuleSet;
 
 /** Moves as values: a game's log, played back on the same deal, gets to the same place. */
 public class ReplayTest {
 
 	/** A whole game between Normal players, on a deal from this seed. */
 	private static Match played(long seed) {
-		Match m = new Match(4, new Random(seed), 0, HandOrder.UP);
+		Match m = new Match(4, new Random(seed), 0, HandOrder.UP, RuleSet.STANDARD);
 		Bot bot = Bot.of(Difficulty.NORMAL, new Random(seed + 1));
 		while (m.phase() != Match.Phase.GAME_OVER) {
 			if (m.phase() == Match.Phase.HAND_OVER) {
@@ -33,7 +34,7 @@ public class ReplayTest {
 	@Test
 	public void aReplayReachesTheSamePlace() {
 		Match game = played(7);
-		Match again = Replay.onto(new Match(4, new Random(7), 0, HandOrder.UP), game.moves());
+		Match again = Replay.onto(new Match(4, new Random(7), 0, HandOrder.UP, RuleSet.STANDARD), game.moves());
 		again.nextHand(); // (moving on from the last hand to the final scores isn't a move)
 		assertEquals(game.save(), again.save());
 		assertEquals(game.moves(), again.moves());
@@ -56,7 +57,7 @@ public class ReplayTest {
 
 	@Test
 	public void anIllegalMoveIsRefusedAndNotLogged() {
-		Match m = new Match(4, new Random(9), 0, HandOrder.UP);
+		Match m = new Match(4, new Random(9), 0, HandOrder.UP, RuleSet.STANDARD);
 		try {
 			m.apply(new Move.Bid(m.currentSeat(), 5)); // one card each: no bid of 5
 			fail();

@@ -5,6 +5,8 @@ import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.utils.Disposable;
 
+import ohheck.util.Log;
+
 /** The game's music and sound effects, respecting the player's settings. */
 public final class Audio implements Disposable {
 
@@ -33,7 +35,7 @@ public final class Audio implements Disposable {
 			try {
 				sounds[e.ordinal()] = Gdx.audio.newSound(Gdx.files.internal(e.path));
 			} catch (RuntimeException ex) {
-				Gdx.app.error("Audio", "Couldn't load " + e.path, ex);
+				Log.warn("Audio", "Couldn't load " + e.path, ex);
 			}
 		}
 		try {
@@ -41,7 +43,7 @@ public final class Audio implements Disposable {
 			music.setLooping(true);
 			music.setVolume(0.6f);
 		} catch (RuntimeException ex) {
-			Gdx.app.error("Audio", "Couldn't load music", ex);
+			Log.warn("Audio", "Couldn't load music", ex);
 		}
 	}
 

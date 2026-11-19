@@ -7,6 +7,8 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import org.junit.Test;
 
+import ohheck.players.Seating;
+
 /** Where things go on the table, at the two shapes it's seen in: 800 wide, and a stretched phone. */
 public class TableLayoutTest {
 
@@ -17,8 +19,8 @@ public class TableLayoutTest {
 		for (float w : WIDTHS) {
 			TableLayout t = new TableLayout();
 			t.resize(w, 480);
-			Rectangle[] panels = new Rectangle[TableLayout.SEATS];
-			for (int s = 0; s < TableLayout.SEATS; s++) {
+			Rectangle[] panels = new Rectangle[Seating.SEATS];
+			for (int s = 0; s < Seating.SEATS; s++) {
 				panels[s] = new Rectangle(t.panelX(s), t.panelTop(s) - TableLayout.PANEL_H, TableLayout.PANEL_W,
 						TableLayout.PANEL_H);
 				assertTrue(w + ": seat " + s + " on screen", panels[s].x >= 0 && panels[s].x + panels[s].width <= w
@@ -50,7 +52,7 @@ public class TableLayoutTest {
 		for (float w : WIDTHS) {
 			TableLayout t = new TableLayout();
 			t.resize(w, 480);
-			Vector2 c = t.deckSpot(TableLayout.HUMAN);
+			Vector2 c = t.deckSpot(Seating.YOU);
 			Rectangle deck = new Rectangle(c.x - TableLayout.backW() / 2, c.y - TableLayout.backH() / 2,
 					TableLayout.backW(), TableLayout.backH());
 			for (int n = 1; n <= 13; n++) {
@@ -72,8 +74,8 @@ public class TableLayoutTest {
 	public void eachSeatPlaysIntoItsOwnSlot() {
 		TableLayout t = new TableLayout();
 		t.resize(800, 480);
-		for (int a = 0; a < TableLayout.SEATS; a++) {
-			for (int b = a + 1; b < TableLayout.SEATS; b++) {
+		for (int a = 0; a < Seating.SEATS; a++) {
+			for (int b = a + 1; b < Seating.SEATS; b++) {
 				Vector2 pa = new Vector2(t.trickSlot(a)), pb = t.trickSlot(b);
 				assertTrue(a + " and " + b, pa.dst(pb) > 20);
 			}

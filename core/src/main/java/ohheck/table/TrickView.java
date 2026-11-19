@@ -2,6 +2,7 @@ package ohheck.table;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Assets;
@@ -36,7 +37,7 @@ final class TrickView {
 
 	/** "Trick Won!" in the middle, elapsed seconds after you completed and won a trick. */
 	static void drawTrickWon(CardArt art, Assets assets, TableLayout table, Match match, float elapsed) {
-		if (match.lastTrickWinner() == TableLayout.HUMAN && elapsed > TRICK_WON.start()) {
+		if (match.lastTrickWinner() == Seating.YOU && elapsed > TRICK_WON.start()) {
 			art.art(assets.trickWonText, table.centreX(), table.centreY(), 0.8f, TRICK_WON.progress(elapsed));
 		}
 	}

@@ -1,36 +1,66 @@
 package ohheck.platform;
 
-import java.util.Random;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
 import ohheck.players.Difficulty;
 import ohheck.records.Records;
-import ohheck.records.SavedGame;
 import ohheck.rules.HandOrder;
 
 /** Player options, saved on the device between sessions. */
-public final class Settings implements Records.Store {
+public final class Settings {
+
+	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", SPEED = "speed", LEVEL = "level",
+			HAND_ORDER = "handOrder", TUTORIAL_SEEN = "tutorialSeen";
+	/** Older builds' keys, still read: a fast on/off switch, and the difficulty by number. */
+	private static final String LEGACY_FAST = "fast", LEGACY_DIFFICULTY = "difficulty";
+
+	/** Game speeds: 0 = slow (the default), 1 = medium, 2 = fast; how much faster than the base timings each runs. */
+	public static final int SLOW = 0, FASTEST = 2;
+	private static final float[] SPEED_FACTORS = { 0.6f, 0.8f, 1.4f };
 
 	private final Preferences prefs = Gdx.app.getPreferences("oh-heck");
+	/** Statistics, high scores and the saved game, kept in the same preferences. */
+	private final Records.Store records = new RecordPrefs(prefs);
+
+	/** Where {@link Records} keeps what it keeps between games. */
+	public Records.Store recordStore() {
+		return records;
+	}
 
 	public boolean music() {
-		return prefs.getBoolean("music", true);
+		return prefs.getBoolean(MUSIC, true);
+	}
+
+	public void setMusic(boolean on) {
+		prefs.putBoolean(MUSIC, on).flush();
 	}
 
 	public boolean sound() {
-		return prefs.getBoolean("sound", true);
+		return prefs.getBoolean(SOUND, true);
 	}
 
-	public static final String[] SPEEDS = { "Slow", "Medium", "Fast" };
-	private static final float[] SPEED_FACTORS = { 0.6f, 0.8f, 1.4f };
+	public void setSound(boolean on) {
+		prefs.putBoolean(SOUND, on).flush();
+	}
 
-	/** Animation and turn speed: 0 = slow (the default), 1 = medium, 2 = fast. */
+	/** Glow, vignette and grain over the whole screen. */
+	public boolean effects() {
+		return prefs.getBoolean(EFFECTS, true);
+	}
+
+	public void setEffects(boolean on) {
+		prefs.putBoolean(EFFECTS, on).flush();
+	}
+
+	/** Animation and turn speed, {@link #SLOW} to {@link #FASTEST}. */
 	public int speed() {
-		// earlier versions saved a fast on/off switch
-		int legacy = prefs.getBoolean("fast", false) ? 2 : 0;
-		return Math.max(0, Math.min(2, prefs.getInteger("speed", legacy)));
+		int legacy = prefs.getBoolean(LEGACY_FAST, false) ? FASTEST : SLOW;
+		return Math.max(SLOW, Math.min(FASTEST, prefs.getInteger(SPEED, legacy)));
+	}
+
+	public void setSpeed(int speed) {
+		prefs.putInteger(SPEED, speed).flush();
 	}
 
 	/** How much faster than the base timings everything runs. */
@@ -40,101 +70,28 @@ public final class Settings implements Records.Store {
 
 	/** The difficulty setting for new games; Normal unless chosen. (Older builds saved its number.) */
 	public Difficulty difficulty() {
-		return Difficulty.fromSaved(prefs.getString("level", null), prefs.getInteger("difficulty", 1));
+		return Difficulty.fromSaved(prefs.getString(LEVEL, null), prefs.getInteger(LEGACY_DIFFICULTY, 1));
 	}
 
 	public void setDifficulty(Difficulty d) {
-		prefs.putString("level", d.name()).flush();
+		prefs.putString(LEVEL, d.name()).flush();
 	}
 
 	/** Which way new games' hands run: one card up to eight (the default), or eight down to one. */
 	public HandOrder handOrder() {
-		return prefs.getString("handOrder", "").equals(HandOrder.DOWN.name()) ? HandOrder.DOWN : HandOrder.UP;
+		return prefs.getString(HAND_ORDER, "").equals(HandOrder.DOWN.name()) ? HandOrder.DOWN : HandOrder.UP;
 	}
 
 	public void setHandOrder(HandOrder order) {
-		prefs.putString("handOrder", order.name()).flush();
-	}
-
-	/** Whether a game in progress is saved. */
-	public boolean hasSavedGame() {
-		return !prefs.getString("savedGame", "").isEmpty();
-	}
-
-	/**
-	 * The game in progress, or null if none is saved. Throws IllegalArgumentException if it
-	 * can't be read. (Saves from before the table travelled with the game kept its difficulty
-	 * and players under keys of their own: read as a fallback.)
-	 */
-	public SavedGame savedGame(Random rng) {
-		String s = prefs.getString("savedGame", "");
-		if (s.isEmpty()) {
-			return null;
-		}
-		Difficulty legacyLevel = Difficulty.fromSaved(null, prefs.getInteger("savedGameDifficulty", 1));
-		String legacyPlayers = prefs.getString("savedGamePlayers", "");
-		return SavedGame.decode(s, rng, legacyLevel, legacyPlayers.isEmpty() ? null : SavedGame.parsePlayers(legacyPlayers));
-	}
-
-	/** Saves the game in progress (with its difficulty and table) as one piece of text. */
-	public void saveGame(SavedGame game) {
-		prefs.putString("savedGame", game.encode());
-		prefs.remove("savedGameDifficulty"); // (the old separate keys: now part of the save)
-		prefs.remove("savedGamePlayers");
-		prefs.flush();
-	}
-
-	/** Forgets the saved game (finished, or unreadable). */
-	public void clearSavedGame() {
-		prefs.remove("savedGame");
-		prefs.flush();
+		prefs.putString(HAND_ORDER, order.name()).flush();
 	}
 
 	/** Whether you've seen (or skipped) the tutorial, shown before your first game. */
 	public boolean tutorialSeen() {
-		return prefs.getBoolean("tutorialSeen", false);
+		return prefs.getBoolean(TUTORIAL_SEEN, false);
 	}
 
 	public void setTutorialSeen(boolean seen) {
-		prefs.putBoolean("tutorialSeen", seen).flush();
-	}
-
-	/** Your statistics, as {@link rules.Stats#encode()} wrote them ("" for none yet). */
-	public String stats() {
-		return prefs.getString("stats", "");
-	}
-
-	public void setStats(String encoded) {
-		prefs.putString("stats", encoded).flush();
-	}
-
-	/** Your best finished games, as HighScores.encode() writes them. */
-	public String highScores() {
-		return prefs.getString("highScores", "");
-	}
-
-	public void setHighScores(String encoded) {
-		prefs.putString("highScores", encoded).flush();
-	}
-
-	/** Glow, vignette and grain over the whole screen. */
-	public boolean effects() {
-		return prefs.getBoolean("effects", true);
-	}
-
-	public void setEffects(boolean on) {
-		prefs.putBoolean("effects", on).flush();
-	}
-
-	public void setMusic(boolean on) {
-		prefs.putBoolean("music", on).flush();
-	}
-
-	public void setSound(boolean on) {
-		prefs.putBoolean("sound", on).flush();
-	}
-
-	public void setSpeed(int speed) {
-		prefs.putInteger("speed", speed).flush();
+		prefs.putBoolean(TUTORIAL_SEEN, seen).flush();
 	}
 }

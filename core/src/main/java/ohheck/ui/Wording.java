@@ -1,8 +1,13 @@
 package ohheck.ui;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
+import ohheck.players.Difficulty;
 import ohheck.players.Player;
 import ohheck.records.Stats;
 import ohheck.rules.Suit;
@@ -18,6 +23,39 @@ public final class Wording {
 	static final String NONE = "—";
 
 	private Wording() {
+	}
+
+	/** Players at each level, in the Options note: "some experts", "the odd expert", "never an expert". */
+	private static final Map<Difficulty, String[]> LEVEL_WORDS = new EnumMap<Difficulty, String[]>(Difficulty.class);
+	static {
+		LEVEL_WORDS.put(Difficulty.EASY, new String[] { "easy-going players", "easy-going player", "a beginner" });
+		LEVEL_WORDS.put(Difficulty.NORMAL, new String[] { "solid players", "solid player", "a solid player" });
+		LEVEL_WORDS.put(Difficulty.HARD, new String[] { "experts", "expert", "an expert" });
+		for (Difficulty d : Difficulty.values()) {
+			if (!LEVEL_WORDS.containsKey(d)) {
+				throw new IllegalStateException("No words for " + d); // (a new level needs its words here)
+			}
+		}
+	}
+	private static final int MANY = 0, ODD_ONE = 1, NEVER = 2;
+
+	/** Who you'll meet at this setting, in a line, from the matchmaking odds (the Options note). */
+	public static String tableDescription(Difficulty setting) {
+		List<Difficulty> byChance = new ArrayList<Difficulty>(Arrays.asList(Difficulty.values()));
+		byChance.sort((x, y) -> Double.compare(setting.chanceOf(y), setting.chanceOf(x))); // (stable: ties keep level order)
+		StringBuilder sb = new StringBuilder("Mostly ").append(LEVEL_WORDS.get(byChance.get(0))[MANY]);
+		for (Difficulty l : byChance.subList(1, byChance.size())) {
+			double p = setting.chanceOf(l);
+			if (p > 0) {
+				sb.append(p < 0.2 ? ", the odd " + LEVEL_WORDS.get(l)[ODD_ONE] : ", some " + LEVEL_WORDS.get(l)[MANY]);
+			}
+		}
+		for (Difficulty l : Difficulty.values()) {
+			if (setting.chanceOf(l) == 0) {
+				sb.append("; never ").append(LEVEL_WORDS.get(l)[NEVER]);
+			}
+		}
+		return sb.append('.').toString();
 	}
 
 	/** "You win the game!", "Rupert wins the game!", "You and Rupert tie!", "You, Rupert and Oswald tie!" */

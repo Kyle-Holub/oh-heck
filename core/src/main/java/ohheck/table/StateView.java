@@ -2,6 +2,7 @@ package ohheck.table;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
+import ohheck.players.Seating;
 import ohheck.rules.Match;
 
 /**
@@ -44,9 +45,9 @@ enum StateView {
 	},
 	TURN {
 		@Override
-		void drawOverlay(TableScene s, int newHighScore) {
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 			if (s.flow().yourTurnToBid()) {
-				s.overlays().drawBidPanel();
+				o.drawBidPanel();
 			}
 		}
 
@@ -63,7 +64,7 @@ enum StateView {
 		@Override
 		String tag(TableScene s, int hand) {
 			Match m = s.match();
-			boolean yours = m.currentSeat() == TableLayout.HUMAN;
+			boolean yours = m.currentSeat() == Seating.YOU;
 			if (m.phase() == Match.Phase.BIDDING) {
 				return (yours ? "bid:" : "bidding:") + hand;
 			}
@@ -85,8 +86,8 @@ enum StateView {
 	},
 	HAND_END {
 		@Override
-		void drawOverlay(TableScene s, int newHighScore) {
-			s.overlays().drawHandEnd(s.stateTime());
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
+			o.drawHandEnd(s.stateTime());
 		}
 
 		@Override
@@ -106,9 +107,9 @@ enum StateView {
 	},
 	RESULTS {
 		@Override
-		void drawOverlay(TableScene s, int newHighScore) {
-			s.overlays().drawHandResults();
-			s.overlays().drawHandLabels(LABELS_DROP.progress(s.stateTime()), 1f);
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
+			o.drawHandResults();
+			o.drawHandLabels(LABELS_DROP.progress(s.stateTime()), 1f);
 		}
 
 		@Override
@@ -128,9 +129,9 @@ enum StateView {
 	},
 	GAME_OVER {
 		@Override
-		void drawOverlay(TableScene s, int newHighScore) {
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 			if (s.resultsShown()) {
-				s.overlays().drawGameOver(newHighScore);
+				o.drawGameOver(newHighScore);
 			}
 		}
 
@@ -157,13 +158,22 @@ enum StateView {
 		}
 	}
 
+	/**
+	 * A short description of what's on screen, such as "deal:3" or "trick:5": how the
+	 * screenshot run knows when to take each picture.
+	 */
+	static String describe(TableScene s) {
+		int hand = s.match().handIndex() + 1;
+		return s.isMenuOpen() ? "menu:" + hand : of(s.state()).tag(s, hand);
+	}
+
 	/** The view of a moment. */
 	static StateView of(TableState s) {
 		return BY_STATE[s.ordinal()];
 	}
 
 	/** What the moment shows over the table (nothing, unless overridden). */
-	void drawOverlay(TableScene s, int newHighScore) {
+	void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 	}
 
 	/** A tap anywhere but the menu button (nothing, unless overridden). */

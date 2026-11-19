@@ -63,33 +63,33 @@ public class RulesTest {
 
 	@Test
 	public void highestOfLeadSuitWins() {
-		assertEquals(2, Rules.trickWinner(cards("5H 9H KH 2H"), Suit.CLUBS));
+		assertEquals(2, RuleSet.STANDARD.trickWinner(cards("5H 9H KH 2H"), Suit.CLUBS));
 	}
 
 	@Test
 	public void aceIsHigh() {
-		assertEquals(1, Rules.trickWinner(cards("KH AH"), Suit.CLUBS));
+		assertEquals(1, RuleSet.STANDARD.trickWinner(cards("KH AH"), Suit.CLUBS));
 	}
 
 	@Test
 	public void offSuitCardNeverWins() {
-		assertEquals(0, Rules.trickWinner(cards("2H AS AD AC"), Suit.HEARTS));
-		assertEquals(0, Rules.trickWinner(cards("2H AS AD"), Suit.CLUBS));
+		assertEquals(0, RuleSet.STANDARD.trickWinner(cards("2H AS AD AC"), Suit.HEARTS));
+		assertEquals(0, RuleSet.STANDARD.trickWinner(cards("2H AS AD"), Suit.CLUBS));
 	}
 
 	@Test
 	public void trumpBeatsLeadSuit() {
-		assertEquals(3, Rules.trickWinner(cards("AH KH QH 2C"), Suit.CLUBS));
+		assertEquals(3, RuleSet.STANDARD.trickWinner(cards("AH KH QH 2C"), Suit.CLUBS));
 	}
 
 	@Test
 	public void higherTrumpBeatsLowerTrump() {
-		assertEquals(2, Rules.trickWinner(cards("AH 3C 9C 4C"), Suit.CLUBS));
+		assertEquals(2, RuleSet.STANDARD.trickWinner(cards("AH 3C 9C 4C"), Suit.CLUBS));
 	}
 
 	@Test
 	public void trumpLeadIsJustTheLeadSuit() {
-		assertEquals(1, Rules.trickWinner(cards("5C 7C AH"), Suit.CLUBS));
+		assertEquals(1, RuleSet.STANDARD.trickWinner(cards("5C 7C AH"), Suit.CLUBS));
 	}
 
 	// ---- Following suit ----
@@ -97,25 +97,25 @@ public class RulesTest {
 	@Test
 	public void mustFollowSuitWhenAble() {
 		List<Card> hand = cards("2H KS 9H 4D");
-		assertEquals(cards("2H 9H"), Rules.legalPlays(hand, Suit.HEARTS));
-		assertFalse(Rules.isLegalPlay(hand, c("KS"), Suit.HEARTS));
+		assertEquals(cards("2H 9H"), RuleSet.STANDARD.legalPlays(hand, Suit.HEARTS));
+		assertFalse(RuleSet.STANDARD.isLegalPlay(hand, c("KS"), Suit.HEARTS));
 	}
 
 	@Test
 	public void anyCardWhenVoidInLeadSuit() {
 		List<Card> hand = cards("2H KS 4D");
-		assertEquals(hand, Rules.legalPlays(hand, Suit.CLUBS));
+		assertEquals(hand, RuleSet.STANDARD.legalPlays(hand, Suit.CLUBS));
 	}
 
 	@Test
 	public void anyCardWhenLeading() {
 		List<Card> hand = cards("2H KS 4D");
-		assertEquals(hand, Rules.legalPlays(hand, null));
+		assertEquals(hand, RuleSet.STANDARD.legalPlays(hand, null));
 	}
 
 	@Test
 	public void cardNotInHandIsNeverLegal() {
-		assertFalse(Rules.isLegalPlay(cards("2H"), c("3H"), null));
+		assertFalse(RuleSet.STANDARD.isLegalPlay(cards("2H"), c("3H"), null));
 	}
 
 	// ---- Bidding ----
@@ -123,25 +123,25 @@ public class RulesTest {
 	@Test
 	public void dealerCannotMakeTotalEqualTricks() {
 		// 5 cards, others bid 3 in total: dealer may not bid 2
-		assertFalse(Rules.isLegalBid(2, 5, 3, true));
-		assertTrue(Rules.isLegalBid(1, 5, 3, true));
-		assertTrue(Rules.isLegalBid(3, 5, 3, true));
+		assertFalse(RuleSet.STANDARD.isLegalBid(2, 5, 3, true));
+		assertTrue(RuleSet.STANDARD.isLegalBid(1, 5, 3, true));
+		assertTrue(RuleSet.STANDARD.isLegalBid(3, 5, 3, true));
 	}
 
 	@Test
 	public void nonDealerMayBidAnythingInRange() {
 		for (int b = 0; b <= 5; b++) {
-			assertTrue(Rules.isLegalBid(b, 5, 3, false));
+			assertTrue(RuleSet.STANDARD.isLegalBid(b, 5, 3, false));
 		}
-		assertFalse(Rules.isLegalBid(6, 5, 0, false));
-		assertFalse(Rules.isLegalBid(-1, 5, 0, false));
+		assertFalse(RuleSet.STANDARD.isLegalBid(6, 5, 0, false));
+		assertFalse(RuleSet.STANDARD.isLegalBid(-1, 5, 0, false));
 	}
 
 	@Test
 	public void dealerUnrestrictedWhenOthersOverbid() {
-		assertEquals(-2, Rules.forbiddenDealerBid(3, 5));
+		assertEquals(-2, RuleSet.STANDARD.forbiddenDealerBid(3, 5));
 		for (int b = 0; b <= 3; b++) {
-			assertTrue(Rules.isLegalBid(b, 3, 5, true));
+			assertTrue(RuleSet.STANDARD.isLegalBid(b, 3, 5, true));
 		}
 	}
 

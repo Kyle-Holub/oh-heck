@@ -8,13 +8,17 @@ import ohheck.rules.Card;
 import ohheck.rules.Match;
 
 /**
- * The table as its helpers read it ({@link TableDrawing}, {@link TableOverlays},
- * {@link TableInput}, {@link Autoplay}): the game and its timing, who's who, your
- * hand's layout and what your finger is doing. {@link PlayScreen} is the table.
+ * The table as its helpers read it ({@link TableDrawing}, {@link CardSprites},
+ * {@link TableOverlays}, {@link TableInput}, {@link Autoplay}): the game and its timing,
+ * who's who, your hand's layout and what your finger is doing. Moves and the table's flow
+ * go through {@link TableActions}, never through here (the match itself is handed out for
+ * reading; only {@link TableDrawing} fills in your hand's layout). {@link PlayScreen} is the
+ * table.
  */
 interface TableScene {
 
-	TableFlow flow();
+	/** The game, the moment it's in and the deal: read only. */
+	FlowView flow();
 
 	default Match match() {
 		return flow().match();
@@ -36,9 +40,6 @@ interface TableScene {
 
 	/** Where things go on the table, for the current screen shape. */
 	TableLayout layout();
-
-	/** The bid panel, menus and buttons over the table (and their tap areas). */
-	TableOverlays overlays();
 
 	/** Your hand in display order, and each card's tap area (rebuilt when drawn). */
 	List<Card> handOrder();

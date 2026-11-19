@@ -10,7 +10,7 @@ import java.util.Random;
  */
 public final class Deck {
 
-	private final List<Card> cards = new ArrayList<Card>(52);
+	private final List<Card> cards = new ArrayList<Card>(Card.COUNT);
 
 	/** A deck in suit-then-rank order, unshuffled. */
 	public Deck() {

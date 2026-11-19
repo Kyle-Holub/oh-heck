@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
+import ohheck.players.Difficulty;
 import ohheck.records.Stats;
 import ohheck.rules.Suit;
 
@@ -38,5 +39,14 @@ public class WordingTest {
 			assertEquals(rows[i][0], Wording.NONE, rows[i][1]);
 		}
 		assertEquals(Wording.NONE, Wording.handRows(new Stats().totals(0))[1][1]);
+	}
+
+	@Test
+	public void theOptionsDescribeTheOddsTruly() {
+		assertEquals("Mostly easy-going players, some solid players; never an expert.",
+				Wording.tableDescription(Difficulty.EASY));
+		assertEquals("Mostly solid players, some easy-going players, some experts.",
+				Wording.tableDescription(Difficulty.NORMAL));
+		assertEquals("Mostly experts, some solid players; never a beginner.", Wording.tableDescription(Difficulty.HARD));
 	}
 }

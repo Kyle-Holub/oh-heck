@@ -10,7 +10,7 @@ import java.util.function.ToLongFunction;
 
 import ohheck.players.Difficulty;
 import ohheck.players.Player;
-import ohheck.rules.Rules;
+import ohheck.players.Seating;
 import ohheck.util.Log;
 
 /**
@@ -96,14 +96,9 @@ public final class Stats {
 	}
 
 	/**
-	 * Counts your hand, just ended (once: false if it was already counted, as when a game is
-	 * resumed at the end of a hand).
+	 * Counts your hand, just ended, and the points it scored by the game's own rules (once:
+	 * false if it was already counted, as when a game is resumed at the end of a hand).
 	 */
-	public boolean countHand(int handIndex, Difficulty level, int bid, int won) {
-		return countHand(handIndex, level, bid, won, Rules.score(bid, won));
-	}
-
-	/** As above, with the points the hand scored (by the game's own rules). */
 	public boolean countHand(int handIndex, Difficulty level, int bid, int won, int points) {
 		if (handIndex < handsCounted) {
 			return false;
@@ -134,18 +129,18 @@ public final class Stats {
 	}
 
 	/**
-	 * Counts the game, just finished (once): seat 0 is you, seats 1-3 the given players
-	 * ({@link Player} ids); level is the difficulty it was started at.
+	 * Counts the game, just finished (once): finalScores by seat, you in {@link Seating#YOU}
+	 * and the given players in the rest; level is the difficulty it was started at.
 	 */
-	public boolean countGame(Difficulty level, int[] finalScores, int hands, int[] players) {
+	public boolean countGame(Difficulty level, int[] finalScores, int hands, Seating players) {
 		if (gameCounted) {
 			return false;
 		}
 		gameCounted = true;
-		int mine = finalScores[0];
+		int mine = finalScores[Seating.YOU];
 		boolean won = true;
-		for (int s = 1; s < finalScores.length; s++) {
-			won &= finalScores[s] <= mine;
+		for (int s = 0; s < finalScores.length; s++) {
+			won &= s == Seating.YOU || finalScores[s] <= mine;
 		}
 		boolean perfect = perfectSoFar && handsCounted == hands;
 		for (Totals t : both(level)) {
@@ -163,9 +158,9 @@ public final class Stats {
 			if (perfect) {
 				t.perfect++;
 			}
-			for (int s = 1; s < finalScores.length; s++) {
-				if (finalScores[s] > mine) {
-					t.beatenBy[players[s - 1]]++;
+			for (int s = 0; s < finalScores.length; s++) {
+				if (s != Seating.YOU && finalScores[s] > mine) {
+					t.beatenBy[players.idAt(s)]++;
 				}
 			}
 		}

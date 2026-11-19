@@ -12,6 +12,7 @@ import ohheck.anim.Ease;
 import ohheck.anim.Tween;
 import ohheck.fx.Glints;
 import ohheck.fx.Motes;
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Suit;
@@ -28,7 +29,7 @@ import ohheck.ui.TapAreas;
  */
 final class TableDrawing {
 
-	private static final int HUMAN = TableLayout.HUMAN;
+	private static final int HUMAN = Seating.YOU;
 	/** The trump card's shadow lift; its warm glow, how long it takes to light, and its size against the card. */
 	private static final float TRUMP_LIFT = 4, TRUMP_GLOW_IN = 0.6f, TRUMP_GLOW_W = 1.9f, TRUMP_GLOW_H = 1.6f;
 	private static final Color TRUMP_GLOW = new Color(1f, 0.78f, 0.4f, 0.22f);
@@ -88,7 +89,7 @@ final class TableDrawing {
 	// ---- the trump card
 
 	void trump(boolean gone) {
-		TableFlow flow = s.flow();
+		FlowView flow = s.flow();
 		if (flow.state() == TableState.SHUFFLE || gone) {
 			if (gone) {
 				motes.draw(batch, assets.glow); // the last few still rising
@@ -125,7 +126,7 @@ final class TableDrawing {
 
 	/** A seat's panel and, for opponents, their face-down cards (while dealing, only those that have landed). */
 	void seat(int seat) {
-		TableFlow flow = s.flow();
+		FlowView flow = s.flow();
 		Match m = s.match();
 		boolean turn = flow.state() == TableState.TURN && m.currentSeat() == seat;
 		state.reset().named(s.name(seat)).score(m.score(seat)).turn(turn).dealer(m.dealer() == seat)
@@ -135,7 +136,7 @@ final class TableDrawing {
 
 	/** Your hand, sorted, laid out, with a tap area for each card (CardSprites draws them). */
 	void layoutHand() {
-		TableFlow flow = s.flow();
+		FlowView flow = s.flow();
 		Match m = s.match();
 		List<Card> order = s.handOrder();
 		order.clear();
