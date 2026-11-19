@@ -46,6 +46,29 @@ public class TableLayoutTest {
 	}
 
 	@Test
+	public void yourDeckIsClearOfYourHandYourPanelAndTheLeftFan() {
+		for (float w : WIDTHS) {
+			TableLayout t = new TableLayout();
+			t.resize(w, 480);
+			Vector2 c = t.deckSpot(TableLayout.HUMAN);
+			Rectangle deck = new Rectangle(c.x - TableLayout.backW() / 2, c.y - TableLayout.backH() / 2,
+					TableLayout.backW(), TableLayout.backH());
+			for (int n = 1; n <= 13; n++) {
+				t.layoutHand(n);
+				Rectangle hand = new Rectangle(t.handStart, TableLayout.HAND_Y, (n - 1) * t.handGap
+						+ TableLayout.handCardW(), TableLayout.handCardH() + TableLayout.LIFT);
+				assertTrue(w + ": clear of a hand of " + n, !deck.overlaps(hand));
+			}
+			Rectangle panel = new Rectangle(t.panelX(0), t.panelTop(0) - TableLayout.PANEL_H, TableLayout.PANEL_W,
+					TableLayout.PANEL_H);
+			Vector2 f = t.fanOrigin(1);
+			Rectangle fan = new Rectangle(f.x, f.y, 13 * TableLayout.FAN_STEP + TableLayout.backW(), TableLayout.backH());
+			assertTrue(w + ": clear of your panel", !deck.overlaps(panel));
+			assertTrue(w + ": clear of the left player's cards", !deck.overlaps(fan));
+		}
+	}
+
+	@Test
 	public void eachSeatPlaysIntoItsOwnSlot() {
 		TableLayout t = new TableLayout();
 		t.resize(800, 480);

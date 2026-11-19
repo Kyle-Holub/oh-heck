@@ -94,7 +94,7 @@ final class DealAnimation {
 	void drawShuffle(SpriteBatch batch, Assets assets, CardArt art, TableLayout table) {
 		float cw = Assets.CARD_W * DECK_SCALE, ch = Assets.CARD_H * DECK_SCALE;
 		float cx = table.centreX(), cy = table.centreY();
-		Vector2 d = table.seatAnchor(dealer);
+		Vector2 d = table.deckSpot(dealer);
 		float dx = d.x, dy = d.y;
 		int stage = shuffle.at(t);
 		float u = shuffle.into(t);
