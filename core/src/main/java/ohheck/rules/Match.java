@@ -3,8 +3,10 @@ package ohheck.rules;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * One game of Oh Heck from the first deal to the final scores, with no
@@ -55,8 +57,8 @@ public final class Match {
 	final int[] scores;
 	final int[] lastHandPoints;
 
-	final List<Card> trick = new ArrayList<Card>();
-	final List<Integer> trickSeats = new ArrayList<Integer>();
+	/** The trick in progress. */
+	final Trick trick;
 	/** Every card played this hand, in order, and who played it: what players remember. */
 	final List<Card> history = new ArrayList<Card>();
 	final List<Integer> historySeats = new ArrayList<Integer>();
@@ -64,14 +66,9 @@ public final class Match {
 	List<Integer> lastTrickSeats = Collections.emptyList();
 	int lastTrickWinner = -1;
 
-	/** A game with a random first dealer, its hands running one card up to eight. */
+	/** A game by the standard rules, with a random first dealer, its hands running one card up to eight. */
 	public static Match random(int players, Random rng) {
-		return random(players, rng, HandOrder.UP);
-	}
-
-	/** A game with a random first dealer, its hands running the given way. */
-	public static Match random(int players, Random rng, HandOrder order) {
-		return random(players, rng, order, RuleSet.STANDARD);
+		return random(players, rng, HandOrder.UP, RuleSet.STANDARD);
 	}
 
 	/** A game by the given rules, with a random first dealer, its hands running the given way. */
@@ -79,14 +76,12 @@ public final class Match {
 		return new Match(players, rng, rng.nextInt(players), order, rules);
 	}
 
+	/** A game by the standard rules, its hands running one card up to eight, firstDealer dealing first. */
 	public Match(int players, Random rng, int firstDealer) {
-		this(players, rng, firstDealer, HandOrder.UP);
+		this(players, rng, firstDealer, HandOrder.UP, RuleSet.STANDARD);
 	}
 
-	public Match(int players, Random rng, int firstDealer, HandOrder order) {
-		this(players, rng, firstDealer, order, RuleSet.STANDARD);
-	}
-
+	/** A game by the given rules, its hands running the given way, firstDealer dealing first. */
 	public Match(int players, Random rng, int firstDealer, HandOrder order, RuleSet rules) {
 		this(players, rng, rules);
 		this.order = order;
@@ -96,12 +91,13 @@ public final class Match {
 
 	/** Allocates an empty game, for the constructors above and {@link MatchCodec}. */
 	Match(int players, Random rng, RuleSet rules) {
-		if (players < 2 || players * rules.numberOfHands() >= 52) {
+		if (players < 2 || players * rules.numberOfHands() >= Card.COUNT) {
 			throw new IllegalArgumentException("Unsupported number of players: " + players);
 		}
 		this.players = players;
 		this.rng = rng;
 		this.rules = rules;
+		this.trick = new Trick(players, rules);
 		this.bids = new int[players];
 		Arrays.fill(bids, NO_BID);
 		this.tricks = new int[players];
@@ -130,10 +126,6 @@ public final class Match {
 		}
 	}
 
-	/**
-	 * Play a card. Returns the seat that won the trick if this card completed
-	 * it, else -1. A completed trick stays visible through {@link #lastTrick()}.
-	 */
 	/** Makes a move (a bid or a card); returns the seat that won a trick it completed, else -1. */
 	public int apply(Move move) {
 		return move.applyTo(this);
@@ -147,6 +139,10 @@ public final class Match {
 		return Collections.unmodifiableList(moves);
 	}
 
+	/**
+	 * Plays a card. Returns the seat that won the trick if this card completed
+	 * it, else -1. A completed trick stays visible through {@link #lastTrick()}.
+	 */
 	public int playCard(int seat, Card card) {
 		requirePhase(Phase.PLAYING);
 		requireTurn(seat);
@@ -156,23 +152,19 @@ public final class Match {
 		}
 		moves.add(new Move.Play(seat, card));
 		hand.remove(card);
-		trick.add(card);
-		trickSeats.add(seat);
 		history.add(card);
 		historySeats.add(seat);
-
-		if (trick.size() < players) {
+		int winner = trick.add(seat, card, trumpCard.suit());
+		if (winner < 0) {
 			current = next(seat);
 			return -1;
 		}
 
-		int winner = trickSeats.get(rules.trickWinner(trick, trumpCard.suit()));
 		tricks[winner]++;
-		lastTrick = Collections.unmodifiableList(new ArrayList<Card>(trick));
-		lastTrickSeats = Collections.unmodifiableList(new ArrayList<Integer>(trickSeats));
+		lastTrick = Collections.unmodifiableList(new ArrayList<Card>(trick.cards()));
+		lastTrickSeats = Collections.unmodifiableList(new ArrayList<Integer>(trick.seats()));
 		lastTrickWinner = winner;
 		trick.clear();
-		trickSeats.clear();
 		current = winner;
 
 		if (hand.isEmpty()) {
@@ -216,11 +208,12 @@ public final class Match {
 		return dealer;
 	}
 
-	/** 0-based index of the current hand. */
+	/** Which way the hands run. */
 	public HandOrder handOrder() {
 		return order;
 	}
 
+	/** 0-based index of the current hand. */
 	public int handIndex() {
 		return handIndex;
 	}
@@ -257,10 +250,15 @@ public final class Match {
 	}
 
 	public int bidsSoFar() {
+		return total(bids);
+	}
+
+	/** The bids made so far, added up ({@link #NO_BID}s left out). */
+	static int total(int[] bids) {
 		int total = 0;
-		for (int s = 0; s < players; s++) {
-			if (hasBid(s)) {
-				total += bids[s];
+		for (int b : bids) {
+			if (b != NO_BID) {
+				total += b;
 			}
 		}
 		return total;
@@ -300,16 +298,16 @@ public final class Match {
 
 	/** Cards played so far in the trick in progress, lead first. */
 	public List<Card> currentTrick() {
-		return Collections.unmodifiableList(trick);
+		return trick.cards();
 	}
 
 	/** Seats that played the cards in {@link #currentTrick()}, in the same order. */
 	public List<Integer> currentTrickSeats() {
-		return Collections.unmodifiableList(trickSeats);
+		return trick.seats();
 	}
 
 	public Suit leadSuit() {
-		return trick.isEmpty() ? null : trick.get(0).suit();
+		return trick.leadSuit();
 	}
 
 	public List<Card> legalPlays(int seat) {
@@ -339,7 +337,6 @@ public final class Match {
 		return lastTrickWinner;
 	}
 
-	/** Seats with the highest score; more than one means a tie. */
 	/** Where this seat stands: 1 for the lead, and players on the same score share a place. */
 	public int placeOf(int seat) {
 		int p = 1;
@@ -351,7 +348,8 @@ public final class Match {
 		return p;
 	}
 
-		public List<Integer> leaders() {
+	/** Seats with the highest score; more than one means a tie. */
+	public List<Integer> leaders() {
 		int best = Integer.MIN_VALUE;
 		for (int s : scores) {
 			best = Math.max(best, s);
@@ -382,14 +380,14 @@ public final class Match {
 			v.scores[s] = scores[s];
 			v.cardsLeft[s] = hands.get(s).size();
 		}
-		v.trick.addAll(trick);
-		v.trickSeats.addAll(trickSeats);
+		v.trick.addAll(trick.cards);
+		v.trickSeats.addAll(trick.seats);
 		v.history.addAll(history);
 		v.historySeats.addAll(historySeats);
 		Suit lead = null;
 		for (int i = 0; i < history.size(); i++) {
 			Card c = history.get(i);
-			v.played[TableView.index(c)] = true;
+			v.played[c.index()] = true;
 			if (i % players == 0) {
 				lead = c.suit();
 			} else if (c.suit() != lead) {
@@ -422,11 +420,11 @@ public final class Match {
 	/** Sanity checks after loading, so a damaged save is rejected rather than played. */
 	void check() {
 		if (handIndex < 0 || handIndex >= rules.numberOfHands() || dealer < 0 || dealer >= players || current < 0
-				|| current >= players || trick.size() != trickSeats.size() || trick.size() >= players
+				|| current >= players || trick.cards.size() != trick.seats.size() || trick.size() >= players
 				|| history.size() != historySeats.size()) {
 			throw new IllegalArgumentException("Inconsistent game state");
 		}
-		java.util.Set<Card> seen = new java.util.HashSet<Card>();
+		Set<Card> seen = new HashSet<Card>();
 		seen.add(trumpCard);
 		for (List<Card> h : hands) {
 			for (Card c : h) {
@@ -435,7 +433,7 @@ public final class Match {
 				}
 			}
 		}
-		for (Card c : trick) {
+		for (Card c : trick.cards) {
 			if (!seen.add(c)) {
 				throw new IllegalArgumentException("Card appears twice: " + c);
 			}
@@ -454,7 +452,6 @@ public final class Match {
 		}
 		trumpCard = deck.deal();
 		trick.clear();
-		trickSeats.clear();
 		history.clear();
 		historySeats.clear();
 		phase = Phase.BIDDING;
@@ -462,7 +459,7 @@ public final class Match {
 	}
 
 	private int next(int seat) {
-		return (seat + 1) % players;
+		return rules.nextSeat(seat, players);
 	}
 
 	private void requirePhase(Phase p) {

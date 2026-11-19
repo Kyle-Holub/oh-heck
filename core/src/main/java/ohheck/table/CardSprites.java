@@ -1,5 +1,6 @@
 package ohheck.table;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
@@ -11,7 +12,6 @@ import ohheck.anim.Tween;
 import ohheck.fx.Glints;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
-import ohheck.rules.TableView;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Palette;
@@ -40,49 +40,30 @@ final class CardSprites {
 	/** Back to front: the fans, your hand, the trick, cards in the air from the deal, the card you hold. */
 	private static final int FAN = 0, HAND = 1, TRICK = 2, DEALING = 3, HELD = 4;
 
-	private final CardSprite[] sprites = new CardSprite[52];
+	private final CardSprite[] sprites = new CardSprite[Card.COUNT];
 	/** This frame: each sprite's layer and order within it, and the hand's tap-area width (for glints). */
-	private final int[] layer = new int[52], order = new int[52];
+	private final int[] layer = new int[Card.COUNT], order = new int[Card.COUNT];
 	/** Your cards' visible width (the next card covers the rest), for their glints. */
-	private final float[] glintW = new float[52];
-	private final boolean[] seen = new boolean[52], dim = new boolean[52];
-	private final CardSprite[] drawOrder = new CardSprite[52];
+	private final float[] glintW = new float[Card.COUNT];
+	private final boolean[] seen = new boolean[Card.COUNT], dim = new boolean[Card.COUNT];
+	private final CardSprite[] drawOrder = new CardSprite[Card.COUNT];
 	private final CardSprite.Pose pose = new CardSprite.Pose(), dealer = new CardSprite.Pose();
 	/** The winning card of a completed trick (framed), or -1. */
 	private int framed = -1;
 
 	CardSprites() {
-		for (int i = 0; i < 52; i++) {
-			sprites[i] = new CardSprite(cardOf(i));
+		for (int i = 0; i < Card.COUNT; i++) {
+			sprites[i] = new CardSprite(Card.ofIndex(i));
 		}
-	}
-
-	private static Card cardOf(int index) {
-		for (Card c : allCards()) {
-			if (TableView.index(c) == index) {
-				return c;
-			}
-		}
-		throw new IllegalStateException();
-	}
-
-	private static Iterable<Card> allCards() {
-		java.util.List<Card> all = new java.util.ArrayList<Card>();
-		for (ohheck.rules.Suit s : ohheck.rules.Suit.values()) {
-			for (ohheck.rules.Rank r : ohheck.rules.Rank.values()) {
-				all.add(Card.of(r, s));
-			}
-		}
-		return all;
 	}
 
 	private CardSprite sprite(Card c) {
-		return sprites[TableView.index(c)];
+		return sprites[c.index()];
 	}
 
 	/** Puts each card where it belongs at game time now, for the table as it is (its hand laid out already). */
 	void update(TableScene s, float now) {
-		java.util.Arrays.fill(seen, false);
+		Arrays.fill(seen, false);
 		framed = -1;
 		TableFlow flow = s.flow();
 		Match m = s.match();
@@ -103,7 +84,7 @@ final class CardSprites {
 				trick(m.currentTrick(), m.currentTrickSeats(), m, table, now);
 			}
 		}
-		for (int i = 0; i < 52; i++) {
+		for (int i = 0; i < Card.COUNT; i++) {
 			if (!seen[i] && sprites[i].visible()) {
 				sprites[i].show(false);
 			}
@@ -111,7 +92,7 @@ final class CardSprites {
 	}
 
 	private void place(CardSprite sp, int layer, int order) {
-		int i = TableView.index(sp.card);
+		int i = sp.card.index();
 		seen[i] = true;
 		this.layer[i] = layer;
 		this.order[i] = order;
@@ -169,7 +150,7 @@ final class CardSprites {
 		for (int i = 0; i < n; i++) {
 			Card c = order.get(i);
 			CardSprite sp = sprite(c);
-			int idx = TableView.index(c);
+			int idx = c.index();
 			boolean canPlay = legal.contains(c);
 			if (s.isDragging() && c == s.pressedCard()) { // under your finger
 				place(sp, HELD, 0);
@@ -219,7 +200,7 @@ final class CardSprites {
 			trick(cards, m.lastTrickSeats(), m, table, now);
 			for (int i = 0; i < cards.size(); i++) {
 				if (m.lastTrickSeats().get(i) == winner) {
-					framed = TableView.index(cards.get(i));
+					framed = cards.get(i).index();
 				}
 			}
 			return;
@@ -236,7 +217,7 @@ final class CardSprites {
 
 	/** Whether any card is still on its way. */
 	boolean moving(float now) {
-		for (int i = 0; i < 52; i++) {
+		for (int i = 0; i < Card.COUNT; i++) {
 			if (seen[i] && sprites[i].moving(now)) {
 				return true;
 			}
@@ -247,18 +228,18 @@ final class CardSprites {
 	/** Draws the cards back to front. */
 	void draw(SpriteBatch batch, Assets assets, CardArt art, Match m, boolean trumpFaceUp, float now, float fade) {
 		int n = 0;
-		for (int i = 0; i < 52; i++) {
+		for (int i = 0; i < Card.COUNT; i++) {
 			if (seen[i]) {
 				drawOrder[n++] = sprites[i];
 			}
 		}
 		java.util.Arrays.sort(drawOrder, 0, n, (a, b) -> {
-			int ia = TableView.index(a.card), ib = TableView.index(b.card);
+			int ia = a.card.index(), ib = b.card.index();
 			return layer[ia] != layer[ib] ? layer[ia] - layer[ib] : order[ia] - order[ib];
 		});
 		for (int k = 0; k < n; k++) {
 			CardSprite sp = drawOrder[k];
-			int i = TableView.index(sp.card);
+			int i = sp.card.index();
 			CardSprite.Pose p = sp.pose(now);
 			if (p.lift > 0.5f && layer[i] != FAN) {
 				art.shadow(p.x, p.y, p.w, p.h, p.lift);

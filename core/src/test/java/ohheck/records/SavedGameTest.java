@@ -11,12 +11,13 @@ import org.junit.Test;
 import ohheck.players.Difficulty;
 import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
+import ohheck.rules.RuleSet;
 
 public class SavedGameTest {
 
 	@Test
 	public void theTableTravelsWithTheGame() {
-		Match m = new Match(4, new Random(3), 1, HandOrder.DOWN);
+		Match m = new Match(4, new Random(3), 1, HandOrder.DOWN, RuleSet.STANDARD);
 		String saved = new SavedGame(m, Difficulty.HARD, new int[] { 8, 9, 5 }).encode();
 		SavedGame back = SavedGame.decode(saved, new Random(1), Difficulty.EASY, null);
 		assertEquals(Difficulty.HARD, back.level());

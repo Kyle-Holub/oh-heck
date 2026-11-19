@@ -14,6 +14,7 @@ import org.junit.Test;
 import ohheck.rules.Card;
 import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
+import ohheck.rules.RuleSet;
 
 /** What your taps do at the table, against a table with no screen. */
 public class TableInputTest {
@@ -173,7 +174,7 @@ public class TableInputTest {
 
 	@Test
 	public void aTapOnANumberBids() {
-		Match m = new Match(4, new Random(4), 3, HandOrder.UP); // seat 3 deals, so you bid first
+		Match m = new Match(4, new Random(4), 3, HandOrder.UP, RuleSet.STANDARD); // seat 3 deals, so you bid first
 		t.flow.start(m);
 		t.flow.skip(); // past the shuffle and deal
 		assertEquals(TableState.TURN, t.flow.state());
@@ -187,7 +188,7 @@ public class TableInputTest {
 
 	@Test
 	public void aCardDraggedOntoTheTableIsPlayed() {
-		Match m = new Match(4, new Random(5), 3, HandOrder.UP);
+		Match m = new Match(4, new Random(5), 3, HandOrder.UP, RuleSet.STANDARD);
 		t.flow.start(m);
 		t.flow.skip();
 		t.overlays.bidButtons.add(new Rectangle(100, 100, 58, 58));

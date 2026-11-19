@@ -216,7 +216,7 @@ public class MatchTest {
 
 	@Test
 	public void handsCanCountDownFromEight() {
-		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN);
+		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
 		assertEquals(8, m.handSize());
 		for (int s = 0; s < 4; s++) {
 			assertEquals(8, m.hand(s).size());
@@ -233,7 +233,7 @@ public class MatchTest {
 
 	@Test
 	public void theHandOrderIsSaved() {
-		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN);
+		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
 		Match back = Match.load(m.save(), new Random(1));
 		assertEquals(HandOrder.DOWN, back.handOrder());
 		assertEquals(8, back.handSize());

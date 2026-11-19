@@ -40,8 +40,8 @@ final class MatchCodec {
 		line(sb, "tricks", ints(m.tricks));
 		line(sb, "scores", ints(m.scores));
 		line(sb, "points", ints(m.lastHandPoints));
-		line(sb, "trick", cards(m.trick));
-		line(sb, "trickSeats", seats(m.trickSeats));
+		line(sb, "trick", cards(m.trick.cards));
+		line(sb, "trickSeats", seats(m.trick.seats));
 		line(sb, "last", cards(m.lastTrick));
 		line(sb, "lastSeats", seats(m.lastTrickSeats));
 		line(sb, "lastWinner", String.valueOf(m.lastTrickWinner));
@@ -114,8 +114,8 @@ final class MatchCodec {
 
 	/** The trick in progress, the last one taken, and the hand's history. */
 	private static void readTricks(Match m, java.util.Map<String, String> v, boolean legacy) {
-		m.trick.addAll(parseCards(req(v, "trick"), legacy));
-		m.trickSeats.addAll(parseSeats(req(v, "trickSeats")));
+		m.trick.cards.addAll(parseCards(req(v, "trick"), legacy));
+		m.trick.seats.addAll(parseSeats(req(v, "trickSeats")));
 		m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last"), legacy));
 		m.lastTrickSeats = Collections.unmodifiableList(parseSeats(req(v, "lastSeats")));
 		m.lastTrickWinner = Integer.parseInt(req(v, "lastWinner"));

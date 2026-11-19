@@ -6,12 +6,20 @@ package ohheck.rules;
  */
 public final class Card {
 
-	private static final Card[][] ALL = new Card[Suit.values().length][Rank.values().length];
+	/** Cards in a deck. */
+	public static final int COUNT = 52;
+	private static final int PER_SUIT = Rank.values().length;
+
+	private static final Card[][] ALL = new Card[Suit.values().length][PER_SUIT];
+	/** Each card by its {@link #index()}. */
+	private static final Card[] BY_INDEX = new Card[COUNT];
 
 	static {
 		for (Suit s : Suit.values()) {
 			for (Rank r : Rank.values()) {
-				ALL[s.ordinal()][r.ordinal()] = new Card(s, r);
+				Card c = new Card(s, r);
+				ALL[s.ordinal()][r.ordinal()] = c;
+				BY_INDEX[c.index()] = c;
 			}
 		}
 	}
@@ -26,6 +34,16 @@ public final class Card {
 
 	public static Card of(Rank rank, Suit suit) {
 		return ALL[suit.ordinal()][rank.ordinal()];
+	}
+
+	/** The card with this {@link #index()}. */
+	public static Card ofIndex(int index) {
+		return BY_INDEX[index];
+	}
+
+	/** A number from 0 to 51 for each card: by suit, then by strength. */
+	public int index() {
+		return suit.ordinal() * PER_SUIT + rank.strength();
 	}
 
 	public Suit suit() {
