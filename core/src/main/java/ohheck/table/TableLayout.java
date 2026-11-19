@@ -116,13 +116,13 @@ final class TableLayout {
 	}
 
 	/**
-	 * Centre of the dealer's deck while dealing: beside an opponent's fan, but for you just
-	 * above your panel, clear of your hand and the trick (your hand's anchor is where your
+	 * Centre of the dealer's deck while dealing: beside an opponent's fan, but for you above
+	 * the right end of your panel, clear of your hand, the trick and the left player's fan (your hand's anchor is where your
 	 * cards land, so the deck can't sit there).
 	 */
 	Vector2 deckSpot(int seat) {
 		if (seat == HUMAN) {
-			return anchor.set(panelX(HUMAN) + backW(), panelTop(HUMAN) + FAN_DROP + backH() / 2);
+			return anchor.set(panelX(HUMAN) + PANEL_W - backW(), panelTop(HUMAN) + FAN_DROP + backH() / 2);
 		}
 		return seatAnchor(seat);
 	}
