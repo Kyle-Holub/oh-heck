@@ -258,7 +258,7 @@ public class OhHeckGame extends Game implements GameHost {
 		if (play != null) {
 			play.dispose();
 		}
-		play = new PlayScreen(this, null, null, null);
+		play = PlayScreen.fresh(this);
 		screens.replaceAll(play);
 	}
 
@@ -271,7 +271,7 @@ public class OhHeckGame extends Game implements GameHost {
 				newGame();
 				return;
 			}
-			play = new PlayScreen(this, saved.match(), saved.level(), saved.players());
+			play = PlayScreen.resume(this, saved);
 		}
 		screens.replaceAll(play);
 	}

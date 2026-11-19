@@ -158,6 +158,15 @@ enum StateView {
 		}
 	}
 
+	/**
+	 * A short description of what's on screen, such as "deal:3" or "trick:5": how the
+	 * screenshot run knows when to take each picture.
+	 */
+	static String describe(TableScene s) {
+		int hand = s.match().handIndex() + 1;
+		return s.isMenuOpen() ? "menu:" + hand : of(s.state()).tag(s, hand);
+	}
+
 	/** The view of a moment. */
 	static StateView of(TableState s) {
 		return BY_STATE[s.ordinal()];

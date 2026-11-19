@@ -101,7 +101,7 @@ public class ScreenshotLauncher {
 
 		GameOptions o = new GameOptions();
 		// a game the scripted player wins (75 to 47, against Cornelius, Oswald and Horatio), to show the
-		// fireworks; found by replaying the rules with the table's random streams (see PlayScreen.stream)
+		// fireworks; found by replaying the rules with the table's random streams (see TableStreams)
 		o.seed = 20261166L;
 		o.autoplayHuman = true;
 		o.persist = false;

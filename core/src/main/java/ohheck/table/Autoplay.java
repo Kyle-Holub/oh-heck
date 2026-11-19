@@ -13,10 +13,9 @@ import ohheck.rules.Match;
 
 /**
  * Plays your seat for the automated screenshot run (GameOptions.autoplayHuman),
- * through the same taps a person would make, and names what's on screen so
- * the run knows when to take each picture. Not used in normal play.
+ * through the same taps a person would make. Not used in normal play.
  */
-final class Autoplay implements TableFlow.Listener {
+final class Autoplay implements YourSeat {
 
 	/** Pause before each of your moves; time the scores stay up; time the pause menu stays open. */
 	private static final float MOVE_DELAY = 1.2f, RESULTS_WAIT = 2.2f, MENU_WAIT = 1.5f;
@@ -56,8 +55,30 @@ final class Autoplay implements TableFlow.Listener {
 		}
 	}
 
+	@Override
+	public boolean menuOnPause() {
+		return false;
+	}
+
+	@Override
+	public boolean thinkAtOnce() {
+		return true;
+	}
+
+	/** Your turn: bid or play; the scores: move on. */
+	@Override
+	public void update(float dt) {
+		FlowView flow = screen.flow();
+		if (flow.yourTurnToBid() || flow.yourTurnToPlay()) {
+			yourTurn(dt);
+		} else if (flow.state() == TableState.RESULTS) {
+			onResults(flow.stateTime());
+		}
+	}
+
 	/** While the pause menu is open: close it again after a moment. */
-	void whilePaused(float dt) {
+	@Override
+	public void whilePaused(float dt) {
 		timer += dt;
 		if (timer > MENU_WAIT) {
 			timer = 0;
@@ -66,7 +87,7 @@ final class Autoplay implements TableFlow.Listener {
 	}
 
 	/** Your turn to bid or play: wait a moment, then tap what the bot would choose. */
-	void yourTurn(float dt) {
+	private void yourTurn(float dt) {
 		Match m = screen.match();
 		timer += dt;
 		if (!menuShown && m.handIndex() == MENU_DEMO_HAND && m.phase() == Match.Phase.BIDDING) {
@@ -90,7 +111,7 @@ final class Autoplay implements TableFlow.Listener {
 	}
 
 	/** The score table is up: move on after a while. */
-	void onResults(float shownFor) {
+	private void onResults(float shownFor) {
 		if (shownFor >= RESULTS_WAIT) {
 			input.tap(screen.layout().w / 2, screen.layout().h / 2);
 		}
@@ -102,13 +123,4 @@ final class Autoplay implements TableFlow.Listener {
 		}
 	}
 
-	/** A short description of what's on screen, such as "deal:3" or "trick:5". */
-	static String describe(TableScene s) {
-		Match m = s.match();
-		int hand = m.handIndex() + 1;
-		if (s.isMenuOpen()) {
-			return "menu:" + hand;
-		}
-		return StateView.of(s.state()).tag(s, hand);
-	}
 }
