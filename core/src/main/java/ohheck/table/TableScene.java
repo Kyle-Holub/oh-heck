@@ -55,6 +55,11 @@ interface TableScene {
 	/** The card under your finger, or null. */
 	Card pressedCard();
 
+	/** Where your finger is while dragging a card. */
+	float dragX();
+
+	float dragY();
+
 	/** Game over and the final scores are up. */
 	boolean resultsShown();
 }

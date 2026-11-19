@@ -18,7 +18,6 @@ import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
-import ohheck.ui.Palette;
 import ohheck.ui.PostProcessor;
 import ohheck.ui.TapAreas;
 
@@ -132,19 +131,10 @@ final class TableDrawing {
 		state.reset().named(s.name(seat)).score(m.score(seat)).turn(turn).dealer(m.dealer() == seat)
 				.bid(m.bid(seat)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
 		panel.draw(state, table.panelX(seat), table.panelTop(seat), s.time());
-		if (seat == HUMAN) {
-			return;
-		}
-		int total = m.hand(seat).size();
-		int n = flow.isDealing() ? flow.deal.dealtTo(seat) : total;
-		float y = table.fanOrigin(seat).y;
-		for (int i = 0; i < n; i++) {
-			batch.draw(assets.back(), table.fanCardX(seat, i, total), y, TableLayout.backW(), TableLayout.backH());
-		}
 	}
 
-	/** Your hand, sorted; lays out the screen's tap areas for it as it goes. */
-	void hand() {
+	/** Your hand, sorted, laid out, with a tap area for each card (CardSprites draws them). */
+	void layoutHand() {
 		TableFlow flow = s.flow();
 		Match m = s.match();
 		List<Card> order = s.handOrder();
@@ -156,38 +146,13 @@ final class TableDrawing {
 		if (n == 0) {
 			return;
 		}
-		int shown = flow.isDealing() ? flow.deal.dealtTo(HUMAN) : n;
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
 		table.layoutHand(n);
-		boolean myTurn = s.humanCanPlay();
-		List<Card> legal = myTurn ? m.legalPlays(HUMAN) : Collections.<Card>emptyList();
+		List<Card> legal = s.humanCanPlay() ? m.legalPlays(HUMAN) : Collections.<Card>emptyList();
 		for (int i = 0; i < n; i++) {
-			Card c = order.get(i);
-			boolean canPlay = legal.contains(c);
 			float x = table.handStart + i * table.handGap;
-			float y = TableLayout.HAND_Y + (canPlay ? TableLayout.LIFT : 0);
+			float y = TableLayout.HAND_Y + (legal.contains(order.get(i)) ? TableLayout.LIFT : 0);
 			s.handRects().get(i).set(x, y, i == n - 1 ? cw : table.handGap, ch);
-			if (i >= shown || (s.isDragging() && c == s.pressedCard())) {
-				continue;
-			}
-			art.shadow(x, y, cw, ch, y - TableLayout.HAND_Y + HAND_LIFT);
-			batch.setColor(myTurn && !canPlay ? Palette.CARD_DIM : Color.WHITE);
-			float flip = flow.isDealing() ? flow.deal.flipOfYourCard(i) : 1f;
-			art.flip(c, x, y, cw, ch, flip);
-			if (flip >= 1 && flow.trumpFaceUp() && c.suit() == m.trump()) {
-				Glints.draw(batch, assets.glow, c, x, y, cw, ch, i == n - 1 ? cw : table.handGap, 0, s.time(),
-						myTurn && !canPlay ? 0.5f : 1f);
-			}
-		}
-		batch.setColor(Color.WHITE);
-	}
-
-	/** The card you're dragging, under your finger at (x, y). */
-	void dragged(Card c, float x, float y) {
-		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
-		batch.draw(assets.face(c), x - cw / 2, y - ch / 2, cw, ch);
-		if (c.suit() == s.match().trump()) {
-			Glints.draw(batch, assets.glow, c, x - cw / 2, y - ch / 2, cw, ch, cw, 0, s.time(), 1f);
 		}
 	}
 

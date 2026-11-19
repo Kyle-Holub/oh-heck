@@ -95,6 +95,16 @@ public class TableInputTest {
 		}
 
 		@Override
+		public float dragX() {
+			return input.dragX();
+		}
+
+		@Override
+		public float dragY() {
+			return input.dragY();
+		}
+
+		@Override
 		public boolean resultsShown() {
 			return false;
 		}

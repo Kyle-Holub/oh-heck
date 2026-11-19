@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Random;
 
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import ohheck.fx.Fireworks;
@@ -16,7 +15,6 @@ import ohheck.players.Player;
 import ohheck.records.SavedGame;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
-import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
@@ -56,7 +54,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final CardArt art;
 	/** Draws the table (counters, trump, panels, your hand); the trick, overlays and effects are separate. */
 	private final TableDrawing drawing;
-	private final TrickView trick = new TrickView();
+	/** Every card on the table, each one sprite for the whole game. */
+	private final CardSprites cards = new CardSprites();
 	private final Sparks sparks = new Sparks();
 	private final Fireworks fireworks = new Fireworks();
 	/** At the game's end: the cards thrown off the table, and the order of what follows. */
@@ -119,22 +118,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final class Effects implements TableFlow.Listener {
 		@Override
 		public void beforeDeal(Match m) {
-			trick.clear();
 			input.clearTouch();
 		}
 
 		@Override
 		public void save(Match m) {
 			PlayScreen.this.save();
-		}
-
-		@Override
-		public void played(Match m, int seat, Card c) {
-			if (seat != HUMAN) {
-				// computer players' cards fly in from their fan; yours already started from your hand
-				Vector2 from = table.seatAnchor(seat);
-				trick.fly(c, from.x - Assets.CARD_W / 2f, from.y - Assets.CARD_H / 2f, time);
-			}
 		}
 
 		@Override
@@ -189,6 +178,16 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public Card pressedCard() {
 		return input.pressed();
+	}
+
+	@Override
+	public float dragX() {
+		return input.dragX();
+	}
+
+	@Override
+	public float dragY() {
+		return input.dragY();
 	}
 
 	@Override
@@ -247,11 +246,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			return;
 		}
 		time += dt;
-		TableState before = flow.state();
 		flow.update(dt);
-		if (before == TableState.TRICK && flow.state() != TableState.TRICK) {
-			trick.clear(); // the winner has gathered the trick in
-		}
 		overlays.update(dt);
 		sparks.step(dt);
 		fireworks.update(dt);
@@ -278,7 +273,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (StateView.of(flow.state()).animating(this)) {
 			return true;
 		}
-		return input.dragging() || sparks.active() || fireworks.active() || trick.anyInFlight(time) || toss.active();
+		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || toss.active();
 	}
 
 	// ------------------------------------------------------------ input
@@ -354,9 +349,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public void humanPlay(Card c, float fromX, float fromY) {
 		input.clearTouch();
-		if (flow.play(c)) {
-			trick.fly(c, fromX, fromY, time);
-		}
+		flow.play(c); // (it flies to the trick from wherever its sprite is)
 	}
 
 	@Override
@@ -392,9 +385,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			overlays.drawMenuButton();
 			drawOverlay();
 		}
-		if (input.dragging()) {
-			drawing.dragged(input.pressed(), input.dragX(), input.dragY());
-		}
 		toss.draw(batch); // over everything else as the cards fall away (the scores wait until they've gone)
 		sparks.draw(batch, assets.glow);
 		if (input.menuOpen()) {
@@ -405,7 +395,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		batch.end();
 	}
 
-	/** The counters, trump, players, your hand, the trick and the deal. */
+	/** The counters, trump, players' panels, then every card, and the deck while it's shuffled. */
 	private void drawTable() {
 		drawing.tally();
 		drawing.bidTracker();
@@ -413,10 +403,14 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		for (int seat = 0; seat < match().players(); seat++) {
 			drawing.seat(seat);
 		}
-		drawing.hand();
-		trick.draw(batch, assets, art, table, match(), flow.state() == TableState.TRICK, flow.stateTime(), time, paint.fade());
+		drawing.layoutHand();
+		if (flow.state() == TableState.TRICK) {
+			TrickView.drawTrickWon(art, assets, table, match(), flow.stateTime());
+		}
+		cards.update(this, time);
+		cards.draw(batch, assets, art, match(), flow.trumpFaceUp(), time, paint.fade());
 		if (flow.isDealing()) {
-			flow.deal.draw(batch, assets, art, table);
+			flow.deal.drawShuffle(batch, assets, art, table);
 		}
 	}
 
