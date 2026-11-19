@@ -13,10 +13,10 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import ohheck.platform.Audio;
 import ohheck.platform.Settings;
 import ohheck.players.Difficulty;
-import ohheck.players.Player;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
+import ohheck.ui.Wording;
 
 /**
  * The settings, saved on the device: the game (difficulty, hand sizes, speed) on the left;
@@ -27,6 +27,8 @@ public class OptionsScreen extends BaseScreen {
 	private static final float COLUMN_W = 440, COLUMN_GAP = 34, SECTION_GAP = 40;
 
 	private final Rectangle backButton = new Rectangle();
+	/** The game speeds' names, {@link Settings#SLOW} to {@link Settings#FASTEST}. */
+	private static final String[] SPEEDS = { "Slow", "Medium", "Fast" };
 
 	/** One setting below the difficulty: its name, its value on a button, and what a tap on the row does. */
 	private static final class Row {
@@ -62,8 +64,7 @@ public class OptionsScreen extends BaseScreen {
 		final Settings s = game.settings();
 		// (both take effect from the next new game)
 		gameRows.add(new Row("Hand progression", () -> s.handOrder().label(), () -> s.setHandOrder(s.handOrder().flipped())));
-		gameRows.add(new Row("Game speed", () -> Settings.SPEEDS[s.speed()],
-				() -> s.setSpeed((s.speed() + 1) % Settings.SPEEDS.length)));
+		gameRows.add(new Row("Game speed", () -> SPEEDS[s.speed()], () -> s.setSpeed((s.speed() + 1) % SPEEDS.length)));
 		displayRows.add(Row.toggle("Music", s::music, () -> {
 			s.setMusic(!s.music());
 			game.audio().startMusic(); // starts or stops it to match
@@ -170,7 +171,7 @@ public class OptionsScreen extends BaseScreen {
 			text(l, Difficulty.values()[i].label, sx, y + 60, true);
 		}
 		BitmapFont n = ui(0.85f);
-		String note = Player.tableDescription(s.difficulty()); // (from the matchmaking odds)
+		String note = Wording.tableDescription(s.difficulty()); // (from the matchmaking odds)
 		glyphs.setText(n, note);
 		if (glyphs.width > rw - 48) { // keep it on one line inside the row
 			n = ui(0.85f * (rw - 48) / glyphs.width);

@@ -83,25 +83,6 @@ public final class Player {
 		return style.bot(level, rng);
 	}
 
-	/** Who you'll meet at this setting, in a line, from the odds (for the Options screen). */
-	public static String tableDescription(Difficulty setting) {
-		List<Difficulty> byChance = new ArrayList<Difficulty>(Arrays.asList(Difficulty.values()));
-		byChance.sort((x, y) -> Double.compare(setting.chanceOf(y), setting.chanceOf(x))); // (stable: ties keep level order)
-		StringBuilder sb = new StringBuilder("Mostly ").append(byChance.get(0).many);
-		for (Difficulty l : byChance.subList(1, byChance.size())) {
-			double p = setting.chanceOf(l);
-			if (p > 0) {
-				sb.append(p < 0.2 ? ", the odd " + l.oddOne : ", some " + l.many);
-			}
-		}
-		for (Difficulty l : Difficulty.values()) {
-			if (setting.chanceOf(l) == 0) {
-				sb.append("; never ").append(l.never);
-			}
-		}
-		return sb.append('.').toString();
-	}
-
 	/** The level a seat goes to, for r drawn evenly from 0 to 1, by the setting's odds. */
 	private static Difficulty pick(Difficulty setting, double r) {
 		Difficulty[] levels = Difficulty.values();

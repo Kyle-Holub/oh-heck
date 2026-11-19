@@ -86,13 +86,4 @@ public class PlayerTest {
 			}
 		}
 	}
-
-	@Test
-	public void theOptionsDescribeTheOddsTruly() {
-		assertEquals("Mostly easy-going players, some solid players; never an expert.",
-				Player.tableDescription(Difficulty.EASY));
-		assertEquals("Mostly solid players, some easy-going players, some experts.",
-				Player.tableDescription(Difficulty.NORMAL));
-		assertEquals("Mostly experts, some solid players; never a beginner.", Player.tableDescription(Difficulty.HARD));
-	}
 }

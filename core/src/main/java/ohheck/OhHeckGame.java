@@ -142,7 +142,7 @@ public class OhHeckGame extends Game implements GameHost {
 		}
 		assets = new Assets();
 		settings = new Settings();
-		records = new Records(settings, options.persist, options.stats);
+		records = new Records(settings.recordStore(), options.persist, options.stats);
 		audio = new Audio(settings);
 		post = new PostProcessor();
 		title = kept(new TitleScreen(this));

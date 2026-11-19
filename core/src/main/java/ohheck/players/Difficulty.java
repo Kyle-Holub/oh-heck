@@ -6,18 +6,16 @@ import java.util.function.Function;
 /**
  * A level of play. It's both how well a computer player plays (each player has one) and
  * the setting you choose in Options, which decides who you're likely to meet. Everything
- * that differs by level lives here, so a new level is one more constant.
+ * that differs by level in play lives here, so a new level is one more constant (and its words
+ * for the Options note in {@code Wording}).
  */
 public enum Difficulty {
 	/** Sensible, but makes mistakes. */
-	EASY("Easy", EasyBot::new, new double[] { 0.65, 0.35, 0 }, 0.6, 0.8,
-			"easy-going players", "easy-going player", "a beginner"),
+	EASY("Easy", EasyBot::new, new double[] { 0.65, 0.35, 0 }, 0.6, 0.8),
 	/** Plays like a decent human: counts cards, trumps in, sheds danger. */
-	NORMAL("Normal", rng -> new NormalBot(), new double[] { 0.25, 0.5, 0.25 }, 0.2, 0.6,
-			"solid players", "solid player", "a solid player"),
+	NORMAL("Normal", rng -> new NormalBot(), new double[] { 0.25, 0.5, 0.25 }, 0.2, 0.6),
 	/** Looks ahead through many possible deals, plays for points and spoils the leader. */
-	HARD("Hard", HardBot::new, new double[] { 0, 0.35, 0.65 }, 0.12, 0.4,
-			"experts", "expert", "an expert");
+	HARD("Hard", HardBot::new, new double[] { 0, 0.35, 0.65 }, 0.12, 0.4);
 
 	public final String label;
 	private final Function<Random, Bot> bot;
@@ -30,14 +28,8 @@ public enum Difficulty {
 	final double styleLean;
 	/** How often a playing habit wins out: a habit you can see, more so in weaker players. */
 	final double playHabit;
-	/** Players at this level, in the Options note: "some experts", "the odd expert", "never an expert". */
-	final String many, oddOne, never;
 
-	Difficulty(String label, Function<Random, Bot> bot, double[] seatOdds, double styleLean, double playHabit,
-			String many, String oddOne, String never) {
-		this.many = many;
-		this.oddOne = oddOne;
-		this.never = never;
+	Difficulty(String label, Function<Random, Bot> bot, double[] seatOdds, double styleLean, double playHabit) {
 		this.label = label;
 		this.bot = bot;
 		this.seatOdds = seatOdds;
