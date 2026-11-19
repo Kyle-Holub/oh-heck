@@ -105,29 +105,6 @@ final class Autoplay implements TableFlow.Listener {
 		if (s.isMenuOpen()) {
 			return "menu:" + hand;
 		}
-		switch (s.state()) {
-		case SHUFFLE:
-			return "shuffle:" + hand;
-		case DEAL:
-			return "deal:" + hand;
-		case TRICK: {
-			float t = s.stateTime();
-			return (t >= TrickView.TRICK_PAUSE ? "trickwon:"
-					: t > TrickView.TRICK_PAUSE - TrickView.COLLECT_TIME ? "collect:" : "trick:") + hand;
-		}
-		case TURN:
-			boolean yours = m.currentSeat() == TableLayout.HUMAN;
-			if (m.phase() == Match.Phase.BIDDING) {
-				return (yours ? "bid:" : "bidding:") + hand;
-			}
-			return yours ? (s.isDragging() ? "drag:" : "play:") + hand + ":" + m.currentTrick().size() : "playing:" + hand;
-		case HAND_END:
-			return "handend:" + hand;
-		case RESULTS:
-			return "handover:" + hand;
-		default:
-			// the final hand's cards thrown off the table, then the scores
-			return s.resultsShown() ? "gameover" : "tossing";
-		}
+		return StateView.of(s.state()).tag(s, hand);
 	}
 }

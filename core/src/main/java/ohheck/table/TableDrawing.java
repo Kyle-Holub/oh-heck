@@ -7,8 +7,9 @@ import java.util.List;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.MathUtils;
 
+import ohheck.anim.Ease;
+import ohheck.anim.Tween;
 import ohheck.fx.Glints;
 import ohheck.fx.Motes;
 import ohheck.rules.Card;
@@ -17,7 +18,6 @@ import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
-import ohheck.ui.Palette;
 import ohheck.ui.PostProcessor;
 import ohheck.ui.TapAreas;
 
@@ -32,6 +32,9 @@ final class TableDrawing {
 	/** The trump card's shadow lift; its warm glow, how long it takes to light, and its size against the card. */
 	private static final float TRUMP_LIFT = 4, TRUMP_GLOW_IN = 0.6f, TRUMP_GLOW_W = 1.9f, TRUMP_GLOW_H = 1.6f;
 	private static final Color TRUMP_GLOW = new Color(1f, 0.78f, 0.4f, 0.22f);
+	/** The trump card turns over once the deal is done, then its glow comes up. */
+	private static final Tween TRUMP_TURNING = Tween.over(TableFlow.TRUMP_FLIP_TIME, Ease.LINEAR),
+			TRUMP_LIGHTING = Tween.over(TRUMP_GLOW_IN, Ease.LINEAR).after(TableFlow.TRUMP_FLIP_TIME);
 	/** The tally's first mark: in from the left, down from the top. */
 	private static final float TALLY_X = 22, TALLY_DROP = 12;
 	/** Your cards' shadow lift, on top of how far a card is raised. */
@@ -94,9 +97,9 @@ final class TableDrawing {
 		}
 		float x = table.trumpX(), y = table.trumpY(), cw = table.trumpW(), ch = table.trumpH();
 		art.shadow(x, y, cw, ch, TRUMP_LIFT);
-		float p = flow.isDealing() ? 0 : MathUtils.clamp(flow.trumpTime() / TableFlow.TRUMP_FLIP_TIME, 0, 1);
+		float p = flow.isDealing() ? 0 : TRUMP_TURNING.progress(flow.trumpTime());
 		// face up, the trump is lit: a warm glow behind it, and the card itself brightened
-		float lit = MathUtils.clamp((flow.trumpTime() - TableFlow.TRUMP_FLIP_TIME) / TRUMP_GLOW_IN, 0, 1);
+		float lit = TRUMP_LIGHTING.progress(flow.trumpTime());
 		if (p >= 1 && lit > 0) {
 			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 			float gw = cw * TRUMP_GLOW_W, gh = ch * TRUMP_GLOW_H;
@@ -128,19 +131,10 @@ final class TableDrawing {
 		state.reset().named(s.name(seat)).score(m.score(seat)).turn(turn).dealer(m.dealer() == seat)
 				.bid(m.bid(seat)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
 		panel.draw(state, table.panelX(seat), table.panelTop(seat), s.time());
-		if (seat == HUMAN) {
-			return;
-		}
-		int total = m.hand(seat).size();
-		int n = flow.isDealing() ? flow.deal.dealtTo(seat) : total;
-		float y = table.fanOrigin(seat).y;
-		for (int i = 0; i < n; i++) {
-			batch.draw(assets.back(), table.fanCardX(seat, i, total), y, TableLayout.backW(), TableLayout.backH());
-		}
 	}
 
-	/** Your hand, sorted; lays out the screen's tap areas for it as it goes. */
-	void hand() {
+	/** Your hand, sorted, laid out, with a tap area for each card (CardSprites draws them). */
+	void layoutHand() {
 		TableFlow flow = s.flow();
 		Match m = s.match();
 		List<Card> order = s.handOrder();
@@ -152,38 +146,13 @@ final class TableDrawing {
 		if (n == 0) {
 			return;
 		}
-		int shown = flow.isDealing() ? flow.deal.dealtTo(HUMAN) : n;
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
 		table.layoutHand(n);
-		boolean myTurn = s.humanCanPlay();
-		List<Card> legal = myTurn ? m.legalPlays(HUMAN) : Collections.<Card>emptyList();
+		List<Card> legal = s.humanCanPlay() ? m.legalPlays(HUMAN) : Collections.<Card>emptyList();
 		for (int i = 0; i < n; i++) {
-			Card c = order.get(i);
-			boolean canPlay = legal.contains(c);
 			float x = table.handStart + i * table.handGap;
-			float y = TableLayout.HAND_Y + (canPlay ? TableLayout.LIFT : 0);
+			float y = TableLayout.HAND_Y + (legal.contains(order.get(i)) ? TableLayout.LIFT : 0);
 			s.handRects().get(i).set(x, y, i == n - 1 ? cw : table.handGap, ch);
-			if (i >= shown || (s.isDragging() && c == s.pressedCard())) {
-				continue;
-			}
-			art.shadow(x, y, cw, ch, y - TableLayout.HAND_Y + HAND_LIFT);
-			batch.setColor(myTurn && !canPlay ? Palette.CARD_DIM : Color.WHITE);
-			float flip = flow.isDealing() ? flow.deal.flipOfYourCard(i) : 1f;
-			art.flip(c, x, y, cw, ch, flip);
-			if (flip >= 1 && flow.trumpFaceUp() && c.suit() == m.trump()) {
-				Glints.draw(batch, assets.glow, c, x, y, cw, ch, i == n - 1 ? cw : table.handGap, 0, s.time(),
-						myTurn && !canPlay ? 0.5f : 1f);
-			}
-		}
-		batch.setColor(Color.WHITE);
-	}
-
-	/** The card you're dragging, under your finger at (x, y). */
-	void dragged(Card c, float x, float y) {
-		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
-		batch.draw(assets.face(c), x - cw / 2, y - ch / 2, cw, ch);
-		if (c.suit() == s.match().trump()) {
-			Glints.draw(batch, assets.glow, c, x - cw / 2, y - ch / 2, cw, ch, cw, 0, s.time(), 1f);
 		}
 	}
 

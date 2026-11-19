@@ -33,6 +33,9 @@ public final class Match {
 	/** A seat's bid before it has bid. */
 	public static final int NO_BID = -1;
 
+	/** The moves made so far (see {@link #moves}). */
+	private final List<Move> moves = new ArrayList<Move>();
+
 	private final Random rng;
 	private final RuleSet rules;
 
@@ -117,6 +120,7 @@ public final class Match {
 		if (!isLegalBid(bid)) {
 			throw new IllegalArgumentException("Seat " + seat + " may not bid " + bid);
 		}
+		moves.add(new Move.Bid(seat, bid));
 		bids[seat] = bid;
 		if (seat == dealer) {
 			phase = Phase.PLAYING;
@@ -130,6 +134,19 @@ public final class Match {
 	 * Play a card. Returns the seat that won the trick if this card completed
 	 * it, else -1. A completed trick stays visible through {@link #lastTrick()}.
 	 */
+	/** Makes a move (a bid or a card); returns the seat that won a trick it completed, else -1. */
+	public int apply(Move move) {
+		return move.applyTo(this);
+	}
+
+	/**
+	 * Every move made in this game since it was started (or loaded: the log isn't saved), in
+	 * order. Replayed onto a game dealt from the same seed, it reaches this position.
+	 */
+	public List<Move> moves() {
+		return Collections.unmodifiableList(moves);
+	}
+
 	public int playCard(int seat, Card card) {
 		requirePhase(Phase.PLAYING);
 		requireTurn(seat);
@@ -137,6 +154,7 @@ public final class Match {
 		if (!rules.isLegalPlay(hand, card, leadSuit())) {
 			throw new IllegalArgumentException("Seat " + seat + " may not play " + card);
 		}
+		moves.add(new Move.Play(seat, card));
 		hand.remove(card);
 		trick.add(card);
 		trickSeats.add(seat);

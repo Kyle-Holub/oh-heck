@@ -60,10 +60,31 @@ public final class Wording {
 		return made ? "Bid tricks!" : "Set!";
 	}
 
-	/** "1st", "2nd", "3rd", "4th"... (to 20th, which is as far as places go). */
+	/** "1st", "2nd", "3rd", "4th"... (made once each: places are drawn every frame). */
 	public static String ordinal(int n) {
-		return n + (n == 1 ? "st" : n == 2 ? "nd" : n == 3 ? "rd" : "th");
+		if (n >= 0 && n < ORDINALS.length) {
+			if (ORDINALS[n] == null) {
+				ORDINALS[n] = n + (n == 1 ? "st" : n == 2 ? "nd" : n == 3 ? "rd" : "th");
+			}
+			return ORDINALS[n];
+		}
+		return n + "th";
 	}
+
+	private static final String[] ORDINALS = new String[21];
+
+	/** "Hand 3 results" (made once each). */
+	public static String handResults(int hand) {
+		if (hand >= 0 && hand < HAND_RESULTS.length) {
+			if (HAND_RESULTS[hand] == null) {
+				HAND_RESULTS[hand] = "Hand " + hand + " results";
+			}
+			return HAND_RESULTS[hand];
+		}
+		return "Hand " + hand + " results";
+	}
+
+	private static final String[] HAND_RESULTS = new String[64];
 
 	/** "heart", "spade"... */
 	static String singular(Suit suit) {

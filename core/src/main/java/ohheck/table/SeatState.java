@@ -17,7 +17,7 @@ public final class SeatState {
 	boolean plain;
 
 	/** Back to an empty placard (for reuse each frame). */
-	SeatState reset() {
+	public SeatState reset() {
 		name = "";
 		score = won = 0;
 		bid = NO_BID;

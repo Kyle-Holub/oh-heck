@@ -1,4 +1,4 @@
-package ohheck.screens;
+package ohheck.anim;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

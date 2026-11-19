@@ -41,12 +41,15 @@ public class PlayersScreen extends BaseScreen {
 	}
 
 	@Override
-	public void render(float delta) {
-		float dt = Math.min(delta, 0.1f);
-		shownFor += dt * game.options().speed;
-		if (game.tour() != null && game.tour().step(this, shownFor)) {
-			return;
+	protected void update(float step) {
+		shownFor += step * game.options().speed;
+		if (game.tour() != null) {
+			game.tour().step(this, shownFor);
 		}
+	}
+
+	@Override
+	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
@@ -54,7 +57,7 @@ public class PlayersScreen extends BaseScreen {
 		float listW = Math.min(w - 60, 980), x = (w - listW) / 2;
 		float listTop = h - HEADER_H - COLUMNS_H - 8;
 		float content = Player.ALL.size() * (ROW_H + ROW_GAP);
-		scroller.update(dt, Gdx.input.isTouched(), content - listTop + 14);
+		scroller.update(frameDelta(), Gdx.input.isTouched(), content - listTop + 14);
 		layoutColumns(x, listW);
 		float y = listTop + scroller.offset();
 		for (Player p : Player.ALL) {

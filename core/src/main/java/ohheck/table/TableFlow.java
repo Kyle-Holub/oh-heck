@@ -4,12 +4,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import ohheck.players.Bot;
 import ohheck.players.Player;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Move;
+import ohheck.rules.TableView;
 
 /**
  * The card table's flow from the first shuffle to the final scores: which
@@ -64,6 +68,18 @@ final class TableFlow {
 	private float stateT;
 	/** Seconds since the deal finished, for the trump card turning over. */
 	private float trumpT;
+	/** This frame's time step, for the moment's own update. */
+	private float dt;
+
+	/** Where the computer players think; at once unless told otherwise. */
+	private Thinker thinker = Thinker.AT_ONCE;
+	/** The computer player's decision being worked out this turn (a bid or a card), or null. */
+	private Future<Move> thinking;
+
+	/** Lets the computer players think on the given thinker (in play: in the background). */
+	void thinkWith(Thinker t) {
+		thinker = t;
+	}
 
 	TableFlow(Listener... listeners) {
 		this.listeners = new ArrayList<Listener>(Arrays.asList(listeners));
@@ -87,6 +103,7 @@ final class TableFlow {
 
 	/** Starts a new game: shuffle and deal its first hand. */
 	void start(Match m) {
+		stopThinking();
 		match = m;
 		tell(l -> l.save(m));
 		startHand();
@@ -94,6 +111,7 @@ final class TableFlow {
 
 	/** Carries on a saved game where it was left, without replaying the deal. */
 	void resume(Match m) {
+		stopThinking();
 		match = m;
 		trumpT = TRUMP_FLIP_TIME;
 		enter(m.phase() == Match.Phase.HAND_OVER ? TableState.HAND_END : TableState.TURN);
@@ -119,7 +137,7 @@ final class TableFlow {
 	}
 
 	boolean isDealing() {
-		return state == TableState.SHUFFLE || state == TableState.DEAL;
+		return state.isDealing();
 	}
 
 	boolean trumpFaceUp() {
@@ -142,55 +160,19 @@ final class TableFlow {
 	// ---- time passing
 
 	void update(float dt) {
+		this.dt = dt;
 		stateT += dt;
 		if (!isDealing()) {
 			trumpT += dt;
 		}
-		switch (state) {
-		case SHUFFLE:
-		case DEAL:
-			if (deal.update(dt)) {
-				tell(Listener::shuffling);
-			}
-			if (deal.isDone()) {
-				enter(TableState.TURN);
-			} else if (state == TableState.SHUFFLE && !deal.isShuffling()) {
-				enter(TableState.DEAL);
-			}
-			break;
-		case TURN:
-			if (match.currentSeat() != HUMAN && stateT >= AI_DELAY) {
-				botMove(match.currentSeat());
-			}
-			break;
-		case TRICK:
-			if (stateT >= TrickView.showLength(match.lastTrickWinner() == HUMAN)) {
-				enter(match.phase() == Match.Phase.HAND_OVER ? TableState.HAND_END : TableState.TURN);
-			}
-			break;
-		case HAND_END:
-			if (stateT >= HAND_END_SHOW) {
-				enter(TableState.RESULTS);
-			}
-			break;
-		default:
-			break;
-		}
+		state.update(this);
 	}
 
 	// ---- your actions
 
 	/** Skips the shuffle and deal, or the hand-end message. Returns false if there was nothing to skip. */
 	boolean skip() {
-		if (isDealing()) {
-			enter(TableState.TURN);
-			return true;
-		}
-		if (state == TableState.HAND_END) {
-			enter(TableState.RESULTS);
-			return true;
-		}
-		return false;
+		return state.skip(this);
 	}
 
 	/** Your bid; false (and nothing happens) if it isn't your turn to bid or the bid isn't allowed. */
@@ -198,7 +180,7 @@ final class TableFlow {
 		if (!yourTurnToBid() || !match.isLegalBid(b)) {
 			return false;
 		}
-		placeBid(HUMAN, b);
+		make(new Move.Bid(HUMAN, b));
 		return true;
 	}
 
@@ -207,7 +189,7 @@ final class TableFlow {
 		if (!yourTurnToPlay() || !match.legalPlays(HUMAN).contains(c)) {
 			return false;
 		}
-		playCard(HUMAN, c);
+		make(new Move.Play(HUMAN, c));
 		return true;
 	}
 
@@ -239,34 +221,87 @@ final class TableFlow {
 		enter(TableState.SHUFFLE);
 	}
 
-	private void enter(TableState s) {
+	/** Drops a decision still being worked out (the table has moved on). */
+	private void stopThinking() {
+		if (thinking != null) {
+			thinking.cancel(false);
+			thinking = null;
+		}
+	}
+
+	/** Moves to another moment, its clock starting at zero. */
+	void enter(TableState s) {
 		state = s;
 		stateT = 0;
-		if (s == TableState.HAND_END) {
-			tell(l -> l.handEnded(match));
-		} else if (s == TableState.GAME_OVER) {
-			tell(l -> l.gameEnded(match));
+		stopThinking();
+		s.entered(this);
+	}
+
+	void tellHandEnded() {
+		tell(l -> l.handEnded(match));
+	}
+
+	void tellGameEnded() {
+		tell(l -> l.gameEnded(match));
+	}
+
+	/** The shuffle and deal playing out; on to the turn once the cards are down. */
+	void dealing() {
+		if (deal.update(dt)) {
+			tell(Listener::shuffling);
+		}
+		if (deal.isDone()) {
+			enter(TableState.TURN);
+		} else if (state == TableState.SHUFFLE && !deal.isShuffling()) {
+			enter(TableState.DEAL);
 		}
 	}
 
+	/** A computer player's turn: it thinks, then moves after its pause. */
+	void computerTurn() {
+		if (match.currentSeat() == HUMAN) {
+			return;
+		}
+		if (thinking == null) {
+			thinking = startThinking(match.currentSeat());
+		}
+		if (stateT >= AI_DELAY && thinking.isDone()) { // its usual pause, and the answer's ready
+			botMove(match.currentSeat());
+		}
+	}
+
+	/** Sets the seat's computer player thinking about its move, from a snapshot of the table. */
+	private Future<Move> startThinking(int seat) {
+		Bot bot = bots[seat];
+		TableView view = match.view(seat);
+		return thinker.think(() -> bot.chooseMove(view));
+	}
+
+	/** Plays the move the seat's computer player decided on. */
 	private void botMove(int seat) {
-		if (match.phase() == Match.Phase.BIDDING) {
-			placeBid(seat, bots[seat].chooseBid(match.view(seat)));
-		} else {
-			playCard(seat, bots[seat].choosePlay(match.view(seat)));
+		Move move;
+		try {
+			move = thinking.get();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return;
+		} catch (ExecutionException e) {
+			throw new IllegalStateException("A computer player failed to decide", e.getCause());
 		}
+		thinking = null;
+		make(move);
 	}
 
-	private void placeBid(int seat, int bid) {
-		match.placeBid(seat, bid);
-		tell(l -> l.save(match));
-		enter(TableState.TURN);
-	}
 
-	private void playCard(int seat, Card c) {
-		int winner = match.playCard(seat, c);
+	/** Makes a move (yours or a computer player's), saves, and moves the table on. */
+	private void make(Move move) {
+		int winner = match.apply(move);
 		tell(l -> l.save(match));
-		tell(l -> l.played(match, seat, c));
+		if (move instanceof Move.Play) {
+			Card c = ((Move.Play) move).card();
+			tell(l -> l.played(match, move.seat(), c));
+		}
 		enter(winner >= 0 ? TableState.TRICK : TableState.TURN);
 	}
+
 }

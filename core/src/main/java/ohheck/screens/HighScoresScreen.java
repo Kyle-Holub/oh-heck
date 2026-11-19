@@ -13,6 +13,7 @@ import ohheck.records.HighScores;
 import ohheck.records.Stats;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
+import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 import ohheck.ui.Wording;
 
@@ -36,6 +37,9 @@ public class HighScoresScreen extends BaseScreen {
 		showStats = true;
 	}
 	private int filter = Stats.ALL;
+	/** The statistics rows shown, and which totals they're for (-1: to be worked out). */
+	private String[][] games, hands;
+	private int rowsFor = -1;
 	/** Seconds left to tap Reset again to confirm, or 0. */
 	private float confirmReset;
 	private final Color highlight = new Color();
@@ -53,6 +57,7 @@ public class HighScoresScreen extends BaseScreen {
 
 	@Override
 	public void show() {
+		rowsFor = -1; // a game may have been played since
 		super.show();
 		list = game.records().highScores().entries(); // read once, not every frame
 		showStats = false;
@@ -60,13 +65,16 @@ public class HighScoresScreen extends BaseScreen {
 	}
 
 	@Override
-	public void render(float delta) {
-		float dt = Math.min(delta, 0.1f);
-		shownFor += dt * game.options().speed;
-		if (game.tour() != null && game.tour().step(this, shownFor)) {
-			return;
+	protected void update(float step) {
+		shownFor += step * game.options().speed;
+		confirmReset = Math.max(0, confirmReset - step);
+		if (game.tour() != null) {
+			game.tour().step(this, shownFor);
 		}
-		confirmReset = Math.max(0, confirmReset - dt);
+	}
+
+	@Override
+	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
@@ -144,11 +152,11 @@ public class HighScoresScreen extends BaseScreen {
 		float badge = SCORE_BADGE;
 		Color c = i == newest ? Palette.GOLD_LIGHT : i == 0 ? GOLD : Palette.CREAM;
 		f.setColor(c);
-		text(f, String.valueOf(i + 1), cols[0], y, true);
+		text(f, Numbers.text(i + 1), cols[0], y, true);
 		if (e.level() >= 0 && e.level() < assets.levelBadge.length) {
 			batch.draw(assets.levelBadge[e.level()], cols[1] - badge / 2, y - SCORE_BADGE_DROP, badge, badge);
 		}
-		text(f, String.valueOf(e.score()), cols[2], y, true);
+		text(f, Numbers.text(e.score()), cols[2], y, true);
 		f.setColor(e.place() == 1 ? GOLD : c);
 		text(f, e.place() == 1 ? "Won" : Wording.ordinal(e.place()), cols[3], y, true);
 		f.setColor(i == newest ? Palette.GOLD_LIGHT : Palette.MUTED);
@@ -190,7 +198,11 @@ public class HighScoresScreen extends BaseScreen {
 		}
 
 		Stats.Totals t = game.records().stats().totals(filter);
-		String[][] games = Wording.gameRows(t), hands = Wording.handRows(t);
+		if (rowsFor != filter) { // (worked out when the totals shown change, not every frame)
+			games = Wording.gameRows(t);
+			hands = Wording.handRows(t);
+			rowsFor = filter;
+		}
 		float top = fy - PANELS_BELOW_FILTERS, x0 = w / 2 - STATS_PANEL_W - STATS_GAP / 2;
 		statPanel("Games", games, x0, top);
 		statPanel("Hands", hands, x0 + STATS_PANEL_W + STATS_GAP, top);
@@ -233,6 +245,7 @@ public class HighScoresScreen extends BaseScreen {
 			if (resetButton.contains(x, y)) {
 				if (confirmReset > 0) {
 					game.records().resetStats();
+					rowsFor = -1;
 					confirmReset = 0;
 				} else {
 					confirmReset = RESET_CONFIRM_TIME;

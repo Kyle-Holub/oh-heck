@@ -3,10 +3,9 @@ package ohheck.table;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
-
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import org.junit.Test;
 
 /** Where things go on the table, at the two shapes it's seen in: 800 wide, and a stretched phone. */
 public class TableLayoutTest {

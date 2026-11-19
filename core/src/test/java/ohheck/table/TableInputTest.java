@@ -8,9 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.junit.Test;
-
 import com.badlogic.gdx.math.Rectangle;
+import org.junit.Test;
 
 import ohheck.rules.Card;
 import ohheck.rules.HandOrder;
@@ -93,6 +92,16 @@ public class TableInputTest {
 		@Override
 		public Card pressedCard() {
 			return input.pressed();
+		}
+
+		@Override
+		public float dragX() {
+			return input.dragX();
+		}
+
+		@Override
+		public float dragY() {
+			return input.dragY();
 		}
 
 		@Override

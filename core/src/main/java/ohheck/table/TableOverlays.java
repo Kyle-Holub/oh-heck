@@ -7,13 +7,15 @@ import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
+import ohheck.anim.Ease;
+import ohheck.anim.Tween;
 import ohheck.rules.Match;
 import ohheck.ui.CardArt;
+import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 import ohheck.ui.TapAreas;
@@ -51,6 +53,7 @@ final class TableOverlays {
 			BID_PANEL_MARGIN = 40, BID_NUMERAL_OF_BUTTON = 0.66f;
 	/** The hand's end: the art fades in over this long, at this scale; the tap note sits below centre. */
 	private static final float HAND_END_FADE = 0.3f, HAND_END_SCALE = 0.95f, TAP_NOTE_BELOW = 40;
+	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	/** "Bid tricks!"/"Set!" labels: yours big, then small beside your panel; the opponents' size; the shadow. */
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
@@ -181,7 +184,7 @@ final class TableOverlays {
 
 	/** "Bid Tricks!" or "You got set!", t seconds in, with how each opponent did. */
 	void drawHandEnd(float t) {
-		float a = MathUtils.clamp(t / HAND_END_FADE, 0, 1);
+		float a = HAND_END_IN.progress(t);
 		art.art(match.madeBid(TableLayout.HUMAN) ? paint.assets.bidTricksText : paint.assets.setText, table.centreX(),
 				table.centreY(), HAND_END_SCALE, a);
 		drawHandLabels(0f, a);
@@ -204,7 +207,7 @@ final class TableOverlays {
 			String s = Wording.handResult(made);
 			float scale, x, y, a = alpha;
 			if (seat == TableLayout.HUMAN) {
-				float p = Interpolation.pow2Out.apply(drop);
+				float p = Ease.OUT.apply(drop);
 				BitmapFont f = paint.serif(LABEL_BIG);
 				paint.glyphs.setText(f, s);
 				float sx = table.w / 2 - paint.glyphs.width / 2, sy = table.centreY() + paint.glyphs.height / 2;
@@ -238,7 +241,7 @@ final class TableOverlays {
 		paint.frame(paint.assets.panel, px, py, pw, ph);
 		BitmapFont f = paint.ui(1.3f);
 		f.setColor(Palette.CREAM);
-		paint.text(f, "Hand " + (match.handIndex() + 1) + " results", table.w / 2, py + ph - RESULTS_TITLE_DROP, true);
+		paint.text(f, Wording.handResults(match.handIndex() + 1), table.w / 2, py + ph - RESULTS_TITLE_DROP, true);
 
 		BitmapFont t = paint.ui(1.1f);
 		float[] cols = RESULT_COLS;
@@ -255,10 +258,10 @@ final class TableOverlays {
 			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
 			t.draw(paint.batch, scene.name(seat) + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
 			paint.numeral(match.bid(seat), px + cols[2] + RESULT_NUMERAL_X, y - RESULT_NUMERAL_Y, RESULT_NUMERAL_H, Color.WHITE);
-			t.draw(paint.batch, String.valueOf(match.tricksWon(seat)), px + cols[3], y);
-			t.draw(paint.batch, (pts > 0 ? "+" : "") + pts, px + cols[4], y);
+			t.draw(paint.batch, Numbers.text(match.tricksWon(seat)), px + cols[3], y);
+			t.draw(paint.batch, Numbers.signed(pts), px + cols[4], y);
 			t.setColor(place(seat) == 1 ? Palette.GOLD : Palette.CREAM);
-			t.draw(paint.batch, String.valueOf(match.score(seat)), px + cols[5], y);
+			t.draw(paint.batch, Numbers.text(match.score(seat)), px + cols[5], y);
 		}
 		BitmapFont s = paint.ui(1f);
 		s.setColor(Palette.GOLD);
@@ -277,12 +280,7 @@ final class TableOverlays {
 		paint.frame(paint.assets.panel, px, py, pw, ph);
 		art.art(paint.assets.gameOverText, table.w / 2, py + ph - GAME_OVER_ART_DROP, GAME_OVER_ART_SCALE, 1f);
 
-		List<Integer> leaders = match.leaders();
-		List<String> names = new ArrayList<String>();
-		for (int seat : leaders) {
-			names.add(scene.name(seat));
-		}
-		String result = Wording.winners(names, leaders.size() == 1 && leaders.get(0) == TableLayout.HUMAN);
+		String result = winnersLine();
 		BitmapFont f = paint.ui(1.5f);
 		f.setColor(Palette.GOLD);
 		paint.text(f, result, table.w / 2, py + ph - GAME_OVER_RESULT_DROP, true);
@@ -294,7 +292,7 @@ final class TableOverlays {
 			t.draw(paint.batch, Wording.ordinal(place(s)), px + GAME_OVER_PLACE_X, y);
 			t.setColor(place(s) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, scene.name(s), px + GAME_OVER_NAME_X, y);
-			paint.text(t, String.valueOf(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
+			paint.text(t, Numbers.text(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
 			if (s == TableLayout.HUMAN && newHighScore == 0) { // only a score that tops the table
 				BitmapFont n = paint.ui(0.95f);
 				n.setColor(Palette.GOLD_LIGHT);
@@ -306,6 +304,23 @@ final class TableOverlays {
 		paint.button(playAgainButton, "Play again", table.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
 		paint.button(highScoresButton, "High scores", table.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
 	}
+
+	/** "You win the game!" and the like: worked out once per finished game, not every frame. */
+	private String winnersLine() {
+		if (winners == null || winnersOf != match) {
+			List<Integer> leaders = match.leaders();
+			List<String> names = new ArrayList<String>();
+			for (int seat : leaders) {
+				names.add(scene.name(seat));
+			}
+			winners = Wording.winners(names, leaders.size() == 1 && leaders.get(0) == TableLayout.HUMAN);
+			winnersOf = match;
+		}
+		return winners;
+	}
+
+	private String winners;
+	private Match winnersOf;
 
 	// ---- standings
 

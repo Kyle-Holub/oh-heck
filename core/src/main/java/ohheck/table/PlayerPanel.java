@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 
 import ohheck.ui.Assets;
+import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
@@ -72,7 +73,7 @@ public final class PlayerPanel {
 			paint.batch.draw(paint.assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
 		}
 		f.setColor(waiting && !seat.turn ? WAIT_SCORE : Palette.GOLD);
-		paint.text(f, String.valueOf(seat.score), x + W - 10, top - 9, false);
+		paint.text(f, Numbers.text(seat.score), x + W - 10, top - 9, false);
 	}
 
 	/** Yet to bid: dim while waiting their turn, pulsing while they decide. */
