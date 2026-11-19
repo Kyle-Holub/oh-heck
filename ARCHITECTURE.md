@@ -191,9 +191,31 @@ screenshot run).
 | Workflow | When | What |
 |---|---|---|
 | `tests.yml` | every push | rules and table tests, and the desktop build |
-| `preview.yml` | `feature/**`, `refactor/**` | the screenshot run, put on a private draft release `preview-N` (newest three kept) |
+| `preview.yml` | `feature/**`, `refactor/**` | the screenshot run, compared with the newest dev build's, put on a private draft release `preview-N` (newest three kept) with `compare.txt`, before/after pictures of changed shots and `phone-view.png` |
 | `android.yml` | `develop/**` | signed APK published as pre-release `dev-NNNN` (Obtainium picks these up; newest three per branch kept), then the desktop jar and screenshots attached |
 | `arena.yml` | by hand only | arena experiments, deliberately kept off the build |
+
+## Developer tools (`tools/dev`, `.claude`)
+
+Scripts that check a change without Gradle (they fetch libGDX from the newest dev build's
+desktop jar into `build/dev`, and find JUnit in a Gradle install or cache):
+
+- `test.sh` compiles everything and runs the tests (`all` adds BotTest; a word runs only
+  the matching test classes).
+- `arena.sh [ref] [quick]` runs the seeded arena on this tree and on `ref` (develop's newest
+  by default) and diffs them: identical unless the bots changed.
+- `shots.py` fetches screenshots, compares two runs, and makes the phone view. Each shot is
+  `same`, `random` (differs only where the run is random: sparkles, fireworks, the title
+  shower, the motes round the trump card) or `CHANGED`. `review [branch]` does it all for a
+  branch's newest preview against the newest dev build. The phone view shows the table
+  shots at the size a phone shows them, for checking that things can be seen.
+- `imports.py` tidies imports.
+- `hooks/merge_gate.sh` is a Claude Code hook (`.claude/settings.json`): a `git merge` into
+  `develop/` or `main` is blocked unless the branch passes its tests and its preview's
+  `compare.txt` shows nothing `CHANGED`, or the merge message says `[shots-reviewed]`.
+
+`.claude/skills` holds two skills: `verify` (which checks fit a change) and `ship` (branch
+to published dev build).
 
 ## Branches and releases
 
