@@ -16,32 +16,24 @@ import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
-/**
- * The tutorial's thirteen scenes, each a few seconds at the table drawn from the scene's
- * clock (see {@link TutorialStage} for what they're drawn with). {@link TutorialScreen}
- * lists them in order with their captions.
- */
+/* The tutorial's scenes, drawn from the scene's clock. */
 final class TutorialScenes extends TutorialStage {
 
-	// the scenes' sentences, made once
 	private static final String BIDS_LINE = LEFT + " bid 1.  " + RIGHT + " bid 1.";
 	private static final String MADE_LINE = "You bid 2 and won 2: made it. " + Rules.MADE + " + " + Rules.PER_TRICK_BID + " + "
 			+ Rules.PER_TRICK_BID + " = " + Rules.score(2, 2) + " points";
 	private static final String SET_LINE = RIGHT + " bid 1 and won 2: one trick over, so " + Rules.score(1, 2);
-	/** "Hand 2: 2 cards each", by hand. */
 	private static final String[] DEAL_LINES = { "", "Hand 1: 1 card each", "Hand 2: 2 cards each", "Hand 3: 3 cards each" };
 
 	TutorialScenes(Painter paint, Settings settings) {
 		super(paint, settings);
 	}
 
-	// ---- 1. welcome: the title, and the four aces fanned out beneath it, sparkling
-
 	private static final Suit[] ACE_SUITS = { Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES };
 
 	void welcome() {
 		art.art(assets.titleText, cx(), cy() + 70, 0.62f, at(0, 0.8f));
-		float open = at(0.9f, 1.9f), sway = MathUtils.sin(clock.shown() * 1.1f) * 2f; // a slow breath once open
+		float open = at(0.9f, 1.9f), sway = MathUtils.sin(clock.shown() * 1.1f) * 2f;
 		float pivotX = cx(), pivotY = cy() - CH - 30;
 		for (int i = 0; i < 4; i++) {
 			float k = at(0.7f + i * 0.08f, 1.2f + i * 0.08f);
@@ -49,7 +41,6 @@ final class TutorialScenes extends TutorialStage {
 				continue;
 			}
 			float rot = (i - 1.5f) * -21f * open + sway * open;
-			// each card turned about a point below the fan, so they spread like a hand of cards
 			float rx = MathUtils.sinDeg(-rot) * (CH + 10), ry = MathUtils.cosDeg(rot) * (CH + 10);
 			float x = pivotX + rx - CW / 2, y = pivotY + ry - CH / 2 + (1 - k) * -40;
 			Card c = card(Rank.ACE, ACE_SUITS[i]);
@@ -65,8 +56,6 @@ final class TutorialScenes extends TutorialStage {
 			sparks.burst(cx(), cy() - 20, 60);
 		}
 	}
-
-	// ---- 2. the ranks: a suit fanned out, Ace to 2, a shimmer running down it
 
 	private static final Rank[] HIGH_TO_LOW = { Rank.ACE, Rank.KING, Rank.QUEEN, Rank.JACK, Rank.TEN, Rank.NINE,
 			Rank.EIGHT, Rank.SEVEN, Rank.SIX, Rank.FIVE, Rank.FOUR, Rank.THREE, Rank.TWO };
@@ -85,10 +74,8 @@ final class TutorialScenes extends TutorialStage {
 		label("LOWEST", x0 + 12 * step + CW / 2, y + CH + 26, at(1.4f, 1.8f));
 	}
 
-	// ---- 3. a trick: three hearts in, one by one into a row; the King wins; the trick goes to Oswald
-
 	void aTrick() {
-		int[] order = { 1, 3, 0 }; // who plays, in turn
+		int[] order = { 1, 3, 0 };
 		Card[] cards = { card(Rank.SEVEN, Suit.HEARTS), card(Rank.KING, Suit.HEARTS), card(Rank.NINE, Suit.HEARTS) };
 		boolean taken = t >= 3.4f;
 		seat(0, plain());
@@ -110,8 +97,6 @@ final class TutorialScenes extends TutorialStage {
 			}
 		}
 	}
-
-	// ---- 4. follow suit: a heart is led; your heart is the only card you may play
 
 	void followSuit() {
 		Card led = card(Rank.TEN, Suit.HEARTS);
@@ -136,8 +121,6 @@ final class TutorialScenes extends TutorialStage {
 		}
 	}
 
-	// ---- 5. can't follow: Oswald leads a diamond, you have none, your King of clubs can't win
-
 	void cantFollow() {
 		Card led = card(Rank.JACK, Suit.DIAMONDS);
 		Card[] hand = { card(Rank.SIX, Suit.HEARTS), card(Rank.KING, Suit.CLUBS), card(Rank.FIVE, Suit.SPADES) };
@@ -156,17 +139,15 @@ final class TutorialScenes extends TutorialStage {
 			}
 		}
 		flying(card(Rank.NINE, Suit.DIAMONDS), fromX(1), fromY(1), rowX(2, 3), y, 2.3f, 2.7f, 1, 1);
-		if (t >= 3.0f) { // the Jack, the highest diamond, wins
+		if (t >= 3.0f) {
 			glow(rowX(0, 3), y, at(3.0f, 3.3f));
 			card(led, rowX(0, 3), y, 2, 1, 1);
 		}
 	}
 
-	// ---- 6. trump: the turned-up card says spades; a lowly 2 of spades beats the Ace of diamonds
-
 	void trump() {
 		Card trumpCard = card(Rank.FIVE, Suit.SPADES);
-		float tx = cx() + CW * 2.2f, ty = rowY(false) + CH + 30; // up and to the right, as at the table
+		float tx = cx() + CW * 2.2f, ty = rowY(false) + CH + 30;
 		float p = at(0.3f, 0.9f);
 		float lit = at(0.9f, 1.5f);
 		glow(tx, ty, lit * 0.8f);
@@ -199,8 +180,6 @@ final class TutorialScenes extends TutorialStage {
 		}
 	}
 
-	// ---- 7. the deal: 1 card each, then 2, then 3 ... up to 8 (two players, for room)
-
 	private static final float DEAL_SCALE = 0.8f;
 
 	void theDeal() {
@@ -210,7 +189,6 @@ final class TutorialScenes extends TutorialStage {
 		art.stack(deckX + CW / 2, deckY + CH / 2, 12, CW, CH, 0);
 		panel.draw(plain().named(RIGHT), seatX(1), seatTop(1), clock.shown());
 		seat(0, plain().dealer(true));
-		// each player's cards in a row beside their panel
 		float[] rowYs = { seatTop(0) - PlayerPanel.H / 2 - dh / 2, seatTop(1) - PlayerPanel.H / 2 - dh / 2 };
 		for (int round = 0; round < 3; round++) {
 			int n = round + 1;
@@ -218,11 +196,10 @@ final class TutorialScenes extends TutorialStage {
 			if (t < a || t >= end) {
 				continue;
 			}
-			BitmapFont f = paint.serif(1.6f);
-			f.setColor(Palette.GOLD.r, Palette.GOLD.g, Palette.GOLD.b, at(a, a + 0.3f) * (1 - at(5.0f, 5.3f)));
+			BitmapFont f = paint.serif(1.6f, Palette.GOLD, at(a, a + 0.3f) * (1 - at(5.0f, 5.3f)));
 			paint.centred(f, DEAL_LINES[n], cx(), h - 70);
 			for (int k = 0; k < n * 2; k++) {
-				int who = k % 2, j = k / 2; // you first (left of the dealer), then Oswald
+				int who = k % 2, j = k / 2;
 				float ka = a + k * 0.12f;
 				if (t < ka) {
 					break;
@@ -234,12 +211,9 @@ final class TutorialScenes extends TutorialStage {
 				batch.draw(assets.back(), x, y, dw, dh);
 			}
 		}
-		BitmapFont f = paint.serif(1.6f);
-		f.setColor(Palette.GOLD.r, Palette.GOLD.g, Palette.GOLD.b, at(5.2f, 5.6f));
+		BitmapFont f = paint.serif(1.6f, Palette.GOLD, at(5.2f, 5.6f));
 		paint.centred(f, "\u2026 and so on, up to " + HANDS, cx(), h - 70);
 	}
-
-	// ---- the bid panel, as at the table: 0..n, one picked, some barred
 
 	void bidPanel(float x, float y, int n, int picked, int barred, float alpha) {
 		if (alpha <= 0) {
@@ -265,8 +239,6 @@ final class TutorialScenes extends TutorialStage {
 
 	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
 
-	// ---- 8. bidding: count your winners (the trump Ace, the King), bid 2; then the others bid
-
 	void bidding() {
 		Card[] hand = { card(Rank.ACE, Suit.SPADES), card(Rank.KING, Suit.HEARTS), card(Rank.FOUR, Suit.CLUBS) };
 		int[] seats = { 0, 1, 3 }, bids = { 2, 1, 0 };
@@ -275,24 +247,20 @@ final class TutorialScenes extends TutorialStage {
 			boolean bid = t >= when[i];
 			seat(seats[i], (bid ? bidOf(bids[i]) : waiting()).turn(i == 0 && !bid).cards(3));
 		}
-		// counting: the Ace (1), then the King (2), with a note to read; then the bid panel; then the bids
 		float counting = 1 - at(4.0f, 4.3f);
 		for (int i = 0; i < 3; i++) {
 			float x = handX(i, 3), y = handY();
 			float g = i < 2 ? at(0.5f + i * 1.0f, 0.9f + i * 1.0f) * counting : 0;
 			glow(x, y, g);
 			card(hand[i], x, y, 2, i == 2 ? 1 - 0.4f * at(0.5f, 0.9f) * counting : 1, 1);
-			if (i < 2 && g > 0) { // counting them: 1, 2
+			if (i < 2 && g > 0) {
 				paint.numeral(i + 1, x + CW / 2, y + CH + 22, 30, tint.set(1, 1, 1, g));
 			}
 		}
-		BitmapFont f = paint.ui(1.05f);
-		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(1.8f, 2.2f)); // stays up
+		BitmapFont f = paint.ui(1.05f, Palette.GOLD_LIGHT, at(1.8f, 2.2f));
 		f.draw(batch, "The Ace of trumps and a King:\ntwo likely winners, so bid 2", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
 		bidPanel(cx(), handY() + CH + 12, 3, t >= 5.2f ? 2 : -1, -1, at(4.4f, 4.8f) * (1 - at(6.2f, 6.4f)));
 	}
-
-	// ---- 9. bidding zero: a low hand bids nothing, and lets the trick go by (Oswald takes it)
 
 	void biddingZero() {
 		Card[] hand = { card(Rank.TWO, Suit.DIAMONDS), card(Rank.THREE, Suit.CLUBS), card(Rank.FOUR, Suit.HEARTS) };
@@ -300,13 +268,12 @@ final class TutorialScenes extends TutorialStage {
 		seat(0, (t >= 0.4f ? bidOf(0) : waiting()).turn(t >= 3.4f).cards(3));
 		seat(1, plain().cards(3));
 		seat(3, (taken ? bidOf(1).won(1) : plain()).cards(3));
-		// the trick, in a row: Rupert leads, Oswald, then you
 		Card[] played = { card(Rank.NINE, Suit.CLUBS), card(Rank.QUEEN, Suit.CLUBS), card(Rank.THREE, Suit.CLUBS) };
 		float[] when = { 1.0f, 1.4f, 1.8f };
 		float y = rowY(true), gone = at(2.4f, 3.0f);
 		for (int i = 0; i < 3; i++) {
 			if (i == 1 && t >= when[2]) {
-				continue; // your 3 of clubs, played
+				continue;
 			}
 			card(hand[i], handX(i, 3), handY(), 2, 1, 1);
 		}
@@ -323,30 +290,23 @@ final class TutorialScenes extends TutorialStage {
 		label("NO TRICKS TAKEN: BID MADE", seatX(0) + PlayerPanel.W / 2, seatTop(0) + 22, at(3.4f, 3.8f));
 	}
 
-	// ---- 10. the dealer's hook: 3 tricks, 2 bid so far; you, the dealer, can't bid 1
-
 	void dealersHook() {
 		seat(1, (t >= 0.3f ? bidOf(1) : waiting()).cards(3));
 		seat(3, (t >= 0.8f ? bidOf(1) : waiting()).cards(3));
 		seat(0, waiting().turn(true).dealer(true).cards(3));
 		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
-		BitmapFont f = paint.ui(1.15f);
-		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
+		BitmapFont f = paint.ui(1.15f, Palette.CREAM, at(2.4f, 2.8f));
 		paint.centred(f, BIDS_LINE, cx(), cy() - 46);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(3.2f, 3.6f));
 		paint.centred(f, "The total of the bids can't be 3, so you can't bid 1.", cx(), cy() - 74);
 	}
 
-	// ---- 11. the counters: the tally fills to the 4th hand; the tracker fills as bids come in, then a red one
-
 	void counters() {
 		float scale = 1.6f, left = cx() - 250, top = h - 80;
 		int done = clock.count(0.5f, 1.0f, 1.5f);
 		counterArt.tally(left, top, Rules.numberOfHands(), done, Counters.pulse(clock.shown()), scale);
-		BitmapFont f = paint.ui(1.05f);
-		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(1.6f, 2.0f));
+		BitmapFont f = paint.ui(1.05f, Palette.CREAM, at(1.6f, 2.0f));
 		f.draw(batch, "Hands: three played, the 4th glowing (of 8)", left + 150 * scale, top - 12);
-		// a hand of 4 tricks: the bids come in, 1 + 2 + 1, then 1 more: one too many
 		int[] totals = { 0, 1, 3, 4, 5 };
 		float[] when = { 0, 3.4f, 4.2f, 5.0f, 5.8f };
 		int total = totals[clock.count(when) - 1];
@@ -363,8 +323,6 @@ final class TutorialScenes extends TutorialStage {
 		}
 	}
 
-	// ---- 12. scoring: your bid of 2 made (+14); Oswald one over his bid of 1, set (-5)
-
 	void scoring() {
 		int mine = clock.count(0.8f, 1.6f), his = clock.count(4.8f, 5.6f);
 		seat(0, bidOf(2).won(mine).score(t >= 2.2f ? Rules.score(2, 2) : 0).cards(3));
@@ -380,14 +338,11 @@ final class TutorialScenes extends TutorialStage {
 			art.art(assets.setText, hx, seatTop(3) - PlayerPanel.H - 34, 0.5f, at(6.2f, 6.5f));
 		}
 		floating(Numbers.text(Rules.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
-		BitmapFont f = paint.ui(1.1f);
-		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(2.4f, 2.8f));
+		BitmapFont f = paint.ui(1.1f, Palette.CREAM, at(2.4f, 2.8f));
 		paint.centred(f, MADE_LINE, cx(), cy() + 36);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(6.6f, 7.0f));
 		paint.centred(f, SET_LINE, cx(), cy() - 4);
 	}
-
-	// ---- 13. ready: the title (eased in once and kept), a few fireworks
 
 	void ready() {
 		if (passed(0.3f) && settings.effects()) {

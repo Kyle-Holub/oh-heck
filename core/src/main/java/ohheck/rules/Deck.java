@@ -5,14 +5,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
- * A standard 52-card deck, dealt from the top.
- */
 public final class Deck {
 
 	private final List<Card> cards = new ArrayList<Card>(Card.COUNT);
 
-	/** A deck in suit-then-rank order, unshuffled. */
 	public Deck() {
 		for (Suit s : Suit.values()) {
 			for (Rank r : Rank.values()) {
@@ -21,7 +17,6 @@ public final class Deck {
 		}
 	}
 
-	/** A shuffled deck. Pass a seeded Random for repeatable deals. */
 	public static Deck shuffled(Random rng) {
 		Deck d = new Deck();
 		Collections.shuffle(d.cards, rng);

@@ -1,6 +1,6 @@
 package ohheck.ui;
 
-/** A screen that can describe itself for automated screenshots ("options", "bid:3"...). */
+/* A screen that names its state for the screenshot run. */
 public interface Tagged {
 	String stateTag();
 }

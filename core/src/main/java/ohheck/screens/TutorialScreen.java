@@ -10,14 +10,9 @@ import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 
-/**
- * How to play, as a tutorial: thirteen short steps, each a little scene at the table that
- * plays out and then loops, with a caption beneath. A tap moves on. It opens the first
- * time you start a game (with Skip), and from Options (with Back).
- */
+/* How to play: a step per scene, each with a caption; a tap moves on. */
 public class TutorialScreen extends BaseScreen implements TourStop {
 
-	/** A step: its heading, caption, its scene, how long that runs, and whether it then plays again. */
 	private static final class Step {
 		final String heading, caption;
 		final Runnable scene;
@@ -40,10 +35,8 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 	private static final String HANDS = TutorialStage.HANDS;
 	private static final float CAPTION_H = TutorialStage.CAPTION_H;
 
-	/** The scenes, and what they're drawn with. */
 	private final TutorialScenes scenes = new TutorialScenes(paint, game.settings());
 
-	/** The steps in order: to add one, write its scene in TutorialScenes and list it here. */
 	private final Step[] steps = {
 			new Step("Welcome", "Oh Heck is about calling your shots: guess how many tricks you'll win, then win exactly that many.",
 					scenes::welcome, 4f, false),
@@ -68,11 +61,9 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 					scenes::scoring, 9f),
 			new Step("Ready", "Highest total after " + HANDS + " hands wins. Good luck!", scenes::ready, 5f, false) };
 
-	/** After a step's scene has run, it holds this long before playing again. */
 	private static final float HOLD = 1.6f;
 
 	private final Rectangle cornerButton = new Rectangle(), doneButton = new Rectangle();
-	/** Opened before your first game (Skip, then the game) or from Options (Back). */
 	private boolean firstRun;
 	private int step;
 	private final StringBuilder sb = new StringBuilder();
@@ -81,7 +72,6 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		super(game);
 	}
 
-	/** Starts from the first step; firstRun if it's before your first game. */
 	public void open(boolean firstRun) {
 		this.firstRun = firstRun;
 		step = 0;
@@ -93,7 +83,7 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		float dt = step * game.options().speed;
 		shownFor += dt;
 		Step s = steps[this.step];
-		scenes.advance(dt, s.length, s.loops, HOLD); // (the first and last play once)
+		scenes.advance(dt, s.length, s.loops, HOLD);
 	}
 
 	@Override
@@ -110,7 +100,6 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		batch.end();
 	}
 
-	/** The tour times each step by its own clock. */
 	@Override
 	protected float tourClock() {
 		return scenes.clock.shown();
@@ -153,7 +142,7 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 	protected void tap(float x, float y) {
 		if (cornerButton.contains(x, y)) {
 			if (firstRun) {
-				finish(); // skip: straight to the game
+				finish();
 			} else {
 				game.back();
 			}
@@ -176,11 +165,8 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		return "tutorial:" + (step + 1);
 	}
 
-	// ------------------------------------------------------------ frame
-
 	private void header() {
-		BitmapFont f = paint.serif(1.3f);
-		f.setColor(Palette.GOLD);
+		BitmapFont f = paint.serif(1.3f, Palette.GOLD);
 		f.draw(batch, "How to play", 22, h - 18);
 		paint.button(cornerButton, firstRun ? "Skip tutorial" : "Back", w - 110, h - 52, 190, 40, assets.buttonAlt);
 	}
@@ -188,14 +174,11 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 	private void caption(Step s) {
 		float cw = Math.min(w - 60, 860), x = (w - cw) / 2, y = 12;
 		paint.frame(assets.panel, x, y, cw, CAPTION_H);
-		BitmapFont hd = paint.serif(1.35f);
-		hd.setColor(Palette.GOLD);
+		BitmapFont hd = paint.serif(1.35f, Palette.GOLD);
 		hd.draw(batch, s.heading, x + 22, y + CAPTION_H - 12);
-		BitmapFont c = paint.ui(1.1f);
-		c.setColor(Palette.CREAM);
+		BitmapFont c = paint.ui(1.1f, Palette.CREAM);
 		c.draw(batch, s.caption, x + 22, y + CAPTION_H - 44, cw - 44, Align.left, true);
-		BitmapFont m = paint.ui(0.9f);
-		m.setColor(Palette.MUTED);
+		BitmapFont m = paint.ui(0.9f, Palette.MUTED);
 		sb.setLength(0);
 		sb.append(step + 1).append(" / ").append(steps.length);
 		paint.text(m, sb.toString(), x + cw - 20, y + CAPTION_H - 14, false);

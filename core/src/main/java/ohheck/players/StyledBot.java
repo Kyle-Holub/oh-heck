@@ -5,33 +5,41 @@ import java.util.Random;
 import ohheck.rules.Card;
 import ohheck.rules.TableView;
 
-/**
- * A computer player with a habit: it asks its level's bot for a bid or a card, then leans
- * it the way its {@link Style} goes, some of the time (experts less often, see
- * {@link Difficulty}). A bid habit carries through the hand, since the bot then plays to
- * make whatever was bid. The habits themselves are written in {@link Style}.
- */
+/* Applies a Style to a level's bot. */
 final class StyledBot implements Bot {
 
 	private final Bot bot;
 	private final Style style;
-	/** How often a bidding habit wins out over the cards, and a playing one. */
-	final double lean, habit;
-	final Random rng;
-	/** Our score when we last bid, and in which hand (-1 before our first bid): for habits with memory. */
-	int scoreAtLastBid, lastBidHand = -1;
+	private final double bidLean, playLean;
+	private final Random rng;
+	private int scoreAtLastBid, lastBidHand = -1;
 
 	StyledBot(Bot bot, Style style, Difficulty level, Random rng) {
 		this.bot = bot;
 		this.style = style;
-		this.lean = level.styleLean;
-		this.habit = level.playHabit;
+		this.bidLean = level.bidLean;
+		this.playLean = level.playLean;
 		this.rng = rng;
 	}
 
-	/** Whether the bidding habit wins out this time. */
 	boolean leans() {
-		return rng.nextDouble() < lean;
+		return leans(1);
+	}
+
+	boolean leans(double strength) {
+		return rng.nextDouble() < bidLean * strength;
+	}
+
+	boolean coinFlip() {
+		return rng.nextBoolean();
+	}
+
+	boolean hasBidBeforeThisHand(TableView v) {
+		return lastBidHand >= 0 && lastBidHand < v.handIndex();
+	}
+
+	boolean scoreRoseSinceLastBid(TableView v) {
+		return v.score(v.seat()) > scoreAtLastBid;
 	}
 
 	@Override
@@ -46,7 +54,7 @@ final class StyledBot implements Bot {
 	@Override
 	public Card choosePlay(TableView v) {
 		Card card = bot.choosePlay(v);
-		if (rng.nextDouble() >= habit) {
+		if (rng.nextDouble() >= playLean) {
 			return card;
 		}
 		return style.play(card, v, v.legalPlays());

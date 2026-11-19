@@ -9,14 +9,13 @@ import ohheck.players.Seating;
 import ohheck.records.Records;
 import ohheck.records.SavedGame;
 
-/**
- * Where {@link Records} keeps your statistics, high scores and the game in progress on the
- * device: the same preferences as {@link Settings}, under keys of their own.
+/*
+ * Records.Store on the device's preferences, including the keys older builds saved the game
+ * under.
  */
 final class RecordPrefs implements Records.Store {
 
 	private static final String STATS = "stats", HIGH_SCORES = "highScores", SAVED_GAME = "savedGame";
-	/** Saves from before the table travelled with the game kept its difficulty and players apart. */
 	private static final String LEGACY_SAVED_LEVEL = "savedGameDifficulty", LEGACY_SAVED_PLAYERS = "savedGamePlayers";
 
 	private final Preferences prefs;
@@ -25,7 +24,6 @@ final class RecordPrefs implements Records.Store {
 		this.prefs = prefs;
 	}
 
-	/** Your statistics, as {@code Stats.encode()} wrote them ("" for none yet). */
 	@Override
 	public String stats() {
 		return prefs.getString(STATS, "");
@@ -36,7 +34,6 @@ final class RecordPrefs implements Records.Store {
 		prefs.putString(STATS, encoded).flush();
 	}
 
-	/** Your best finished games, as {@code HighScores.encode()} writes them. */
 	@Override
 	public String highScores() {
 		return prefs.getString(HIGH_SCORES, "");
@@ -52,11 +49,6 @@ final class RecordPrefs implements Records.Store {
 		return !prefs.getString(SAVED_GAME, "").isEmpty();
 	}
 
-	/**
-	 * The game in progress, or null if none is saved. Throws IllegalArgumentException if it
-	 * can't be read. (Older saves' difficulty and players are read from their own keys as a
-	 * fallback.)
-	 */
 	@Override
 	public SavedGame savedGame(Random rng) {
 		String s = prefs.getString(SAVED_GAME, "");
@@ -68,16 +60,14 @@ final class RecordPrefs implements Records.Store {
 		return SavedGame.decode(s, rng, legacyLevel, legacyPlayers.isEmpty() ? null : Seating.parse(legacyPlayers));
 	}
 
-	/** Saves the game in progress (with its difficulty and table) as one piece of text. */
 	@Override
 	public void saveGame(SavedGame game) {
 		prefs.putString(SAVED_GAME, game.encode());
-		prefs.remove(LEGACY_SAVED_LEVEL); // (now part of the save)
+		prefs.remove(LEGACY_SAVED_LEVEL);
 		prefs.remove(LEGACY_SAVED_PLAYERS);
 		prefs.flush();
 	}
 
-	/** Forgets the saved game (finished, or unreadable). */
 	@Override
 	public void clearSavedGame() {
 		prefs.remove(SAVED_GAME);

@@ -3,59 +3,48 @@ package ohheck.players;
 import java.util.Random;
 import java.util.function.Function;
 
-/**
- * A level of play. It's both how well a computer player plays (each player has one) and
- * the setting you choose in Options, which decides who you're likely to meet. Everything
- * that differs by level in play lives here, so a new level is one more constant (and its words
- * for the Options note in {@code Wording}).
+/*
+ * A level of play: a player's skill, and as the Options setting, the odds of meeting each
+ * level. A new level is one more constant.
  */
 public enum Difficulty {
-	/** Sensible, but makes mistakes. */
-	EASY("Easy", EasyBot::new, new double[] { 0.65, 0.35, 0 }, 0.6, 0.8),
-	/** Plays like a decent human: counts cards, trumps in, sheds danger. */
-	NORMAL("Normal", rng -> new NormalBot(), new double[] { 0.25, 0.5, 0.25 }, 0.2, 0.6),
-	/** Looks ahead through many possible deals, plays for points and spoils the leader. */
-	HARD("Hard", HardBot::new, new double[] { 0, 0.35, 0.65 }, 0.12, 0.4);
+	EASY("Easy", EasyBot::new, meets(0.65, 0.35, 0), leans(0.6, 0.8)),
+	NORMAL("Normal", rng -> new NormalBot(), meets(0.25, 0.5, 0.25), leans(0.2, 0.6)),
+	HARD("Hard", HardBot::new, meets(0, 0.35, 0.65), leans(0.12, 0.4));
 
 	public final String label;
 	private final Function<Random, Bot> bot;
-	/**
-	 * As the Options setting: the chance a seat goes to an easy, normal or expert player
-	 * (indexed by their level). Easy never seats an expert, Hard never a beginner.
-	 */
-	private final double[] seatOdds;
-	/** As a player's level: how often a bidding habit wins out over the cards (measured in the arena's "players"). */
-	final double styleLean;
-	/** How often a playing habit wins out: a habit you can see, more so in weaker players. */
-	final double playHabit;
+	private final double[] chanceOfMeeting;
+	final double bidLean, playLean;
 
-	Difficulty(String label, Function<Random, Bot> bot, double[] seatOdds, double styleLean, double playHabit) {
+	Difficulty(String label, Function<Random, Bot> bot, double[] chanceOfMeeting, double[] leans) {
 		this.label = label;
 		this.bot = bot;
-		this.seatOdds = seatOdds;
-		this.styleLean = styleLean;
-		this.playHabit = playHabit;
+		this.chanceOfMeeting = chanceOfMeeting;
+		this.bidLean = leans[0];
+		this.playLean = leans[1];
 	}
 
-	/** A plain computer player at this level; rng drives any randomness (seed it for repeatable games). */
+	private static double[] meets(double easy, double normal, double hard) {
+		return new double[] { easy, normal, hard };
+	}
+
+	private static double[] leans(double bid, double play) {
+		return new double[] { bid, play };
+	}
+
 	public Bot bot(Random rng) {
 		return bot.apply(rng);
 	}
 
-	/** As the Options setting: the chance a seat goes to a player of this level. */
 	public double chanceOf(Difficulty playerLevel) {
-		return seatOdds[playerLevel.ordinal()];
+		return chanceOfMeeting[playerLevel.ordinal()];
 	}
 
-	/** A short lowercase name ("easy"), for saved keys and image names. */
 	public String key() {
 		return name().toLowerCase();
 	}
 
-	/**
-	 * A level read back from saved settings: by name, or (from older builds) by its
-	 * ordinal; Normal if neither reads.
-	 */
 	public static Difficulty fromSaved(String name, int legacyOrdinal) {
 		if (name != null) {
 			for (Difficulty d : values()) {

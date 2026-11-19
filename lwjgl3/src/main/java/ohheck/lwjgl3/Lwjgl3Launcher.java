@@ -5,7 +5,6 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 
 import ohheck.OhHeckGame;
 
-/** Starts the libGDX version of the game in a desktop window. */
 public class Lwjgl3Launcher {
 	public static void main(String[] args) {
 		new Lwjgl3Application(new OhHeckGame(), config(1300, 600));

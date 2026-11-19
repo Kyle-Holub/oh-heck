@@ -18,10 +18,8 @@ import ohheck.rules.Match;
 import ohheck.rules.RuleSet;
 import ohheck.ui.Wording;
 
-/** What your taps do at the table, against a table with no screen. */
 public class TableInputTest {
 
-	/** A table without a screen: a real flow and match, tap areas set by hand, actions written down. */
 	static final class FakeTable implements TableScene, TableActions {
 		final TableFlow flow = new TableFlow();
 		final TableLayout layout = new TableLayout();
@@ -30,7 +28,6 @@ public class TableInputTest {
 		final List<Card> handOrder = new ArrayList<Card>();
 		final List<Rectangle> handRects = new ArrayList<Rectangle>();
 		final List<String> did = new ArrayList<String>();
-		/** The state to report; null to report the flow's own. */
 		TableState pretend;
 
 		FakeTable() {
@@ -165,10 +162,10 @@ public class TableInputTest {
 		for (MenuItem item : MenuItem.values()) {
 			t.targets.menuItem(item).set(300, 300 - item.ordinal() * 60, 200, 50);
 		}
-		t.input.tap(400, 260); // Options
+		t.input.tap(400, 260);
 		assertEquals("options", t.did.get(0));
 		assertTrue("the menu waits for your return", t.input.menuOpen());
-		t.input.tap(400, 320); // Resume
+		t.input.tap(400, 320);
 		assertFalse(t.input.menuOpen());
 		t.input.back();
 		assertTrue(t.input.menuOpen());
@@ -182,7 +179,7 @@ public class TableInputTest {
 		t.pretend = TableState.GAME_OVER;
 		t.targets.button(OverlayTargets.Button.PLAY_AGAIN).set(200, 50, 170, 42);
 		t.targets.button(OverlayTargets.Button.HIGH_SCORES).set(400, 50, 170, 42);
-		t.input.tap(100, 300); // a stray tap: the scores stay up
+		t.input.tap(100, 300);
 		assertTrue(t.did.isEmpty());
 		t.input.tap(250, 70);
 		t.input.tap(450, 70);
@@ -191,15 +188,15 @@ public class TableInputTest {
 
 	@Test
 	public void aTapOnANumberBids() {
-		Match m = new Match(4, new Random(4), 3, HandOrder.UP, RuleSet.STANDARD); // seat 3 deals, so you bid first
+		Match m = new Match(4, new Random(4), 3, HandOrder.UP, RuleSet.STANDARD);
 		t.flow.start(m);
-		t.flow.skip(); // past the shuffle and deal
+		t.flow.skip();
 		assertEquals(TableState.TURN, t.flow.state());
 		t.targets.bidsUpTo(m.handSize());
 		for (int b = 0; b <= m.handSize(); b++) {
 			t.targets.bid(b).set(100 + b * 70, 100, 58, 58);
 		}
-		t.input.tap(105, 105); // the 0
+		t.input.tap(105, 105);
 		assertTrue(m.hasBid(Seating.YOU));
 		assertEquals(0, m.bid(Seating.YOU));
 	}
@@ -211,9 +208,9 @@ public class TableInputTest {
 		t.flow.skip();
 		t.targets.bidsUpTo(m.handSize());
 		t.targets.bid(0).set(100, 100, 58, 58);
-		t.input.tap(105, 105); // bid 0
+		t.input.tap(105, 105);
 		while (!t.flow.yourTurnToPlay()) {
-			t.flow.update(1 / 30f); // the others bid; you lead
+			t.flow.update(1 / 30f);
 		}
 		Card c = m.hand(Seating.YOU).get(0);
 		t.handOrder.add(c);
@@ -228,7 +225,7 @@ public class TableInputTest {
 	@Test
 	public void aButtonNotYetDrawnCantBeHit() {
 		t.flow.start(Match.random(4, new Random(2)));
-		t.input.tap(0, 0); // the menu button hasn't been placed
+		t.input.tap(0, 0);
 		assertFalse(t.input.menuOpen());
 		t.targets.clearGameOverButtons();
 		t.pretend = TableState.GAME_OVER;
@@ -238,9 +235,9 @@ public class TableInputTest {
 
 	@Test
 	public void aCardThatDoesntFollowSuitGivesAHint() {
-		for (long seed = 1; seed < 50; seed++) { // a deal where you hold a card you may not play
+		for (long seed = 1; seed < 50; seed++) {
 			FakeTable f = new FakeTable();
-			Match m = new Match(4, new Random(seed), 2, HandOrder.DOWN, RuleSet.STANDARD); // 8 cards; seat 3 leads
+			Match m = new Match(4, new Random(seed), 2, HandOrder.DOWN, RuleSet.STANDARD);
 			f.flow.start(m);
 			f.flow.skip();
 			while (!f.flow.yourTurnToPlay()) {

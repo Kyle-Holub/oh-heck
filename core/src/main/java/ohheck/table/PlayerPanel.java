@@ -9,28 +9,17 @@ import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
-/**
- * A player's bar, after the original game's: name, dealer icon and score, and
- * one card icon per trick: faded = bid but not won yet, solid = won, red =
- * won over the bid; a bid of zero shows a struck-through circle until a trick is taken. Glows
- * gold while it's that player's turn; until they've bid, it sits sunk into the table (same size), dimmed,
- * with an hourglass.
- */
+/* A player's placard: name, score, dealer mark, and the bid and tricks. */
 public final class PlayerPanel {
 
 	public static final float W = 214, H = 80;
 
 	private static final float ICON_MAX_W = 28, ICON_GAP = 3;
 
-	/**
-	 * The icons' width this hand: as big as fits the most any player can show (one per card
-	 * dealt), up to 28, so every panel's icons are the same size.
-	 */
 	private static float iconWidth(int handSize) {
 		return Math.min(ICON_MAX_W, (W - 20) / Math.max(1, handSize) - ICON_GAP);
 	}
 	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.32f);
-	/** Not bid yet: the panel's text dimmed. */
 	private static final Color WAIT_TEXT = new Color(0.72f, 0.66f, 0.58f, 1f), WAIT_SCORE = new Color(0.62f, 0.5f, 0.3f, 1f);
 
 	private final Painter paint;
@@ -39,7 +28,6 @@ public final class PlayerPanel {
 		this.paint = paint;
 	}
 
-	/** Draws the placard showing seat, its top-left corner at (x, top); time pulses the hourglass. */
 	public void draw(SeatState seat, float x, float top, float time) {
 		Assets assets = paint.assets;
 		float y = top - H;
@@ -59,16 +47,13 @@ public final class PlayerPanel {
 		}
 	}
 
-	/** The name (with the dealer's chip after it) on the left, the score on the right. */
 	private void drawNameAndScore(SeatState seat, float x, float top) {
 		boolean waiting = seat.waiting();
-		BitmapFont f = paint.ui(1.3f);
-		f.setColor(seat.turn ? Palette.GOLD_LIGHT : waiting ? WAIT_TEXT : Palette.CREAM);
+		BitmapFont f = paint.ui(1.3f, seat.turn ? Palette.GOLD_LIGHT : waiting ? WAIT_TEXT : Palette.CREAM);
 		paint.glyphs.setText(f, seat.name);
 		float nameW = paint.glyphs.width, nameH = paint.glyphs.height;
 		f.draw(paint.batch, seat.name, x + 10, top - 9);
 		if (seat.dealer) {
-			// centred on the name's letters
 			float chip = 26, mid = top - 9 - nameH / 2;
 			paint.batch.draw(paint.assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
 		}
@@ -76,7 +61,6 @@ public final class PlayerPanel {
 		paint.text(f, Numbers.text(seat.score), x + W - 10, top - 9, false);
 	}
 
-	/** Yet to bid: dim while waiting their turn, pulsing while they decide. */
 	private void drawHourglass(SeatState seat, float x, float y, float time) {
 		float a = seat.turn ? 0.75f + 0.25f * MathUtils.sin(time * 4f) : 0.55f;
 		float iw = iconWidth(seat.handSize), ih = iw * 18f / 14f;
@@ -85,10 +69,6 @@ public final class PlayerPanel {
 		paint.batch.setColor(Color.WHITE);
 	}
 
-	/**
-	 * One icon per trick: faded = bid, not won yet; solid = won; red = over the bid. A bid of
-	 * zero shows its icon until a trick is taken, when the red over-the-bid icons replace it.
-	 */
 	private void drawTricks(SeatState seat, float x, float y) {
 		Assets assets = paint.assets;
 		int bid = seat.bid, won = seat.won;
@@ -110,5 +90,4 @@ public final class PlayerPanel {
 			}
 		}
 	}
-
 }

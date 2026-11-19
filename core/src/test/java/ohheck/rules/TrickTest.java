@@ -17,8 +17,8 @@ public class TrickTest {
 		assertFalse(t.revealsVoid(Card.of(Rank.TWO, Suit.HEARTS)));
 		assertTrue(t.revealsVoid(Card.of(Rank.TWO, Suit.CLUBS)));
 		assertEquals(-1, t.add(0, Card.of(Rank.ACE, Suit.HEARTS), Suit.SPADES));
-		assertEquals(1, t.add(1, Card.of(Rank.TWO, Suit.SPADES), Suit.SPADES)); // trumped
-		assertEquals(3, t.size()); // kept until cleared
+		assertEquals(1, t.add(1, Card.of(Rank.TWO, Suit.SPADES), Suit.SPADES));
+		assertEquals(3, t.size());
 		t.clear();
 		assertTrue(t.isEmpty());
 	}

@@ -1,18 +1,13 @@
 package ohheck;
 
-/**
- * Holds the frame rate down while nothing on screen is moving, to save battery: an idle
- * frame waits out the rest of its time before the next one starts.
- */
+/* Drops the frame rate to 30 fps while nothing on screen is moving. */
 final class FramePacer {
 
-	/** Frame length when nothing is moving: 30 fps. */
 	private static final long IDLE_FRAME_NS = 1000000000L / 30;
 
 	private long frameStart;
 	private boolean idle;
 
-	/** At the start of a frame: after an idle one, waits until its time is up. */
 	void startFrame() {
 		long now = System.nanoTime();
 		if (idle) {
@@ -29,7 +24,6 @@ final class FramePacer {
 		frameStart = now;
 	}
 
-	/** At the end of a frame: whether the next may run slow (nothing is moving). */
 	void endFrame(boolean nothingMoving) {
 		idle = nothingMoving;
 	}

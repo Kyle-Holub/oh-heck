@@ -1,50 +1,38 @@
 package ohheck.rules;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * What one player can see at the table: their own hand, the trump card, the
- * bids, tricks and scores, the cards played so far this hand, and which
- * players have shown they're out of a suit. Never anyone else's cards. This is
- * all a bot gets, and it can only read it: views are filled in by {@link Match#view},
- * or by a {@link Builder} for a game a bot imagines (the Hard bot's simulations), and
- * the lists a view hands out are read-only.
- */
+/* What one player can see at the table; all a bot gets. */
 public final class TableView {
 
-	int seat, players, handIndex, handSize, dealer, numberOfHands;
-	/** The rules this game is played by. */
-	RuleSet rules = RuleSet.STANDARD;
-	Card trumpCard;
-	final List<Card> hand = new ArrayList<Card>();
-	/** {@link Match#NO_BID} where a player hasn't bid yet. */
-	final int[] bids;
-	final int[] tricksWon, scores;
-	/** Cards each player still holds. */
-	final int[] cardsLeft;
-	/** The trick in progress, lead first, and who played each card. */
-	final List<Card> trick = new ArrayList<Card>();
-	final List<Integer> trickSeats = new ArrayList<Integer>();
-	/** Every card played so far this hand, in order, and who played it. */
-	final List<Card> history = new ArrayList<Card>();
-	final List<Integer> historySeats = new ArrayList<Integer>();
-	/** Cards played so far this hand (including the trick in progress), by {@link Card#index}. */
-	final boolean[] played = new boolean[Card.COUNT];
-	/** voids[seat][suit]: that player failed to follow that suit this hand, so holds none of it. */
-	final boolean[][] voids;
+	private int seat, handIndex, handSize, dealer, numberOfHands;
+	private final int players;
+	private RuleSet rules = RuleSet.STANDARD;
+	private Card trumpCard;
+	private final List<Card> hand = new ArrayList<Card>();
+	private final int[] bids;
+	private final int[] tricksWon, scores;
+	private final int[] cardsLeft;
+	private final List<Card> trick = new ArrayList<Card>();
+	private final List<Integer> trickSeats = new ArrayList<Integer>();
+	private final List<Card> history = new ArrayList<Card>();
+	private final List<Integer> historySeats = new ArrayList<Integer>();
+	private final boolean[] played = new boolean[Card.COUNT];
+	private final boolean[][] voids;
 
-	// read-only views of the lists, made once
 	private final List<Card> handView = Collections.unmodifiableList(hand), trickView = Collections.unmodifiableList(trick),
 			historyView = Collections.unmodifiableList(history);
 	private final List<Integer> trickSeatsView = Collections.unmodifiableList(trickSeats),
 			historySeatsView = Collections.unmodifiableList(historySeats);
 
-	TableView(int players) {
+	private TableView(int players) {
 		this.players = players;
 		bids = new int[players];
-		java.util.Arrays.fill(bids, Match.NO_BID);
+		Arrays.fill(bids, Match.NO_BID);
 		tricksWon = new int[players];
 		scores = new int[players];
 		cardsLeft = new int[players];
@@ -63,7 +51,6 @@ public final class TableView {
 		return Match.total(bids);
 	}
 
-	/** Whether this player, on their turn, is choosing a bid (they haven't bid this hand) rather than a card. */
 	public boolean bidding() {
 		return !hasBid(seat);
 	}
@@ -80,14 +67,10 @@ public final class TableView {
 		return rules.legalPlays(hand, leadSuit());
 	}
 
-	/** Tricks this player still wants: their bid minus tricks taken (0 or less: wants no more). */
 	public int need() {
 		return (hasBid(seat) ? bids[seat] : 0) - tricksWon[seat];
 	}
 
-	// ---- reading it
-
-	/** Whose view this is. */
 	public int seat() {
 		return seat;
 	}
@@ -96,7 +79,6 @@ public final class TableView {
 		return players;
 	}
 
-	/** Which hand of the game (0-based), and how many there are. */
 	public int handIndex() {
 		return handIndex;
 	}
@@ -105,7 +87,6 @@ public final class TableView {
 		return numberOfHands;
 	}
 
-	/** Cards dealt to each player this hand. */
 	public int handSize() {
 		return handSize;
 	}
@@ -122,12 +103,10 @@ public final class TableView {
 		return trumpCard;
 	}
 
-	/** This player's cards. */
 	public List<Card> hand() {
 		return handView;
 	}
 
-	/** A seat's bid, or {@link Match#NO_BID}. */
 	public int bid(int seat) {
 		return bids[seat];
 	}
@@ -140,12 +119,10 @@ public final class TableView {
 		return scores[seat];
 	}
 
-	/** Cards a seat still holds. */
 	public int cardsLeft(int seat) {
 		return cardsLeft[seat];
 	}
 
-	/** The trick in progress, lead first, and who played each card. */
 	public List<Card> trick() {
 		return trickView;
 	}
@@ -154,7 +131,6 @@ public final class TableView {
 		return trickSeatsView;
 	}
 
-	/** Every card played this hand, in order, and who played it. */
 	public List<Card> history() {
 		return historyView;
 	}
@@ -163,25 +139,18 @@ public final class TableView {
 		return historySeatsView;
 	}
 
-	/** Whether this card has been played this hand (including the trick in progress). */
 	public boolean played(Card c) {
 		return played[c.index()];
 	}
 
-	/** Whether the seat has shown it holds none of this suit (it didn't follow it). */
 	public boolean isVoid(int seat, Suit suit) {
 		return voids[seat][suit.ordinal()];
 	}
 
-	/** Whether the card with this {@link Card#index} has been played this hand. */
 	public boolean played(int index) {
 		return played[index];
 	}
 
-	/**
-	 * Fills in a view of an imagined table, for a bot thinking ahead. It keeps its view, so
-	 * one view can be refilled again and again without allocating.
-	 */
 	public static final class Builder {
 		private final TableView v;
 
@@ -189,7 +158,6 @@ public final class TableView {
 			v = new TableView(players);
 		}
 
-		/** The view being filled. Bots read it; only this builder changes it. */
 		public TableView view() {
 			return v;
 		}
@@ -199,7 +167,6 @@ public final class TableView {
 			return this;
 		}
 
-		/** The hand: which (0-based), how many in the game, cards each, who dealt, trump, rules. */
 		public Builder hand(int handIndex, int numberOfHands, int handSize, int dealer, Card trumpCard, RuleSet rules) {
 			v.handIndex = handIndex;
 			v.numberOfHands = numberOfHands;
@@ -210,8 +177,7 @@ public final class TableView {
 			return this;
 		}
 
-		/** This player's cards (replacing any before). */
-		public Builder cards(java.util.Collection<Card> cards) {
+		public Builder cards(Collection<Card> cards) {
 			v.hand.clear();
 			v.hand.addAll(cards);
 			return this;
@@ -222,7 +188,6 @@ public final class TableView {
 			return this;
 		}
 
-		/** One seat's bid (or Match.NO_BID), tricks, score and cards left. */
 		public Builder seatState(int seat, int bid, int tricksWon, int score, int cardsLeft) {
 			v.bids[seat] = bid;
 			v.tricksWon[seat] = tricksWon;
@@ -231,13 +196,11 @@ public final class TableView {
 			return this;
 		}
 
-		/** Which suits a seat has shown it holds none of (by suit ordinal). */
 		public Builder voids(int seat, boolean[] bySuit) {
 			System.arraycopy(bySuit, 0, v.voids[seat], 0, 4);
 			return this;
 		}
 
-		/** The trick in progress (replacing any before). */
 		public Builder trick(List<Card> cards, List<Integer> seats) {
 			v.trick.clear();
 			v.trick.addAll(cards);
@@ -246,7 +209,24 @@ public final class TableView {
 			return this;
 		}
 
-		/** Which cards have been played, by {@link Card#index}. */
+		public Builder history(List<Card> cards, List<Integer> seats) {
+			v.history.clear();
+			v.history.addAll(cards);
+			v.historySeats.clear();
+			v.historySeats.addAll(seats);
+			Suit lead = null;
+			for (int i = 0; i < cards.size(); i++) {
+				Card c = cards.get(i);
+				v.played[c.index()] = true;
+				if (i % v.players == 0) {
+					lead = c.suit();
+				} else if (c.suit() != lead) {
+					v.voids[seats.get(i)][lead.ordinal()] = true;
+				}
+			}
+			return this;
+		}
+
 		public Builder played(boolean[] byIndex) {
 			System.arraycopy(byIndex, 0, v.played, 0, Card.COUNT);
 			return this;

@@ -9,7 +9,6 @@ import org.junit.Test;
 
 import ohheck.players.Seating;
 
-/** Where things go on the table, at the two shapes it's seen in: 800 wide, and a stretched phone. */
 public class TableLayoutTest {
 
 	private static final float[] WIDTHS = { 800, 1040 };

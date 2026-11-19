@@ -14,10 +14,8 @@ import ohheck.rules.Rank;
 import ohheck.rules.Suit;
 import ohheck.rules.TableView;
 
-/** The computer players at each difficulty: they play legally, and the harder ones score more. */
 public class BotTest {
 
-	/** Plays one game with the given level in each seat; returns the final scores. */
 	static int[] play(long seed, Difficulty... seats) {
 		Bot[] bots = new Bot[4];
 		for (int i = 0; i < 4; i++) {
@@ -57,7 +55,6 @@ public class BotTest {
 		}
 	}
 
-	/** Average score of seat 0 (the level under test) against three of another level, minus their average. */
 	private static double edge(int games, Difficulty me, Difficulty others) {
 		double mine = 0, theirs = 0;
 		for (long seed = 0; seed < games; seed++) {
@@ -100,7 +97,6 @@ public class BotTest {
 
 	@Test
 	public void viewsRememberPlayedCardsAndVoids() {
-		// play hand 1 out and into hand 2's first trick, then check what seat 0 knows
 		Match m = Match.random(4, new Random(11));
 		Bot bot = Bot.of(Difficulty.NORMAL, new Random(1));
 		while (m.handIndex() < 1 || m.phase() == Match.Phase.BIDDING) {
@@ -129,7 +125,6 @@ public class BotTest {
 			assertEquals(!followed, v.isVoid(seat, lead));
 		}
 		assertFalse(v.played(m.hand(0).get(0)));
-		// and it survives saving
 		TableView again = Match.load(m.save(), new Random()).view(0);
 		for (int i = 0; i < 52; i++) {
 			assertEquals(v.played(i), again.played(i));

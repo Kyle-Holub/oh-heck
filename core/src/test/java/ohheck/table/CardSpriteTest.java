@@ -23,12 +23,12 @@ public class CardSpriteTest {
 	@Test
 	public void itGlidesFromWhereItIsToItsNewPlace() {
 		CardSprite s = new CardSprite(Card.of(Rank.ACE, Suit.SPADES));
-		s.moveTo(at(0), ONE_SECOND, 0, 0, 0); // first placing: straight there
+		s.moveTo(at(0), ONE_SECOND, 0, 0, 0);
 		assertEquals(0, s.pose(0).x, 0);
 		s.moveTo(at(100), ONE_SECOND, 0, 2f, 0);
 		assertEquals(50, s.pose(2.5f).x, 1e-4);
 		assertTrue(s.moving(2.5f));
-		s.moveTo(at(0), ONE_SECOND, 0, 2.5f, 0); // turned back halfway: it starts from where it is
+		s.moveTo(at(0), ONE_SECOND, 0, 2.5f, 0);
 		assertEquals(25, s.pose(3f).x, 1e-4);
 		assertFalse(s.moving(4f));
 	}
@@ -38,7 +38,7 @@ public class CardSpriteTest {
 		CardSprite s = new CardSprite(Card.of(Rank.TWO, Suit.HEARTS));
 		s.moveTo(at(0), ONE_SECOND, 0, 0, 0);
 		s.moveTo(at(100), ONE_SECOND, 0, 0, 0);
-		s.moveTo(at(100), ONE_SECOND, 0, 0.5f, 0); // asked again each frame
+		s.moveTo(at(100), ONE_SECOND, 0, 0.5f, 0);
 		assertEquals(75, s.pose(0.75f).x, 1e-4);
 	}
 
@@ -46,7 +46,7 @@ public class CardSpriteTest {
 	public void aBackdatedMotionIsAlreadyUnderWay() {
 		CardSprite s = new CardSprite(Card.of(Rank.KING, Suit.CLUBS));
 		s.snap(at(0));
-		s.moveTo(at(100), ONE_SECOND, 0, 10f, 0.25f); // should have started a quarter second ago
+		s.moveTo(at(100), ONE_SECOND, 0, 10f, 0.25f);
 		assertEquals(25, s.pose(10f).x, 1e-4);
 	}
 

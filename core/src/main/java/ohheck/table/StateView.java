@@ -5,11 +5,7 @@ import ohheck.anim.Tween;
 import ohheck.players.Seating;
 import ohheck.rules.Match;
 
-/**
- * How each moment of the table ({@link TableState}) looks and answers you: what it shows
- * over the table, what a tap does, whether it's moving (so the frame rate stays up), and
- * how the screenshot run names it. One constant per moment, in the same order.
- */
+/* How each TableState looks and answers taps. */
 enum StateView {
 	SHUFFLE {
 		@Override
@@ -142,49 +138,38 @@ enum StateView {
 
 		@Override
 		String tag(TableScene s, int hand) {
-			// the final hand's cards thrown off the table, then the scores
 			return s.resultsShown() ? "gameover" : "tossing";
 		}
 	};
 
-	/** Your "Bid tricks!"/"Set!" takes this long to glide beside your panel. */
 	static final float LABEL_DROP = 0.6f;
 	private static final Tween LABELS_DROP = Tween.over(LABEL_DROP, Ease.LINEAR);
 
 	private static final StateView[] BY_STATE = new StateView[TableState.values().length];
 	static {
 		for (TableState s : TableState.values()) {
-			BY_STATE[s.ordinal()] = valueOf(s.name()); // (fails at once if a moment has no view)
+			BY_STATE[s.ordinal()] = valueOf(s.name());
 		}
 	}
 
-	/**
-	 * A short description of what's on screen, such as "deal:3" or "trick:5": how the
-	 * screenshot run knows when to take each picture.
-	 */
 	static String describe(TableScene s) {
 		int hand = s.match().handIndex() + 1;
 		return s.isMenuOpen() ? "menu:" + hand : of(s.state()).tag(s, hand);
 	}
 
-	/** The view of a moment. */
 	static StateView of(TableState s) {
 		return BY_STATE[s.ordinal()];
 	}
 
-	/** What the moment shows over the table (nothing, unless overridden). */
 	void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 	}
 
-	/** A tap anywhere but the menu button (nothing, unless overridden). */
 	void tap(TableInput in, float x, float y) {
 	}
 
-	/** Whether the moment itself is moving. */
 	boolean animating(TableScene s) {
 		return false;
 	}
 
-	/** The screenshot run's name for what's on screen. */
 	abstract String tag(TableScene s, int hand);
 }

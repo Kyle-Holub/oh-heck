@@ -13,54 +13,34 @@ import ohheck.rules.Suit;
 import ohheck.rules.TableView;
 import ohheck.rules.Trick;
 
-/**
- * Looks ahead. For each bid or card it could make, it deals out the cards it
- * can't see many times over, plays each deal out with everyone playing like
- * {@link NormalBot}, and picks the choice that does best on average.
- * <p>
- * The imagined deals fit what it has seen: who is out of which suit, and the
- * bids. A deal where a player who bid 3 holds nothing worth a trick is
- * unlikely, so deals are weighted by how well they explain each bid.
- * <p>
- * "Best" is its own points minus half the points of whoever it is racing: the
- * leader if it is behind, or the player in second if it is ahead, so it
- * spoils that player's bid when it can do so cheaply. It never sees anyone's
- * cards.
+/*
+ * Monte Carlo search: each option is played out on many imagined deals of the unseen cards,
+ * weighted by how well they explain the bids, with everyone playing as NormalBot. It scores
+ * its own points less half a rival's, and in the last hand plays to win. The tuning constants
+ * were measured in the arena.
  */
 final class HardBot implements Bot {
 
-	/** In the last hand: the value of winning the game, and of each of our own points besides. */
 	static final double WIN = 100, WIN_TIEBREAK = 0.1;
-	/** How much spoiling the rival's hand is worth, against scoring its own. */
 	static final double SPOIL = 0.5;
-	/** This player's weight on the rival's points (a spoiler cares more). */
 	private final double spoil;
-	/** Candidate deals drawn per deal kept, when weighting deals by the bids. */
 	static final int CANDIDATES = 4;
-	/**
-	 * How sharply a deal is discounted per trick of difference between a player's bid and the
-	 * bid that deal suggests (tuned in the arena: 0.7 and 3 both did worse).
-	 */
 	static final double BID_SHARPNESS = 1.5;
 
 	private final Random rng;
 	private final NormalBot policy = new NormalBot();
 
-	/** How hard to think: the deal budgets times this (1 normally; the arena tries others). */
 	private final double effort;
-	/** Whether the last hand is played to win the game rather than for points (the arena can turn it off). */
 	private final boolean playToWin;
 
 	HardBot(Random rng) {
 		this(rng, SPOIL);
 	}
 
-	/** A Hard player weighing the rival's points by spoil (SPOIL is the usual; a spoiler's is higher). */
 	HardBot(Random rng, double spoil) {
 		this(rng, spoil, 1, true);
 	}
 
-	/** For the arena's experiments: thinking effort, and whether the last hand is played to win. */
 	HardBot(Random rng, double spoil, double effort, boolean playToWin) {
 		this.rng = rng;
 		this.spoil = spoil;
@@ -115,19 +95,9 @@ final class HardBot implements Bot {
 		return legal.get(pick);
 	}
 
-	// ---- how hard to think
-
-	/**
-	 * Imagined deals per decision: more for bids in big hands and for plays with many cards
-	 * left, where an extra deal changes the answer most; fewer for a choice of two. The
-	 * arena scales them all with {@code effort} to measure the trade-off.
-	 */
 	static final int BID_DEALS_BASE = 24, BID_DEALS_PER_CARD = 8, MANY_DEALS = 80, SOME_DEALS = 48, FEW_DEALS = 24;
-	/** Deals are played in batches; after MIN_DEALS, stop as soon as one option is clearly best. */
 	static final int BATCH = 8, MIN_DEALS = 16;
-	/** How clearly: the best option's lead over the next, in standard errors of that lead. */
 	static final double CLEAR = 2.5;
-	/** At most this many play-outs per decision (deals times options), so no decision stutters on a phone. */
 	static final int MAX_PLAYOUTS = 480;
 
 	private int budget(int deals, int options) {
@@ -135,15 +105,10 @@ final class HardBot implements Bot {
 		return Math.max(MIN_DEALS, (int) Math.round(capped * effort));
 	}
 
-	/** The value of one option played out on one imagined deal. */
 	private interface Outcome {
 		double of(int option, List<Card>[] deal);
 	}
 
-	/**
-	 * Tries every option on the same imagined deals, a batch at a time, and returns the one
-	 * that does best on average, stopping early once one option is clearly ahead.
-	 */
 	private int pick(TableView v, int options, int budget, Outcome outcome) {
 		List<List<Card>[]> deals = deals(v, budget);
 		double[][] value = new double[options][budget];
@@ -171,7 +136,6 @@ final class HardBot implements Bot {
 		return best;
 	}
 
-	/** Is the leading option ahead of the next by more than CLEAR standard errors (comparing deal by deal)? */
 	private static boolean clearlyBest(double[][] value, double[] total, int n) {
 		int best = 0, second = -1;
 		for (int o = 1; o < total.length; o++) {
@@ -192,7 +156,6 @@ final class HardBot implements Bot {
 		return mean > CLEAR * Math.sqrt(variance / n) + 1e-9;
 	}
 
-	/** The player to race: the highest-scoring other player (the leader, or second place if we lead). */
 	static int rival(TableView v) {
 		int rival = -1;
 		for (int s = 0; s < v.players(); s++) {
@@ -203,13 +166,6 @@ final class HardBot implements Bot {
 		return rival;
 	}
 
-	// ---- imagining the unseen cards
-
-	/**
-	 * {@code samples} deals of the unseen cards to the other players, the same deals used
-	 * for every choice. When reading the bids, draws several times as many and keeps them in
-	 * proportion to how well each explains the bids made.
-	 */
 	private List<List<Card>[]> deals(TableView v, int samples) {
 		List<Card> unseen = unseen(v);
 		List<List<Card>[]> deals = new ArrayList<List<Card>[]>();
@@ -230,7 +186,6 @@ final class HardBot implements Bot {
 		return keepByWeight(candidates, weight, samples);
 	}
 
-	/** Every card this player hasn't seen: not in their hand, not played, not the trump card. */
 	private static List<Card> unseen(TableView v) {
 		List<Card> unseen = new ArrayList<Card>();
 		for (Suit s : Suit.values()) {
@@ -244,7 +199,6 @@ final class HardBot implements Bot {
 		return unseen;
 	}
 
-	/** Samples of the candidates, kept in proportion to their weights (evenly spaced picks). */
 	private List<List<Card>[]> keepByWeight(List<List<Card>[]> candidates, double[] weight, int samples) {
 		int n = candidates.size();
 		double total = 0;
@@ -266,7 +220,6 @@ final class HardBot implements Bot {
 		return deals;
 	}
 
-
 	private static boolean anyoneElseBid(TableView v) {
 		for (int s = 0; s < v.players(); s++) {
 			if (s != v.seat() && v.hasBid(s)) {
@@ -276,7 +229,6 @@ final class HardBot implements Bot {
 		return false;
 	}
 
-	/** How well this deal explains everyone's bids: Normal's bid with that hand against the bid made. */
 	private double likelihood(TableView v, List<Card>[] deal) {
 		double w = 1;
 		for (int s = 0; s < v.players(); s++) {
@@ -290,7 +242,6 @@ final class HardBot implements Bot {
 		return w;
 	}
 
-	/** What player s saw when bidding, if this deal is the truth: their cards then, and the bids before theirs. */
 	private static TableView bidTimeView(TableView v, List<Card>[] deal, int s) {
 		TableView.Builder t = new TableView.Builder(v.players()).seat(s)
 				.hand(v.handIndex(), v.numberOfHands(), v.handSize(), v.dealer(), v.trumpCard(), v.rules()).cards(deal[s]);
@@ -309,7 +260,6 @@ final class HardBot implements Bot {
 		return t.view();
 	}
 
-	/** One random deal that fits the known voids (or ignores them if none can be found). */
 	@SuppressWarnings("unchecked")
 	private List<Card>[] deal(TableView v, List<Card> unseen) {
 		for (int attempt = 0; attempt < 30; attempt++) {
@@ -342,9 +292,6 @@ final class HardBot implements Bot {
 		throw new IllegalStateException("Couldn't deal the unseen cards");
 	}
 
-	// ---- playing an imagined deal out
-
-	/** The rest of the hand, played out quickly on an imagined deal. */
 	private static final class Sim {
 		private final int players, dealer, handSize, numberOfHands, handIndex;
 		private final Card trumpCard;
@@ -365,14 +312,14 @@ final class HardBot implements Bot {
 			numberOfHands = v.numberOfHands();
 			handIndex = v.handIndex();
 			trumpCard = v.trumpCard();
-			hands = copy(deal); // each simulation plays out its own copy of the imagined deal
+			hands = copy(deal);
 			bids = new int[players];
 			tricks = new int[players];
 			scores = new int[players];
 			voids = new boolean[players][4];
 			Suit[] suits = Suit.values();
 			for (int s = 0; s < players; s++) {
-				bids[s] = v.bid(s); // (NO_BID, -1, until they bid)
+				bids[s] = v.bid(s);
 				tricks[s] = v.tricksWon(s);
 				scores[s] = v.score(s);
 				for (Suit suit : suits) {
@@ -402,7 +349,6 @@ final class HardBot implements Bot {
 			current = rules.nextSeat(seat, players);
 		}
 
-		/** The players after us bid as Normal players would. */
 		void finishBidding(Bot policy) {
 			while (bids[dealer] < 0) {
 				bid(current, policy.chooseBid(viewFor(current)));
@@ -432,11 +378,6 @@ final class HardBot implements Bot {
 			}
 		}
 
-		/**
-		 * How good this outcome is for us: our points for the hand, less spoil times the
-		 * rival's. In the last hand, what counts is winning the game: WIN for a win (shared
-		 * for a tie), plus a little for our own points so a lost cause still scores.
-		 */
 		double value(int me, int rival, double spoil, boolean playToWin) {
 			double mine = rules.score(bids[me], tricks[me]);
 			if (playToWin && handIndex == numberOfHands - 1) {
@@ -459,7 +400,6 @@ final class HardBot implements Bot {
 			return rival < 0 ? mine : mine - spoil * rules.score(bids[rival], tricks[rival]);
 		}
 
-		/** What the given player would see now (refilling one view). */
 		private TableView viewFor(int seat) {
 			TableView.Builder v = view;
 			v.seat(seat).hand(handIndex, numberOfHands, handSize, dealer, trumpCard, rules).cards(hands[seat]);

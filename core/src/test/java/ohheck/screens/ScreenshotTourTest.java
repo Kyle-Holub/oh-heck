@@ -13,7 +13,6 @@ import ohheck.screens.ScreenshotTour.Stop;
 import ohheck.ui.Navigator;
 import ohheck.ui.Tagged;
 
-/** The screenshot run's route and timing (what CI's screenshots rely on). */
 public class ScreenshotTourTest {
 
 	@Test
@@ -32,10 +31,10 @@ public class ScreenshotTourTest {
 		assertEquals(Move.STAY, ScreenshotTour.plan(Stop.TITLE, 3.4f, false));
 		assertEquals(Move.LEAVE, ScreenshotTour.plan(Stop.TITLE, 3.6f, false));
 		assertEquals(Move.STAY, ScreenshotTour.plan(Stop.HIGH_SCORES, 1f, false));
-		assertEquals(Move.SECOND_HALF, ScreenshotTour.plan(Stop.HIGH_SCORES, 2f, false)); // the Statistics tab
+		assertEquals(Move.SECOND_HALF, ScreenshotTour.plan(Stop.HIGH_SCORES, 2f, false));
 		assertEquals(Move.LEAVE, ScreenshotTour.plan(Stop.HIGH_SCORES, 3.1f, false));
 		assertEquals(Move.LEAVE, ScreenshotTour.plan(Stop.OPTIONS, 1.6f, false));
-		assertEquals(Move.SECOND_HALF, ScreenshotTour.plan(Stop.ROSTER, 1.5f, false)); // the end of the list
+		assertEquals(Move.SECOND_HALF, ScreenshotTour.plan(Stop.ROSTER, 1.5f, false));
 		assertEquals(Move.LEAVE, ScreenshotTour.plan(Stop.ROSTER, 2.3f, false));
 	}
 
@@ -46,7 +45,6 @@ public class ScreenshotTourTest {
 		assertEquals(Move.LEAVE, ScreenshotTour.plan(Stop.TUTORIAL, 4.1f, true));
 	}
 
-	/** A stop with nothing behind it: it writes down what it's asked. */
 	private static final class FakeStop implements TourStop, Tagged {
 		final Stop stop;
 		final StringBuilder did = new StringBuilder();
@@ -84,7 +82,6 @@ public class ScreenshotTourTest {
 		}
 	}
 
-	/** Only the way between screens is used: it writes down where it was sent. */
 	private static Navigator recorder(StringBuilder went) {
 		return (Navigator) Proxy.newProxyInstance(Navigator.class.getClassLoader(), new Class<?>[] { Navigator.class },
 				(proxy, method, args) -> {

@@ -6,49 +6,37 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 
-/**
- * A fireworks show for when you win the game: rockets rise from the bottom of
- * the screen with a glowing trail and burst into rings of sparks in the
- * table's colours, mostly reds and golds.
- */
+/* Rockets that rise and burst into sparks when you win. */
 public final class Fireworks {
 
-	/** Burst colours: oxblood, crimson, scarlet, amber, gold, pale gold, warm cream. */
 	private static final float[][] PALETTE = { { 0.95f, 0.16f, 0.14f }, { 1f, 0.24f, 0.2f },
 			{ 1f, 0.32f, 0.14f }, { 1f, 0.55f, 0.12f }, { 1f, 0.76f, 0.25f }, { 1f, 0.88f, 0.52f },
 			{ 1f, 0.95f, 0.82f } };
-	/** How often each colour is picked: mostly reds and golds, a little cream. */
 	private static final int[] WEIGHTS = { 3, 3, 2, 2, 3, 2, 1 };
 
 	private static final int ROCKETS = 30;
 	private static final float SHOW_LENGTH = 5f, GRAVITY = 90f, ROCKET_GRAVITY = 300f;
 
-	// rockets: waiting (launch time in the future), rising, or spent
 	private final float[] rx = new float[ROCKETS], ry = new float[ROCKETS], rvx = new float[ROCKETS],
 			rvy = new float[ROCKETS], launchAt = new float[ROCKETS];
 	private final int[] colour = new int[ROCKETS], colour2 = new int[ROCKETS];
 	private final boolean[] rising = new boolean[ROCKETS], waiting = new boolean[ROCKETS];
 
-	/** Sparks from bursts and rocket trails, coloured individually. */
 	private final Sparkles sparks = new Sparkles(2600);
 	private float clock;
 
-	/** Starts a show over a screen w x h. */
 	public void show(float w, float h) {
 		clock = 0;
 		for (int i = 0; i < ROCKETS; i++) {
 			waiting[i] = true;
 			rising[i] = false;
-			// a quick opening volley, then a steady stream, then a finale
 			float t = i < 4 ? i * 0.12f : i < ROCKETS - 7 ? MathUtils.random(0.4f, SHOW_LENGTH - 1.2f)
 					: SHOW_LENGTH - 1.1f + MathUtils.random(0.4f);
 			launchAt[i] = t;
-			// mostly either side of the score panel, sometimes over it
 			float side = MathUtils.random(0.06f, 0.32f);
 			rx[i] = (MathUtils.randomBoolean(0.8f) ? (MathUtils.randomBoolean() ? side : 1 - side)
 					: MathUtils.random(0.35f, 0.65f)) * w;
 			ry[i] = -10;
-			// rise to between half and nine-tenths of the screen height
 			float peak = MathUtils.random(0.45f, 0.92f) * h;
 			rvy[i] = (float) Math.sqrt(2 * ROCKET_GRAVITY * (peak - ry[i]));
 			rvx[i] = MathUtils.random(-30f, 30f);
@@ -89,7 +77,6 @@ public final class Fireworks {
 		sparks.step(dt);
 	}
 
-	/** A ring of sparks; some bursts mix two colours. */
 	private void burst(int i) {
 		int n = MathUtils.random(80, 110);
 		float speed = MathUtils.random(150f, 260f);
@@ -100,7 +87,6 @@ public final class Fireworks {
 			sparks.spawn(rx[i], ry[i], MathUtils.cos(a) * s, MathUtils.sin(a) * s, MathUtils.random(1.3f, 2.2f),
 					MathUtils.random(8f, 13f), c, 1f);
 		}
-		// a bright flash at the centre of each burst
 		for (int k = 0; k < 6; k++) {
 			sparks.spawn(rx[i], ry[i], MathUtils.random(-20f, 20f), MathUtils.random(-20f, 20f), 0.35f, 26f, PALETTE[6], 1f);
 		}
@@ -121,7 +107,6 @@ public final class Fireworks {
 		return 0;
 	}
 
-	/** Drawn additively, like the gold sparks: a soft coloured glow round a bright core. */
 	public void draw(SpriteBatch batch, Texture glow) {
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		for (int i = 0; i < ROCKETS; i++) {
@@ -135,9 +120,7 @@ public final class Fireworks {
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
 
-	/** The sparks: falling gently, slowing, flickering as they die. */
 	private static final class Sparkles extends ParticlePool {
-
 		private final float[] r, g, b, bright;
 
 		Sparkles(int max) {
@@ -175,7 +158,7 @@ public final class Fireworks {
 				float age = age(i);
 				float a = (1 - age) * bright[i];
 				if (age > 0.6f) {
-					a *= 0.6f + 0.4f * MathUtils.sin(clock * 40f + i * 1.7f); // crackle as they fade
+					a *= 0.6f + 0.4f * MathUtils.sin(clock * 40f + i * 1.7f);
 				}
 				float big = size[i] * 2.2f;
 				batch.setColor(r[i], g[i], b[i], Math.min(1, a * 0.75f));

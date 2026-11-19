@@ -4,14 +4,10 @@ import ohheck.players.Difficulty;
 import ohheck.players.Seating;
 import ohheck.records.Records;
 import ohheck.rules.Match;
+import ohheck.util.Dates;
 
-/**
- * Keeps your records as a game goes: each hand and each finished game in the statistics,
- * and a finished game in the high scores. No libGDX.
- */
+/* Records each hand and finished game in the statistics and high scores. */
 final class GameRecorder implements TableFlow.Listener {
-
-	private static final int HUMAN = Seating.YOU;
 
 	private final Records records;
 	private Difficulty level;
@@ -22,7 +18,6 @@ final class GameRecorder implements TableFlow.Listener {
 		this.records = records;
 	}
 
-	/** The table being played: its difficulty setting and who sits where. fresh: a new game, not a resumed one. */
 	void table(Difficulty level, Seating players, boolean fresh) {
 		this.level = level;
 		this.players = players;
@@ -33,21 +28,20 @@ final class GameRecorder implements TableFlow.Listener {
 		}
 	}
 
-	/** Where the finished game went in the high scores (0 = best), or -1. */
 	int newHighScore() {
 		return newHighScore;
 	}
 
 	@Override
 	public void handEnded(Match m) {
-		if (records.stats().countHand(m.handIndex(), level, m.bid(HUMAN), m.tricksWon(HUMAN), m.lastHandPoints(HUMAN))) {
+		if (records.stats().countHand(m.handIndex(), level, m.bid(Seating.YOU), m.tricksWon(Seating.YOU), m.lastHandPoints(Seating.YOU))) {
 			records.saveStats();
 		}
 	}
 
 	@Override
 	public void gameEnded(Match m) {
-		newHighScore = records.recordHighScore(m.score(HUMAN), m.placeOf(HUMAN), level, Records.today());
+		newHighScore = records.recordHighScore(m.score(Seating.YOU), m.placeOf(Seating.YOU), level, Dates.today());
 		int[] finals = new int[m.players()];
 		for (int s = 0; s < finals.length; s++) {
 			finals[s] = m.score(s);

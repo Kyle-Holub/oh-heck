@@ -1,15 +1,10 @@
 package ohheck.fx;
 
-/**
- * A fixed pool of small particles (position, velocity, life and size), shared
- * by the table's effects: {@link Sparks} and {@link Motes}. Subclasses decide
- * how particles are born, move and look; nothing is allocated after creation.
- */
+/* A fixed pool of particles shared by Sparks and Motes; nothing is allocated after creation. */
 abstract class ParticlePool {
 
 	final int max;
 	final float[] x, y, vx, vy, life, maxLife, size;
-	/** Seconds of game time, for twinkles and sway. */
 	float clock;
 
 	ParticlePool(int max) {
@@ -23,7 +18,6 @@ abstract class ParticlePool {
 		size = new float[max];
 	}
 
-	/** A free slot, or -1 if all are in use. */
 	int free() {
 		for (int i = 0; i < max; i++) {
 			if (life[i] <= 0) {
@@ -33,7 +27,6 @@ abstract class ParticlePool {
 		return -1;
 	}
 
-	/** Starts particle i with a lifetime of the given seconds. */
 	void born(int i, float px, float py, float pvx, float pvy, float lifetime, float sz) {
 		x[i] = px;
 		y[i] = py;
@@ -47,7 +40,6 @@ abstract class ParticlePool {
 		return life[i] > 0;
 	}
 
-	/** 0 when born, rising to 1 as it dies. */
 	float age(int i) {
 		return 1 - life[i] / maxLife[i];
 	}
@@ -61,7 +53,6 @@ abstract class ParticlePool {
 		return false;
 	}
 
-	/** Ages every live particle and moves it by its velocity, after {@link #accelerate}. */
 	public void step(float dt) {
 		clock += dt;
 		for (int i = 0; i < max; i++) {
@@ -75,7 +66,6 @@ abstract class ParticlePool {
 		}
 	}
 
-	/** Changes particle i's velocity for this step (gravity, drag, sway); the default does nothing. */
 	void accelerate(int i, float dt) {
 	}
 }

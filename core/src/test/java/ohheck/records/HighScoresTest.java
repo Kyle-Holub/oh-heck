@@ -41,15 +41,12 @@ public class HighScoresTest {
 		assertTrue(HighScores.decode("").entries().isEmpty());
 		assertTrue(HighScores.decode(null).entries().isEmpty());
 		assertTrue(h.encode().startsWith("score:72,place:1,date:2026-11-16,level:NORMAL"));
-		// entries saved before difficulty levels existed still load, with no level
 		HighScores old = HighScores.decode("40,1,2026-11-01");
 		assertEquals(40, old.entries().get(0).score());
 		assertNull(old.entries().get(0).level());
-		// and the numbered form with a level, from the first builds that had one
 		HighScores numbered = HighScores.decode("55,2,2026-11-10,2");
 		assertEquals(Difficulty.HARD, numbered.entries().get(0).level());
 		assertEquals("score:55,place:2,date:2026-11-10,level:HARD", numbered.encode());
-		// a level number this build doesn't have reads as none, and is written as none
 		HighScores unknown = HighScores.decode("55,2,2026-11-10,7");
 		assertNull(unknown.entries().get(0).level());
 		assertEquals("score:55,place:2,date:2026-11-10,level:-", unknown.encode());

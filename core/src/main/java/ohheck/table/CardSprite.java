@@ -4,15 +4,9 @@ import ohheck.anim.Ease;
 import ohheck.anim.Tween;
 import ohheck.rules.Card;
 
-/**
- * One card's picture on the table, for the whole game: where it is, its size and tilt, how
- * far it has turned face up, and how high it's lifted (its shadow). When the card's place
- * changes it doesn't jump: it glides there from wherever it is, by a {@link Tween}.
- * No libGDX: {@link CardSprites} decides the places and draws.
- */
+/* One card's pose on the table, gliding to each new target. */
 final class CardSprite {
 
-	/** A place and look: bottom-left corner, size, tilt (degrees), face up (0 to 1), lift. */
 	static final class Pose {
 		float x, y, w, h, rot, flip, lift;
 
@@ -42,10 +36,8 @@ final class CardSprite {
 	}
 
 	final Card card;
-	/** Where it's going, where it set off from, and where it is now. */
 	private final Pose target = new Pose(), from = new Pose(), now = new Pose();
 	private Tween motion = Tween.over(0, Ease.LINEAR);
-	/** Extra lift at the start of a motion, falling away as it lands (a card dropped onto the table). */
 	private float arc;
 	private float start;
 	private boolean placed, visible;
@@ -54,7 +46,6 @@ final class CardSprite {
 		this.card = card;
 	}
 
-	/** Puts it straight at p, with no motion. */
 	void snap(Pose p) {
 		target.set(p);
 		from.set(p);
@@ -64,11 +55,6 @@ final class CardSprite {
 		placed = true;
 	}
 
-	/**
-	 * Sends it to p if that's a new place: it glides there by how (arc: extra lift at the
-	 * start), from where it is at time t. startedAgo backdates the start, for a motion that
-	 * should have begun between frames.
-	 */
 	void moveTo(Pose p, Tween how, float arc, float t, float startedAgo) {
 		if (!placed) {
 			snap(p);
@@ -84,7 +70,6 @@ final class CardSprite {
 		start = t - startedAgo;
 	}
 
-	/** Where it is at time t. */
 	Pose pose(float t) {
 		float u = t - start, p = motion.progress(u);
 		now.x = Ease.lerp(from.x, target.x, p);
@@ -97,7 +82,6 @@ final class CardSprite {
 		return now;
 	}
 
-	/** Whether it's still on its way at time t. */
 	boolean moving(float t) {
 		return placed && !motion.done(t - start);
 	}
@@ -109,7 +93,7 @@ final class CardSprite {
 	void show(boolean v) {
 		visible = v;
 		if (!v) {
-			placed = false; // next time it's seen, it starts where it's put
+			placed = false;
 		}
 	}
 }
