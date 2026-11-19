@@ -60,17 +60,17 @@ public final class Glints {
 	 */
 	private static void star(SpriteBatch batch, Texture glow, float x, float y, float arm, float a, float rot) {
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(0.78f, 0.47f, 0.06f, 0.8f * a);
-		streaks(batch, glow, x, y, arm * 1.05f, arm * 0.3f, rot);
-		batch.setColor(0.72f, 0.4f, 0.04f, 0.55f * a);
-		batch.draw(glow, x - arm * 0.3f, y - arm * 0.3f, arm * 0.6f, arm * 0.6f);
+		batch.setColor(0.66f, 0.36f, 0.02f, 0.95f * a);
+		streaks(batch, glow, x, y, arm * 1.1f, arm * 0.36f, rot);
+		batch.setColor(0.6f, 0.3f, 0.02f, 0.7f * a);
+		batch.draw(glow, x - arm * 0.35f, y - arm * 0.35f, arm * 0.7f, arm * 0.7f);
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		batch.setColor(1f, 0.8f, 0.45f, 0.35f * a);
+		batch.setColor(1f, 0.78f, 0.35f, 0.3f * a);
 		batch.draw(glow, x - arm * 0.6f, y - arm * 0.6f, arm * 1.2f, arm * 1.2f);
-		batch.setColor(1f, 0.93f, 0.75f, 0.9f * a);
-		streaks(batch, glow, x, y, arm, arm * 0.14f, rot);
-		batch.setColor(1f, 1f, 0.95f, a);
-		batch.draw(glow, x - arm * 0.16f, y - arm * 0.16f, arm * 0.32f, arm * 0.32f);
+		batch.setColor(1f, 0.9f, 0.6f, 0.6f * a);
+		streaks(batch, glow, x, y, arm * 0.9f, arm * 0.08f, rot);
+		batch.setColor(1f, 1f, 0.92f, a);
+		batch.draw(glow, x - arm * 0.12f, y - arm * 0.12f, arm * 0.24f, arm * 0.24f);
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
 
