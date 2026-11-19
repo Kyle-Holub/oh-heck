@@ -12,8 +12,9 @@ the screenshot run, CI, the arena and the art tools.
   never one above (no cycles). `ohheck.rules`, `ohheck.players`, `ohheck.records`,
   `ohheck.util` and `ohheck.anim` stay libGDX-free, so they run in plain JUnit. Put new game logic and timing
   there, or in small gdx-free classes like `GameEnd`, and test it.
-- **Screens depend on `GameHost`**, not `OhHeckGame`; helpers that draw take a `Painter`,
-  not a screen; table parts read `TableScene` and act through `TableActions`.
+- **Screens depend on `GameHost`** (`Services` and `Navigator`), not `OhHeckGame`; helpers
+  that draw take a `Painter`, not a screen; table parts read `TableScene` (the flow as a
+  `FlowView`) and act through `TableActions`; taps find buttons in `OverlayTargets`.
 - **Saved formats must keep reading their older versions**, with a test for each:
   `SavedGame`, `Stats`, `Match.save`, high scores.
 - **Player ids are permanent.** Look players up with `Player.byId`. A new player gets the
@@ -33,8 +34,10 @@ the screenshot run, CI, the arena and the art tools.
 - **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
   constant, a rules variant a `RuleSet` subclass listed in `RuleSet.ALL`, and a new reaction
   to table events a `TableFlow.Listener`, a new table state a `TableState` constant with
-  its `StateView`. Code playing a game asks `match.rules()`, not
-  `Rules`.
+  its `StateView`, a pause-menu choice a `MenuItem` constant, and a screenshot-tour stop a
+  screen implementing `TourStop`. Code playing a game asks `match.rules()`, not `Rules`.
+- **Seats:** you are `Seating.YOU`; who sits in the other seats is a `Seating`, not an
+  `int[]`.
 
 ## Checking changes
 
