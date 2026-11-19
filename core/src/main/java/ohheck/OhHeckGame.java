@@ -124,8 +124,8 @@ public class OhHeckGame extends Game implements GameHost {
 	/** The screenshot run's walk through the menus; null in normal play. */
 	private final ScreenshotTour tour;
 
-	/** Screens to return to with Back: Options, How to play and High scores open over where you were. */
-	private final java.util.ArrayDeque<Screen> backStack = new java.util.ArrayDeque<Screen>();
+	/** Which screen is showing, the way back, and the change between them. */
+	private final Screens screens = new Screens(this);
 
 	@Override
 	public void create() {
@@ -150,7 +150,7 @@ public class OhHeckGame extends Game implements GameHost {
 		optionsScreen = kept(new OptionsScreen(this));
 		highScoresScreen = kept(new HighScoresScreen(this));
 		playersScreen = kept(new PlayersScreen(this));
-		setScreen(title);
+		screens.replaceAll(title);
 	}
 
 	/** Frame length when nothing is moving: 30 fps, to save battery. */
@@ -179,12 +179,13 @@ public class OhHeckGame extends Game implements GameHost {
 		if (getScreen() != null) {
 			getScreen().render(delta);
 		}
+		screens.drawChange(batch, assets, delta); // a new screen comes up out of a dark tint
 		if (effects) {
 			post.end(delta);
 		}
 		capturing = false;
 		Screen s = getScreen();
-		idle = options.fixedStep <= 0 && s instanceof BaseScreen && !((BaseScreen) s).animating();
+		idle = options.fixedStep <= 0 && !screens.changing() && s instanceof BaseScreen && !((BaseScreen) s).animating();
 		if (options.frameListener != null && s instanceof GameHost.Tagged) {
 			options.frameListener.onFrame(((GameHost.Tagged) s).stateTag());
 		}
@@ -199,23 +200,20 @@ public class OhHeckGame extends Game implements GameHost {
 	}
 
 	/** Opens a screen over the current one; {@link #back()} returns to it. */
+	/** Options, How to play and High scores open over where you were, for Back to return to. */
 	private void open(Screen s) {
-		if (getScreen() != null) {
-			backStack.push(getScreen());
-		}
-		setScreen(s);
+		screens.open(s);
 	}
 
 	/** Back to the screen that opened this one, or the title screen. */
 	@Override
 	public void back() {
-		setScreen(backStack.isEmpty() ? title : backStack.pop());
+		screens.back(title);
 	}
 
 	@Override
 	public void showTitle() {
-		backStack.clear();
-		setScreen(title);
+		screens.replaceAll(title);
 	}
 
 	/** How to play, from Options: the tutorial, with Back. */
@@ -259,8 +257,7 @@ public class OhHeckGame extends Game implements GameHost {
 			play.dispose();
 		}
 		play = new PlayScreen(this, null, null, null);
-		backStack.clear();
-		setScreen(play);
+		screens.replaceAll(play);
 	}
 
 	/** Back to the game in progress, or the saved one after the app was closed. */
@@ -274,8 +271,7 @@ public class OhHeckGame extends Game implements GameHost {
 			}
 			play = new PlayScreen(this, saved.match(), saved.level(), saved.players());
 		}
-		backStack.clear();
-		setScreen(play);
+		screens.replaceAll(play);
 	}
 
 	@Override
