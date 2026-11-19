@@ -266,4 +266,43 @@ public class TableFlowTest {
 		}
 		assertEquals(target, flow.state());
 	}
+
+	/** A thinker that holds each answer back until told to let it go. */
+	static final class SlowThinker implements Thinker {
+		final List<java.util.concurrent.FutureTask<?>> waiting = new ArrayList<java.util.concurrent.FutureTask<?>>();
+
+		@Override
+		public <T> java.util.concurrent.Future<T> think(java.util.concurrent.Callable<T> decision) {
+			java.util.concurrent.FutureTask<T> f = new java.util.concurrent.FutureTask<T>(decision);
+			waiting.add(f);
+			return f;
+		}
+
+		void finish() {
+			for (java.util.concurrent.FutureTask<?> f : waiting) {
+				f.run();
+			}
+			waiting.clear();
+		}
+	}
+
+	@Test
+	public void theTableWaitsForAComputerPlayerStillThinking() {
+		SlowThinker slow = new SlowThinker();
+		flow.thinkWith(slow);
+		Match m = newGame(3);
+		flow.skip();
+		while (m.currentSeat() == TableFlow.HUMAN) {
+			newGame(m.dealer() + 10); // a deal where a computer player bids first
+			m = flow.match();
+			flow.skip();
+		}
+		int seat = m.currentSeat();
+		flow.update(TableFlow.AI_DELAY + 1f);
+		assertFalse("no answer yet: still its turn", m.hasBid(seat));
+		assertEquals(1, slow.waiting.size());
+		slow.finish();
+		flow.update(STEP);
+		assertTrue("played as soon as it was ready", m.hasBid(seat));
+	}
 }

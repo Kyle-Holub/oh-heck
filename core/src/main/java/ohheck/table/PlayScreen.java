@@ -104,6 +104,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		TableFlow.Listener effects = new Effects(), sounds = new TableSounds(game.audio());
 		this.flow = autoplay != null ? new TableFlow(autoplay, effects, sounds, recorder)
 				: new TableFlow(effects, sounds, recorder);
+		if (autoplay == null && options.fixedStep <= 0) {
+			flow.thinkWith(Thinker.background()); // in play; the screenshot run thinks at once, to repeat exactly
+		}
 		if (restored == null) {
 			startGame();
 		} else {

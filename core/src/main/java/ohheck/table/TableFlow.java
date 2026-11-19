@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import ohheck.players.Bot;
 import ohheck.players.Player;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.TableView;
 
 /**
  * The card table's flow from the first shuffle to the final scores: which
@@ -65,6 +68,16 @@ final class TableFlow {
 	/** Seconds since the deal finished, for the trump card turning over. */
 	private float trumpT;
 
+	/** Where the computer players think; at once unless told otherwise. */
+	private Thinker thinker = Thinker.AT_ONCE;
+	/** The computer player's decision being worked out this turn (a bid or a card), or null. */
+	private Future<?> thinking;
+
+	/** Lets the computer players think on the given thinker (in play: in the background). */
+	void thinkWith(Thinker t) {
+		thinker = t;
+	}
+
 	TableFlow(Listener... listeners) {
 		this.listeners = new ArrayList<Listener>(Arrays.asList(listeners));
 	}
@@ -87,6 +100,7 @@ final class TableFlow {
 
 	/** Starts a new game: shuffle and deal its first hand. */
 	void start(Match m) {
+		stopThinking();
 		match = m;
 		tell(l -> l.save(m));
 		startHand();
@@ -94,6 +108,7 @@ final class TableFlow {
 
 	/** Carries on a saved game where it was left, without replaying the deal. */
 	void resume(Match m) {
+		stopThinking();
 		match = m;
 		trumpT = TRUMP_FLIP_TIME;
 		enter(m.phase() == Match.Phase.HAND_OVER ? TableState.HAND_END : TableState.TURN);
@@ -159,8 +174,13 @@ final class TableFlow {
 			}
 			break;
 		case TURN:
-			if (match.currentSeat() != HUMAN && stateT >= AI_DELAY) {
-				botMove(match.currentSeat());
+			if (match.currentSeat() != HUMAN) {
+				if (thinking == null) {
+					thinking = startThinking(match.currentSeat());
+				}
+				if (stateT >= AI_DELAY && thinking.isDone()) { // its usual pause, and the answer's ready
+					botMove(match.currentSeat());
+				}
 			}
 			break;
 		case TRICK:
@@ -239,9 +259,18 @@ final class TableFlow {
 		enter(TableState.SHUFFLE);
 	}
 
+	/** Drops a decision still being worked out (the table has moved on). */
+	private void stopThinking() {
+		if (thinking != null) {
+			thinking.cancel(false);
+			thinking = null;
+		}
+	}
+
 	private void enter(TableState s) {
 		state = s;
 		stateT = 0;
+		stopThinking();
 		if (s == TableState.HAND_END) {
 			tell(l -> l.handEnded(match));
 		} else if (s == TableState.GAME_OVER) {
@@ -249,13 +278,35 @@ final class TableFlow {
 		}
 	}
 
-	private void botMove(int seat) {
+	/** Sets the seat's computer player thinking about its move, from a snapshot of the table. */
+	private Future<?> startThinking(int seat) {
+		Bot bot = bots[seat];
+		TableView view = match.view(seat);
 		if (match.phase() == Match.Phase.BIDDING) {
-			placeBid(seat, bots[seat].chooseBid(match.view(seat)));
+			return thinker.think(() -> bot.chooseBid(view));
+		}
+		return thinker.think(() -> bot.choosePlay(view));
+	}
+
+	/** Plays the move the seat's computer player decided on. */
+	private void botMove(int seat) {
+		Object move;
+		try {
+			move = thinking.get();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return;
+		} catch (ExecutionException e) {
+			throw new IllegalStateException("A computer player failed to decide", e.getCause());
+		}
+		thinking = null;
+		if (match.phase() == Match.Phase.BIDDING) {
+			placeBid(seat, (Integer) move);
 		} else {
-			playCard(seat, bots[seat].choosePlay(match.view(seat)));
+			playCard(seat, (Card) move);
 		}
 	}
+
 
 	private void placeBid(int seat, int bid) {
 		match.placeBid(seat, bid);
