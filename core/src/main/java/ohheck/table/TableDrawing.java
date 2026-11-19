@@ -12,6 +12,7 @@ import ohheck.anim.Ease;
 import ohheck.anim.Tween;
 import ohheck.fx.Glints;
 import ohheck.fx.Motes;
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Suit;
@@ -28,7 +29,7 @@ import ohheck.ui.TapAreas;
  */
 final class TableDrawing {
 
-	private static final int HUMAN = TableLayout.HUMAN;
+	private static final int HUMAN = Seating.YOU;
 	/** The trump card's shadow lift; its warm glow, how long it takes to light, and its size against the card. */
 	private static final float TRUMP_LIFT = 4, TRUMP_GLOW_IN = 0.6f, TRUMP_GLOW_W = 1.9f, TRUMP_GLOW_H = 1.6f;
 	private static final Color TRUMP_GLOW = new Color(1f, 0.78f, 0.4f, 0.22f);

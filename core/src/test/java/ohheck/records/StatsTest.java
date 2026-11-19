@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import ohheck.players.Difficulty;
+import ohheck.players.Seating;
 import ohheck.rules.Rules;
 
 public class StatsTest {
@@ -55,8 +56,8 @@ public class StatsTest {
 			for (int h = 0; h < 8; h++) {
 				s.countHand(h, Difficulty.EASY, 1, 1, Rules.score(1, 1));
 			}
-			assertTrue(s.countGame(Difficulty.EASY, g, 8, new int[] { 4, 6, 9 }));
-			assertFalse(s.countGame(Difficulty.EASY, g, 8, new int[] { 4, 6, 9 }));
+			assertTrue(s.countGame(Difficulty.EASY, g, 8, Seating.of(4, 6, 9)));
+			assertFalse(s.countGame(Difficulty.EASY, g, 8, Seating.of(4, 6, 9)));
 		}
 		Stats.Totals t = s.totals(Stats.ALL);
 		assertEquals(4, t.games);
@@ -78,7 +79,7 @@ public class StatsTest {
 		for (int h = 0; h < 8; h++) {
 			s.countHand(h, Difficulty.NORMAL, 1, h == 4 ? 0 : 1, Rules.score(1, h == 4 ? 0 : 1));
 		}
-		s.countGame(Difficulty.NORMAL, new int[] { 80, 0, 0, 0 }, 8, new int[] { 0, 1, 2 });
+		s.countGame(Difficulty.NORMAL, new int[] { 80, 0, 0, 0 }, 8, Seating.of(0, 1, 2));
 		assertEquals(0, s.totals(Stats.ALL).perfect);
 	}
 
@@ -93,7 +94,7 @@ public class StatsTest {
 		Stats s = new Stats();
 		s.startGame();
 		s.countHand(0, Difficulty.HARD, 2, 2, Rules.score(2, 2));
-		s.countGame(Difficulty.HARD, new int[] { 10, 30, 0, 0 }, 1, new int[] { 9, 4, 1 });
+		s.countGame(Difficulty.HARD, new int[] { 10, 30, 0, 0 }, 1, Seating.of(9, 4, 1));
 		String saved = s.encode();
 		assertTrue(saved.contains("hard.games=1"));
 		assertTrue(saved.contains("all.beatenBy.9=1"));

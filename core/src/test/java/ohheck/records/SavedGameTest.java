@@ -9,6 +9,7 @@ import java.util.Random;
 import org.junit.Test;
 
 import ohheck.players.Difficulty;
+import ohheck.players.Seating;
 import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
 import ohheck.rules.RuleSet;
@@ -18,25 +19,25 @@ public class SavedGameTest {
 	@Test
 	public void theTableTravelsWithTheGame() {
 		Match m = new Match(4, new Random(3), 1, HandOrder.DOWN, RuleSet.STANDARD);
-		String saved = new SavedGame(m, Difficulty.HARD, new int[] { 8, 9, 5 }).encode();
+		String saved = new SavedGame(m, Difficulty.HARD, Seating.of(8, 9, 5)).encode();
 		SavedGame back = SavedGame.decode(saved, new Random(1), Difficulty.EASY, null);
 		assertEquals(Difficulty.HARD, back.level());
-		assertArrayEquals(new int[] { 8, 9, 5 }, back.players());
+		assertEquals(Seating.of(8, 9, 5), back.players());
 		assertEquals(m.save(), back.match().save());
 	}
 
 	@Test
 	public void olderSavesTakeTheTableFromTheirOldKeys() {
 		String old = new Match(4, new Random(3), 1).save(); // just the match, as before
-		SavedGame back = SavedGame.decode(old, new Random(1), Difficulty.NORMAL, new int[] { 4, 6, 1 });
+		SavedGame back = SavedGame.decode(old, new Random(1), Difficulty.NORMAL, Seating.of(4, 6, 1));
 		assertEquals(Difficulty.NORMAL, back.level());
-		assertArrayEquals(new int[] { 4, 6, 1 }, back.players());
+		assertEquals(Seating.of(4, 6, 1), back.players());
 	}
 
 	@Test
 	public void aPlayerNoLongerOnTheRosterMeansANewTable() {
 		Match m = new Match(4, new Random(3), 1);
-		String saved = new SavedGame(m, Difficulty.NORMAL, new int[] { 4, 99, 1 }).encode();
+		String saved = new SavedGame(m, Difficulty.NORMAL, Seating.of(4, 99, 1)).encode();
 		assertNull(SavedGame.decode(saved, new Random(1), Difficulty.NORMAL, null).players());
 	}
 }

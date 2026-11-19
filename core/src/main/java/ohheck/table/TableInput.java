@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.badlogic.gdx.math.Rectangle;
 
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Wording;
@@ -16,7 +17,7 @@ import ohheck.ui.Wording;
  */
 final class TableInput {
 
-	private static final int HUMAN = TableLayout.HUMAN;
+	private static final int HUMAN = Seating.YOU;
 	/** How far a finger moves on a card before it counts as dragging it. */
 	private static final float DRAG_START = 12f;
 

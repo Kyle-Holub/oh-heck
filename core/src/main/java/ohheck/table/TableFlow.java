@@ -9,7 +9,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import ohheck.players.Bot;
-import ohheck.players.Player;
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Move;
@@ -54,14 +54,14 @@ final class TableFlow {
 		}
 	}
 
-	static final int HUMAN = TableLayout.HUMAN;
+	static final int HUMAN = Seating.YOU;
 	/** A computer player's thinking time; how long the hand-end message stays; the trump card's turn. */
 	static final float AI_DELAY = 0.8f, HAND_END_SHOW = 2.4f, TRUMP_FLIP_TIME = 0.45f;
 
 	final DealAnimation deal = new DealAnimation();
 	private final List<Listener> listeners;
-	/** The computer players, one per seat (seat 0, yours, is unused). */
-	private final Bot[] bots = new Bot[TableLayout.SEATS];
+	/** The computer players, one per seat (yours is unused). */
+	private final Bot[] bots = new Bot[Seating.SEATS];
 
 	private Match match;
 	private TableState state = TableState.TURN;
@@ -92,10 +92,12 @@ final class TableFlow {
 		}
 	}
 
-	/** Seats the computer players: players[s - 1] (a {@link Player} id) in seat s. */
-	void seat(int[] players, Random rng) {
-		for (int s = 1; s < bots.length; s++) {
-			bots[s] = Player.byId(players[s - 1]).bot(new Random(rng.nextLong()));
+	/** Seats the computer players, each with its own random numbers drawn from rng. */
+	void seat(Seating players, Random rng) {
+		for (int s = 0; s < bots.length; s++) {
+			if (s != HUMAN) {
+				bots[s] = players.at(s).bot(new Random(rng.nextLong()));
+			}
 		}
 	}
 

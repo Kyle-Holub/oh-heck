@@ -1,6 +1,7 @@
 package ohheck.table;
 
 import ohheck.players.Difficulty;
+import ohheck.players.Seating;
 import ohheck.records.Records;
 import ohheck.rules.Match;
 
@@ -10,19 +11,19 @@ import ohheck.rules.Match;
  */
 final class GameRecorder implements TableFlow.Listener {
 
-	private static final int HUMAN = TableLayout.HUMAN;
+	private static final int HUMAN = Seating.YOU;
 
 	private final Records records;
 	private Difficulty level;
-	private int[] players;
+	private Seating players;
 	private int newHighScore = -1;
 
 	GameRecorder(Records records) {
 		this.records = records;
 	}
 
-	/** The table being played: its difficulty setting and players (ids, seats 1 on). fresh: a new game, not a resumed one. */
-	void table(Difficulty level, int[] players, boolean fresh) {
+	/** The table being played: its difficulty setting and players . fresh: a new game, not a resumed one. */
+	void table(Difficulty level, Seating players, boolean fresh) {
 		this.level = level;
 		this.players = players;
 		newHighScore = -1;

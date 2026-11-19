@@ -2,6 +2,7 @@ package ohheck.table;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
+import ohheck.players.Seating;
 import ohheck.rules.Match;
 
 /**
@@ -63,7 +64,7 @@ enum StateView {
 		@Override
 		String tag(TableScene s, int hand) {
 			Match m = s.match();
-			boolean yours = m.currentSeat() == TableLayout.HUMAN;
+			boolean yours = m.currentSeat() == Seating.YOU;
 			if (m.phase() == Match.Phase.BIDDING) {
 				return (yours ? "bid:" : "bidding:") + hand;
 			}

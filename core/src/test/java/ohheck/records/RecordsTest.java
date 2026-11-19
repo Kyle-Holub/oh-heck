@@ -10,6 +10,7 @@ import java.util.Random;
 import org.junit.Test;
 
 import ohheck.players.Difficulty;
+import ohheck.players.Seating;
 import ohheck.rules.Match;
 
 public class RecordsTest {
@@ -59,7 +60,7 @@ public class RecordsTest {
 		assertEquals(50, new Records(store, true, null).highScores().entries().get(0).score());
 
 		Match m = Match.random(4, new Random(1));
-		r.saveGame(new SavedGame(m, Difficulty.EASY, new int[] { 0, 1, 2 }));
+		r.saveGame(new SavedGame(m, Difficulty.EASY, Seating.of(0, 1, 2)));
 		assertTrue(r.hasSavedGame());
 		assertEquals(Difficulty.EASY, r.savedGame(new Random(2)).level());
 		r.clearSavedGame(); // the game finished
@@ -73,7 +74,7 @@ public class RecordsTest {
 		assertEquals(-1, r.recordHighScore(50, 1, Difficulty.HARD, "2026-11-18"));
 		r.stats().startGame();
 		r.saveStats();
-		r.saveGame(new SavedGame(Match.random(4, new Random(1)), Difficulty.EASY, new int[] { 0, 1, 2 }));
+		r.saveGame(new SavedGame(Match.random(4, new Random(1)), Difficulty.EASY, Seating.of(0, 1, 2)));
 		assertEquals("", store.stats);
 		assertEquals("", store.highScores);
 		assertFalse(r.hasSavedGame());

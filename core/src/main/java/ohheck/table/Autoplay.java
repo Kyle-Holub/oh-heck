@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 import ohheck.platform.GameOptions;
 import ohheck.players.Bot;
 import ohheck.players.Difficulty;
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 
@@ -76,10 +77,10 @@ final class Autoplay implements TableFlow.Listener {
 		}
 		timer = 0;
 		if (m.phase() == Match.Phase.BIDDING) {
-			int b = bot.chooseBid(m.view(TableLayout.HUMAN));
+			int b = bot.chooseBid(m.view(Seating.YOU));
 			tapCentre(b < screen.overlays().bidButtons.size() ? screen.overlays().bidButtons.get(b) : null);
 		} else {
-			Card c = bot.choosePlay(m.view(TableLayout.HUMAN));
+			Card c = bot.choosePlay(m.view(Seating.YOU));
 			int i = screen.handOrder().indexOf(c);
 			tapCentre(i >= 0 ? screen.handRects().get(i) : null);
 		}

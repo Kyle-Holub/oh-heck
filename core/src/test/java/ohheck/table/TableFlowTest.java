@@ -15,6 +15,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 
@@ -72,9 +73,9 @@ public class TableFlowTest {
 	}
 
 	private final Events events = new Events();
-	private final TableFlow flow = seated(events, new int[] { 4, 5, 6 }, 1); // three Normal players
+	private final TableFlow flow = seated(events, Seating.of(4, 5, 6), 1); // three Normal players
 
-	private static TableFlow seated(TableFlow.Listener listener, int[] players, long seed) {
+	private static TableFlow seated(TableFlow.Listener listener, Seating players, long seed) {
 		TableFlow f = new TableFlow(listener);
 		f.seat(players, new Random(seed));
 		return f;
@@ -235,7 +236,7 @@ public class TableFlowTest {
 		playUntil(TableState.TRICK); // the first of hand 2's two tricks
 		assertEquals(Match.Phase.PLAYING, m.phase());
 		Match saved = Match.load(m.save(), new Random(1));
-		TableFlow resumed = seated(new Events(), new int[] { 8, 9, 10 }, 2); // three experts
+		TableFlow resumed = seated(new Events(), Seating.of(8, 9, 10), 2); // three experts
 		resumed.resume(saved);
 		assertEquals(TableState.TURN, resumed.state());
 		assertTrue(resumed.trumpFaceUp());

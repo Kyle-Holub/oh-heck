@@ -19,6 +19,7 @@ import ohheck.platform.GameOptions;
 import ohheck.players.Bot;
 import ohheck.players.Difficulty;
 import ohheck.players.Player;
+import ohheck.players.Seating;
 import ohheck.records.Stats;
 import ohheck.rules.Match;
 
@@ -146,9 +147,9 @@ public class ScreenshotLauncher {
 		Random rng = new Random(7);
 		for (int g = 0; g < 12; g++) {
 			Difficulty level = Difficulty.values()[g % 3];
-			int[] players = Player.draw(level, rng);
-			Bot[] bots = { Bot.of(Difficulty.NORMAL, rng), Player.byId(players[0]).bot(rng),
-					Player.byId(players[1]).bot(rng), Player.byId(players[2]).bot(rng) };
+			Seating players = Player.draw(level, rng);
+			Bot[] bots = { Bot.of(Difficulty.NORMAL, rng), players.at(1).bot(rng), players.at(2).bot(rng),
+					players.at(3).bot(rng) };
 			Match m = new Match(4, rng, rng.nextInt(4));
 			stats.startGame();
 			while (m.phase() != Match.Phase.GAME_OVER) {

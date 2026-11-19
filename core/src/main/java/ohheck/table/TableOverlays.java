@@ -13,6 +13,7 @@ import com.badlogic.gdx.math.Vector2;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
+import ohheck.players.Seating;
 import ohheck.rules.Match;
 import ohheck.ui.CardArt;
 import ohheck.ui.Numbers;
@@ -185,7 +186,7 @@ final class TableOverlays {
 	/** "Bid Tricks!" or "You got set!", t seconds in, with how each opponent did. */
 	void drawHandEnd(float t) {
 		float a = HAND_END_IN.progress(t);
-		art.art(match.madeBid(TableLayout.HUMAN) ? paint.assets.bidTricksText : paint.assets.setText, table.centreX(),
+		art.art(match.madeBid(Seating.YOU) ? paint.assets.bidTricksText : paint.assets.setText, table.centreX(),
 				table.centreY(), HAND_END_SCALE, a);
 		drawHandLabels(0f, a);
 		BitmapFont f = paint.ui(1f);
@@ -200,21 +201,21 @@ final class TableOverlays {
 	 */
 	void drawHandLabels(float drop, float alpha) {
 		for (int seat = 0; seat < match.players(); seat++) {
-			if (seat == TableLayout.HUMAN && drop <= 0) {
+			if (seat == Seating.YOU && drop <= 0) {
 				continue;
 			}
 			boolean made = match.madeBid(seat);
 			String s = Wording.handResult(made);
 			float scale, x, y, a = alpha;
-			if (seat == TableLayout.HUMAN) {
+			if (seat == Seating.YOU) {
 				float p = Ease.OUT.apply(drop);
 				BitmapFont f = paint.serif(LABEL_BIG);
 				paint.glyphs.setText(f, s);
 				float sx = table.w / 2 - paint.glyphs.width / 2, sy = table.centreY() + paint.glyphs.height / 2;
 				f = paint.serif(LABEL_SMALL);
 				paint.glyphs.setText(f, s);
-				float ex = table.panelX(TableLayout.HUMAN) + TableLayout.PANEL_W + LABEL_BESIDE;
-				float ey = table.panelTop(TableLayout.HUMAN) - TableLayout.PANEL_H / 2 + paint.glyphs.height / 2;
+				float ex = table.panelX(Seating.YOU) + TableLayout.PANEL_W + LABEL_BESIDE;
+				float ey = table.panelTop(Seating.YOU) - TableLayout.PANEL_H / 2 + paint.glyphs.height / 2;
 				scale = MathUtils.lerp(LABEL_BIG, LABEL_SMALL, p);
 				x = MathUtils.lerp(sx, ex, p);
 				y = MathUtils.lerp(sy, ey, p);
@@ -293,7 +294,7 @@ final class TableOverlays {
 			t.setColor(place(s) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, scene.name(s), px + GAME_OVER_NAME_X, y);
 			paint.text(t, Numbers.text(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
-			if (s == TableLayout.HUMAN && newHighScore == 0) { // only a score that tops the table
+			if (s == Seating.YOU && newHighScore == 0) { // only a score that tops the table
 				BitmapFont n = paint.ui(0.95f);
 				n.setColor(Palette.GOLD_LIGHT);
 				n.draw(paint.batch, "New best!", px + pw - NEW_BEST_FROM_RIGHT, y - 2);
@@ -313,7 +314,7 @@ final class TableOverlays {
 			for (int seat : leaders) {
 				names.add(scene.name(seat));
 			}
-			winners = Wording.winners(names, leaders.size() == 1 && leaders.get(0) == TableLayout.HUMAN);
+			winners = Wording.winners(names, leaders.size() == 1 && leaders.get(0) == Seating.YOU);
 			winnersOf = match;
 		}
 		return winners;

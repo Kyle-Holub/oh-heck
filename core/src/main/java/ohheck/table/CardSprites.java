@@ -10,6 +10,7 @@ import com.badlogic.gdx.math.Vector2;
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
 import ohheck.fx.Glints;
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Assets;
@@ -25,7 +26,7 @@ import ohheck.ui.Palette;
  */
 final class CardSprites {
 
-	private static final int HUMAN = TableLayout.HUMAN;
+	private static final int HUMAN = Seating.YOU;
 	/** A card played flies in to the trick, dropping onto it; a card moving about the hand settles. */
 	private static final Tween PLAYED = Tween.over(TrickView.PLAY_FLIGHT, Ease.OUT), SETTLE = Tween.over(0.15f, Ease.OUT);
 	private static final float PLAY_ARC = 30;

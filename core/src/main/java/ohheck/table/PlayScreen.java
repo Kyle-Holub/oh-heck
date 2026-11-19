@@ -12,6 +12,7 @@ import ohheck.fx.Sparks;
 import ohheck.platform.GameOptions;
 import ohheck.players.Difficulty;
 import ohheck.players.Player;
+import ohheck.players.Seating;
 import ohheck.records.SavedGame;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
@@ -38,7 +39,7 @@ import ohheck.ui.Palette;
  */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
-	private static final int HUMAN = TableLayout.HUMAN;
+	private static final int HUMAN = Seating.YOU;
 
 
 	private final GameOptions options;
@@ -72,7 +73,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	/** The difficulty this game was started at: its high score badge and statistics level. */
 	private Difficulty level;
 	/** Who sits in seats 1-3 ({@link Player} ids). */
-	private int[] players;
+	private Seating players;
 
 	/** Your taps and drags, and the pause menu. */
 	private final TableInput input = new TableInput(this, this);
@@ -85,7 +86,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	 * A new game (restored null), or the saved game restored, started at the given difficulty
 	 * with the given players seated (drawn afresh if null, as for saves from before the pool).
 	 */
-	public PlayScreen(GameHost game, Match restored, Difficulty savedLevel, int[] savedPlayers) {
+	public PlayScreen(GameHost game, Match restored, Difficulty savedLevel, Seating savedPlayers) {
 		super(game);
 		this.options = game.options();
 		seating = stream(options.seed, 0x5EA7L);
@@ -220,7 +221,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		seatPlayers(Player.draw(level, seating));
 		toss.clear();
 		end.reset();
-		Match m = Match.random(TableLayout.SEATS, deck, game.settings().handOrder(), RuleSet.STANDARD);
+		Match m = Match.random(Seating.SEATS, deck, game.settings().handOrder(), RuleSet.STANDARD);
 		overlays.setMatch(m);
 		recorder.table(level, players, true);
 		flow.start(m);
@@ -293,10 +294,10 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	/** The name shown for a seat: "You", or the computer player sitting there. */
 	@Override
 	public String name(int seat) {
-		return seat == HUMAN ? "You" : Player.byId(players[seat - 1]).name;
+		return seat == HUMAN ? "You" : players.at(seat).name;
 	}
 
-	private void seatPlayers(int[] ids) {
+	private void seatPlayers(Seating ids) {
 		players = ids;
 		flow.seat(ids, bots);
 	}

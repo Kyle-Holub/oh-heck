@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 
 import ohheck.fx.FallingCards;
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Assets;
@@ -32,7 +33,7 @@ final class TableToss {
 	/** Throws the trump and every card of the final hand (from where each was played) off the table. */
 	void toss(Match m) {
 		// (its own seed, so the throw never changes the game's random numbers)
-		tumble = FallingCards.forTable(assets, new Random(m.score(TableLayout.HUMAN) * 31L + m.score(0)));
+		tumble = FallingCards.forTable(assets, new Random(m.score(Seating.YOU) * 31L + m.score(0)));
 		float cx = table.w / 2, cy = table.h / 2;
 		tumble.toss(m.trumpCard(), table.trumpX() + table.trumpW() / 2 - cx, table.trumpY() + table.trumpH() / 2 - cy,
 				table.trumpW(), 0, TOSS_TRUMP);

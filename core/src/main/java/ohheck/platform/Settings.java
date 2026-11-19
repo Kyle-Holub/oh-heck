@@ -6,6 +6,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
 import ohheck.players.Difficulty;
+import ohheck.players.Seating;
 import ohheck.records.Records;
 import ohheck.records.SavedGame;
 import ohheck.rules.HandOrder;
@@ -73,7 +74,7 @@ public final class Settings implements Records.Store {
 		}
 		Difficulty legacyLevel = Difficulty.fromSaved(null, prefs.getInteger("savedGameDifficulty", 1));
 		String legacyPlayers = prefs.getString("savedGamePlayers", "");
-		return SavedGame.decode(s, rng, legacyLevel, legacyPlayers.isEmpty() ? null : SavedGame.parsePlayers(legacyPlayers));
+		return SavedGame.decode(s, rng, legacyLevel, legacyPlayers.isEmpty() ? null : Seating.parse(legacyPlayers));
 	}
 
 	/** Saves the game in progress (with its difficulty and table) as one piece of text. */

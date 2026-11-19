@@ -31,7 +31,7 @@ public class PlayerTest {
 	public void aTableIsThreeDifferentPlayers() {
 		Random rng = new Random(5);
 		for (int i = 0; i < 500; i++) {
-			int[] t = Player.draw(Difficulty.values()[i % 3], rng);
+			int[] t = Player.draw(Difficulty.values()[i % 3], rng).ids();
 			assertNotEquals(t[0], t[1]);
 			assertNotEquals(t[0], t[2]);
 			assertNotEquals(t[1], t[2]);
@@ -44,7 +44,7 @@ public class PlayerTest {
 		int[][] experts = new int[3][1];
 		for (Difficulty d : Difficulty.values()) {
 			for (int i = 0; i < 2000; i++) {
-				for (int id : Player.draw(d, rng)) {
+				for (int id : Player.draw(d, rng).ids()) {
 					if (Player.byId(id).level == Difficulty.HARD) {
 						experts[d.ordinal()][0]++;
 					}
@@ -59,10 +59,10 @@ public class PlayerTest {
 	public void easyNeverSeatsAnExpertAndHardNeverABeginner() {
 		Random rng = new Random(3);
 		for (int i = 0; i < 2000; i++) {
-			for (int id : Player.draw(Difficulty.EASY, rng)) {
+			for (int id : Player.draw(Difficulty.EASY, rng).ids()) {
 				assertNotEquals(Difficulty.HARD, Player.byId(id).level);
 			}
-			for (int id : Player.draw(Difficulty.HARD, rng)) {
+			for (int id : Player.draw(Difficulty.HARD, rng).ids()) {
 				assertNotEquals(Difficulty.EASY, Player.byId(id).level);
 			}
 		}

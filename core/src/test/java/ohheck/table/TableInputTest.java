@@ -11,6 +11,7 @@ import java.util.Random;
 import com.badlogic.gdx.math.Rectangle;
 import org.junit.Test;
 
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
@@ -32,7 +33,7 @@ public class TableInputTest {
 		TableState pretend;
 
 		FakeTable() {
-			flow.seat(new int[] { 4, 5, 6 }, new Random(1));
+			flow.seat(Seating.of(4, 5, 6), new Random(1));
 		}
 
 		@Override
@@ -182,8 +183,8 @@ public class TableInputTest {
 			t.overlays.bidButtons.add(new Rectangle(100 + b * 70, 100, 58, 58));
 		}
 		t.input.tap(105, 105); // the 0
-		assertTrue(m.hasBid(TableLayout.HUMAN));
-		assertEquals(0, m.bid(TableLayout.HUMAN));
+		assertTrue(m.hasBid(Seating.YOU));
+		assertEquals(0, m.bid(Seating.YOU));
 	}
 
 	@Test
@@ -196,7 +197,7 @@ public class TableInputTest {
 		while (!t.flow.yourTurnToPlay()) {
 			t.flow.update(1 / 30f); // the others bid; you lead
 		}
-		Card c = m.hand(TableLayout.HUMAN).get(0);
+		Card c = m.hand(Seating.YOU).get(0);
 		t.handOrder.add(c);
 		t.handRects.add(new Rectangle(300, 10, 80, 110));
 		t.input.touchDown(340, 60);
