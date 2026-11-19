@@ -11,9 +11,9 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import ohheck.players.Difficulty;
 import ohheck.records.HighScores;
 import ohheck.records.Stats;
-import ohheck.ui.Numbers;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
+import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 import ohheck.ui.Wording;
 

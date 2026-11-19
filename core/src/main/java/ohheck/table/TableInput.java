@@ -119,37 +119,36 @@ final class TableInput {
 		}
 	}
 
-	/** What a tap does depends on the moment. */
+	/** What a tap does depends on the moment (see StateView). */
 	private void tapTable(float x, float y) {
+		StateView.of(s.state()).tap(this, x, y);
+	}
+
+	/** Hurries the shuffle and deal, or the hand-end message, along. */
+	void skip() {
+		s.flow().skip();
+	}
+
+	/** On from the hand's scores. */
+	void nextHand() {
+		s.flow().nextHand();
+	}
+
+	/** Your bid or your card, if it's your turn. */
+	void tapTurn(float x, float y) {
 		Match m = s.match();
-		switch (s.state()) {
-		case SHUFFLE:
-		case DEAL:
-		case HAND_END:
-			s.flow().skip(); // the shuffle and deal, or the hand-end message
-			break;
-		case TURN:
-			if (m.currentSeat() == HUMAN) {
-				if (m.phase() == Match.Phase.BIDDING) {
-					tapBid(x, y);
-				} else {
-					tapCard(x, y);
-				}
-			}
-			break;
-		case TRICK:
-			break;
-		case RESULTS:
-			s.flow().nextHand();
-			break;
-		case GAME_OVER:
-			tapGameOver(x, y);
-			break;
+		if (m.currentSeat() != HUMAN) {
+			return;
+		}
+		if (m.phase() == Match.Phase.BIDDING) {
+			tapBid(x, y);
+		} else {
+			tapCard(x, y);
 		}
 	}
 
 	/** Only the buttons: a stray tap mustn't throw away the final scores. */
-	private void tapGameOver(float x, float y) {
+	void tapGameOver(float x, float y) {
 		TableOverlays o = s.overlays();
 		if (o.highScoresButton.contains(x, y)) {
 			act.showHighScores();

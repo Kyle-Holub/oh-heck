@@ -4,8 +4,8 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 
-import ohheck.ui.Numbers;
 import ohheck.ui.Assets;
+import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 

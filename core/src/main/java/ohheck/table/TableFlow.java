@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import ohheck.players.Bot;
@@ -67,6 +67,8 @@ final class TableFlow {
 	private float stateT;
 	/** Seconds since the deal finished, for the trump card turning over. */
 	private float trumpT;
+	/** This frame's time step, for the moment's own update. */
+	private float dt;
 
 	/** Where the computer players think; at once unless told otherwise. */
 	private Thinker thinker = Thinker.AT_ONCE;
@@ -134,7 +136,7 @@ final class TableFlow {
 	}
 
 	boolean isDealing() {
-		return state == TableState.SHUFFLE || state == TableState.DEAL;
+		return state.isDealing();
 	}
 
 	boolean trumpFaceUp() {
@@ -157,60 +159,19 @@ final class TableFlow {
 	// ---- time passing
 
 	void update(float dt) {
+		this.dt = dt;
 		stateT += dt;
 		if (!isDealing()) {
 			trumpT += dt;
 		}
-		switch (state) {
-		case SHUFFLE:
-		case DEAL:
-			if (deal.update(dt)) {
-				tell(Listener::shuffling);
-			}
-			if (deal.isDone()) {
-				enter(TableState.TURN);
-			} else if (state == TableState.SHUFFLE && !deal.isShuffling()) {
-				enter(TableState.DEAL);
-			}
-			break;
-		case TURN:
-			if (match.currentSeat() != HUMAN) {
-				if (thinking == null) {
-					thinking = startThinking(match.currentSeat());
-				}
-				if (stateT >= AI_DELAY && thinking.isDone()) { // its usual pause, and the answer's ready
-					botMove(match.currentSeat());
-				}
-			}
-			break;
-		case TRICK:
-			if (stateT >= TrickView.showLength(match.lastTrickWinner() == HUMAN)) {
-				enter(match.phase() == Match.Phase.HAND_OVER ? TableState.HAND_END : TableState.TURN);
-			}
-			break;
-		case HAND_END:
-			if (stateT >= HAND_END_SHOW) {
-				enter(TableState.RESULTS);
-			}
-			break;
-		default:
-			break;
-		}
+		state.update(this);
 	}
 
 	// ---- your actions
 
 	/** Skips the shuffle and deal, or the hand-end message. Returns false if there was nothing to skip. */
 	boolean skip() {
-		if (isDealing()) {
-			enter(TableState.TURN);
-			return true;
-		}
-		if (state == TableState.HAND_END) {
-			enter(TableState.RESULTS);
-			return true;
-		}
-		return false;
+		return state.skip(this);
 	}
 
 	/** Your bid; false (and nothing happens) if it isn't your turn to bid or the bid isn't allowed. */
@@ -267,14 +228,44 @@ final class TableFlow {
 		}
 	}
 
-	private void enter(TableState s) {
+	/** Moves to another moment, its clock starting at zero. */
+	void enter(TableState s) {
 		state = s;
 		stateT = 0;
 		stopThinking();
-		if (s == TableState.HAND_END) {
-			tell(l -> l.handEnded(match));
-		} else if (s == TableState.GAME_OVER) {
-			tell(l -> l.gameEnded(match));
+		s.entered(this);
+	}
+
+	void tellHandEnded() {
+		tell(l -> l.handEnded(match));
+	}
+
+	void tellGameEnded() {
+		tell(l -> l.gameEnded(match));
+	}
+
+	/** The shuffle and deal playing out; on to the turn once the cards are down. */
+	void dealing() {
+		if (deal.update(dt)) {
+			tell(Listener::shuffling);
+		}
+		if (deal.isDone()) {
+			enter(TableState.TURN);
+		} else if (state == TableState.SHUFFLE && !deal.isShuffling()) {
+			enter(TableState.DEAL);
+		}
+	}
+
+	/** A computer player's turn: it thinks, then moves after its pause. */
+	void computerTurn() {
+		if (match.currentSeat() == HUMAN) {
+			return;
+		}
+		if (thinking == null) {
+			thinking = startThinking(match.currentSeat());
+		}
+		if (stateT >= AI_DELAY && thinking.isDone()) { // its usual pause, and the answer's ready
+			botMove(match.currentSeat());
 		}
 	}
 

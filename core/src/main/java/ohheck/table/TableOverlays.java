@@ -13,8 +13,8 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 import ohheck.rules.Match;
-import ohheck.ui.Numbers;
 import ohheck.ui.CardArt;
+import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 import ohheck.ui.TapAreas;

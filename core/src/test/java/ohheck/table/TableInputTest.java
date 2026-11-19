@@ -8,9 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.junit.Test;
-
 import com.badlogic.gdx.math.Rectangle;
+import org.junit.Test;
 
 import ohheck.rules.Card;
 import ohheck.rules.HandOrder;

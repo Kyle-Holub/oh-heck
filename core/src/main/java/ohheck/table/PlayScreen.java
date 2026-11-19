@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -42,8 +41,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	private static final int HUMAN = TableLayout.HUMAN;
 
-	/** Your "Bid tricks!"/"Set!" takes this long to glide beside your panel. */
-	private static final float LABEL_DROP = 0.6f;
 
 	private final GameOptions options;
 	/**
@@ -278,24 +275,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (input.menuOpen()) {
 			return false;
 		}
-		switch (flow.state()) {
-		case SHUFFLE:
-		case DEAL:
-		case TRICK:
-		case HAND_END:
+		if (StateView.of(flow.state()).animating(this)) {
 			return true;
-		case RESULTS:
-			if (flow.stateTime() < LABEL_DROP) {
-				return true;
-			}
-			break;
-		case TURN:
-			if (flow.trumpTime() < TableFlow.TRUMP_FLIP_TIME) {
-				return true;
-			}
-			break;
-		default:
-			break;
 		}
 		return input.dragging() || sparks.active() || fireworks.active() || trick.anyInFlight(time) || toss.active();
 	}
@@ -441,28 +422,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	/** Whatever the moment shows over the table: your bid panel, the hand's end, the scores. */
 	private void drawOverlay() {
-		switch (flow.state()) {
-		case TURN:
-			if (match().phase() == Match.Phase.BIDDING && match().currentSeat() == HUMAN) {
-				overlays.drawBidPanel();
-			}
-			break;
-		case HAND_END:
-			overlays.drawHandEnd(flow.stateTime());
-			break;
-		case RESULTS:
-			overlays.drawHandResults();
-			overlays.drawHandLabels(MathUtils.clamp(flow.stateTime() / LABEL_DROP, 0, 1), 1f);
-			break;
-		case GAME_OVER:
-			if (resultsShown()) {
-				overlays.drawGameOver(recorder.newHighScore());
-			}
-			break;
-		default:
-			break;
-		}
+		StateView.of(flow.state()).drawOverlay(this, recorder.newHighScore());
 	}
+
 
 
 	// ----------------------------------------------------------- helpers
