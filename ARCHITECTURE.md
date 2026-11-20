@@ -138,8 +138,9 @@ first five have no libGDX and test in plain JUnit.
     inner offsets are named next to its size. Each button it draws is placed in
     `OverlayTargets`, which `TableInput` and `Autoplay` ask what a tap hit.
   - `TableLayout`: where everything goes, for the current screen shape (`TableLayoutTest`).
-  - `TableToss` throws the cards off at the end; `GameEnd` orders the ending (cards, then
-    fireworks, then scores) and is tested in `GameEndTest`.
+  - `DeckShower` sprays a deck's cards across the screen when you lose; `GameEnd` orders
+    the ending (the shower, or fireworks if you won, then the scores) and is tested in
+    `GameEndTest`.
 - `PlayerPanel` draws a player's placard from a `SeatState` (name, score, bid, tricks,
   turn...). `Counters` draws the hand tally (one mark per hand, in gates of five) and the
   bid tracker; both are shared with the tutorial.

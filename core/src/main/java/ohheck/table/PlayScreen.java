@@ -36,7 +36,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final CardSprites cards = new CardSprites();
 	private final Sparks sparks = new Sparks();
 	private final Fireworks fireworks = new Fireworks();
-	private final TableToss toss;
+	private final DeckShower shower = new DeckShower();
 	private final GameEnd end = new GameEnd();
 	private final YourSeat you;
 
@@ -66,7 +66,6 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		this.overlays = new TableOverlays(paint, this, layout, art, targets);
 		this.you = options.autoplayHuman ? new Autoplay(this, input, targets, options) : YourSeat.PERSON;
 		this.drawing = new TableDrawing(this, paint, art, game.post(), game.settings()::handSort);
-		this.toss = new TableToss(assets, layout);
 		this.recorder = new GameRecorder(game.records());
 		this.flow = new TableFlow(you, new Effects(), new TableSounds(game.audio()), recorder);
 		if (!you.thinkAtOnce() && options.fixedStep <= 0) {
@@ -100,8 +99,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		@Override
 		public void gameEnded(Match m) {
 			targets.clearGameOverButtons();
-			toss.toss(m);
-			end.start(m.leaders().contains(Seating.YOU));
+			boolean won = m.leaders().contains(Seating.YOU);
+			if (!won) {
+				shower.start(finalScoresSeed(m));
+			}
+			end.start(won);
 		}
 	}
 
@@ -167,7 +169,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private void startGame() {
 		level = game.settings().difficulty();
 		seatPlayers(Player.draw(level, streams.seating));
-		toss.clear();
+		shower.clear();
 		end.reset();
 		Match m = Match.random(Seating.SEATS, streams.deck, game.settings().handOrder(), RuleSet.STANDARD);
 		overlays.setMatch(m);
@@ -203,12 +205,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		overlays.update(dt);
 		sparks.step(dt);
 		fireworks.update(dt);
-		toss.update(dt);
-		if (end.update(flow.stateTime(), toss.allGone())) {
+		shower.update(dt, layout.w, layout.h);
+		if (end.update(flow.stateTime(), !shower.active())) {
 			sparks.burst(layout.w / 2, layout.h / 2 + 100, 160);
 			fireworks.show(layout.w, layout.h);
 		}
-		drawing.updateMotes(dt, flow.trumpFaceUp() && !toss.trumpGone());
+		drawing.updateMotes(dt, flow.trumpFaceUp() && !gameOver());
 		you.update(dt);
 	}
 
@@ -220,7 +222,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (StateView.of(flow.state()).animating(this)) {
 			return true;
 		}
-		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || toss.active();
+		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || shower.active();
 	}
 
 	@Override
@@ -341,7 +343,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			overlays.drawMenuButton();
 			drawOverlay();
 		}
-		toss.draw(batch);
+		shower.draw(batch, assets, art, layout.w, layout.h);
 		sparks.draw(batch, assets.glow);
 		if (input.menuOpen()) {
 			overlays.drawMenu();
@@ -354,7 +356,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private void drawTable() {
 		drawing.tally();
 		drawing.bidTracker();
-		drawing.trump(toss.trumpGone());
+		drawing.trump(gameOver());
 		for (int seat = 0; seat < match().players(); seat++) {
 			drawing.seat(seat);
 		}
@@ -376,5 +378,17 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public String stateTag() {
 		return StateView.describe(this);
+	}
+
+	private boolean gameOver() {
+		return flow.state() == TableState.GAME_OVER;
+	}
+
+	private static long finalScoresSeed(Match m) {
+		long seed = 0;
+		for (int s = 0; s < m.players(); s++) {
+			seed = seed * 31 + m.score(s);
+		}
+		return seed;
 	}
 }
