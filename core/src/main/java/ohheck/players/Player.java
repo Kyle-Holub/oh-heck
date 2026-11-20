@@ -73,11 +73,11 @@ public final class Player {
 		return style.bot(level, rng);
 	}
 
-	private static Difficulty pick(Difficulty setting, double r) {
+	private static Difficulty pick(Difficulty setting, int seat, double r) {
 		Difficulty[] levels = Difficulty.values();
 		double sum = 0;
 		for (Difficulty l : levels) {
-			sum += setting.chanceOf(l);
+			sum += setting.chanceAt(seat, l);
 			if (r < sum) {
 				return l;
 			}
@@ -87,8 +87,8 @@ public final class Player {
 
 	public static Seating draw(Difficulty setting, Random rng) {
 		List<Integer> chosen = new ArrayList<Integer>();
-		while (chosen.size() < Seating.OTHERS) {
-			Difficulty level = pick(setting, rng.nextDouble());
+		while (chosen.size() < setting.tableSeats()) {
+			Difficulty level = pick(setting, chosen.size(), rng.nextDouble());
 			List<Integer> free = new ArrayList<Integer>();
 			for (Player p : ALL) {
 				if (p.level == level && !chosen.contains(p.id)) {
@@ -99,6 +99,7 @@ public final class Player {
 				chosen.add(free.get(rng.nextInt(free.size())));
 			}
 		}
+		Collections.shuffle(chosen, rng);
 		int[] ids = new int[chosen.size()];
 		for (int i = 0; i < ids.length; i++) {
 			ids[i] = chosen.get(i);

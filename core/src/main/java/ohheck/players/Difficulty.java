@@ -4,29 +4,33 @@ import java.util.Random;
 import java.util.function.Function;
 
 /*
- * A level of play: a player's skill, and as the Options setting, the odds of meeting each
- * level. A new level is one more constant.
+ * A level of play: a player's skill, and as the Options setting, who sits at your table (each
+ * computer seat's chance of each level). A new level is one more constant.
  */
 public enum Difficulty {
-	EASY("Easy", EasyBot::new, meets(0.65, 0.35, 0), leans(0.6, 0.8)),
-	NORMAL("Normal", rng -> new NormalBot(), meets(0.25, 0.5, 0.25), leans(0.2, 0.6)),
-	HARD("Hard", HardBot::new, meets(0, 0.35, 0.65), leans(0.12, 0.4));
+	EASY("Easy", EasyBot::new, table(meets(1, 0, 0), meets(1, 0, 0), meets(0.6, 0.4, 0)), leans(0.6, 0.8)),
+	NORMAL("Normal", rng -> new NormalBot(), table(meets(0, 1, 0), meets(0, 1, 0), meets(0.2, 0.6, 0.2)), leans(0.2, 0.6)),
+	HARD("Hard", HardBot::new, table(meets(0, 0, 1), meets(0, 0, 1), meets(0, 0, 1)), leans(0.12, 0.4));
 
 	public final String label;
 	private final Function<Random, Bot> bot;
-	private final double[] chanceOfMeeting;
+	private final double[][] seats;
 	final double bidLean, playLean;
 
-	Difficulty(String label, Function<Random, Bot> bot, double[] chanceOfMeeting, double[] leans) {
+	Difficulty(String label, Function<Random, Bot> bot, double[][] seats, double[] leans) {
 		this.label = label;
 		this.bot = bot;
-		this.chanceOfMeeting = chanceOfMeeting;
+		this.seats = seats;
 		this.bidLean = leans[0];
 		this.playLean = leans[1];
 	}
 
 	private static double[] meets(double easy, double normal, double hard) {
 		return new double[] { easy, normal, hard };
+	}
+
+	private static double[][] table(double[]... seats) {
+		return seats;
 	}
 
 	private static double[] leans(double bid, double play) {
@@ -37,8 +41,12 @@ public enum Difficulty {
 		return bot.apply(rng);
 	}
 
-	public double chanceOf(Difficulty playerLevel) {
-		return chanceOfMeeting[playerLevel.ordinal()];
+	public int tableSeats() {
+		return seats.length;
+	}
+
+	public double chanceAt(int seat, Difficulty playerLevel) {
+		return seats[seat][playerLevel.ordinal()];
 	}
 
 	public String key() {

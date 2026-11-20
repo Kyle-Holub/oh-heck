@@ -55,7 +55,7 @@ first five have no libGDX and test in plain JUnit.
   it alone and can only read it. A bot that imagines games (the Hard bot) fills its own
   views with a `TableView.Builder`.
 - `Difficulty` holds everything that differs by level: its bot (`bot(rng)`), the
-  matchmaking odds as an Options setting (`chanceOf`), and how strongly habits show. A new
+  table as an Options setting (each computer seat's chance of each level, `chanceAt`), and how strongly habits show. A new
   level is one more constant, plus its words for the Options note in `Wording`.
 - Bots: `Bot` (`Bot.of(level, rng)`), `EasyBot` (Normal that loses count, slips on bids and plays loosely), `NormalBot`
   (bids from the learned `BidTable`, plays with card memory), `HardBot` (Monte Carlo over
