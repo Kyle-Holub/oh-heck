@@ -20,6 +20,19 @@ public enum Style {
 			return false;
 		}
 	},
+	THINKER("Thinks it through") {
+		static final double EFFORT = 3;
+
+		@Override
+		boolean habitual() {
+			return false;
+		}
+
+		@Override
+		Bot base(Difficulty level, Random rng) {
+			return level == Difficulty.HARD ? new HardBot(rng, HardBot.SPOIL, EFFORT, true) : level.bot(rng);
+		}
+	},
 	BOLD("Overbids") {
 		static final double STRENGTH = 0.25;
 
