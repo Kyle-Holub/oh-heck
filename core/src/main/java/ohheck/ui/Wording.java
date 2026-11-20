@@ -1,7 +1,5 @@
 package ohheck.ui;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
@@ -22,33 +20,59 @@ public final class Wording {
 
 	private static final Map<Difficulty, String[]> LEVEL_WORDS = new EnumMap<Difficulty, String[]>(Difficulty.class);
 	static {
-		LEVEL_WORDS.put(Difficulty.EASY, new String[] { "easy-going players", "easy-going player", "a beginner" });
-		LEVEL_WORDS.put(Difficulty.NORMAL, new String[] { "solid players", "solid player", "a solid player" });
-		LEVEL_WORDS.put(Difficulty.HARD, new String[] { "experts", "expert", "an expert" });
+		LEVEL_WORDS.put(Difficulty.EASY, new String[] { "easy-going players", "an easy-going player" });
+		LEVEL_WORDS.put(Difficulty.NORMAL, new String[] { "solid players", "a solid player" });
+		LEVEL_WORDS.put(Difficulty.HARD, new String[] { "experts", "an expert" });
 		for (Difficulty d : Difficulty.values()) {
 			if (!LEVEL_WORDS.containsKey(d)) {
 				throw new IllegalStateException("No words for " + d);
 			}
 		}
 	}
-	private static final int MANY = 0, ODD_ONE = 1, NEVER = 2;
+	private static final int PLURAL = 0, ONE = 1;
+	private static final String[] COUNTS = { "No", "One", "Two", "Three" }, SEATS = { "first", "second", "third" };
 
 	public static String tableDescription(Difficulty setting) {
-		List<Difficulty> byChance = new ArrayList<Difficulty>(Arrays.asList(Difficulty.values()));
-		byChance.sort((x, y) -> Double.compare(setting.chanceOf(y), setting.chanceOf(x)));
-		StringBuilder sb = new StringBuilder("Mostly ").append(LEVEL_WORDS.get(byChance.get(0))[MANY]);
-		for (Difficulty l : byChance.subList(1, byChance.size())) {
-			double p = setting.chanceOf(l);
-			if (p > 0) {
-				sb.append(p < 0.2 ? ", the odd " + LEVEL_WORDS.get(l)[ODD_ONE] : ", some " + LEVEL_WORDS.get(l)[MANY]);
+		StringBuilder sb = new StringBuilder();
+		for (Difficulty level : Difficulty.values()) {
+			int sure = 0;
+			for (int seat = 0; seat < setting.tableSeats(); seat++) {
+				sure += setting.chanceAt(seat, level) == 1 ? 1 : 0;
+			}
+			if (sure > 0) {
+				sb.append(sb.length() > 0 ? ", " : "").append(COUNTS[sure]).append(' ')
+						.append(sure == 1 ? LEVEL_WORDS.get(level)[ONE] : LEVEL_WORDS.get(level)[PLURAL]);
 			}
 		}
-		for (Difficulty l : Difficulty.values()) {
-			if (setting.chanceOf(l) == 0) {
-				sb.append("; never ").append(LEVEL_WORDS.get(l)[NEVER]);
+		for (int seat = 0; seat < setting.tableSeats(); seat++) {
+			String odds = openSeat(setting, seat);
+			if (!odds.isEmpty()) {
+				sb.append("; the ").append(SEATS[seat]).append(" is ").append(odds);
 			}
 		}
 		return sb.append('.').toString();
+	}
+
+	private static String openSeat(Difficulty setting, int seat) {
+		Difficulty likeliest = null;
+		for (Difficulty level : Difficulty.values()) {
+			double p = setting.chanceAt(seat, level);
+			if (p == 1) {
+				return "";
+			}
+			if (likeliest == null || p > setting.chanceAt(seat, likeliest)) {
+				likeliest = level;
+			}
+		}
+		StringBuilder sb = new StringBuilder();
+		for (Difficulty level : Difficulty.values()) {
+			double p = setting.chanceAt(seat, level);
+			if (p > 0 && level != likeliest) {
+				sb.append(sb.length() > 0 ? " and " : "").append(LEVEL_WORDS.get(level)[ONE]).append(' ')
+						.append(Math.round(p * 100)).append("% of the time");
+			}
+		}
+		return sb.length() > 0 ? sb.toString() : LEVEL_WORDS.get(likeliest)[ONE];
 	}
 
 	public static String winners(List<String> names, boolean youAlone) {

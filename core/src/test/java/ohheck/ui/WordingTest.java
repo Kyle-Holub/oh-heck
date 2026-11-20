@@ -43,10 +43,10 @@ public class WordingTest {
 
 	@Test
 	public void theOptionsDescribeTheOddsTruly() {
-		assertEquals("Mostly easy-going players, some solid players; never an expert.",
+		assertEquals("Two easy-going players; the third is a solid player 40% of the time.",
 				Wording.tableDescription(Difficulty.EASY));
-		assertEquals("Mostly solid players, some easy-going players, some experts.",
+		assertEquals("Two solid players; the third is an easy-going player 20% of the time and an expert 20% of the time.",
 				Wording.tableDescription(Difficulty.NORMAL));
-		assertEquals("Mostly experts, some solid players; never a beginner.", Wording.tableDescription(Difficulty.HARD));
+		assertEquals("Three experts.", Wording.tableDescription(Difficulty.HARD));
 	}
 }

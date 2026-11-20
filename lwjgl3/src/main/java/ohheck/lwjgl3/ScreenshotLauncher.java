@@ -94,7 +94,7 @@ public class ScreenshotLauncher {
 
 	private static GameOptions scriptedRun(GameOptions.FrameListener capture) {
 		GameOptions o = new GameOptions();
-		o.seed = 20261166L;
+		o.seed = 20261184L;
 		o.autoplayHuman = true;
 		o.persist = false;
 		o.speed = 2f;

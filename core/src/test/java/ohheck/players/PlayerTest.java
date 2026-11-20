@@ -86,4 +86,60 @@ public class PlayerTest {
 			}
 		}
 	}
+
+	private static int[] levels(Seating table) {
+		int[] count = new int[Difficulty.values().length];
+		for (int id : table.ids()) {
+			count[Player.byId(id).level.ordinal()]++;
+		}
+		return count;
+	}
+
+	@Test
+	public void easySeatsTwoBeginnersAndSometimesASolidPlayer() {
+		Random rng = new Random(11);
+		int solid = 0, tables = 4000;
+		for (int i = 0; i < tables; i++) {
+			int[] count = levels(Player.draw(Difficulty.EASY, rng));
+			assertTrue(count[Difficulty.EASY.ordinal()] >= 2);
+			assertEquals(0, count[Difficulty.HARD.ordinal()]);
+			solid += count[Difficulty.NORMAL.ordinal()];
+		}
+		assertEquals(0.4, (double) solid / tables, 0.03);
+	}
+
+	@Test
+	public void normalSeatsTwoSolidPlayersAndAThirdOfAnyLevel() {
+		Random rng = new Random(12);
+		int easy = 0, hard = 0, tables = 4000;
+		for (int i = 0; i < tables; i++) {
+			int[] count = levels(Player.draw(Difficulty.NORMAL, rng));
+			assertTrue(count[Difficulty.NORMAL.ordinal()] >= 2);
+			easy += count[Difficulty.EASY.ordinal()];
+			hard += count[Difficulty.HARD.ordinal()];
+		}
+		assertEquals(0.2, (double) easy / tables, 0.03);
+		assertEquals(0.2, (double) hard / tables, 0.03);
+	}
+
+	@Test
+	public void hardSeatsThreeExperts() {
+		Random rng = new Random(13);
+		for (int i = 0; i < 500; i++) {
+			assertEquals(3, levels(Player.draw(Difficulty.HARD, rng))[Difficulty.HARD.ordinal()]);
+		}
+	}
+
+	@Test
+	public void theOddPlayerOutSitsInAnySeat() {
+		Random rng = new Random(14);
+		boolean[] seen = new boolean[Seating.SEATS];
+		for (int i = 0; i < 500; i++) {
+			Seating table = Player.draw(Difficulty.EASY, rng);
+			for (int seat = 1; seat < Seating.SEATS; seat++) {
+				seen[seat] |= table.at(seat).level == Difficulty.NORMAL;
+			}
+		}
+		assertTrue(seen[1] && seen[2] && seen[3]);
+	}
 }
