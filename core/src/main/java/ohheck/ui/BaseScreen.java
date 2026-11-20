@@ -1,13 +1,19 @@
 package ohheck.ui;
 
+import java.nio.IntBuffer;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
+import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import ohheck.anim.FixedSteps;
@@ -178,6 +184,22 @@ public abstract class BaseScreen extends ScreenAdapter implements Tagged {
 
 	public boolean animating() {
 		return false;
+	}
+
+	private final IntBuffer glViewport = BufferUtils.newIntBuffer(16);
+	private final Rectangle scissor = new Rectangle();
+
+	protected boolean clipTo(Rectangle area) {
+		batch.flush();
+		Gdx.gl.glGetIntegerv(GL20.GL_VIEWPORT, glViewport);
+		ScissorStack.calculateScissors(viewport.getCamera(), glViewport.get(0), glViewport.get(1), glViewport.get(2),
+				glViewport.get(3), batch.getTransformMatrix(), area, scissor);
+		return ScissorStack.pushScissors(scissor);
+	}
+
+	protected void unclip() {
+		batch.flush();
+		ScissorStack.popScissors();
 	}
 
 	@Override
