@@ -25,6 +25,12 @@ public final class MenuChrome {
 		backButton(back, h - HEADER_H + (HEADER_H - BACK_H) / 2);
 	}
 
+	public Rectangle headerButton(Rectangle area, String label, float width, boolean lit, float w, float h) {
+		float margin = BACK_X - BACK_W / 2, y = h - HEADER_H + (HEADER_H - BACK_H) / 2;
+		return paint.button(area, label, w - margin - width / 2, y, width, BACK_H,
+				lit ? paint.assets.button : paint.assets.buttonAlt);
+	}
+
 	public Rectangle backButton(Rectangle area, float y) {
 		return paint.button(area, "Back", BACK_X, y, BACK_W, BACK_H, paint.assets.buttonAlt);
 	}

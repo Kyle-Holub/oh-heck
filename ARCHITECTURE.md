@@ -151,8 +151,9 @@ first five have no libGDX and test in plain JUnit.
 timed scenes, a tap each; each step names its scene in `TutorialScenes`, which draws with
 `TutorialStage`'s little table, and each scene's clock is an `ohheck.anim.Timeline`,
 tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`, each a list of
-`OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`), `PlayersScreen` (the Roster), `HighScoresScreen` (tabs like Options': High scores, then the statistics for all games and each
-`Difficulty`, in a panel that scrolls, clipped with `BaseScreen.clipTo`).
+`OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
+statistics, a switch at the top of the panel picks which, and Reset statistics sits in the
+header; the panel scrolls, clipped with `BaseScreen.clipTo`).
 
 Facts the screens show come from the rules, not copied text: the Options difficulty note is
 `Wording.tableDescription` (from the matchmaking odds), the tutorial's players, points and
