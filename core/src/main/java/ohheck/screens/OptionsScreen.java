@@ -37,6 +37,8 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 						new DifficultyOption(s),
 						OptionItem.choice("Hand progression", "How many cards each hand deals, first to last.",
 								() -> s.handOrder().label(), () -> s.setHandOrder(s.handOrder().flipped())),
+						OptionItem.choice("Sort your hand", "Trumps on the left, then by suit or by rank.",
+								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next())),
 						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
 								() -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame()))),
 				new OptionsPage("Sound & display",

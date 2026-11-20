@@ -273,6 +273,14 @@ public final class Match {
 		return Collections.unmodifiableList(historySeats);
 	}
 
+	public void winningCards(List<Card> into) {
+		into.clear();
+		for (int start = 0; start + players <= history.size(); start += players) {
+			List<Card> played = history.subList(start, start + players);
+			into.add(played.get(rules.trickWinner(played, trumpCard.suit())));
+		}
+	}
+
 	public List<Card> lastTrick() {
 		return lastTrick;
 	}

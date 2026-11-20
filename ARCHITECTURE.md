@@ -50,7 +50,7 @@ first five have no libGDX and test in plain JUnit.
   bot's imagined games alike. `Rules` holds the standard rules' numbers (scores, hands), for
   code without a game in hand (the tutorial's captions and its little table);
   anything else without a game asks `RuleSet.STANDARD`.
-  `HandOrder` says which way the hands run. `BidTable` is learned for the standard rules.
+  `HandOrder` says which way the hands run, and `HandSort` how your hand is laid out (trumps first, then by suit or by rank). `BidTable` is learned for the standard rules.
 - `TableView` is what a player may know at a moment (`Match.view(seat)`). Bots decide from
   it alone and can only read it. A bot that imagines games (the Hard bot) fills its own
   views with a `TableView.Builder`.

@@ -6,12 +6,13 @@ import com.badlogic.gdx.Preferences;
 import ohheck.players.Difficulty;
 import ohheck.records.Records;
 import ohheck.rules.HandOrder;
+import ohheck.rules.HandSort;
 
 /* The player's options, in the device's preferences. */
 public final class Settings {
 
 	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
-			HAND_ORDER = "handOrder", TUTORIAL_SEEN = "tutorialSeen";
+			HAND_ORDER = "handOrder", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen";
 	private static final String LEGACY_FAST = "fast", LEGACY_SPEED = "speed", LEGACY_DIFFICULTY = "difficulty";
 	private static final int LEGACY_FASTEST_SPEED = 2;
 
@@ -78,6 +79,14 @@ public final class Settings {
 
 	public void setHandOrder(HandOrder order) {
 		prefs.putString(HAND_ORDER, order.name()).flush();
+	}
+
+	public HandSort handSort() {
+		return prefs.getString(HAND_SORT, "").equals(HandSort.RANK.name()) ? HandSort.RANK : HandSort.SUIT;
+	}
+
+	public void setHandSort(HandSort sort) {
+		prefs.putString(HAND_SORT, sort.name()).flush();
 	}
 
 	public boolean tutorialSeen() {
