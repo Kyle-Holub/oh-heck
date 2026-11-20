@@ -1,7 +1,9 @@
 package ohheck.screens;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
@@ -16,22 +18,51 @@ import ohheck.ui.GameHost;
 import ohheck.ui.MenuChrome;
 import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
+import ohheck.ui.Scroller;
 import ohheck.ui.Wording;
 
-/* The high scores and, on a second tab, the statistics. */
+/*
+ * Your records, a page at a time: the high scores, or the statistics for every game or one
+ * difficulty. Tabs down the left, the chosen page in a panel on the right that scrolls.
+ */
 public class HighScoresScreen extends BaseScreen implements TourStop {
 
-	private final MenuChrome chrome = new MenuChrome(paint);
+	private static final float MAX_W = 940, MARGIN = 24, GAP = 18, TABS_W = 210, TAB_H = 50, TAB_GAP = 8;
+	private static final float GROUP_LABEL_H = 30, BADGE = 24, BADGE_INSET = 14, PAD = 22, SCROLLBAR_W = 4, FRAME = 6;
+	private static final float SCORE_ROW = 32, SCORE_HEADS_H = 40, STAT_ROW = 42, SECTION_H = 50, RESET_ROOM = 76;
+	private static final float RESET_W = 260, RESET_H = 42, RESET_CONFIRM_TIME = 3f;
+	private static final float[] SCORE_COLS = { 0.07f, 0.2f, 0.38f, 0.58f };
+	private static final Color DIVIDER = new Color(0.68f, 0.6f, 0.49f, 0.25f), SCROLLBAR = new Color(0.89f, 0.72f, 0.37f, 0.5f);
+	private static final int SCORES = 0;
 
-	private final Rectangle backButton = new Rectangle(), scoresTab = new Rectangle(), statsTab = new Rectangle(),
+	private final MenuChrome chrome = new MenuChrome(paint);
+	private final Rectangle backButton = new Rectangle(), page = new Rectangle(), inside = new Rectangle(),
 			resetButton = new Rectangle();
-	private final Rectangle[] filterButtons = new Rectangle[Stats.ALL + 1];
-	{
-		for (int i = 0; i < filterButtons.length; i++) {
-			filterButtons[i] = new Rectangle();
+	private final List<Rectangle> tabs = new ArrayList<Rectangle>();
+	private final Scroller scroller = new Scroller();
+	private final Color highlight = new Color();
+	private final int[] statsOf;
+	private int current = SCORES, rowsFor = -1;
+	private String[][] games, hands;
+	private float confirmReset;
+	private List<HighScores.Entry> list;
+	private int newest = -1;
+
+	public HighScoresScreen(GameHost game) {
+		super(game);
+		statsOf = new int[Stats.ALL + 2];
+		statsOf[1] = Stats.ALL;
+		for (Difficulty d : Difficulty.values()) {
+			statsOf[d.ordinal() + 2] = d.ordinal();
+		}
+		for (int i = 0; i < statsOf.length; i++) {
+			tabs.add(new Rectangle());
 		}
 	}
-	private boolean showStats;
+
+	public void highlight(int position) {
+		newest = position;
+	}
 
 	@Override
 	public ScreenshotTour.Stop tourStop() {
@@ -40,33 +71,33 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 
 	@Override
 	public void secondHalf(boolean on) {
-		if (on) {
-			showStats = true;
+		if (on && current == SCORES) {
+			choose(1);
 		}
-	}
-	private int filter = Stats.ALL;
-	private String[][] games, hands;
-	private int rowsFor = -1;
-	private float confirmReset;
-	private final Color highlight = new Color();
-	private List<HighScores.Entry> list;
-	private int newest = -1;
-
-	public HighScoresScreen(GameHost game) {
-		super(game);
-	}
-
-	public void highlight(int position) {
-		newest = position;
 	}
 
 	@Override
 	public void show() {
-		rowsFor = -1;
 		super.show();
 		list = game.records().highScores().entries();
-		showStats = false;
+		rowsFor = -1;
 		confirmReset = 0;
+		choose(SCORES);
+	}
+
+	private void choose(int tab) {
+		current = tab;
+		scroller.reset();
+		confirmReset = 0;
+	}
+
+	private boolean onStats() {
+		return current != SCORES;
+	}
+
+	@Override
+	protected void drag(float dy) {
+		scroller.drag(dy);
 	}
 
 	@Override
@@ -80,170 +111,175 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
-
-		BitmapFont t = paint.serif(2.2f, Palette.GOLD);
-		paint.centred(t, showStats ? "Statistics" : "High scores", w / 2, h - TITLE_DROP);
-		paint.button(scoresTab, "Scores", w - SCORES_TAB_FROM_RIGHT, h - TABS_DROP, SCORES_TAB_W, TAB_H,
-				showStats ? assets.buttonAlt : assets.button);
-		paint.button(statsTab, "Statistics", w - STATS_TAB_FROM_RIGHT, h - TABS_DROP, STATS_TAB_W, TAB_H,
-				showStats ? assets.button : assets.buttonAlt);
-		chrome.backButton(backButton, h - TABS_DROP);
-		if (showStats) {
-			drawStats();
-		} else {
-			drawScores();
+		float width = Math.min(MAX_W, w - 2 * MARGIN), left = (w - width) / 2;
+		float top = h - MenuChrome.HEADER_H - GAP, bottom = MARGIN;
+		drawTabs(left, top);
+		page.set(left + TABS_W + GAP, bottom, width - TABS_W - GAP, top - bottom);
+		paint.frame(assets.panel, page.x, page.y, page.width, page.height);
+		float content = onStats() ? statsHeight() : scoresHeight();
+		scroller.update(frameDelta(), Gdx.input.isTouched(), content - page.height);
+		inside.set(page.x + FRAME, page.y + FRAME, page.width - 2 * FRAME, page.height - 2 * FRAME);
+		if (clipTo(inside)) {
+			if (onStats()) {
+				drawStats(page.y + page.height + scroller.offset());
+			} else {
+				drawScores(page.y + page.height + scroller.offset());
+			}
+			unclip();
 		}
+		drawScrollbar(content);
+		chrome.header("High scores", backButton, w, h);
 		batch.end();
 	}
 
-	private static final float TITLE_DROP = 40, TABS_DROP = 52, TAB_H = 40;
-	private static final float SCORES_TAB_FROM_RIGHT = 250, SCORES_TAB_W = 130, STATS_TAB_FROM_RIGHT = 98, STATS_TAB_W = 160;
-	private static final float SCORES_W = 480, SCORES_TOP_DROP = 100, SCORES_PAD = 66, SCORE_ROW = 30;
-	private static final float SCORE_HEADS_DROP = 18, EMPTY_NOTE_BELOW = 22, FIRST_ROW_BELOW_HEADS = 40;
-	private static final float[] SCORE_COLS = { 36, 86, 190, 300 };
-	private static final float DATE_FROM_RIGHT = 30, ROW_HIGHLIGHT_INSET = 12, ROW_HIGHLIGHT_RISE = 8;
-	private static final float SCORE_BADGE = 24, SCORE_BADGE_DROP = 16;
+	private void drawTabs(float left, float top) {
+		float y = top;
+		for (int i = 0; i < tabs.size(); i++) {
+			if (i == 1) {
+				paint.ui(0.95f, Palette.MUTED).draw(batch, "Statistics", left + 6, y - 8);
+				y -= GROUP_LABEL_H;
+			}
+			Rectangle tab = tabs.get(i).set(left, y - TAB_H, TABS_W, TAB_H);
+			boolean chosen = i == current;
+			paint.frame(chosen ? assets.button : assets.buttonAlt, tab.x, tab.y, tab.width, tab.height);
+			BitmapFont f = paint.serif(1.3f, chosen ? Palette.CREAM : Palette.MUTED);
+			boolean level = i > 1;
+			if (level) {
+				batch.draw(assets.levelBadge[statsOf[i]], tab.x + BADGE_INSET, tab.y + (TAB_H - BADGE) / 2, BADGE, BADGE);
+			}
+			paint.textIn(f, tabName(i), tab.x, tab.y, tab.width, tab.height);
+			y -= TAB_H + TAB_GAP;
+		}
+	}
 
-	private void drawScores() {
-		float pw = SCORES_W, rowH = SCORE_ROW, ph = SCORES_PAD + Math.max(1, list.size()) * rowH;
-		float px = (w - pw) / 2, top = h - SCORES_TOP_DROP;
-		paint.frame(assets.panel, px, top - ph, pw, ph);
-		BitmapFont f = paint.ui(1.15f);
-		float y = top - SCORE_HEADS_DROP;
+	private String tabName(int tab) {
+		if (tab == SCORES) {
+			return "High scores";
+		}
+		return statsOf[tab] == Stats.ALL ? "All games" : Difficulty.values()[statsOf[tab]].label;
+	}
+
+	private float scoresHeight() {
+		return SCORE_HEADS_H + Math.max(1, list.size()) * SCORE_ROW + PAD;
+	}
+
+	private float column(int c) {
+		return page.x + page.width * SCORE_COLS[c];
+	}
+
+	private void drawScores(float top) {
+		BitmapFont f = paint.ui(1.15f, Palette.MUTED);
+		float y = top - PAD + 4;
 		if (list.isEmpty()) {
-			f.setColor(Palette.MUTED);
-			paint.centred(f, "Finish a game to set your first high score", w / 2, y - EMPTY_NOTE_BELOW);
+			paint.centred(f, "Finish a game to set your first high score", page.x + page.width / 2, y - 6);
 			return;
 		}
-		for (int c = 0; c < SCORE_COLS.length; c++) {
-			scoreCols[c] = px + SCORE_COLS[c];
-		}
-		scoreCols[4] = px + pw - DATE_FROM_RIGHT;
-		drawScoreHeads(f, y);
-		y -= FIRST_ROW_BELOW_HEADS;
+		paint.text(f, "#", column(0), y, true);
+		paint.text(f, "Level", column(1), y, true);
+		paint.text(f, "Score", column(2), y, true);
+		paint.text(f, "Finished", column(3), y, true);
+		paint.text(f, "Date", page.x + page.width - PAD, y, false);
+		y = top - SCORE_HEADS_H;
 		float pulse = 0.5f + 0.5f * MathUtils.sin(shownFor * 3f);
 		for (int i = 0; i < list.size(); i++) {
 			if (i == newest) {
-				paint.rect(px + ROW_HIGHLIGHT_INSET, y - rowH + ROW_HIGHLIGHT_RISE, pw - 2 * ROW_HIGHLIGHT_INSET, rowH,
+				paint.rect(page.x + PAD / 2, y - SCORE_ROW, page.width - PAD, SCORE_ROW,
 						highlight.set(0.97f, 0.85f, 0.56f, 0.10f + 0.08f * pulse));
 			}
-			drawScoreRow(f, i, list.get(i), y);
-			y -= rowH;
+			drawScoreRow(i, list.get(i), y - 7);
+			y -= SCORE_ROW;
 		}
 	}
 
-	private final float[] scoreCols = new float[5];
-
-	private void drawScoreHeads(BitmapFont f, float y) {
-		float[] cols = scoreCols;
-		f.setColor(Palette.MUTED);
-		paint.text(f, "#", cols[0], y, true);
-		paint.text(f, "Level", cols[1], y, true);
-		paint.text(f, "Score", cols[2], y, true);
-		paint.text(f, "Finished", cols[3], y, true);
-		paint.text(f, "Date", cols[4], y, false);
-	}
-
-	private void drawScoreRow(BitmapFont f, int i, HighScores.Entry e, float y) {
-		float[] cols = scoreCols;
-		float badge = SCORE_BADGE;
+	private void drawScoreRow(int i, HighScores.Entry e, float y) {
 		Color c = i == newest ? Palette.GOLD_LIGHT : i == 0 ? Palette.GOLD : Palette.CREAM;
-		f.setColor(c);
-		paint.text(f, Numbers.text(i + 1), cols[0], y, true);
+		BitmapFont f = paint.ui(1.15f, c);
+		paint.text(f, Numbers.text(i + 1), column(0), y, true);
 		if (e.level() != null) {
-			batch.draw(assets.levelBadge[e.level().ordinal()], cols[1] - badge / 2, y - SCORE_BADGE_DROP, badge, badge);
+			batch.draw(assets.levelBadge[e.level().ordinal()], column(1) - BADGE / 2, y - 18, BADGE, BADGE);
 		}
-		paint.text(f, Numbers.text(e.score()), cols[2], y, true);
+		paint.text(f, Numbers.text(e.score()), column(2), y, true);
 		f.setColor(e.place() == 1 ? Palette.GOLD : c);
-		paint.text(f, e.place() == 1 ? "Won" : Wording.ordinal(e.place()), cols[3], y, true);
+		paint.text(f, e.place() == 1 ? "Won" : Wording.ordinal(e.place()), column(3), y, true);
 		f.setColor(i == newest ? Palette.GOLD_LIGHT : Palette.MUTED);
-		paint.text(f, e.date(), cols[4], y, false);
+		paint.text(f, e.date(), page.x + page.width - PAD, y, false);
 	}
 
-	private static final float FILTER_W = 152, FILTER_H = 40, FILTERS_DROP = 116, FILTER_GAP = 12;
-	private static final float FILTER_BADGE = 24, FILTER_BADGE_X = 10, FILTER_BADGE_Y = 8, FILTER_BADGE_SPACE = 28;
-	private static final float STATS_PANEL_W = 430, STATS_GAP = 30, STAT_ROW = 33, PANELS_BELOW_FILTERS = 18;
-	private static final float STAT_PANEL_PAD = 52, STAT_TITLE_DROP = 12, STAT_ROWS_DROP = 50, STAT_INSET = 22;
-	private static final float RESET_Y = 18, RESET_W = 260, RESET_H = 40;
-
-	private static String filterLabel(int which) {
-		return which == Stats.ALL ? "All" : Difficulty.values()[which].label;
-	}
-
-	private void drawStats() {
-		float fw = FILTER_W, fh = FILTER_H, fy = h - FILTERS_DROP;
-		int n = filterButtons.length;
-		float fx = w / 2 - (n * fw + (n - 1) * FILTER_GAP) / 2;
-		for (int i = 0; i < n; i++) {
-			int which = i == 0 ? Stats.ALL : i - 1;
-			float cx = fx + i * (fw + FILTER_GAP) + fw / 2;
-			boolean badge = which != Stats.ALL;
-			float space = badge ? FILTER_BADGE_SPACE : 0;
-			paint.button(filterButtons[which], "", cx, fy, fw, fh, which == filter ? assets.button : assets.buttonAlt);
-			BitmapFont f = paint.serif(1.5f, Palette.CREAM);
-			paint.textIn(f, filterLabel(which), cx - fw / 2 + space, fy, fw - space, fh);
-			if (badge) {
-				batch.draw(assets.levelBadge[which], cx - fw / 2 + FILTER_BADGE_X, fy + FILTER_BADGE_Y, FILTER_BADGE, FILTER_BADGE);
-			}
-		}
-
-		Stats.Totals t = game.records().stats().totals(filter);
-		if (rowsFor != filter) {
+	private void statRows() {
+		int which = statsOf[current];
+		if (rowsFor != which) {
+			Stats.Totals t = game.records().stats().totals(which);
 			games = Wording.gameRows(t);
 			hands = Wording.handRows(t);
-			rowsFor = filter;
+			rowsFor = which;
 		}
-		float top = fy - PANELS_BELOW_FILTERS, x0 = w / 2 - STATS_PANEL_W - STATS_GAP / 2;
-		statPanel("Games", games, x0, top);
-		statPanel("Hands", hands, x0 + STATS_PANEL_W + STATS_GAP, top);
-
-		paint.button(resetButton, confirmReset > 0 ? "Tap again to reset" : "Reset statistics", w / 2, RESET_Y, RESET_W, RESET_H,
-				confirmReset > 0 ? assets.button : assets.buttonAlt);
 	}
 
-	private void statPanel(String title, String[][] rows, float x, float top) {
-		float ph = STAT_PANEL_PAD + rows.length * STAT_ROW;
-		paint.frame(assets.panel, x, top - ph, STATS_PANEL_W, ph);
-		BitmapFont head = paint.serif(1.5f, Palette.GOLD);
-		head.draw(batch, title, x + STAT_INSET, top - STAT_TITLE_DROP);
-		BitmapFont f = paint.ui(1.15f);
-		float y = top - STAT_ROWS_DROP;
-		for (String[] row : rows) {
+	private float statsHeight() {
+		statRows();
+		return 2 * SECTION_H + (games.length + hands.length) * STAT_ROW + RESET_ROOM;
+	}
+
+	private void drawStats(float top) {
+		statRows();
+		float y = drawSection("Games", games, top);
+		y = drawSection("Hands", hands, y);
+		paint.button(resetButton, confirmReset > 0 ? "Tap again to reset" : "Reset statistics", page.x + page.width / 2,
+				y - RESET_ROOM + (RESET_ROOM - RESET_H) / 2, RESET_W, RESET_H, confirmReset > 0 ? assets.button : assets.buttonAlt);
+	}
+
+	private float drawSection(String title, String[][] rows, float top) {
+		paint.serif(1.4f, Palette.GOLD).draw(batch, title, page.x + PAD, top - 14);
+		float y = top - SECTION_H;
+		BitmapFont f = paint.ui(1.2f);
+		for (int i = 0; i < rows.length; i++) {
+			float text = y - (STAT_ROW - 18) / 2;
 			f.setColor(Palette.CREAM);
-			f.draw(batch, row[0], x + STAT_INSET, y);
+			f.draw(batch, rows[i][0], page.x + PAD, text);
 			f.setColor(Palette.GOLD_LIGHT);
-			paint.text(f, row[1], x + STATS_PANEL_W - STAT_INSET, y, false);
+			paint.text(f, rows[i][1], page.x + page.width - PAD, text, false);
 			y -= STAT_ROW;
+			if (i < rows.length - 1) {
+				paint.rect(page.x + PAD, y, page.width - 2 * PAD, 1, DIVIDER);
+			}
 		}
+		return y;
+	}
+
+	private void drawScrollbar(float content) {
+		if (content <= page.height) {
+			return;
+		}
+		float track = page.height - 2 * PAD, bar = Math.max(30, track * page.height / content);
+		float travel = content - page.height, at = travel <= 0 ? 0 : scroller.offset() / travel;
+		paint.rect(page.x + page.width - PAD / 2 - SCROLLBAR_W, page.y + PAD + (track - bar) * (1 - at), SCROLLBAR_W, bar,
+				SCROLLBAR);
 	}
 
 	@Override
 	protected void tap(float x, float y) {
 		if (backButton.contains(x, y)) {
 			back();
-		} else if (scoresTab.contains(x, y)) {
-			showStats = false;
-		} else if (statsTab.contains(x, y)) {
-			showStats = true;
-		} else if (showStats) {
-			for (int i = 0; i < filterButtons.length; i++) {
-				if (filterButtons[i].contains(x, y)) {
-					filter = i;
+			return;
+		}
+		for (int i = 0; i < tabs.size(); i++) {
+			if (tabs.get(i).contains(x, y)) {
+				if (i != current) {
+					choose(i);
 				}
+				return;
 			}
-			if (resetButton.contains(x, y)) {
-				if (confirmReset > 0) {
-					game.records().resetStats();
-					rowsFor = -1;
-					confirmReset = 0;
-				} else {
-					confirmReset = RESET_CONFIRM_TIME;
-				}
+		}
+		if (onStats() && page.contains(x, y) && resetButton.contains(x, y)) {
+			if (confirmReset > 0) {
+				game.records().resetStats();
+				rowsFor = -1;
+				confirmReset = 0;
+			} else {
+				confirmReset = RESET_CONFIRM_TIME;
 			}
 		}
 	}
-
-	private static final float RESET_CONFIRM_TIME = 3f;
 
 	@Override
 	protected void back() {
@@ -253,6 +289,6 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 
 	@Override
 	public String stateTag() {
-		return showStats ? "statistics" : "highscores";
+		return onStats() ? "statistics" : "highscores";
 	}
 }
