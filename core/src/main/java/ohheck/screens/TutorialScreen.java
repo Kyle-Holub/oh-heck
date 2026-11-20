@@ -51,7 +51,7 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 					+ ". (You can reverse this in Options.)", scenes::theDeal, 6.5f),
 			new Step("Bidding", "Before playing, everyone bids how many tricks they'll win. Look at your cards and count your winners.",
 					scenes::bidding, 9.5f),
-			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", scenes::biddingZero, 5.5f),
+			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", scenes::biddingZero, 7f),
 			new Step("The dealer's hook", "The dealer bids last and can't make the bids add up to the number of tricks, so someone always misses.",
 					scenes::dealersHook, 5.5f),
 			new Step("The counters", "Top left of the table: tally marks count the " + HANDS
@@ -92,7 +92,6 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 		scenes.size(w, h);
-		scenes.fireworks.draw(batch, assets.glow);
 		steps[step].scene.run();
 		scenes.sparks.draw(batch, assets.glow);
 		caption(steps[step]);

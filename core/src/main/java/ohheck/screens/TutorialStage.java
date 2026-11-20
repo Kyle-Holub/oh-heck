@@ -7,7 +7,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 
 import ohheck.anim.Timeline;
-import ohheck.fx.Fireworks;
 import ohheck.fx.Sparks;
 import ohheck.platform.Settings;
 import ohheck.players.Player;
@@ -38,7 +37,6 @@ abstract class TutorialStage {
 	final PlayerPanel panel;
 	final Counters counterArt;
 	final Sparks sparks = new Sparks();
-	final Fireworks fireworks = new Fireworks();
 	final Timeline clock = new Timeline();
 	float t;
 	float w = BaseScreen.WORLD_W, h = BaseScreen.WORLD_H;
@@ -63,7 +61,6 @@ abstract class TutorialStage {
 		clock.advance(dt, length, loops, hold);
 		t = clock.t();
 		sparks.step(dt);
-		fireworks.update(dt);
 	}
 
 	void size(float w, float h) {

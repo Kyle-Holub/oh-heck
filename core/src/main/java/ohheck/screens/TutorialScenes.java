@@ -258,36 +258,59 @@ final class TutorialScenes extends TutorialStage {
 			}
 		}
 		BitmapFont f = paint.ui(1.05f, Palette.GOLD_LIGHT, at(1.8f, 2.2f));
-		f.draw(batch, "The Ace of trumps and a King:\ntwo likely winners, so bid 2", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
+		f.draw(batch, "The Ace of spades and a King:\ntwo likely winners, so bid 2", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
 		bidPanel(cx(), handY() + CH + 12, 3, t >= 5.2f ? 2 : -1, -1, at(4.4f, 4.8f) * (1 - at(6.2f, 6.4f)));
 	}
 
+	private static final Card[] ZERO_HAND = { card(Rank.THREE, Suit.CLUBS), card(Rank.TWO, Suit.DIAMONDS) };
+	private static final Card[][] ZERO_TRICKS = {
+			{ card(Rank.KING, Suit.CLUBS), ZERO_HAND[0], card(Rank.NINE, Suit.CLUBS) },
+			{ card(Rank.ACE, Suit.DIAMONDS), ZERO_HAND[1], card(Rank.EIGHT, Suit.DIAMONDS) } };
+	private static final int[] ZERO_PLAY_ORDER = { 3, 0, 1 };
+	private static final int[] ZERO_SLOTS = { 2, 1, 0 };
+	private static final int ZERO_WINNER = 3;
+	private static final float[] ZERO_TRICK_STARTS = { 1.0f, 3.2f };
+	private static final float CARD_GAP = 0.4f, GATHER_FROM = 1.4f, GATHER_TO = 2.0f, HAND_END_AT = 5.4f;
+
 	void biddingZero() {
-		Card[] hand = { card(Rank.TWO, Suit.DIAMONDS), card(Rank.THREE, Suit.CLUBS), card(Rank.FOUR, Suit.HEARTS) };
-		boolean taken = t >= 3.0f;
-		seat(0, (t >= 0.4f ? bidOf(0) : waiting()).turn(t >= 3.4f).cards(3));
-		seat(1, plain().cards(3));
-		seat(3, (taken ? bidOf(1).won(1) : plain()).cards(3));
-		Card[] played = { card(Rank.NINE, Suit.CLUBS), card(Rank.QUEEN, Suit.CLUBS), card(Rank.THREE, Suit.CLUBS) };
-		float[] when = { 1.0f, 1.4f, 1.8f };
-		float y = rowY(true), gone = at(2.4f, 3.0f);
-		for (int i = 0; i < 3; i++) {
-			if (i == 1 && t >= when[2]) {
-				continue;
-			}
-			card(hand[i], handX(i, 3), handY(), 2, 1, 1);
+		int taken = 0;
+		for (float start : ZERO_TRICK_STARTS) {
+			taken += t >= start + GATHER_TO ? 1 : 0;
 		}
-		float[] fromXs = { fromX(1), fromX(3), handX(1, 3) }, fromYs = { fromY(1), fromY(3), handY() };
-		for (int i = 0; i < 3; i++) {
-			float x = MathUtils.lerp(rowX(i, 3), fromX(3), gone), cy = MathUtils.lerp(y, fromY(3), gone);
-			float a = when[i];
-			if (t >= a + 0.4f) {
-				card(played[i], x, cy, 2, 1, 1 - gone);
+		seat(0, (t >= 0.4f ? bidOf(0) : waiting()).cards(2));
+		seat(1, bidOf(1).cards(2));
+		seat(3, bidOf(2).won(taken).cards(2));
+		for (int k = 0; k < ZERO_HAND.length; k++) {
+			if (t < ZERO_TRICK_STARTS[k] + CARD_GAP) {
+				card(ZERO_HAND[k], handX(k, ZERO_HAND.length), handY(), 2, 1, 1);
+			}
+		}
+		for (int k = 0; k < ZERO_TRICKS.length; k++) {
+			zeroTrick(k);
+		}
+		float shown = at(HAND_END_AT, HAND_END_AT + 0.3f);
+		if (passed(HAND_END_AT) && settings.effects()) {
+			sparks.burst(cx(), cy(), 110);
+		}
+		art.art(assets.bidTricksText, cx(), cy(), 0.8f, shown);
+	}
+
+	private void zeroTrick(int k) {
+		float start = ZERO_TRICK_STARTS[k], gone = at(start + GATHER_FROM, start + GATHER_TO), y = rowY(true);
+		if (gone >= 1) {
+			return;
+		}
+		for (int i = 0; i < ZERO_PLAY_ORDER.length; i++) {
+			int seat = ZERO_PLAY_ORDER[i];
+			float a = start + i * CARD_GAP;
+			float x0 = seat == 0 ? handX(k, ZERO_HAND.length) : fromX(seat), y0 = seat == 0 ? handY() : fromY(seat);
+			if (t >= a + CARD_GAP) {
+				float x = MathUtils.lerp(rowX(ZERO_SLOTS[i], 3), fromX(ZERO_WINNER), gone), cy = MathUtils.lerp(y, fromY(ZERO_WINNER), gone);
+				card(ZERO_TRICKS[k][i], x, cy, 2, 1, 1 - gone);
 			} else {
-				flying(played[i], fromXs[i], fromYs[i], rowX(i, 3), y, a, a + 0.4f, 1, 1);
+				flying(ZERO_TRICKS[k][i], x0, y0, rowX(ZERO_SLOTS[i], 3), y, a, a + CARD_GAP, 1, 1);
 			}
 		}
-		label("NO TRICKS TAKEN: BID MADE", seatX(0) + PlayerPanel.W / 2, seatTop(0) + 22, at(3.4f, 3.8f));
 	}
 
 	void dealersHook() {
@@ -344,10 +367,34 @@ final class TutorialScenes extends TutorialStage {
 		paint.centred(f, SET_LINE, cx(), cy() - 4);
 	}
 
-	void ready() {
-		if (passed(0.3f) && settings.effects()) {
-			fireworks.show(w, h);
+	private static final Suit[] LINE_SUITS = { Suit.SPADES, Suit.HEARTS, Suit.CLUBS, Suit.DIAMONDS };
+	private static final Card[] LINE = new Card[Card.COUNT];
+	static {
+		int i = 0;
+		for (Suit suit : LINE_SUITS) {
+			for (int r = HIGH_TO_LOW.length - 1; r >= 0; r--) {
+				LINE[i++] = card(HIGH_TO_LOW[r], suit);
+			}
 		}
-		art.art(assets.titleText, cx(), cy() + 20, 0.62f, 0.25f + 0.75f * at(0, 1.2f));
+	}
+	private static final float LINE_SCALE = 0.75f, LINE_DEAL = 0.022f, LINE_FLIGHT = 0.35f, FLIP_FROM = 1.6f,
+			FLIP_STEP = 0.02f, FLIP_TIME = 0.25f, WAVE_FROM = 3.0f, WAVE_HEIGHT = 14, WAVE_SPEED = 3.2f, WAVE_LENGTH = 0.28f;
+
+	void ready() {
+		art.art(assets.titleText, cx(), cy() + 70, 0.62f, 0.25f + 0.75f * at(0, 1.2f));
+		float cw = CW * LINE_SCALE, ch = CH * LINE_SCALE;
+		float step = (w - 80 - cw) / (LINE.length - 1), x0 = (w - step * (LINE.length - 1) - cw) / 2;
+		float baseY = cy() - ch + 4, wave = at(WAVE_FROM, WAVE_FROM + 1f);
+		for (int i = 0; i < LINE.length; i++) {
+			float arrive = i * LINE_DEAL, k = at(arrive, arrive + LINE_FLIGHT);
+			if (t < arrive) {
+				break;
+			}
+			float x = MathUtils.lerp(-cw - 20, x0 + i * step, k);
+			float y = baseY - (1 - k) * 60 + wave * WAVE_HEIGHT * MathUtils.sin(clock.shown() * WAVE_SPEED - i * WAVE_LENGTH);
+			float flip = at(FLIP_FROM + i * FLIP_STEP, FLIP_FROM + i * FLIP_STEP + FLIP_TIME);
+			art.shadow(x, y, cw, ch, 3);
+			art.flip(LINE[i], x, y, cw, ch, flip);
+		}
 	}
 }
