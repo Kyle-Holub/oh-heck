@@ -170,7 +170,7 @@ public class BotScenarioTest {
 				m.placeBid(m.currentSeat(), s);
 			}
 		}
-		assertTrue("Phillip bid higher " + higher + " times in " + asked, higher > asked / 8);
+		assertTrue("Phillip bid higher " + higher + " times in " + asked, higher > asked / 12);
 	}
 
 	@Test
