@@ -20,10 +20,25 @@ public enum Style {
 			return false;
 		}
 	},
+	THINKER("Thinks it through") {
+		static final double EFFORT = 3;
+
+		@Override
+		boolean habitual() {
+			return false;
+		}
+
+		@Override
+		Bot base(Difficulty level, Random rng) {
+			return level == Difficulty.HARD ? new HardBot(rng, HardBot.SPOIL, EFFORT, true) : level.bot(rng);
+		}
+	},
 	BOLD("Overbids") {
+		static final double STRENGTH = 0.25;
+
 		@Override
 		int bid(int bid, TableView v, StyledBot player) {
-			return player.leans() ? up(bid, v) : bid;
+			return player.leans(STRENGTH) ? up(bid, v) : bid;
 		}
 	},
 	TIMID("Underbids") {
@@ -91,7 +106,7 @@ public enum Style {
 		}
 	},
 	GREEDY("Greedy") {
-		static final double CLOSE = 5;
+		static final double CLOSE = 4;
 
 		@Override
 		int bid(int bid, TableView v, StyledBot player) {
