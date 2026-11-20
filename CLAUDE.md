@@ -42,7 +42,8 @@ the screenshot run, CI, the arena and the art tools.
 - **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
   constant, a rules variant a `RuleSet` subclass listed in `RuleSet.ALL`, and a new reaction
   to table events a `TableFlow.Listener`, a new table state a `TableState` constant with
-  its `StateView`, a pause-menu choice a `MenuItem` constant, and a screenshot-tour stop a
+  its `StateView`, a pause-menu choice a `MenuItem` constant, a setting an `OptionItem` on its `OptionsPage`
+  (a new category is one more page), and a screenshot-tour stop a
   screen implementing `TourStop`. Code playing a game asks `match.rules()`, not `Rules`.
 - **Seats:** you are `Seating.YOU`; who sits in the other seats is a `Seating`, not an
   `int[]`.
