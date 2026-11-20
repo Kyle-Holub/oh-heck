@@ -20,7 +20,7 @@ public enum Style {
 			return false;
 		}
 	},
-	THINKER("Thinks it through") {
+	THINKER("Thinker") {
 		static final double EFFORT = 3;
 
 		@Override

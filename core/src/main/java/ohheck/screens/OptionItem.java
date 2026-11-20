@@ -12,7 +12,7 @@ import ohheck.ui.Palette;
 /* One setting on an options page: its name and a line on what it does, with a control on the right. */
 abstract class OptionItem {
 
-	static final float ROW_H = 66, PAD = 22, PILL_W = 150, PILL_H = 38;
+	static final float ROW_H = 66, PAD = 22, PILL_W = 150, PILL_H = 38, MORE_W = 64, DOT = 5, DOT_GAP = 10;
 
 	final String label, detail;
 	final Rectangle bounds = new Rectangle();
@@ -96,8 +96,11 @@ abstract class OptionItem {
 
 		@Override
 		void drawControl(Painter paint, float right, float y, float h) {
-			BitmapFont arrow = paint.serif(1.8f, Palette.GOLD);
-			paint.text(arrow, ">", right, y + h / 2 + 14, false);
+			float px = right - MORE_W, py = y + (h - PILL_H) / 2;
+			paint.frame(paint.assets.button, px, py, MORE_W, PILL_H);
+			for (int i = -1; i <= 1; i++) {
+				paint.rect(px + MORE_W / 2 + i * DOT_GAP - DOT / 2, py + PILL_H / 2 - DOT / 2, DOT, DOT, Palette.CREAM);
+			}
 		}
 
 		@Override
