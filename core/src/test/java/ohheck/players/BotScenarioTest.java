@@ -151,7 +151,7 @@ public class BotScenarioTest {
 		TableView v = Position.deal(3, "2S").me(3, "KH 9H 4C").bids(0, 1, 0, 1).trick(0, "8H 5H 2H").view();
 		double spendthrift = rate(player(3), 200, b -> b.choosePlay(v).equals(card("KH")));
 		double plain = rate(Difficulty.EASY::bot, 200, b -> b.choosePlay(v).equals(card("KH")));
-		assertTrue("Wilfred won with the king " + spendthrift + " of the time, plain Easy " + plain,
+		assertTrue("Horatio won with the king " + spendthrift + " of the time, plain Easy " + plain,
 				spendthrift > plain + 0.2);
 	}
 
