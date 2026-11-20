@@ -1,92 +1,58 @@
 package ohheck.screens;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import ohheck.platform.Audio;
 import ohheck.platform.Settings;
-import ohheck.players.Difficulty;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.MenuChrome;
 import ohheck.ui.Palette;
-import ohheck.ui.Wording;
+import ohheck.ui.TapAreas;
 
+/* The settings, a page per category: tabs down the left, the chosen page's settings on the right. */
 public class OptionsScreen extends BaseScreen implements TourStop {
 
+	private static final float MAX_W = 940, MARGIN = 24, GAP = 18, TABS_W = 210, TAB_H = 54, TAB_GAP = 10, PAGE_TOP = 18;
+	private static final Color DIVIDER = new Color(0.68f, 0.6f, 0.49f, 0.25f);
+
 	private final MenuChrome chrome = new MenuChrome(paint);
-
-	private static final float COLUMN_W = 440, COLUMN_GAP = 34, SECTION_GAP = 40;
-
-	private final Rectangle backButton = new Rectangle();
-	private final Map<Difficulty, String> notes = new EnumMap<Difficulty, String>(Difficulty.class);
-	{
-		for (Difficulty d : Difficulty.values()) {
-			notes.put(d, Wording.tableDescription(d));
-		}
-	}
-
-	private static final class Row {
-		final String label;
-		final Supplier<String> value;
-		final BooleanSupplier on;
-		final Runnable tap;
-		final Rectangle bounds = new Rectangle();
-
-		Row(String label, Supplier<String> value, BooleanSupplier on, Runnable tap) {
-			this.label = label;
-			this.value = value;
-			this.on = on;
-			this.tap = tap;
-		}
-
-		Row(String label, Supplier<String> value, Runnable tap) {
-			this(label, value, () -> true, tap);
-		}
-
-		static Row link(String label, Runnable open) {
-			return new Row(label, null, open);
-		}
-
-		boolean isLink() {
-			return value == null;
-		}
-
-		static Row toggle(String label, BooleanSupplier on, Runnable flip) {
-			return new Row(label, () -> on.getAsBoolean() ? "On" : "Off", on, flip);
-		}
-	}
-
-	private final List<Row> gameRows = new ArrayList<Row>(), displayRows = new ArrayList<Row>(),
-			learnRows = new ArrayList<Row>();
-	{
-		final Settings s = game.settings();
-		gameRows.add(new Row("Hand progression", () -> s.handOrder().label(), () -> s.setHandOrder(s.handOrder().flipped())));
-		gameRows.add(new Row("Game speed", () -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame())));
-		displayRows.add(Row.toggle("Music", s::music, () -> {
-			s.setMusic(!s.music());
-			game.audio().startMusic();
-		}));
-		displayRows.add(Row.toggle("Sound effects", s::sound, () -> {
-			s.setSound(!s.sound());
-			game.audio().play(Audio.Effect.PLAY_CARD);
-		}));
-		displayRows.add(Row.toggle("Visual effects", s::effects, () -> s.setEffects(!s.effects())));
-		learnRows.add(Row.link("How to play", game::showTutorial));
-		learnRows.add(Row.link("Roster", game::showPlayers));
-	}
+	private final Rectangle backButton = new Rectangle(), page = new Rectangle();
+	private final List<Rectangle> tabs = new ArrayList<Rectangle>();
+	private final List<OptionsPage> pages;
+	private int current;
+	private OptionItem dragging;
 
 	public OptionsScreen(GameHost game) {
 		super(game);
+		Settings s = game.settings();
+		pages = Arrays.asList(
+				new OptionsPage("Game",
+						new DifficultyOption(s),
+						OptionItem.choice("Hand progression", "How many cards each hand deals, first to last.",
+								() -> s.handOrder().label(), () -> s.setHandOrder(s.handOrder().flipped())),
+						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
+								() -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame()))),
+				new OptionsPage("Sound & display",
+						OptionItem.toggle("Music", "The background music.", s::music, () -> {
+							s.setMusic(!s.music());
+							game.audio().startMusic();
+						}),
+						OptionItem.toggle("Sound effects", "Cards, shuffles and fanfares.", s::sound, () -> {
+							s.setSound(!s.sound());
+							game.audio().play(Audio.Effect.PLAY_CARD);
+						}),
+						OptionItem.toggle("Visual effects", "Glow, vignette and film grain.", s::effects,
+								() -> s.setEffects(!s.effects()))),
+				new OptionsPage("Learn",
+						OptionItem.link("How to play", "The rules, a step at a time.", game::showTutorial),
+						OptionItem.link("Roster", "The players you can meet at the table.", game::showPlayers)));
 	}
 
 	@Override
@@ -104,112 +70,55 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
-
-		float rh = ROW_H, top = h - MenuChrome.HEADER_H - 46;
-		float left = (w - 2 * COLUMN_W - COLUMN_GAP) / 2, right = left + COLUMN_W + COLUMN_GAP;
-		chrome.heading("Game", left, top + 30);
-		chrome.heading("Sound & display", right, top + 30);
-		float y = top - DIFFICULTY_H;
-		drawDifficulty(left, y, COLUMN_W);
-		for (Row row : gameRows) {
-			y -= ROW_GAP + rh;
-			drawRow(row, left, y, COLUMN_W, rh);
-		}
-		y = top;
-		for (Row row : displayRows) {
-			y -= rh;
-			drawRow(row, right, y, COLUMN_W, rh);
-			y -= ROW_GAP;
-		}
-		y -= SECTION_GAP;
-		chrome.heading("Learn", right, y + 30);
-		for (Row row : learnRows) {
-			y -= rh;
-			drawRow(row, right, y, COLUMN_W, rh);
-			y -= ROW_GAP;
-		}
-
+		float width = Math.min(MAX_W, w - 2 * MARGIN), left = (w - width) / 2;
+		float top = h - MenuChrome.HEADER_H - GAP, bottom = MARGIN;
+		drawTabs(left, top);
+		page.set(left + TABS_W + GAP, bottom, width - TABS_W - GAP, top - bottom);
+		drawPage(pages.get(current));
 		chrome.header("Options", backButton, w, h);
 		batch.end();
 	}
 
-	private void drawRow(Row row, float x, float y, float rw, float rh) {
-		row.bounds.set(x, y, rw, rh);
-		if (row.isLink()) {
-			paint.frame(assets.button, x, y, rw, rh);
-			paint.textIn(paint.serif(1.6f, Palette.CREAM), row.label, x, y, rw, rh);
-			return;
+	private void drawTabs(float left, float top) {
+		TapAreas.sizeTo(tabs, pages.size());
+		for (int i = 0; i < pages.size(); i++) {
+			Rectangle tab = tabs.get(i).set(left, top - (i + 1) * TAB_H - i * TAB_GAP, TABS_W, TAB_H);
+			boolean chosen = i == current;
+			paint.frame(chosen ? assets.button : assets.buttonAlt, tab.x, tab.y, tab.width, tab.height);
+			paint.textIn(paint.serif(1.3f, chosen ? Palette.CREAM : Palette.MUTED), pages.get(i).name, tab.x, tab.y,
+					tab.width, tab.height);
 		}
-		paint.frame(assets.panel, x, y, rw, rh);
-		BitmapFont f = paint.serif(1.6f, Palette.CREAM);
-		glyphs.setText(f, row.label);
-		f.draw(batch, row.label, x + 24, y + rh / 2 + glyphs.height / 2);
-		float vw = 140;
-		boolean on = row.on.getAsBoolean();
-		paint.frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 7, vw, rh - 14);
-		BitmapFont v = paint.ui(1.4f, on ? Palette.CREAM : Palette.MUTED);
-		paint.textIn(v, row.value.get(), x + rw - vw - 14, y, vw, rh);
 	}
 
-	private static final float ROW_H = 40, ROW_GAP = 6, DIFFICULTY_H = 112, KNOB = 34;
-	private static final Color TRACK = new Color(0.36f, 0.29f, 0.21f, 1f);
-	private final Rectangle slider = new Rectangle();
-	private float stop0, stopStep;
-	private boolean sliding;
-
-	private void drawDifficulty(float x, float y, float rw) {
-		Settings s = game.settings();
-		paint.frame(assets.panel, x, y, rw, DIFFICULTY_H);
-		BitmapFont f = paint.serif(1.6f, Palette.CREAM);
-		f.draw(batch, "Difficulty", x + 24, y + DIFFICULTY_H - 18);
-		float x0 = x + 214, x1 = x + rw - 36, ty = y + 84;
-		stop0 = x0;
-		stopStep = (x1 - x0) / (Difficulty.values().length - 1);
-		slider.set(x0 - 30, y + 48, x1 - x0 + 60, DIFFICULTY_H - 48);
-		int level = s.difficulty().ordinal();
-		float knobX = x0 + level * stopStep;
-		paint.rect(x0, ty - 2, x1 - x0, 4, TRACK);
-		paint.rect(x0, ty - 2, knobX - x0, 4, Palette.GOLD);
-		BitmapFont l = paint.ui(0.9f);
-		for (int i = 0; i < Difficulty.values().length; i++) {
-			float sx = x0 + i * stopStep;
-			paint.rect(sx - 1.5f, ty - 7, 3, 14, i <= level ? Palette.GOLD : TRACK);
-			l.setColor(i == level ? Palette.GOLD_LIGHT : Palette.MUTED);
-			paint.text(l, Difficulty.values()[i].label, sx, y + 60, true);
-		}
-		BitmapFont n = paint.ui(0.85f);
-		String note = notes.get(s.difficulty());
-		glyphs.setText(n, note);
-		if (glyphs.width > rw - 48) {
-			n = paint.ui(0.85f * (rw - 48) / glyphs.width);
-		}
-		n.setColor(Palette.MUTED);
-		n.draw(batch, note, x + 24, y + 38);
-		n.draw(batch, "Seats a new table from your next game.", x + 24, y + 20);
-		batch.draw(assets.levelBadge[level], knobX - KNOB / 2, ty - KNOB / 2, KNOB, KNOB);
-	}
-
-	private void slideTo(float x) {
-		int n = Difficulty.values().length;
-		Difficulty level = Difficulty.values()[Math.max(0, Math.min(n - 1, Math.round((x - stop0) / stopStep)))];
-		if (level != game.settings().difficulty()) {
-			game.settings().setDifficulty(level);
+	private void drawPage(OptionsPage p) {
+		paint.frame(assets.panel, page.x, page.y, page.width, page.height);
+		float y = page.y + page.height - PAGE_TOP;
+		for (int i = 0; i < p.items.size(); i++) {
+			OptionItem item = p.items.get(i);
+			y -= item.height();
+			item.draw(paint, page.x, y, page.width);
+			if (i < p.items.size() - 1) {
+				paint.rect(page.x + OptionItem.PAD, y, page.width - 2 * OptionItem.PAD, 1, DIVIDER);
+			}
 		}
 	}
 
 	@Override
 	protected void touchDown(float x, float y) {
 		super.touchDown(x, y);
-		sliding = slider.contains(x, y);
-		if (sliding) {
-			slideTo(x);
+		dragging = null;
+		for (OptionItem item : pages.get(current).items) {
+			if (item.grabs(x, y)) {
+				dragging = item;
+				item.dragTo(x);
+			}
 		}
 	}
 
 	@Override
 	protected void touchDragged(float x, float y) {
-		if (sliding) {
-			slideTo(x);
+		if (dragging != null) {
+			dragging.dragTo(x);
 		} else {
 			super.touchDragged(x, y);
 		}
@@ -217,8 +126,8 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 
 	@Override
 	protected void touchUp(float x, float y) {
-		if (sliding) {
-			sliding = false;
+		if (dragging != null) {
+			dragging = null;
 			return;
 		}
 		super.touchUp(x, y);
@@ -230,12 +139,16 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 			back();
 			return;
 		}
-		for (List<Row> rows : java.util.Arrays.asList(gameRows, displayRows, learnRows)) {
-			for (Row row : rows) {
-				if (row.bounds.contains(x, y)) {
-					row.tap.run();
-					return;
-				}
+		for (int i = 0; i < tabs.size(); i++) {
+			if (tabs.get(i).contains(x, y)) {
+				current = i;
+				return;
+			}
+		}
+		for (OptionItem item : pages.get(current).items) {
+			if (item.bounds.contains(x, y)) {
+				item.tap(x, y);
+				return;
 			}
 		}
 	}

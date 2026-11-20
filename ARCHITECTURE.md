@@ -149,8 +149,8 @@ first five have no libGDX and test in plain JUnit.
 `TitleScreen` (with `FallingCards`, the 3D shower), `TutorialScreen` (How to play: 13
 timed scenes, a tap each; each step names its scene in `TutorialScenes`, which draws with
 `TutorialStage`'s little table, and each scene's clock is an `ohheck.anim.Timeline`,
-tested in `TimelineTest`), `OptionsScreen` (setting rows are `Row`s built from
-lambdas; `Row.toggle` for On/Off), `PlayersScreen` (the Roster), `HighScoresScreen` (plus
+tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`, each a list of
+`OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`), `PlayersScreen` (the Roster), `HighScoresScreen` (plus
 the Statistics tab, its filter built from `Difficulty`).
 
 Facts the screens show come from the rules, not copied text: the Options difficulty note is
