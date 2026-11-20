@@ -57,10 +57,10 @@ first five have no libGDX and test in plain JUnit.
 - `Difficulty` holds everything that differs by level: its bot (`bot(rng)`), the
   matchmaking odds as an Options setting (`chanceOf`), and how strongly habits show. A new
   level is one more constant, plus its words for the Options note in `Wording`.
-- Bots: `Bot` (`Bot.of(level, rng)`), `EasyBot` (Normal with slips), `NormalBot`
+- Bots: `Bot` (`Bot.of(level, rng)`), `EasyBot` (Normal that loses count, slips on bids and plays loosely), `NormalBot`
   (bids from the learned `BidTable`, plays with card memory), `HardBot` (Monte Carlo over
   imagined deals). Each `Style` writes its own habit (`bid` and `play` in its constant) and
-  `StyledBot` applies it on top of the level's bot. A new habit is one more `Style` constant.
+  `StyledBot` applies it on top of the level's bot. A new habit is one more `Style` constant. `BotScenarioTest` asks every player positions with an obvious move (a zero bid never leads an ace, a made bid ducks when it can...) and checks each habit shows where it should.
 - `Player` is the roster of twelve: name, level, style, trait, and a **permanent id**.
   Look players up with `Player.byId`, never by position. Never renumber or reuse an id,
   because saves and statistics refer to players by id. `Player.draw` seats a table, using

@@ -4,18 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /* Short card names for tests: "AS" is the ace of spades, "10H" the ten of hearts. */
-final class TestCards {
+public final class TestCards {
 
 	private TestCards() {
 	}
 
-	static Card c(String name) {
+	public static Card c(String name) {
 		String r = name.substring(0, name.length() - 1);
 		char s = name.charAt(name.length() - 1);
 		return Card.of(rank(r), suit(s));
 	}
 
-	static List<Card> cards(String names) {
+	public static List<Card> cards(String names) {
 		List<Card> list = new ArrayList<Card>();
 		for (String n : names.trim().split("\\s+")) {
 			list.add(c(n));
