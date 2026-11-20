@@ -69,10 +69,6 @@ public final class Wording {
 		return sb.toString();
 	}
 
-	public static String dealerCantBid(int forbidden) {
-		return "As dealer you can't bid " + forbidden;
-	}
-
 	public static String dealerCantBid(int bid, int tricks) {
 		return "As dealer you can't bid " + bid + ": the bids would add up to " + tricks;
 	}

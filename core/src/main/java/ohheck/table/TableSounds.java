@@ -21,8 +21,10 @@ final class TableSounds implements TableFlow.Listener {
 	@Override
 	public void played(Match m, int seat, Card c) {
 		audio.play(Audio.Effect.PLAY_CARD);
-		if (m.phase() == Match.Phase.HAND_OVER) {
-			audio.play(m.madeBid(Seating.YOU) ? Audio.Effect.WIN : Audio.Effect.LOSE);
-		}
+	}
+
+	@Override
+	public void handEnded(Match m) {
+		audio.play(m.madeBid(Seating.YOU) ? Audio.Effect.WIN : Audio.Effect.LOSE);
 	}
 }

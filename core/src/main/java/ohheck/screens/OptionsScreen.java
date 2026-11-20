@@ -34,7 +34,6 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 			notes.put(d, Wording.tableDescription(d));
 		}
 	}
-	private static final String[] SPEEDS = { "Slow", "Medium", "Fast" };
 
 	private static final class Row {
 		final String label;
@@ -54,6 +53,14 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 			this(label, value, () -> true, tap);
 		}
 
+		static Row link(String label, Runnable open) {
+			return new Row(label, null, open);
+		}
+
+		boolean isLink() {
+			return value == null;
+		}
+
 		static Row toggle(String label, BooleanSupplier on, Runnable flip) {
 			return new Row(label, () -> on.getAsBoolean() ? "On" : "Off", on, flip);
 		}
@@ -64,7 +71,7 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 	{
 		final Settings s = game.settings();
 		gameRows.add(new Row("Hand progression", () -> s.handOrder().label(), () -> s.setHandOrder(s.handOrder().flipped())));
-		gameRows.add(new Row("Game speed", () -> SPEEDS[s.speed()], () -> s.setSpeed((s.speed() + 1) % SPEEDS.length)));
+		gameRows.add(new Row("Game speed", () -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame())));
 		displayRows.add(Row.toggle("Music", s::music, () -> {
 			s.setMusic(!s.music());
 			game.audio().startMusic();
@@ -74,8 +81,8 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 			game.audio().play(Audio.Effect.PLAY_CARD);
 		}));
 		displayRows.add(Row.toggle("Visual effects", s::effects, () -> s.setEffects(!s.effects())));
-		learnRows.add(new Row("How to play", () -> "View", game::showTutorial));
-		learnRows.add(new Row("Roster", () -> "View", game::showPlayers));
+		learnRows.add(Row.link("How to play", game::showTutorial));
+		learnRows.add(Row.link("Roster", game::showPlayers));
 	}
 
 	public OptionsScreen(GameHost game) {
@@ -127,6 +134,12 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 	}
 
 	private void drawRow(Row row, float x, float y, float rw, float rh) {
+		row.bounds.set(x, y, rw, rh);
+		if (row.isLink()) {
+			paint.frame(assets.button, x, y, rw, rh);
+			paint.textIn(paint.serif(1.6f, Palette.CREAM), row.label, x, y, rw, rh);
+			return;
+		}
 		paint.frame(assets.panel, x, y, rw, rh);
 		BitmapFont f = paint.serif(1.6f, Palette.CREAM);
 		glyphs.setText(f, row.label);
@@ -136,7 +149,6 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 		paint.frame(on ? assets.button : assets.buttonOff, x + rw - vw - 14, y + 7, vw, rh - 14);
 		BitmapFont v = paint.ui(1.4f, on ? Palette.CREAM : Palette.MUTED);
 		paint.textIn(v, row.value.get(), x + rw - vw - 14, y, vw, rh);
-		row.bounds.set(x, y, rw, rh);
 	}
 
 	private static final float ROW_H = 40, ROW_GAP = 6, DIFFICULTY_H = 112, KNOB = 34;

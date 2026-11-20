@@ -37,9 +37,9 @@ final class TableOverlays {
 
 	private static final float PAUSE_LIFT = 20, PAUSED_TITLE_RISE = 36;
 	private static final float MENU_BUTTON_Y = 10;
-	private static final float BID_TITLE_DROP = 44, BID_TITLE_SCALE = 0.78f, BID_NOTE_DROP = 86, BID_ROW_RISE = 20,
+	private static final float BID_TITLE_TOP = 12, BID_TITLE_SCALE = 0.92f, BID_ROW_RISE = 20,
 			BID_PANEL_MARGIN = 40, BID_NUMERAL_OF_BUTTON = 0.66f;
-	private static final float HAND_END_FADE = 0.3f, HAND_END_SCALE = 0.95f, TAP_NOTE_BELOW = 40;
+	private static final float HAND_END_FADE = 0.3f, HAND_END_SCALE = 0.95f;
 	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
@@ -134,12 +134,8 @@ final class TableOverlays {
 		float px = (layout.w - pw) / 2, py = layout.centreY() - ph / 2;
 		paint.frame(paint.assets.panel, px, py, pw, ph);
 
-		art.art(paint.assets.makeBidText, layout.w / 2, py + ph - BID_TITLE_DROP, BID_TITLE_SCALE, 1f);
-		int forbidden = match.forbiddenBid();
-		if (forbidden >= 0) {
-			BitmapFont s = paint.ui(1f, Palette.MUTED);
-			paint.text(s, Wording.dealerCantBid(forbidden), layout.w / 2, py + ph - BID_NOTE_DROP, true);
-		}
+		float titleH = paint.assets.makeBidText.getHeight() * BID_TITLE_SCALE;
+		art.art(paint.assets.makeBidText, layout.w / 2, py + ph - BID_TITLE_TOP - titleH / 2, BID_TITLE_SCALE, 1f);
 
 		targets.bidsUpTo(n);
 		float bx = (layout.w - rowW) / 2, by = py + BID_ROW_RISE;
@@ -156,8 +152,6 @@ final class TableOverlays {
 		art.art(match.madeBid(Seating.YOU) ? paint.assets.bidTricksText : paint.assets.setText, layout.centreX(),
 				layout.centreY(), HAND_END_SCALE, a);
 		drawHandLabels(0f, a);
-		BitmapFont f = paint.ui(1f, Palette.MUTED);
-		paint.text(f, "Tap for the scores", layout.w / 2, layout.h / 2 - TAP_NOTE_BELOW, true);
 	}
 
 	void drawHandLabels(float drop, float alpha) {
