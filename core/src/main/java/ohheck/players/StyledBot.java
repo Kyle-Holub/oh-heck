@@ -30,10 +30,6 @@ final class StyledBot implements Bot {
 		return rng.nextDouble() < bidLean * strength;
 	}
 
-	boolean coinFlip() {
-		return rng.nextBoolean();
-	}
-
 	boolean hasBidBeforeThisHand(TableView v) {
 		return lastBidHand >= 0 && lastBidHand < v.handIndex();
 	}

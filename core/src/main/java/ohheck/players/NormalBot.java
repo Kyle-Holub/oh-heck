@@ -16,28 +16,34 @@ final class NormalBot implements Bot {
 
 	@Override
 	public int chooseBid(TableView v) {
+		double[] expected = expectedScores(v);
+		int best = -1;
+		for (int b = 0; b < expected.length; b++) {
+			if (!Double.isNaN(expected[b]) && (best < 0 || expected[b] > expected[best])) {
+				best = b;
+			}
+		}
+		return best;
+	}
+
+	static double[] expectedScores(TableView v) {
 		double[] p = new double[v.hand().size()];
 		for (int i = 0; i < p.length; i++) {
 			p[i] = BidTable.chance(v, v.hand().get(i));
 		}
 		adjustForTheTable(v, p);
 		double[] dist = trickDistribution(p);
-		int best = -1;
-		double bestScore = Double.NEGATIVE_INFINITY;
+		double[] expected = new double[v.handSize() + 1];
 		for (int b = 0; b <= v.handSize(); b++) {
 			if (!v.isLegalBid(b)) {
+				expected[b] = Double.NaN;
 				continue;
 			}
-			double expected = 0;
 			for (int k = 0; k < dist.length; k++) {
-				expected += dist[k] * v.rules().score(b, k);
-			}
-			if (expected > bestScore) {
-				bestScore = expected;
-				best = b;
+				expected[b] += dist[k] * v.rules().score(b, k);
 			}
 		}
-		return best;
+		return expected;
 	}
 
 	static final double TABLE_PULL = 0.6;

@@ -1,5 +1,6 @@
 package ohheck.players;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -38,17 +39,8 @@ public enum Style {
 			return player.leans(strength) ? 0 : bid;
 		}
 	},
-	GAMBLER("Unpredictable") {
-		@Override
-		int bid(int bid, TableView v, StyledBot player) {
-			if (!player.leans()) {
-				return bid;
-			}
-			return player.coinFlip() ? up(bid, v) : down(bid);
-		}
-	},
 	SPOILER("Spoiler") {
-		static final double SPOIL = 1.2;
+		static final double SPOIL = 0.8;
 
 		@Override
 		boolean habitual() {
@@ -79,34 +71,61 @@ public enum Style {
 			return bid;
 		}
 	},
-	TRUMP_HAPPY("Trump-happy") {
+	TRUMP_COUNTER("Trump counter") {
 		@Override
-		Card play(Card card, TableView v, List<Card> legal) {
-			if (v.trick().isEmpty() && v.hand().size() * 2 > v.handSize()) {
-				Card t = highest(legal, v.trump(), true);
-				return t != null ? t : card;
-			}
-			return card;
+		int bid(int bid, TableView v, StyledBot player) {
+			return player.leans() ? Math.min(v.handSize(), trumpsAndAces(v)) : bid;
 		}
 	},
-	TRUMP_HOARDER("Trump hoarder") {
+	SPENDTHRIFT("Spendthrift") {
 		@Override
 		Card play(Card card, TableView v, List<Card> legal) {
-			if (card.suit() == v.trump() && v.hand().size() > 2) {
-				Card other = lowest(legal, v.trump());
-				return other != null ? other : card;
+			if (v.need() <= 0) {
+				return card;
 			}
-			return card;
-		}
-	},
-	ACE_LEADER("Ace leader") {
-		@Override
-		Card play(Card card, TableView v, List<Card> legal) {
 			if (v.trick().isEmpty()) {
-				Card high = highest(legal, v.trump(), false);
-				return high != null && high.rank().strength() >= Rank.KING.strength() ? high : card;
+				return strongest(legal, v);
 			}
-			return card;
+			List<Card> winners = winners(legal, v);
+			return winners.contains(card) ? strongest(winners, v) : card;
+		}
+	},
+	GREEDY("Greedy") {
+		static final double CLOSE = 5;
+
+		@Override
+		int bid(int bid, TableView v, StyledBot player) {
+			double[] expected = NormalBot.expectedScores(v);
+			double best = Double.NEGATIVE_INFINITY;
+			for (double e : expected) {
+				best = Double.isNaN(e) ? best : Math.max(best, e);
+			}
+			for (int b = expected.length - 1; b > bid; b--) {
+				if (!Double.isNaN(expected[b]) && expected[b] >= best - CLOSE) {
+					return b;
+				}
+			}
+			return bid;
+		}
+	},
+	VOID_MAKER("Void maker") {
+		@Override
+		Card play(Card card, TableView v, List<Card> legal) {
+			Suit led = v.leadSuit();
+			if (led == null || card.suit() == led || card.suit() == v.trump()) {
+				return card;
+			}
+			Card discard = null;
+			int shortest = Integer.MAX_VALUE;
+			for (Card c : legal) {
+				int length = suitLength(v.hand(), c.suit());
+				if (c.suit() != v.trump() && (length < shortest
+						|| length == shortest && c.rank().strength() < discard.rank().strength())) {
+					shortest = length;
+					discard = c;
+				}
+			}
+			return discard != null ? discard : card;
 		}
 	};
 
@@ -157,20 +176,41 @@ public enum Style {
 		return best;
 	}
 
-	static Card highest(List<Card> legal, Suit trump, boolean trumps) {
-		Card best = null;
-		for (Card c : legal) {
-			if ((c.suit() == trump) == trumps && (best == null || c.rank().strength() > best.rank().strength())) {
-				best = c;
+	static int trumpsAndAces(TableView v) {
+		int n = 0;
+		for (Card c : v.hand()) {
+			if (c.suit() == v.trump() || c.rank() == Rank.ACE) {
+				n++;
 			}
 		}
-		return best;
+		return n;
 	}
 
-	static Card lowest(List<Card> legal, Suit trump) {
-		Card best = null;
+	static int suitLength(List<Card> hand, Suit suit) {
+		int n = 0;
+		for (Card c : hand) {
+			if (c.suit() == suit) {
+				n++;
+			}
+		}
+		return n;
+	}
+
+	static List<Card> winners(List<Card> legal, TableView v) {
+		Card winning = v.trick().get(v.rules().trickWinner(v.trick(), v.trump()));
+		List<Card> winners = new ArrayList<Card>();
 		for (Card c : legal) {
-			if (c.suit() != trump && (best == null || c.rank().strength() < best.rank().strength())) {
+			if (v.rules().beats(c, winning, v.trump())) {
+				winners.add(c);
+			}
+		}
+		return winners;
+	}
+
+	static Card strongest(List<Card> cards, TableView v) {
+		Card best = cards.get(0);
+		for (Card c : cards) {
+			if (NormalBot.cheaper(best, c, v.trump())) {
 				best = c;
 			}
 		}
