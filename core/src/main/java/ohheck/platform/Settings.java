@@ -10,12 +10,12 @@ import ohheck.rules.HandOrder;
 /* The player's options, in the device's preferences. */
 public final class Settings {
 
-	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", SPEED = "speed", LEVEL = "level",
+	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
 			HAND_ORDER = "handOrder", TUTORIAL_SEEN = "tutorialSeen";
-	private static final String LEGACY_FAST = "fast", LEGACY_DIFFICULTY = "difficulty";
+	private static final String LEGACY_FAST = "fast", LEGACY_SPEED = "speed", LEGACY_DIFFICULTY = "difficulty";
+	private static final int LEGACY_FASTEST_SPEED = 2;
 
-	public static final int SLOW = 0, FASTEST = 2;
-	private static final float[] SPEED_FACTORS = { 0.6f, 0.8f, 1.4f };
+	private static final float STANDARD_PACE = 0.6f, FAST_PACE = 1.4f;
 
 	private final Preferences prefs = Gdx.app.getPreferences("oh-heck");
 	private final Records.Store records = new RecordPrefs(prefs);
@@ -48,17 +48,20 @@ public final class Settings {
 		prefs.putBoolean(EFFECTS, on).flush();
 	}
 
-	public int speed() {
-		int legacy = prefs.getBoolean(LEGACY_FAST, false) ? FASTEST : SLOW;
-		return Math.max(SLOW, Math.min(FASTEST, prefs.getInteger(SPEED, legacy)));
+	public boolean fastGame() {
+		if (prefs.contains(FAST_GAME)) {
+			return prefs.getBoolean(FAST_GAME, false);
+		}
+		int legacy = prefs.getBoolean(LEGACY_FAST, false) ? LEGACY_FASTEST_SPEED : 0;
+		return prefs.getInteger(LEGACY_SPEED, legacy) >= LEGACY_FASTEST_SPEED;
 	}
 
-	public void setSpeed(int speed) {
-		prefs.putInteger(SPEED, speed).flush();
+	public void setFastGame(boolean fast) {
+		prefs.putBoolean(FAST_GAME, fast).flush();
 	}
 
 	public float speedFactor() {
-		return SPEED_FACTORS[speed()];
+		return fastGame() ? FAST_PACE : STANDARD_PACE;
 	}
 
 	public Difficulty difficulty() {
