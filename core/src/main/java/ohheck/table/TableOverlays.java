@@ -14,7 +14,9 @@ import com.badlogic.gdx.math.Vector2;
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
 import ohheck.players.Seating;
+import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
@@ -30,7 +32,7 @@ final class TableOverlays {
 	private static final float PAUSE_BUTTON_W = 260, PAUSE_BUTTON_H = 56, PAUSE_GAP = 14;
 	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
 	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190;
-	private static final float RESULTS_W = 540, RESULTS_H = 220, RESULTS_ROW = 26;
+	private static final float RESULTS_W = 540, RESULTS_H = 240, RESULTS_ROW = 26;
 	private static final float GAME_OVER_W = 420, GAME_OVER_H = 306, GAME_OVER_ROW = 27;
 	private static final float END_BUTTON_W = 170, END_BUTTON_H = 42;
 	private static final float HINT_H = 40, HINT_PAD = 16;
@@ -43,7 +45,8 @@ final class TableOverlays {
 	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
-	private static final float RESULTS_TITLE_DROP = 14, RESULTS_HEAD_DROP = 52, RESULTS_TAP_RISE = 26,
+	private static final float RESULTS_TITLE_DROP = 14, RESULTS_HEAD_DROP = 52, WON_CARD_SCALE = 0.5f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12,
+			TAP_NOTE_GAP = 16,
 			RESULT_NUMERAL_H = 26, RESULT_NUMERAL_X = 8, RESULT_NUMERAL_Y = 8;
 	private static final float GAME_OVER_LIFT = 6, GAME_OVER_ART_DROP = 50, GAME_OVER_ART_SCALE = 0.66f,
 			GAME_OVER_RESULT_DROP = 94, GAME_OVER_ROWS_DROP = 130, GAME_OVER_PLACE_X = 60, GAME_OVER_NAME_X = 120,
@@ -77,6 +80,7 @@ final class TableOverlays {
 
 	void setMatch(Match match) {
 		this.match = match;
+		winningCardsOf = -1;
 	}
 
 	void hint(String s) {
@@ -218,9 +222,30 @@ final class TableOverlays {
 			t.setColor(match.placeOf(seat) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, Numbers.text(match.score(seat)), px + cols[5], y);
 		}
+		drawWinningCards(py + WON_CARDS_RISE);
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
-		paint.text(s, "Tap to continue", layout.w / 2, py + RESULTS_TAP_RISE, true);
+		Rectangle menu = targets.button(OverlayTargets.Button.MENU);
+		paint.glyphs.setText(s, TAP_NOTE);
+		paint.text(s, TAP_NOTE, menu.x - TAP_NOTE_GAP, menu.y + (menu.height + paint.glyphs.height) / 2, false);
 	}
+
+	private void drawWinningCards(float y) {
+		if (winningCardsOf != match.handIndex()) {
+			match.winningCards(winningCards);
+			winningCardsOf = match.handIndex();
+		}
+		float cw = Assets.CARD_W * WON_CARD_SCALE, ch = Assets.CARD_H * WON_CARD_SCALE;
+		float rowW = winningCards.size() * (cw + WON_CARD_GAP) - WON_CARD_GAP, x = (layout.w - rowW) / 2;
+		for (Card c : winningCards) {
+			art.shadow(x, y, cw, ch, 2);
+			paint.batch.draw(paint.assets.face(c), x, y, cw, ch);
+			x += cw + WON_CARD_GAP;
+		}
+	}
+
+	private static final String TAP_NOTE = "Tap to continue";
+	private final List<Card> winningCards = new ArrayList<Card>();
+	private int winningCardsOf = -1;
 
 	private static final float[] RESULT_COLS = { 22, 62, 255, 315, 380, 465 };
 	private static final String[] RESULT_HEAD = { "", "Player", "Bid", "Won", "Points", "Total" };

@@ -65,7 +65,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		this.art = new CardArt(batch, assets);
 		this.overlays = new TableOverlays(paint, this, layout, art, targets);
 		this.you = options.autoplayHuman ? new Autoplay(this, input, targets, options) : YourSeat.PERSON;
-		this.drawing = new TableDrawing(this, paint, art, game.post());
+		this.drawing = new TableDrawing(this, paint, art, game.post(), game.settings()::handSort);
 		this.toss = new TableToss(assets, layout);
 		this.recorder = new GameRecorder(game.records());
 		this.flow = new TableFlow(you, new Effects(), new TableSounds(game.audio()), recorder);

@@ -300,4 +300,22 @@ public class TableFlowTest {
 		flow.update(STEP);
 		assertTrue("played as soon as it was ready", m.hasBid(seat));
 	}
+
+	@Test
+	public void scoresWaitForTheResultsTable() {
+		Match m = newGame(4);
+		while (m.phase() != Match.Phase.HAND_OVER) {
+			flow.update(1 / 30f);
+			if (flow.yourTurnToBid()) {
+				flow.bid(m.isLegalBid(0) ? 0 : 1);
+			} else if (flow.yourTurnToPlay()) {
+				flow.play(m.legalPlays(Seating.YOU).get(0));
+			}
+		}
+		assertEquals(0, TableDrawing.scoreShown(flow, m, Seating.YOU));
+		while (flow.state() != TableState.RESULTS) {
+			flow.update(1 / 30f);
+		}
+		assertEquals(m.score(Seating.YOU), TableDrawing.scoreShown(flow, m, Seating.YOU));
+	}
 }

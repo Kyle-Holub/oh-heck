@@ -1,8 +1,8 @@
 package ohheck.table;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -14,8 +14,8 @@ import ohheck.fx.Glints;
 import ohheck.fx.Motes;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
+import ohheck.rules.HandSort;
 import ohheck.rules.Match;
-import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
@@ -42,8 +42,10 @@ final class TableDrawing {
 	private final SeatState state = new SeatState();
 	private final Counters counters;
 	private final Motes motes = new Motes();
+	private final Supplier<HandSort> sort;
 
-	TableDrawing(TableScene scene, Painter paint, CardArt art, PostProcessor post) {
+	TableDrawing(TableScene scene, Painter paint, CardArt art, PostProcessor post, Supplier<HandSort> sort) {
+		this.sort = sort;
 		this.scene = scene;
 		this.post = post;
 		this.batch = paint.batch;
@@ -107,9 +109,15 @@ final class TableDrawing {
 		FlowView flow = scene.flow();
 		Match m = scene.match();
 		boolean turn = flow.state() == TableState.TURN && m.currentSeat() == seat;
-		state.reset().named(scene.name(seat)).score(m.score(seat)).turn(turn).dealer(m.dealer() == seat)
+		state.reset().named(scene.name(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(m.dealer() == seat)
 				.bid(m.bid(seat)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
+	}
+
+	static int scoreShown(FlowView flow, Match m, int seat) {
+		boolean pending = m.phase() == Match.Phase.HAND_OVER
+				&& (flow.state() == TableState.TRICK || flow.state() == TableState.HAND_END);
+		return m.score(seat) - (pending ? m.lastHandPoints(seat) : 0);
 	}
 
 	void layoutHand() {
@@ -118,7 +126,7 @@ final class TableDrawing {
 		List<Card> order = scene.handOrder();
 		order.clear();
 		order.addAll(m.hand(Seating.YOU));
-		Collections.sort(order, DISPLAY_ORDER);
+		Collections.sort(order, sort.get().order(m.trump()));
 		int n = order.size();
 		TapAreas.sizeTo(scene.handRects(), n);
 		if (n == 0) {
@@ -134,22 +142,4 @@ final class TableDrawing {
 		}
 	}
 
-	private static final Comparator<Card> DISPLAY_ORDER = new Comparator<Card>() {
-		private final Suit[] order = { Suit.CLUBS, Suit.HEARTS, Suit.SPADES, Suit.DIAMONDS };
-
-		private int suitIndex(Suit s) {
-			for (int i = 0; i < order.length; i++) {
-				if (order[i] == s) {
-					return i;
-				}
-			}
-			return 0;
-		}
-
-		@Override
-		public int compare(Card a, Card b) {
-			int d = suitIndex(a.suit()) - suitIndex(b.suit());
-			return d != 0 ? d : a.rank().strength() - b.rank().strength();
-		}
-	};
 }
