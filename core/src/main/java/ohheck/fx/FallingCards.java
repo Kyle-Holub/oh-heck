@@ -36,9 +36,6 @@ public final class FallingCards {
 		final Vector3 axis = new Vector3();
 		float fall, spin, swayAmp, swayFreq, swayPhase, age;
 		Card card;
-		boolean tossed;
-		final Vector3 vel = new Vector3();
-		float delay;
 	}
 
 	private final Assets assets;
@@ -46,7 +43,6 @@ public final class FallingCards {
 	private final List<Flake> flakes = new ArrayList<Flake>();
 	private float time, spawnDebt;
 	private final boolean fromEmpty;
-	private boolean tableMode;
 	private final float period, phase;
 
 	private final Vector3 v = new Vector3(), n = new Vector3(), toCam = new Vector3();
@@ -67,42 +63,8 @@ public final class FallingCards {
 		this.phase = rng.nextFloat() * MathUtils.PI2;
 	}
 
-	public static FallingCards forTable(Assets assets, Random rng) {
-		FallingCards f = new FallingCards(assets, rng, true);
-		f.tableMode = true;
-		f.falling = false;
-		return f;
-	}
-
-	private static final float TOSS_UP_MIN = 260f, TOSS_UP_MAX = 460f, TOSS_SIDE = 160f, GRAVITY = 1500f,
-			TOSS_SPIN_MIN = 160f, TOSS_SPIN_MAX = 480f, SPIN_UP_TIME = 0.35f;
-
-	public void toss(Card c, float x, float y, float w, float rot, float delay) {
-		Flake f = new Flake();
-		float z = CARD_W * FOCAL / w, k = z / FOCAL;
-		f.pos.set(x * k, y * k, z);
-		f.rot.set(Vector3.Z, rot);
-		f.vel.set((x / 400f * TOSS_SIDE + (rng.nextFloat() * 2 - 1) * TOSS_SIDE) * k,
-				MathUtils.lerp(TOSS_UP_MIN, TOSS_UP_MAX, rng.nextFloat()) * k, (rng.nextFloat() * 2 - 0.6f) * 260f);
-		f.axis.set(rng.nextFloat() * 2 - 1, rng.nextFloat() * 2 - 1, (rng.nextFloat() * 2 - 1) * 0.4f).nor();
-		f.spin = MathUtils.lerp(TOSS_SPIN_MIN, TOSS_SPIN_MAX, rng.nextFloat()) * (rng.nextBoolean() ? 1 : -1);
-		f.card = c;
-		f.tossed = true;
-		f.delay = delay;
-		flakes.add(f);
-	}
-
 	public boolean active() {
 		return !flakes.isEmpty();
-	}
-
-	public boolean anyThrown() {
-		for (Flake f : flakes) {
-			if (f.tossed && f.age >= f.delay) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private float spawnRate() {
@@ -125,9 +87,7 @@ public final class FallingCards {
 			}
 		}
 		time += dt;
-		if (!tableMode) {
-			updateSparkles(dt, viewW, viewH);
-		}
+		updateSparkles(dt, viewW, viewH);
 		if (falling) {
 			spawnFalling(dt, viewW, viewH);
 		}
@@ -152,20 +112,9 @@ public final class FallingCards {
 
 	private boolean move(Flake f, float dt) {
 		f.age += dt;
-		if (f.tossed) {
-			float t = f.age - f.delay;
-			if (t <= 0) {
-				return false;
-			}
-			float k = f.pos.z / FOCAL;
-			f.vel.y -= GRAVITY * k * dt;
-			f.pos.mulAdd(f.vel, dt);
-			dq.set(f.axis, f.spin * Math.min(1f, t / SPIN_UP_TIME) * dt);
-		} else {
-			f.pos.y -= f.fall * dt;
-			f.pos.x += f.swayAmp * MathUtils.cos(f.swayFreq * f.age + f.swayPhase) * dt;
-			dq.set(f.axis, f.spin * dt);
-		}
+		f.pos.y -= f.fall * dt;
+		f.pos.x += f.swayAmp * MathUtils.cos(f.swayFreq * f.age + f.swayPhase) * dt;
+		dq.set(f.axis, f.spin * dt);
 		f.rot.set(dq.mul(f.rot)).nor();
 		return true;
 	}
@@ -204,18 +153,12 @@ public final class FallingCards {
 
 	public void draw(SpriteBatch batch, float cx, float cy) {
 		Collections.sort(flakes, FAR_FIRST);
-		if (!tableMode) {
-			drawSparkles(batch, cx, cy, true);
-		}
+		drawSparkles(batch, cx, cy, true);
 		glinting.clear();
 		for (Flake f : flakes) {
-			if (!f.tossed || f.age >= f.delay) {
-				drawFlake(batch, f, cx, cy);
-			}
+			drawFlake(batch, f, cx, cy);
 		}
-		if (!tableMode) {
-			drawSparkles(batch, cx, cy, false);
-		}
+		drawSparkles(batch, cx, cy, false);
 		drawGlints(batch, cx, cy);
 	}
 
@@ -230,13 +173,13 @@ public final class FallingCards {
 		boolean front = n.dot(toCam) > 0;
 		float lit = 0.38f + 0.62f * Math.abs(n.dot(LIGHT));
 		float depth = (f.pos.z - NEAR) / (FAR - NEAR);
-		float b = Math.min(0.94f, tableMode ? 0.5f + 0.6f * lit : lit * MathUtils.lerp(1.05f, 0.42f, depth));
-		float d = tableMode ? 0f : defocus(f.pos.z);
-		float warmR = tableMode ? 1f : WARM_R, warmG = tableMode ? 1f : WARM_G, warmB = tableMode ? 1f : WARM_B;
+		float b = Math.min(0.94f, lit * MathUtils.lerp(1.05f, 0.42f, depth));
+		float d = defocus(f.pos.z);
+		float warmR = WARM_R, warmG = WARM_G, warmB = WARM_B;
 
 		VIEW_LIGHT.set(LIGHT).add(toCam).nor();
 		float spec = (float) Math.pow(Math.abs(n.dot(VIEW_LIGHT)), 40) * (1 - d);
-		if (!tableMode && spec > 0.04f && glinting.size() < glintStrength.length) {
+		if (spec > 0.04f && glinting.size() < glintStrength.length) {
 			glintStrength[glinting.size()] = spec;
 			glinting.add(f);
 		}

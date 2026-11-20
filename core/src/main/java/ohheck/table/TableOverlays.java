@@ -32,7 +32,7 @@ final class TableOverlays {
 	private static final float PAUSE_BUTTON_W = 260, PAUSE_BUTTON_H = 56, PAUSE_GAP = 14;
 	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
 	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190;
-	private static final float RESULTS_W = 540, RESULTS_H = 240, RESULTS_ROW = 26;
+	private static final float RESULTS_W = 540, RESULTS_H = 262, RESULTS_ROW = 26;
 	private static final float GAME_OVER_W = 420, GAME_OVER_H = 306, GAME_OVER_ROW = 27;
 	private static final float END_BUTTON_W = 170, END_BUTTON_H = 42;
 	private static final float HINT_H = 40, HINT_PAD = 16;
@@ -45,7 +45,7 @@ final class TableOverlays {
 	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
-	private static final float RESULTS_TITLE_DROP = 14, RESULTS_HEAD_DROP = 52, WON_CARD_SCALE = 0.5f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12,
+	private static final float RESULTS_TITLE_DROP = 14, RESULTS_HEAD_DROP = 52, WON_CARD_SCALE = 0.7f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12,
 			TAP_NOTE_GAP = 16,
 			RESULT_NUMERAL_H = 26, RESULT_NUMERAL_X = 8, RESULT_NUMERAL_Y = 8;
 	private static final float GAME_OVER_LIFT = 6, GAME_OVER_ART_DROP = 50, GAME_OVER_ART_SCALE = 0.66f,
