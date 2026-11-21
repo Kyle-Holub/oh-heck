@@ -219,7 +219,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (input.menuOpen()) {
 			return false;
 		}
-		if (StateView.of(flow.state()).animating(this)) {
+		if (flow.state().animating(this)) {
 			return true;
 		}
 		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || shower.active();
@@ -372,12 +372,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	private void drawOverlay() {
-		StateView.of(flow.state()).drawOverlay(this, overlays, recorder.newHighScore());
+		flow.state().drawOverlay(this, overlays, recorder.newHighScore());
 	}
 
 	@Override
 	public String stateTag() {
-		return StateView.describe(this);
+		return TableState.describe(this);
 	}
 
 	private boolean gameOver() {
