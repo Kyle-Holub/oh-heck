@@ -10,7 +10,9 @@ import java.util.Random;
 
 import ohheck.records.Stats;
 import ohheck.rules.Card;
+import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
+import ohheck.rules.RuleSet;
 import ohheck.rules.TableView;
 
 /*
@@ -32,11 +34,14 @@ public final class Arena {
 		};
 	}
 
+	static RuleSet rules = RuleSet.STANDARD;
+
 	static final class Stats {
+		static final int SIZES = RuleSet.MOST_CARDS + 1;
 		long games, hands, exact;
 		double points, miss, wins;
-		final long[] handsBy = new long[9], exactBy = new long[9], overBy = new long[9], underBy = new long[9];
-		final double[] pointsBy = new double[9], expectedBy = new double[9], wonBy = new double[9];
+		final long[] handsBy = new long[SIZES], exactBy = new long[SIZES], overBy = new long[SIZES], underBy = new long[SIZES];
+		final double[] pointsBy = new double[SIZES], expectedBy = new double[SIZES], wonBy = new double[SIZES];
 	}
 
 	static void game(long deal, int seat, Maker test, Maker field, Stats st) {
@@ -44,7 +49,7 @@ public final class Arena {
 		for (int i = 0; i < 4; i++) {
 			bots[i] = (i == seat ? test : field).make(deal * 4 + i);
 		}
-		Match m = Match.random(4, new Random(deal));
+		Match m = Match.random(4, new Random(deal), rules);
 		double expected = 0;
 		while (m.phase() != Match.Phase.GAME_OVER) {
 			if (m.phase() == Match.Phase.HAND_OVER) {
@@ -98,6 +103,22 @@ public final class Arena {
 		return st;
 	}
 
+	static void variants(int n) {
+		for (HandOrder order : HandOrder.values()) {
+			for (int most : new int[] { RuleSet.USUAL_CARDS, RuleSet.MOST_CARDS }) {
+				for (int flags = 0; flags < 4; flags++) {
+					rules = new RuleSet(order, most, (flags & 1) != 0, (flags & 2) != 0);
+					System.out.println("== " + rules.code());
+					report("  Easy (all four)", run(n, level(Difficulty.EASY), level(Difficulty.EASY)));
+					report("  Normal (all four)", run(n, level(Difficulty.NORMAL), level(Difficulty.NORMAL)));
+					report("  Normal vs 3 Easy", run(n, level(Difficulty.NORMAL), level(Difficulty.EASY)));
+					report("  Hard vs 3 Normal", run(Math.max(1, n / 4), level(Difficulty.HARD), level(Difficulty.NORMAL)));
+				}
+			}
+		}
+		rules = RuleSet.STANDARD;
+	}
+
 	static void report(String name, Stats s) {
 		System.out.printf("%-30s %5.2f pts/hand   %4.1f%% exact   %4.2f off   %4.1f%% wins   (%d games)%n", name,
 				s.points / s.hands, 100.0 * s.exact / s.hands, s.miss / s.hands, 100 * s.wins / s.games, s.games);
@@ -105,7 +126,7 @@ public final class Arena {
 
 	static void byRound(Stats s) {
 		System.out.println("   hand  exact  over  under  pts/hand  tricks expected  taken");
-		for (int n = 1; n <= 8; n++) {
+		for (int n = 1; n < Stats.SIZES; n++) {
 			if (s.handsBy[n] > 0) {
 				double h = s.handsBy[n];
 				System.out.printf("   %d     %3.0f%%   %3.0f%%  %3.0f%%    %5.2f       %4.2f        %4.2f%n", n,
@@ -117,12 +138,11 @@ public final class Arena {
 
 	private static final double PRIOR = 40;
 
-	static void learn(int games) throws IOException {
-		double[][][] won = new double[9][2][13], dealt = new double[9][2][13];
-		double[][][][] fineWon = new double[9][2][13][BidTable.CONTEXTS], fineDealt = new double[9][2][13][BidTable.CONTEXTS];
+	static void watch(RuleSet r, int games, long seeds, int smallest, double[][][] won, double[][][] dealt,
+			double[][][][] fineWon, double[][][][] fineDealt) {
 		Bot bot = Bot.of(Difficulty.NORMAL, new Random(1));
 		for (int g = 0; g < games; g++) {
-			Match m = Match.random(4, new Random(900000 + g));
+			Match m = Match.random(4, new Random(seeds + g), r);
 			Map<Card, int[]> dealtAs = new HashMap<Card, int[]>();
 			while (m.phase() != Match.Phase.GAME_OVER) {
 				if (m.phase() == Match.Phase.HAND_OVER) {
@@ -143,24 +163,33 @@ public final class Arena {
 					m.placeBid(s, bot.chooseBid(m.view(s)));
 				} else {
 					Card c = bot.choosePlay(m.view(s));
-					if (m.playCard(s, c) >= 0) {
+					if (m.playCard(s, c) >= 0 && m.handSize() >= smallest) {
 						List<Card> t = m.lastTrick();
 						Card winner = t.get(m.rules().trickWinner(t, m.trump()));
 						int n = m.handSize();
 						for (Card x : t) {
 							int[] k = dealtAs.get(x);
-							int r = x.rank().strength(), w = x == winner ? 1 : 0;
-							dealt[n][k[0]][r]++;
-							won[n][k[0]][r] += w;
-							fineDealt[n][k[0]][r][k[1]]++;
-							fineWon[n][k[0]][r][k[1]] += w;
+							int rank = x.rank().strength(), w = x == winner ? 1 : 0;
+							dealt[n][k[0]][rank]++;
+							won[n][k[0]][rank] += w;
+							fineDealt[n][k[0]][rank][k[1]]++;
+							fineWon[n][k[0]][rank][k[1]] += w;
 						}
 					}
 				}
 			}
 		}
+	}
+
+	static void learn(int games) throws IOException {
+		int sizes = RuleSet.MOST_CARDS + 1;
+		double[][][] won = new double[sizes][2][13], dealt = new double[sizes][2][13];
+		double[][][][] fineWon = new double[sizes][2][13][BidTable.CONTEXTS], fineDealt = new double[sizes][2][13][BidTable.CONTEXTS];
+		RuleSet bigHands = RuleSet.STANDARD.withOrder(HandOrder.DOWN).withMostCards(RuleSet.MOST_CARDS);
+		watch(RuleSet.STANDARD, games, 900000, 1, won, dealt, fineWon, fineDealt);
+		watch(bigHands, games, 1900000, RuleSet.USUAL_CARDS + 1, won, dealt, fineWon, fineDealt);
 		StringBuilder rows = new StringBuilder();
-		for (int n = 1; n <= 8; n++) {
+		for (int n = 1; n < sizes; n++) {
 			for (int t = 0; t < 2; t++) {
 				rows.append("\t\t\t// hand ").append(n).append(t == 1 ? ", trumps" : ", side suits").append("\n");
 				for (int r = 0; r < 13; r++) {
@@ -183,12 +212,12 @@ public final class Arena {
 
 	private static final String TEMPLATE = "package ohheck.players;\n\n"
 			+ "import ohheck.rules.Card;\n"
-			+ "import ohheck.rules.RuleSet;\n"
 			+ "import ohheck.rules.TableView;\n\n"
 			+ "/**\n"
 			+ " * How often a card takes a trick, learned from $GAMES simulated games between Normal\n"
-			+ " * players: by hand size, whether it's a trump, rank, how many cards of its suit its\n"
-			+ " * holder has (1, 2, 3 or more), and the holder's place in the bidding.\n"
+			+ " * players (and as many games counting down from 13 cards, for hands of 9 and up): by hand\n"
+			+ " * size, whether it's a trump, rank, how many cards of its suit its holder has (1, 2, 3 or\n"
+			+ " * more), and the holder's place in the bidding.\n"
 			+ " * <p>\n"
 			+ " * Generated by {@code ./gradlew core:arena -Parena=\"learn $GAMES\"}; don't edit the numbers by\n"
 			+ " * hand. Regenerate (twice) after changing how the computer players play.\n"
@@ -199,7 +228,7 @@ public final class Arena {
 			+ "\tstatic final int CONTEXTS = 12;\n\n"
 			+ "\t/** The chance this card in the viewer's hand takes a trick this hand. */\n"
 			+ "\tstatic double chance(TableView v, Card c) {\n"
-			+ "\t\tint row = ((Math.min(v.handSize(), RuleSet.USUAL_CARDS) - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();\n"
+			+ "\t\tint row = ((v.handSize() - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();\n"
 			+ "\t\treturn CHANCE[row][context(v, c)];\n"
 			+ "\t}\n\n"
 			+ "\t/** Which column: the card's suit length in the hand, and the viewer's place in the bidding. */\n"
@@ -222,6 +251,9 @@ public final class Arena {
 	public static void main(String[] args) throws IOException {
 		String what = args.length > 0 ? args[0] : "levels";
 		int n = args.length > 1 ? Integer.parseInt(args[1]) : 200;
+		if (args.length > 2) {
+			rules = RuleSet.parse(args[2]);
+		}
 		long start = System.currentTimeMillis();
 		if (what.equals("levels")) {
 			for (Difficulty d : Difficulty.values()) {
@@ -233,6 +265,8 @@ public final class Arena {
 			report("Normal vs 3 Easy", run(n, level(Difficulty.NORMAL), level(Difficulty.EASY)));
 			report("Hard vs 3 Normal", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.NORMAL)));
 			report("Hard vs 3 Easy", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.EASY)));
+		} else if (what.equals("variants")) {
+			variants(n);
 		} else if (what.equals("learn")) {
 			learn(n);
 		} else if (what.equals("players")) {
@@ -257,7 +291,7 @@ public final class Arena {
 				System.out.printf("   %.1f s%n", (System.currentTimeMillis() - t) / 1000.0);
 			}
 		} else {
-			System.out.println("Experiments: levels N | vs N | learn N | effort N | players N");
+			System.out.println("Experiments: levels N | vs N | variants N | learn N | effort N | players N, then optionally a rules code");
 		}
 		System.out.printf("(%.1f s)%n", (System.currentTimeMillis() - start) / 1000.0);
 	}

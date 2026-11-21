@@ -350,8 +350,11 @@ final class HardBot implements Bot {
 		}
 
 		void finishBidding(Bot policy) {
-			while (bids[dealer] < 0) {
-				bid(current, policy.chooseBid(viewFor(current)));
+			int seat = rules.nextSeat(dealer, players);
+			for (int n = 0; n < players; n++, seat = rules.nextSeat(seat, players)) {
+				if (bids[seat] < 0) {
+					bids[seat] = policy.chooseBid(viewFor(seat));
+				}
 			}
 			current = rules.nextSeat(dealer, players);
 		}
