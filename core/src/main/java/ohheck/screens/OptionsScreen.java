@@ -45,15 +45,16 @@ public class OptionsScreen extends BaseScreen {
 						OptionItem.toggle("Marathon", "Hands grow to " + RuleSet.MOST_CARDS + " cards, the whole deck.",
 								() -> s.rules().mostCards == RuleSet.MOST_CARDS,
 								() -> s.customize(r -> r.withMostCards(r.mostCards == RuleSet.MOST_CARDS ? RuleSet.USUAL_CARDS : RuleSet.MOST_CARDS))),
-						OptionItem.toggle("Big bids", "A made bid scores " + RuleSet.STANDARD.made() + " plus its square: bid big.",
+						OptionItem.toggle("Big bids", "Bigger bids are worth more.",
 								() -> s.rules().bigBids, () -> s.customize(r -> r.withBigBids(!r.bigBids))),
 						OptionItem.toggle("Blind bids", "Bids are made unseen and shown together; the dealer may bid anything.",
 								() -> s.rules().blindBids, () -> s.customize(r -> r.withBlindBids(!r.blindBids)))),
-				new OptionsPage("Sound & display",
-						OptionItem.choice("Hand sort", "Trumps on the left, then by suit or by rank.",
-								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next())),
-						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
-								() -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame())),
+				new OptionsPage("Preferences",
+						OptionItem.heading("Sound"),
+						OptionItem.toggle("Mute all", "Silences the music and sound effects.", s::muted, () -> {
+							s.setMuted(!s.muted());
+							game.audio().startMusic();
+						}),
 						OptionItem.toggle("Music", "The background music.", s::music, () -> {
 							s.setMusic(!s.music());
 							game.audio().startMusic();
@@ -62,6 +63,11 @@ public class OptionsScreen extends BaseScreen {
 							s.setSound(!s.sound());
 							game.audio().play(Audio.Effect.PLAY_CARD);
 						}),
+						OptionItem.heading("Display"),
+						OptionItem.choice("Hand sort", "Trumps on the left, then by suit or by rank.",
+								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next())),
+						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
+								() -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame())),
 						OptionItem.toggle("Visual effects", "Glow, vignette and film grain.", s::effects,
 								() -> s.setEffects(!s.effects()))),
 				new OptionsPage("Tutorial",
@@ -111,7 +117,7 @@ public class OptionsScreen extends BaseScreen {
 			OptionItem item = p.items.get(i);
 			y -= item.height();
 			item.draw(paint, page.x, y, page.width);
-			if (i < p.items.size() - 1) {
+			if (i < p.items.size() - 1 && item.dividedBelow() && p.items.get(i + 1).dividedBelow()) {
 				paint.rect(page.x + OptionItem.PAD, y, page.width - 2 * OptionItem.PAD, 1, DIVIDER);
 			}
 		}

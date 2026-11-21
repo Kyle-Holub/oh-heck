@@ -71,7 +71,7 @@ final class HardBot implements Bot {
 				return s.value(view.seat(), rival, spoil, playToWin);
 			}
 		});
-		return bids.get(pick);
+		return Bot.neverZeroWithTheTrumpAce(v, bids.get(pick));
 	}
 
 	@Override

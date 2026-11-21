@@ -32,7 +32,7 @@ public final class Assets implements Disposable {
 	public final Texture[] levelBadge = new Texture[Difficulty.values().length];
 	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon, waitingIcon;
 	public final Texture bidDigits;
-	private final TextureRegion[] digits = new TextureRegion[10];
+	private final TextureRegion[] digits = new TextureRegion[11];
 	public final Texture white;
 	public final Texture stroke;
 	public final BitmapFont font;
@@ -92,7 +92,7 @@ public final class Assets implements Disposable {
 		serif = bitmapFont("serif");
 	}
 	private void cutDigits() {
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < digits.length; i++) {
 			digits[i] = new TextureRegion(bidDigits, i * DIGIT_W, 0, DIGIT_W, DIGIT_H);
 		}
 	}
@@ -173,7 +173,7 @@ public final class Assets implements Disposable {
 		return f;
 	}
 
-	public static final int DIGIT_W = 64, DIGIT_H = 88;
+	public static final int DIGIT_W = 64, DIGIT_H = 88, PLAIN_ZERO = 10;
 
 	public TextureRegion digit(int n) {
 		return digits[n];

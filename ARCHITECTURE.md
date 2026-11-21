@@ -44,7 +44,7 @@ first five have no libGDX and test in plain JUnit.
 - `RuleSet` is the rules a game is played by: which way the hands run (`HandOrder`: up, down,
   or up and down), the biggest hand (8, or 13 for a marathon, whose 13-card hand deals the
   whole deck and so has no trump: `trump()` is null, and the table shows a dotted outline),
-  whether a made bid scores big (10 plus its square), and whether bids are blind (made unseen,
+  whether a made bid scores big (8, plus 4 for the first trick bid, doubling with each trick after), and whether bids are blind (made unseen,
   shown together, no dealer's limit: `Match.bidSeenBy` hides them from the other seats and from
   their bots until bidding ends). It also says which card wins, what may be bid and played, and the score.
   A `Match` holds its rules (`rules()`) and `TableView` carries them to the bots. A rule set is
@@ -64,7 +64,7 @@ first five have no libGDX and test in plain JUnit.
   (bids the best expected score under the game's rules from the learned `BidTable`, reading
   the earlier bids except when bids are blind; plays with card memory), `HardBot` (Monte Carlo over
   imagined deals). Each `Style` writes its own habit (`bid` and `play` in its constant) and
-  `StyledBot` applies it on top of the level's bot. A new habit is one more `Style` constant. `BotScenarioTest` asks every player positions with an obvious move (a zero bid never leads an ace, a made bid ducks when it can...) and checks each habit shows where it should.
+  `StyledBot` applies it on top of the level's bot. A new habit is one more `Style` constant. Every bot's bid passes through `Bot.neverZeroWithTheTrumpAce`. `BotScenarioTest` asks every player positions with an obvious move (a zero bid never leads an ace, the trump ace is never bid as zero, a made bid ducks when it can...) and checks each habit shows where it should.
 - `Player` is the roster of twelve: name, level, style, trait, and a **permanent id**.
   Look players up with `Player.byId`, never by position. Never renumber or reuse an id,
   because saves and statistics refer to players by id. `Player.draw` seats a table, using

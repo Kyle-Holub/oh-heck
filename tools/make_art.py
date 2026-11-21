@@ -451,14 +451,15 @@ NUMERAL_FONT = "/usr/share/texmf/fonts/opentype/public/tex-gyre/texgyrepagella-b
 
 
 def bid_digits(out):
-    """Bid numerals 0-9 in one strip: gold, shaded darker toward the foot, with a dark
-    edge and an engraved shadow; the 0 is struck through like the zero-bid icon.
+    """Bid numerals 0-9 in one strip, then a plain 0 for the tens: gold, shaded darker toward
+    the foot, with a dark edge and an engraved shadow; the first 0 (a bid of zero) is struck
+    through like the zero-bid icon.
     The numeral font must be TeX Gyre Pagella: its empty-set sign is the slashed zero."""
     CW, CH = 64, 88
     W, H = CW * SS, CH * SS
     font = ImageFont.truetype(NUMERAL_FONT, 80 * SS)
-    strip = Image.new("RGBA", (CW * 10, CH), (0, 0, 0, 0))
-    for n in range(10):
+    strip = Image.new("RGBA", (CW * 11, CH), (0, 0, 0, 0))
+    for n in range(11):
         mask = Image.new("L", (W, H), 0)
         md = ImageDraw.Draw(mask)
         cx, cy = W / 2, H / 2 + 2 * SS
@@ -469,7 +470,7 @@ def bid_digits(out):
             l, t, r, b = md.textbbox((0, 0), "\u2205", font=zero)
             md.text((cx - (l + r) / 2, H / 2 - (t + b) / 2), "\u2205", font=zero, fill=255)
         else:
-            md.text((cx, cy), str(n), font=font, fill=255, anchor="mm")
+            md.text((cx, cy), str(n % 10), font=font, fill=255, anchor="mm")
         edge = mask.filter(ImageFilter.MaxFilter(2 * (2 * SS) + 1))
         img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         # engraved shadow, then a dark edge, then the gold

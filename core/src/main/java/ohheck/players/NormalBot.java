@@ -23,7 +23,7 @@ final class NormalBot implements Bot {
 				best = b;
 			}
 		}
-		return best;
+		return Bot.neverZeroWithTheTrumpAce(v, best);
 	}
 
 	static double[] expectedScores(TableView v) {
