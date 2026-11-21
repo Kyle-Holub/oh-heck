@@ -267,4 +267,22 @@ public class MatchTest {
 			assertEquals(expected, winners);
 		}
 	}
+
+	@Test
+	public void blindBidsAreHiddenUntilAllAreIn() {
+		Match m = new Match(4, new Random(1), 0, GameMode.POKER_FACE.rules(null));
+		m.placeBid(1, 1);
+		m.placeBid(2, 0);
+		m.placeBid(3, 0);
+		assertEquals(-1, m.forbiddenBid());
+		assertTrue("the dealer may make the bids add up", m.isLegalBid(0));
+		assertFalse(m.view(0).hasBid(1));
+		assertEquals(0, m.view(0).bidsSoFar());
+		assertEquals(1, m.view(1).bid(1));
+		assertEquals(0, m.bidsSeenBy(0));
+		m.placeBid(0, 0);
+		assertEquals(Match.Phase.PLAYING, m.phase());
+		assertEquals(1, m.view(0).bid(1));
+		assertEquals(1, m.bidsSeenBy(0));
+	}
 }

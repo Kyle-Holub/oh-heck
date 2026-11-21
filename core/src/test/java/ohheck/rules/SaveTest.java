@@ -123,7 +123,7 @@ public class SaveTest {
 
 	@Test
 	public void aHandWithNoTrumpReadsBack() {
-		RuleSet rules = new RuleSet(HandOrder.DOWN, RuleSet.MOST_CARDS, true);
+		RuleSet rules = new RuleSet(HandOrder.DOWN, RuleSet.MOST_CARDS, true, true);
 		Match m = new Match(4, new Random(5), 0, rules);
 		assertNull(m.trumpCard());
 		Match back = Match.load(m.save(), new Random(1));

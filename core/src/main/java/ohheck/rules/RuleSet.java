@@ -1,61 +1,73 @@
 package ohheck.rules;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /*
- * The rules a game is played by: which way the hand sizes run, the biggest hand, and how a made
- * bid scores. Its code is written into saves and high scores, so a code never changes meaning.
+ * The rules a game is played by: which way the hand sizes run, the biggest hand, how a made bid
+ * scores, and whether bids are blind (made unseen, revealed together, with no dealer's limit). Its
+ * code is written into saves and high scores, so a code never changes meaning.
  */
 public final class RuleSet {
 
 	public static final int MOST_CARDS = 13, USUAL_CARDS = 8;
-	public static final RuleSet STANDARD = new RuleSet(HandOrder.UP, USUAL_CARDS, false);
+	public static final RuleSet STANDARD = new RuleSet(HandOrder.UP, USUAL_CARDS, false, false);
+
+	private static final String BIG = "big", BLIND = "blind";
 
 	public final HandOrder order;
 	public final int mostCards;
-	public final boolean bigBids;
+	public final boolean bigBids, blindBids;
 
-	public RuleSet(HandOrder order, int mostCards, boolean bigBids) {
+	public RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids) {
 		if (mostCards < 1 || mostCards > MOST_CARDS) {
 			throw new IllegalArgumentException("No hand of " + mostCards);
 		}
 		this.order = order;
 		this.mostCards = mostCards;
 		this.bigBids = bigBids;
+		this.blindBids = blindBids;
 	}
 
 	public RuleSet withOrder(HandOrder o) {
-		return new RuleSet(o, mostCards, bigBids);
+		return new RuleSet(o, mostCards, bigBids, blindBids);
 	}
 
 	public RuleSet withMostCards(int n) {
-		return new RuleSet(order, n, bigBids);
+		return new RuleSet(order, n, bigBids, blindBids);
 	}
 
 	public RuleSet withBigBids(boolean on) {
-		return new RuleSet(order, mostCards, on);
+		return new RuleSet(order, mostCards, on, blindBids);
+	}
+
+	public RuleSet withBlindBids(boolean on) {
+		return new RuleSet(order, mostCards, bigBids, on);
 	}
 
 	public String code() {
-		return order.name() + "/" + mostCards + (bigBids ? "/big" : "");
+		return order.name() + "/" + mostCards + (bigBids ? "/" + BIG : "") + (blindBids ? "/" + BLIND : "");
 	}
 
 	public static RuleSet parse(String code) {
 		String[] p = code.split("/");
-		if (p.length < 2 || p.length > 3 || (p.length == 3 && !p[2].equals("big"))) {
+		List<String> flags = Arrays.asList(p).subList(Math.min(2, p.length), p.length);
+		RuleSet r = p.length < 2 ? null
+				: new RuleSet(HandOrder.valueOf(p[0]), Integer.parseInt(p[1]), flags.contains(BIG), flags.contains(BLIND));
+		if (r == null || !r.code().equals(code)) {
 			throw new IllegalArgumentException("Unknown rules: " + code);
 		}
-		return new RuleSet(HandOrder.valueOf(p[0]), Integer.parseInt(p[1]), p.length == 3);
+		return r;
 	}
 
 	public String describe() {
-		return order.label(mostCards) + (bigBids ? ", big bids" : "");
+		return order.label(mostCards) + (bigBids ? ", big bids" : "") + (blindBids ? ", blind bids" : "");
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		return o instanceof RuleSet r && r.order == order && r.mostCards == mostCards && r.bigBids == bigBids;
+		return o instanceof RuleSet r && r.code().equals(code());
 	}
 
 	@Override
@@ -132,7 +144,7 @@ public final class RuleSet {
 		if (bid < 0 || bid > handSize) {
 			return false;
 		}
-		return !(isDealer && bid == forbiddenDealerBid(handSize, bidsSoFar));
+		return blindBids || !(isDealer && bid == forbiddenDealerBid(handSize, bidsSoFar));
 	}
 
 	public int made() {

@@ -43,11 +43,13 @@ first five have no libGDX and test in plain JUnit.
   `MatchCodec`, its text format.
 - `RuleSet` is the rules a game is played by: which way the hands run (`HandOrder`: up, down,
   or up and down), the biggest hand (8, or 13 for a marathon, whose 13-card hand deals the
-  whole deck and so has no trump: `trump()` is null), and whether a made bid scores big (10
-  plus its square). It also says which card wins, what may be bid and played, and the score.
+  whole deck and so has no trump: `trump()` is null, and the table shows a dotted outline),
+  whether a made bid scores big (10 plus its square), and whether bids are blind (made unseen,
+  shown together, no dealer's limit: `Match.bidSeenBy` hides them from the other seats and from
+  their bots until bidding ends). It also says which card wins, what may be bid and played, and the score.
   A `Match` holds its rules (`rules()`) and `TableView` carries them to the bots. A rule set is
   a value written as a short code (`UP/8`, `UP_AND_DOWN/13/big`) into saves and high scores.
-  `GameMode` names three fixed sets (Classic, High Stakes, Marathon) and Custom, which plays
+  `GameMode` names four fixed sets (Classic, High Stakes, Poker Face, Marathon) and Custom, which plays
   the rules the player chose; `GameMode.of(rules)` names any rule set. Turn order is `RuleSet.nextSeat`, and
   `Trick` decides when a trick is complete and who takes it, for `Match` and for the Hard
   bot's imagined games alike. Code without a game in hand (the tutorial) asks `RuleSet.STANDARD`.
@@ -151,8 +153,8 @@ first five have no libGDX and test in plain JUnit.
 `TitleScreen` (with `FallingCards`, the 3D shower), `TutorialScreen` (How to play: 13
 timed scenes, a tap each; each step names its scene in `TutorialScenes`, which draws with
 `TutorialStage`'s little table, and each scene's clock is an `ohheck.anim.Timeline`,
-tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`; the Rules page picks the game mode, and changing
-any rule there makes the game Custom; each a list of
+tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long; the Game page picks the
+game mode under the difficulty, and changing any rule there makes the game Custom; each a list of
 `OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
 statistics, a switch at the top of the panel picks which, high scores have a button per game
 mode, and Reset statistics sits in the header; the panel scrolls, clipped with `BaseScreen.clipTo`).

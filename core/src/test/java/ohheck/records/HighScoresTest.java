@@ -49,7 +49,7 @@ public class HighScoresTest {
 	@Test
 	public void eachModeKeepsItsOwnTen() {
 		HighScores h = new HighScores();
-		RuleSet marathon = GameMode.MARATHON.rules(null), custom = new RuleSet(HandOrder.DOWN, 8, true);
+		RuleSet marathon = GameMode.MARATHON.rules(null), custom = new RuleSet(HandOrder.DOWN, 8, true, false);
 		for (int i = 0; i < 12; i++) {
 			h.add(new HighScores.Entry(100 + i, 1, "d", Difficulty.EASY, RuleSet.STANDARD));
 			h.add(new HighScores.Entry(300 + i, 1, "d", Difficulty.EASY, marathon));

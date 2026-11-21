@@ -205,6 +205,18 @@ public final class Match {
 		return total(bids);
 	}
 
+	public int bidSeenBy(int seat, int viewer) {
+		return rules.blindBids && phase == Phase.BIDDING && seat != viewer ? NO_BID : bids[seat];
+	}
+
+	public int bidsSeenBy(int viewer) {
+		int total = 0;
+		for (int s = 0; s < players; s++) {
+			total += Math.max(0, bidSeenBy(s, viewer));
+		}
+		return total;
+	}
+
 	static int total(int[] bids) {
 		int total = 0;
 		for (int b : bids) {
@@ -220,7 +232,7 @@ public final class Match {
 	}
 
 	public int forbiddenBid() {
-		if (phase != Phase.BIDDING || current != dealer) {
+		if (phase != Phase.BIDDING || current != dealer || rules.blindBids) {
 			return -1;
 		}
 		int f = rules.forbiddenDealerBid(handSize(), bidsSoFar());
@@ -316,7 +328,7 @@ public final class Match {
 				.hand(handIndex, rules.numberOfHands(), handSize(), dealer, trumpCard, rules).cards(hands.get(seat))
 				.trick(trick.cards(), trick.seats()).history(history, historySeats);
 		for (int s = 0; s < players; s++) {
-			v.seatState(s, bids[s], tricks[s], scores[s], hands.get(s).size());
+			v.seatState(s, bidSeenBy(s, seat), tricks[s], scores[s], hands.get(s).size());
 		}
 		return v.view();
 	}

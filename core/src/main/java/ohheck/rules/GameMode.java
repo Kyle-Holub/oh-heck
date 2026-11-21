@@ -3,8 +3,9 @@ package ohheck.rules;
 /* A game's rules by name: three fixed sets, and Custom, which plays whatever rules the player chose. */
 public enum GameMode {
 	CLASSIC("Classic", RuleSet.STANDARD),
-	HIGH_STAKES("High Stakes", new RuleSet(HandOrder.UP, RuleSet.USUAL_CARDS, true)),
-	MARATHON("Marathon", new RuleSet(HandOrder.UP_AND_DOWN, RuleSet.MOST_CARDS, false)),
+	HIGH_STAKES("High Stakes", RuleSet.STANDARD.withBigBids(true)),
+	POKER_FACE("Poker Face", RuleSet.STANDARD.withBlindBids(true)),
+	MARATHON("Marathon", RuleSet.STANDARD.withOrder(HandOrder.UP_AND_DOWN).withMostCards(RuleSet.MOST_CARDS)),
 	CUSTOM("Custom", null);
 
 	public final String label;
