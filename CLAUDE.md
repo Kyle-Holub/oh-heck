@@ -58,7 +58,8 @@ the screenshot run, CI, the arena and the art tools.
 
 **Ship every finished change without asking:** once a request's change is verified, merge
 it into the current `develop/` and publish the dev build (the `ship` skill), then report
-the build number.
+the build number. Once the build is out and the request is done, send a push notification
+naming the build and what it brings (one line, e.g. "dev-0094 ready: Poker Face mode").
 
 Use the `verify` skill after every change and the `ship` skill to merge; the scripts are in
 `tools/dev` (see "Developer tools" in `ARCHITECTURE.md`):
