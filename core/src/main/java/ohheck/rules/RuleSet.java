@@ -6,7 +6,8 @@ import java.util.List;
 
 /*
  * The rules a game is played by: which way the hand sizes run, the biggest hand, how a made bid
- * scores, and whether bids are blind (made unseen, revealed together, with no dealer's limit). Its
+ * scores (with big bids: 8, plus 4 for the first trick bid, doubling with each trick after), and
+ * whether bids are blind (made unseen, revealed together, with no dealer's limit). Its
  * code is written into saves and high scores, so a code never changes meaning.
  */
 public final class RuleSet {
@@ -15,6 +16,7 @@ public final class RuleSet {
 	public static final RuleSet STANDARD = new RuleSet(HandOrder.UP, USUAL_CARDS, false, false);
 
 	private static final String BIG = "big", BLIND = "blind";
+	private static final int BIG_MADE = 8, BIG_FIRST_TRICK = 4;
 
 	public final HandOrder order;
 	public final int mostCards;
@@ -148,11 +150,14 @@ public final class RuleSet {
 	}
 
 	public int made() {
-		return 10;
+		return bigBids ? BIG_MADE : 10;
 	}
 
 	public int madeBonus(int bid) {
-		return bigBids ? bid * bid : perTrickBid() * bid;
+		if (bigBids) {
+			return bid == 0 ? 0 : BIG_FIRST_TRICK << (bid - 1);
+		}
+		return perTrickBid() * bid;
 	}
 
 	public int perTrickBid() {

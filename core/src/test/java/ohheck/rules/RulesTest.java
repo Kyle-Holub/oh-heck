@@ -190,12 +190,14 @@ public class RulesTest {
 	}
 
 	@Test
-	public void bigBidsScoreTheSquare() {
+	public void bigBidsDoubleWithEachTrick() {
 		RuleSet big = GameMode.HIGH_STAKES.rules(null);
-		assertEquals(10, big.score(0, 0));
-		assertEquals(19, big.score(3, 3));
-		assertEquals(74, big.score(8, 8));
+		int[] made = { 8, 12, 16, 24, 40, 72 };
+		for (int b = 0; b < made.length; b++) {
+			assertEquals("bid " + b, made[b], big.score(b, b));
+		}
 		assertEquals(-5, big.score(2, 3));
+		assertEquals(-10, big.score(0, 2));
 	}
 
 	@Test

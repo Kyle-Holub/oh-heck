@@ -34,6 +34,10 @@ abstract class OptionItem {
 		return new Link(label, detail, open);
 	}
 
+	static OptionItem heading(String label) {
+		return new Heading(label);
+	}
+
 	float height() {
 		return ROW_H;
 	}
@@ -58,6 +62,42 @@ abstract class OptionItem {
 	}
 
 	void dragTo(float x) {
+	}
+
+	boolean dividedBelow() {
+		return true;
+	}
+
+	private static final class Heading extends OptionItem {
+		private static final float H = 44;
+
+		Heading(String label) {
+			super(label, "");
+		}
+
+		@Override
+		float height() {
+			return H;
+		}
+
+		@Override
+		void draw(Painter paint, float x, float y, float w) {
+			bounds.set(x, y, w, H);
+			paint.serif(1.4f, Palette.GOLD).draw(paint.batch, label, x + PAD, y + H - 10);
+		}
+
+		@Override
+		void drawControl(Painter paint, float right, float y, float h) {
+		}
+
+		@Override
+		void tap(float x, float y) {
+		}
+
+		@Override
+		boolean dividedBelow() {
+			return false;
+		}
 	}
 
 	private static final class Choice extends OptionItem {

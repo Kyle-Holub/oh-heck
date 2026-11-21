@@ -14,7 +14,7 @@ import ohheck.rules.RuleSet;
 /* The player's options, in the device's preferences. */
 public final class Settings {
 
-	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
+	private static final String MUSIC = "music", SOUND = "sound", MUTED = "muted", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
 			MODE = "mode", CUSTOM_RULES = "customRules", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen";
 
 	private static final float STANDARD_PACE = 0.6f, FAST_PACE = 1.4f;
@@ -40,6 +40,14 @@ public final class Settings {
 
 	public void setSound(boolean on) {
 		prefs.putBoolean(SOUND, on).flush();
+	}
+
+	public boolean muted() {
+		return prefs.getBoolean(MUTED, false);
+	}
+
+	public void setMuted(boolean muted) {
+		prefs.putBoolean(MUTED, muted).flush();
 	}
 
 	public boolean effects() {

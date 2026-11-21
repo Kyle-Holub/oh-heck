@@ -29,7 +29,7 @@ final class EasyBot implements Bot {
 		if (rng.nextDouble() < BID_SLIP) {
 			int off = b + (rng.nextBoolean() ? 1 : -1);
 			if (off >= 0 && off <= v.handSize() && v.isLegalBid(off)) {
-				return off;
+				return Bot.neverZeroWithTheTrumpAce(v, off);
 			}
 		}
 		return b;

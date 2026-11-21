@@ -84,7 +84,8 @@ public final class Painter {
 		float x = cx - (w + step * (s.length() - 1)) / 2;
 		batch.setColor(c.r, c.g, c.b, c.a * fade);
 		for (int i = 0; i < s.length(); i++) {
-			batch.draw(assets.digit(s.charAt(i) - '0'), x + i * step, cy - h / 2, w, h);
+			int d = s.charAt(i) - '0';
+			batch.draw(assets.digit(d == 0 && s.length() > 1 ? Assets.PLAIN_ZERO : d), x + i * step, cy - h / 2, w, h);
 		}
 		batch.setColor(Color.WHITE);
 	}

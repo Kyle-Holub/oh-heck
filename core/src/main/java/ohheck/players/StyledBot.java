@@ -44,7 +44,7 @@ final class StyledBot implements Bot {
 		int leaned = style.bid(bid, v, this);
 		scoreAtLastBid = v.score(v.seat());
 		lastBidHand = v.handIndex();
-		return v.isLegalBid(leaned) ? leaned : bid;
+		return Bot.neverZeroWithTheTrumpAce(v, v.isLegalBid(leaned) ? leaned : bid);
 	}
 
 	@Override
