@@ -17,9 +17,9 @@ the screenshot run, CI, the arena and the art tools.
   the map, never one below (no cycles); anything may use `ohheck.util` and `ohheck.anim`. `ohheck.rules`, `ohheck.players`, `ohheck.records`,
   `ohheck.util` and `ohheck.anim` stay libGDX-free, so they run in plain JUnit. Put new game logic and timing
   there, or in small gdx-free classes like `GameEnd`, and test it.
-- **Screens depend on `GameHost`** (`Services` and `Navigator`), not `OhHeckGame`; helpers
-  that draw take a `Painter`, not a screen; table parts read `TableScene` (the flow as a
-  `FlowView`) and act through `TableActions`; taps find buttons in `OverlayTargets`.
+- **Screens depend on `GameHost`**, not `OhHeckGame`; helpers that draw take a `Painter`,
+  not a screen; table parts read `TableScene` and act through `TableActions`; taps find
+  buttons in `OverlayTargets`. A menu screen with categories uses `SideTabs`.
 - **Saved data has no backward compatibility:** `SavedGame`, `Stats`, `Match.save` and high
   scores read only their current format. Anything unreadable (an older save included) is
   reported through `Log` and set aside. Test that each format reads back what it writes.
@@ -47,10 +47,9 @@ the screenshot run, CI, the arena and the art tools.
   and the roster, not copied text.
 - **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
   constant, a rules variant a `RuleSet` subclass listed in `RuleSet.ALL`, and a new reaction
-  to table events a `TableFlow.Listener`, a new table state a `TableState` constant with
-  its `StateView`, a pause-menu choice a `MenuItem` constant, a setting an `OptionItem` on its `OptionsPage`
-  (a new category is one more page), and a screenshot-tour stop a
-  screen implementing `TourStop`. Code playing a game asks `match.rules()`, not `Rules`.
+  to table events a `TableFlow.Listener`, a new table state a `TableState` constant, a pause-menu choice a `MenuItem` constant, a setting an `OptionItem` on its `OptionsPage`
+  (a new category is one more page), and a screenshot-run stop a
+  step in `ScreenshotLauncher.Walk`. Code playing a game asks `match.rules()`.
 - **Seats:** you are `Seating.YOU`; who sits in the other seats is a `Seating`, not an
   `int[]`.
 

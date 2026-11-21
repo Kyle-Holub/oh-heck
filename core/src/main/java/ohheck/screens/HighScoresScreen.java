@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -19,6 +20,7 @@ import ohheck.ui.MenuChrome;
 import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 import ohheck.ui.Scroller;
+import ohheck.ui.SideTabs;
 import ohheck.ui.Wording;
 
 /*
@@ -27,8 +29,7 @@ import ohheck.ui.Wording;
  */
 public class HighScoresScreen extends BaseScreen {
 
-	private static final float MAX_W = 940, MARGIN = 24, GAP = 18, TABS_W = 210, TAB_H = 50, TAB_GAP = 8;
-	private static final float BADGE = 24, BADGE_INSET = 14, PAD = 22, SCROLLBAR_W = 4, FRAME = 6;
+	private static final float BADGE = 24, PAD = 22, SCROLLBAR_W = 4, FRAME = 6;
 	private static final float SWITCH_H = 40, SWITCH_ROOM = 58;
 	private static final float SCORE_ROW = 32, SCORE_HEADS_H = 34, STAT_ROW = 42, SECTION_H = 50;
 	private static final float RESET_W = 230, RESET_CONFIRM_TIME = 3f;
@@ -38,7 +39,7 @@ public class HighScoresScreen extends BaseScreen {
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final Rectangle backButton = new Rectangle(), resetButton = new Rectangle(), page = new Rectangle(),
 			inside = new Rectangle(), scoresSwitch = new Rectangle(), statsSwitch = new Rectangle();
-	private final List<Rectangle> filters = new ArrayList<Rectangle>();
+	private final SideTabs filters;
 	private final int[] filterOf = new int[Stats.ALL + 1];
 	private final Scroller scroller = new Scroller();
 	private final Color highlight = new Color();
@@ -56,9 +57,13 @@ public class HighScoresScreen extends BaseScreen {
 		for (Difficulty d : Difficulty.values()) {
 			filterOf[d.ordinal() + 1] = d.ordinal();
 		}
+		String[] names = new String[filterOf.length];
+		Texture[] badges = new Texture[filterOf.length];
 		for (int i = 0; i < filterOf.length; i++) {
-			filters.add(new Rectangle());
+			names[i] = filterName(filterOf[i]);
+			badges[i] = filterOf[i] == Stats.ALL ? null : assets.levelBadge[filterOf[i]];
 		}
+		filters = new SideTabs(paint, "Difficulty", names, badges);
 	}
 
 	public void highlight(int position) {
@@ -78,6 +83,7 @@ public class HighScoresScreen extends BaseScreen {
 		scoresFor = -1;
 		confirmReset = 0;
 		filter = Stats.ALL;
+		filters.choose(0);
 		view(false);
 	}
 
@@ -102,10 +108,7 @@ public class HighScoresScreen extends BaseScreen {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
-		float width = Math.min(MAX_W, w - 2 * MARGIN), left = (w - width) / 2;
-		float top = h - MenuChrome.HEADER_H - GAP, bottom = MARGIN;
-		drawFilters(left, top);
-		page.set(left + TABS_W + GAP, bottom, width - TABS_W - GAP, top - bottom);
+		filters.draw(w, h, page);
 		paint.frame(assets.panel, page.x, page.y, page.width, page.height);
 		drawSwitch();
 		inside.set(page.x + FRAME, page.y + FRAME, page.width - 2 * FRAME, page.height - SWITCH_ROOM - FRAME);
@@ -125,22 +128,6 @@ public class HighScoresScreen extends BaseScreen {
 		chrome.headerButton(resetButton, confirmReset > 0 ? "Tap to confirm" : "Reset statistics", RESET_W, confirmReset > 0,
 				w, h);
 		batch.end();
-	}
-
-	private void drawFilters(float left, float top) {
-		paint.ui(0.95f, Palette.MUTED).draw(batch, "Difficulty", left + 6, top - 4);
-		float y = top - 26;
-		for (int i = 0; i < filters.size(); i++) {
-			Rectangle tab = filters.get(i).set(left, y - TAB_H, TABS_W, TAB_H);
-			boolean chosen = filterOf[i] == filter;
-			paint.frame(chosen ? assets.button : assets.buttonAlt, tab.x, tab.y, tab.width, tab.height);
-			if (filterOf[i] != Stats.ALL) {
-				batch.draw(assets.levelBadge[filterOf[i]], tab.x + BADGE_INSET, tab.y + (TAB_H - BADGE) / 2, BADGE, BADGE);
-			}
-			BitmapFont f = paint.serif(1.3f, chosen ? Palette.CREAM : Palette.MUTED);
-			paint.textIn(f, filterName(filterOf[i]), tab.x, tab.y, tab.width, tab.height);
-			y -= TAB_H + TAB_GAP;
-		}
 	}
 
 	private static String filterName(int which) {
@@ -281,11 +268,11 @@ public class HighScoresScreen extends BaseScreen {
 		} else if (statsSwitch.contains(x, y) && !showStats) {
 			view(true);
 		} else {
-			for (int i = 0; i < filters.size(); i++) {
-				if (filters.get(i).contains(x, y) && filterOf[i] != filter) {
-					filter = filterOf[i];
-					scroller.reset();
-				}
+			int tab = filters.tabAt(x, y);
+			if (tab >= 0 && filterOf[tab] != filter) {
+				filters.choose(tab);
+				filter = filterOf[tab];
+				scroller.reset();
 			}
 		}
 	}
