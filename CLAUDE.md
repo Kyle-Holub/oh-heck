@@ -5,6 +5,11 @@ the screenshot run, CI, the arena and the art tools.
 
 ## Conventions
 
+- **Keep it simple (KISS):** write the simplest code that does the job. A plain method or
+  class beats a new interface, pattern or layer; add an abstraction only when two real uses
+  need it today, not for a future that may not come. Delete what isn't used, and prefer
+  fewer files and fewer hops between them to clever generality. When a change makes the
+  code simpler, that's a reason to make it.
 - **Branches:** work on `feature/…` or `refactor/…` (CI previews the screenshots), then
   merge into the current `develop/alpha-X.Y.Z` (CI publishes a dev build). Don't commit
   straight to `develop/` or `main`.
