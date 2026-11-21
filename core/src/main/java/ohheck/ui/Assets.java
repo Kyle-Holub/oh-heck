@@ -22,7 +22,7 @@ public final class Assets implements Disposable {
 	public static final float UI_BASE = 16f / 42f, SERIF_BASE = 16f / 52f;
 
 	public final Texture table;
-	public final Texture cardSheet, cardBack, cardSheetBlur, cardBackBlur;
+	public final Texture cardSheet, cardBack, cardSheetBlur, cardBackBlur, cardSlot;
 	public final Texture shadow;
 	public final Texture glow;
 	public final NinePatch panel, panelTurn, panelWait, button, buttonAlt, buttonOff;
@@ -53,6 +53,7 @@ public final class Assets implements Disposable {
 		table = linear(own(new Texture(Gdx.files.internal("images/table.jpg"))));
 		cardSheet = mipmapped("images/cards_hd.png");
 		cardBack = mipmapped("images/back_hd.png");
+		cardSlot = mipmapped("images/card_slot.png");
 		cardSheetBlur = mipmapped("images/cards_blur.png");
 		cardBackBlur = mipmapped("images/back_blur.png");
 		shadow = linear(own(new Texture(Gdx.files.internal("images/shadow.png"))));

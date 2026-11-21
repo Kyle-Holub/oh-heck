@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 
+import ohheck.rules.RuleSet;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
@@ -51,12 +52,14 @@ public final class Counters {
 
 	public float tracker(float x0, float top, float avail, int n, int total, float scale) {
 		int filled = Math.min(total, n), count = Math.max(total, n);
-		float iw = Math.min(TRACKER_MAX_W * scale, avail / count - TRACKER_GAP * scale), ih = iw * 18f / 14f;
+		int rows = n > RuleSet.USUAL_CARDS ? 2 : 1, perRow = (count + rows - 1) / rows;
+		float gap = TRACKER_GAP * scale;
+		float iw = Math.min(TRACKER_MAX_W * scale, avail / perRow - gap), ih = iw * 18f / 14f;
 		for (int i = 0; i < count; i++) {
 			Texture t = i < filled ? paint.assets.bidTaken : i < n ? paint.assets.bidOpen : paint.assets.bidOver;
-			paint.batch.draw(t, x0 + i * (iw + TRACKER_GAP * scale), top - ih, iw, ih);
+			paint.batch.draw(t, x0 + (i % perRow) * (iw + gap), top - ih - (i / perRow) * (ih + gap), iw, ih);
 		}
-		return ih;
+		return rows * ih + (rows - 1) * gap;
 	}
 
 	private void mark(float cx, float cy, float sw, float sh, float rot, Color c, float alpha) {
