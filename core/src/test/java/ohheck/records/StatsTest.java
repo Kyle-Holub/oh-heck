@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import ohheck.players.Difficulty;
 import ohheck.players.Seating;
-import ohheck.rules.Rules;
+import ohheck.rules.RuleSet;
 
 public class StatsTest {
 
@@ -16,10 +16,10 @@ public class StatsTest {
 	public void handsCountForTheirLevelAndForAll() {
 		Stats s = new Stats();
 		s.startGame();
-		s.countHand(0, Difficulty.HARD, 1, 1, Rules.score(1, 1));
-		s.countHand(1, Difficulty.HARD, 0, 0, Rules.score(0, 0));
-		s.countHand(2, Difficulty.HARD, 2, 3, Rules.score(2, 3));
-		s.countHand(3, Difficulty.HARD, 3, 1, Rules.score(3, 1));
+		s.countHand(0, Difficulty.HARD, 1, 1, RuleSet.STANDARD.score(1, 1));
+		s.countHand(1, Difficulty.HARD, 0, 0, RuleSet.STANDARD.score(0, 0));
+		s.countHand(2, Difficulty.HARD, 2, 3, RuleSet.STANDARD.score(2, 3));
+		s.countHand(3, Difficulty.HARD, 3, 1, RuleSet.STANDARD.score(3, 1));
 		for (int which : new int[] { Difficulty.HARD.ordinal(), Stats.ALL }) {
 			Stats.Totals t = s.totals(which);
 			assertEquals(4, t.hands);
@@ -29,8 +29,8 @@ public class StatsTest {
 			assertEquals(1, t.over);
 			assertEquals(1, t.under);
 			assertEquals(5, t.tricks);
-			assertEquals(Math.max(Rules.score(1, 1), Rules.score(0, 0)), t.bestHand);
-			assertEquals(Math.min(Math.min(Rules.score(1, 1), Rules.score(0, 0)), Math.min(Rules.score(2, 3), Rules.score(3, 1))),
+			assertEquals(Math.max(RuleSet.STANDARD.score(1, 1), RuleSet.STANDARD.score(0, 0)), t.bestHand);
+			assertEquals(Math.min(Math.min(RuleSet.STANDARD.score(1, 1), RuleSet.STANDARD.score(0, 0)), Math.min(RuleSet.STANDARD.score(2, 3), RuleSet.STANDARD.score(3, 1))),
 					t.worstHand);
 		}
 		assertEquals(0, s.totals(Difficulty.EASY.ordinal()).hands);
@@ -40,11 +40,11 @@ public class StatsTest {
 	public void aResumedHandIsNotCountedTwice() {
 		Stats s = new Stats();
 		s.startGame();
-		assertTrue(s.countHand(0, Difficulty.NORMAL, 1, 1, Rules.score(1, 1)));
+		assertTrue(s.countHand(0, Difficulty.NORMAL, 1, 1, RuleSet.STANDARD.score(1, 1)));
 		Stats back = Stats.decode(s.encode());
-		assertFalse(back.countHand(0, Difficulty.NORMAL, 1, 1, Rules.score(1, 1)));
+		assertFalse(back.countHand(0, Difficulty.NORMAL, 1, 1, RuleSet.STANDARD.score(1, 1)));
 		assertEquals(1, back.totals(Stats.ALL).hands);
-		assertTrue(back.countHand(1, Difficulty.NORMAL, 0, 0, Rules.score(0, 0)));
+		assertTrue(back.countHand(1, Difficulty.NORMAL, 0, 0, RuleSet.STANDARD.score(0, 0)));
 	}
 
 	@Test
@@ -54,7 +54,7 @@ public class StatsTest {
 		for (int[] g : games) {
 			s.startGame();
 			for (int h = 0; h < 8; h++) {
-				s.countHand(h, Difficulty.EASY, 1, 1, Rules.score(1, 1));
+				s.countHand(h, Difficulty.EASY, 1, 1, RuleSet.STANDARD.score(1, 1));
 			}
 			assertTrue(s.countGame(Difficulty.EASY, g, 8, Seating.of(4, 6, 9)));
 			assertFalse(s.countGame(Difficulty.EASY, g, 8, Seating.of(4, 6, 9)));
@@ -77,7 +77,7 @@ public class StatsTest {
 		Stats s = new Stats();
 		s.startGame();
 		for (int h = 0; h < 8; h++) {
-			s.countHand(h, Difficulty.NORMAL, 1, h == 4 ? 0 : 1, Rules.score(1, h == 4 ? 0 : 1));
+			s.countHand(h, Difficulty.NORMAL, 1, h == 4 ? 0 : 1, RuleSet.STANDARD.score(1, h == 4 ? 0 : 1));
 		}
 		s.countGame(Difficulty.NORMAL, new int[] { 80, 0, 0, 0 }, 8, Seating.of(0, 1, 2));
 		assertEquals(0, s.totals(Stats.ALL).perfect);
@@ -93,7 +93,7 @@ public class StatsTest {
 	public void savedByNameAndReadBack() {
 		Stats s = new Stats();
 		s.startGame();
-		s.countHand(0, Difficulty.HARD, 2, 2, Rules.score(2, 2));
+		s.countHand(0, Difficulty.HARD, 2, 2, RuleSet.STANDARD.score(2, 2));
 		s.countGame(Difficulty.HARD, new int[] { 10, 30, 0, 0 }, 1, Seating.of(9, 4, 1));
 		String saved = s.encode();
 		assertTrue(saved.contains("hard.games=1"));

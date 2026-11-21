@@ -21,7 +21,7 @@ first five have no libGDX and test in plain JUnit.
 
 | Package | What's in it |
 |---|---|
-| `ohheck.rules` | Cards, `Match`, `Trick`, `Move` and `Replay`, `MatchCodec`, `RuleSet` / `Rules`, `HandOrder`, `TableView` |
+| `ohheck.rules` | Cards, `Match`, `Trick`, `Move` and `Replay`, `MatchCodec`, `RuleSet`, `HandOrder`, `TableView` |
 | `ohheck.players` | The roster (`Player`), who sits where (`Seating`), levels (`Difficulty`), habits (`Style`), the bots, `BidTable`; the arena lives here too |
 | `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
@@ -47,9 +47,7 @@ first five have no libGDX and test in plain JUnit.
   a variant extends `RuleSet`, overrides what it changes, and is added to `RuleSet.ALL` so
   saved games (which record `rules=<name>`) can find it. Turn order is `RuleSet.nextSeat`, and
   `Trick` decides when a trick is complete and who takes it, for `Match` and for the Hard
-  bot's imagined games alike. `Rules` holds the standard rules' numbers (scores, hands), for
-  code without a game in hand (the tutorial's captions and its little table);
-  anything else without a game asks `RuleSet.STANDARD`.
+  bot's imagined games alike. Code without a game in hand (the tutorial) asks `RuleSet.STANDARD`.
   `HandOrder` says which way the hands run, and `HandSort` how your hand is laid out (trumps first, then by suit or by rank). `BidTable` is learned for the standard rules.
 - `TableView` is what a player may know at a moment (`Match.view(seat)`). Bots decide from
   it alone and can only read it. A bot that imagines games (the Hard bot) fills its own
@@ -157,7 +155,7 @@ header; the panel scrolls, clipped with `BaseScreen.clipTo`).
 
 Facts the screens show come from the rules, not copied text: the Options difficulty note is
 `Wording.tableDescription` (from the matchmaking odds), the tutorial's players, points and
-hand counts come from the roster (`Player.byId`) and `Rules`, and the tally from the
+hand counts come from the roster (`Player.byId`) and `RuleSet.STANDARD`, and the tally from the
 game's rules.
 
 ### Saving

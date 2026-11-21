@@ -5,7 +5,7 @@ public enum HandOrder {
 	UP, DOWN;
 
 	public String label() {
-		int n = Rules.numberOfHands();
+		int n = RuleSet.STANDARD.numberOfHands();
 		return this == UP ? "1 to " + n : n + " to 1";
 	}
 
@@ -14,10 +14,6 @@ public enum HandOrder {
 			throw new IllegalArgumentException("No hand " + handIndex);
 		}
 		return this == UP ? handIndex + 1 : hands - handIndex;
-	}
-
-	public int handSize(int handIndex) {
-		return handSize(handIndex, Rules.numberOfHands());
 	}
 
 	public HandOrder flipped() {

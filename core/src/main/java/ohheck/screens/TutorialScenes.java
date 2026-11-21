@@ -8,7 +8,7 @@ import ohheck.fx.Glints;
 import ohheck.platform.Settings;
 import ohheck.rules.Card;
 import ohheck.rules.Rank;
-import ohheck.rules.Rules;
+import ohheck.rules.RuleSet;
 import ohheck.rules.Suit;
 import ohheck.table.Counters;
 import ohheck.table.PlayerPanel;
@@ -20,9 +20,9 @@ import ohheck.ui.Palette;
 final class TutorialScenes extends TutorialStage {
 
 	private static final String BIDS_LINE = LEFT + " bid 1.  " + RIGHT + " bid 1.";
-	private static final String MADE_LINE = "You bid 2 and won 2: made it. " + Rules.MADE + " + " + Rules.PER_TRICK_BID + " + "
-			+ Rules.PER_TRICK_BID + " = " + Rules.score(2, 2) + " points";
-	private static final String SET_LINE = RIGHT + " bid 1 and won 2: one trick over, so " + Rules.score(1, 2);
+	private static final String MADE_LINE = "You bid 2 and won 2: made it. " + RuleSet.STANDARD.made() + " + " + RuleSet.STANDARD.perTrickBid() + " + "
+			+ RuleSet.STANDARD.perTrickBid() + " = " + RuleSet.STANDARD.score(2, 2) + " points";
+	private static final String SET_LINE = RIGHT + " bid 1 and won 2: one trick over, so " + RuleSet.STANDARD.score(1, 2);
 	private static final String[] DEAL_LINES = { "", "Hand 1: 1 card each", "Hand 2: 2 cards each", "Hand 3: 3 cards each" };
 
 	TutorialScenes(Painter paint, Settings settings) {
@@ -327,7 +327,7 @@ final class TutorialScenes extends TutorialStage {
 	void counters() {
 		float scale = 1.6f, left = cx() - 250, top = h - 80;
 		int done = clock.count(0.5f, 1.0f, 1.5f);
-		counterArt.tally(left, top, Rules.numberOfHands(), done, Counters.pulse(clock.shown()), scale);
+		counterArt.tally(left, top, RuleSet.STANDARD.numberOfHands(), done, Counters.pulse(clock.shown()), scale);
 		BitmapFont f = paint.ui(1.05f, Palette.CREAM, at(1.6f, 2.0f));
 		f.draw(batch, "Hands: three played, the 4th glowing (of 8)", left + 150 * scale, top - 12);
 		int[] totals = { 0, 1, 3, 4, 5 };
@@ -348,19 +348,19 @@ final class TutorialScenes extends TutorialStage {
 
 	void scoring() {
 		int mine = clock.count(0.8f, 1.6f), his = clock.count(4.8f, 5.6f);
-		seat(0, bidOf(2).won(mine).score(t >= 2.2f ? Rules.score(2, 2) : 0).cards(3));
-		seat(3, bidOf(1).won(his).score(t >= 6.4f ? Rules.score(1, 2) : 0).cards(3));
+		seat(0, bidOf(2).won(mine).score(t >= 2.2f ? RuleSet.STANDARD.score(2, 2) : 0).cards(3));
+		seat(3, bidOf(1).won(his).score(t >= 6.4f ? RuleSet.STANDARD.score(1, 2) : 0).cards(3));
 		seat(1, plain().cards(3));
 		float yx = seatX(0) + PlayerPanel.W / 2, yy = seatTop(0) + 10;
 		if (passed(2.2f)) {
 			sparks.burst(yx, yy - PlayerPanel.H / 2, 70);
 		}
-		floating(Numbers.signed(Rules.score(2, 2)), yx, yy, 2.2f, Palette.GOLD_LIGHT);
+		floating(Numbers.signed(RuleSet.STANDARD.score(2, 2)), yx, yy, 2.2f, Palette.GOLD_LIGHT);
 		float hx = seatX(3) + PlayerPanel.W / 2;
 		if (t >= 6.2f) {
 			art.art(assets.setText, hx, seatTop(3) - PlayerPanel.H - 34, 0.5f, at(6.2f, 6.5f));
 		}
-		floating(Numbers.text(Rules.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
+		floating(Numbers.text(RuleSet.STANDARD.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
 		BitmapFont f = paint.ui(1.1f, Palette.CREAM, at(2.4f, 2.8f));
 		paint.centred(f, MADE_LINE, cx(), cy() + 36);
 		f.setColor(Palette.CREAM.r, Palette.CREAM.g, Palette.CREAM.b, at(6.6f, 7.0f));

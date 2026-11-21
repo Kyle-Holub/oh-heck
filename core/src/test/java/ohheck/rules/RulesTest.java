@@ -48,10 +48,10 @@ public class RulesTest {
 
 	@Test
 	public void eightHandsOfOneToEightCardsEitherWay() {
-		assertEquals(8, Rules.numberOfHands());
+		assertEquals(8, RuleSet.STANDARD.numberOfHands());
 		for (int i = 0; i < 8; i++) {
-			assertEquals(i + 1, HandOrder.UP.handSize(i));
-			assertEquals(8 - i, HandOrder.DOWN.handSize(i));
+			assertEquals(i + 1, HandOrder.UP.handSize(i, 8));
+			assertEquals(8 - i, HandOrder.DOWN.handSize(i, 8));
 		}
 	}
 
@@ -136,16 +136,16 @@ public class RulesTest {
 
 	@Test
 	public void makingBidScoresTenPlusTwoPerTrick() {
-		assertEquals(10, Rules.score(0, 0));
-		assertEquals(16, Rules.score(3, 3));
-		assertEquals(26, Rules.score(8, 8));
+		assertEquals(10, RuleSet.STANDARD.score(0, 0));
+		assertEquals(16, RuleSet.STANDARD.score(3, 3));
+		assertEquals(26, RuleSet.STANDARD.score(8, 8));
 	}
 
 	@Test
 	public void missingBidLosesFivePerTrickOff() {
-		assertEquals(-5, Rules.score(2, 3));
-		assertEquals(-5, Rules.score(2, 1));
-		assertEquals(-15, Rules.score(0, 3));
+		assertEquals(-5, RuleSet.STANDARD.score(2, 3));
+		assertEquals(-5, RuleSet.STANDARD.score(2, 1));
+		assertEquals(-15, RuleSet.STANDARD.score(0, 3));
 	}
 
 	@Test
