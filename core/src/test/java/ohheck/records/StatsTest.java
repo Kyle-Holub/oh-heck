@@ -64,9 +64,8 @@ public class StatsTest {
 		assertEquals(3, t.wins);
 		assertEquals(1, t.streak);
 		assertEquals(2, t.bestStreak);
-		assertEquals(70, t.bestFinal);
-		assertEquals(20, t.worstFinal);
-		assertEquals(50.0, t.averageFinal(), 1e-9);
+		assertEquals((1 + 1 + 3 + 1) / 4.0, t.averagePlace(), 1e-9);
+		assertEquals(RuleSet.STANDARD.score(1, 1), t.pointsPerHand(), 1e-9);
 		assertEquals(4, t.perfect);
 		assertEquals(4, t.nemesis());
 		assertEquals(4, Stats.decode(s.encode()).totals(Stats.ALL).nemesis());

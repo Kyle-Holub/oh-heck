@@ -183,6 +183,7 @@ public final class Arena {
 
 	private static final String TEMPLATE = "package ohheck.players;\n\n"
 			+ "import ohheck.rules.Card;\n"
+			+ "import ohheck.rules.RuleSet;\n"
 			+ "import ohheck.rules.TableView;\n\n"
 			+ "/**\n"
 			+ " * How often a card takes a trick, learned from $GAMES simulated games between Normal\n"
@@ -198,7 +199,7 @@ public final class Arena {
 			+ "\tstatic final int CONTEXTS = 12;\n\n"
 			+ "\t/** The chance this card in the viewer's hand takes a trick this hand. */\n"
 			+ "\tstatic double chance(TableView v, Card c) {\n"
-			+ "\t\tint row = ((v.handSize() - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();\n"
+			+ "\t\tint row = ((Math.min(v.handSize(), RuleSet.USUAL_CARDS) - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();\n"
 			+ "\t\treturn CHANCE[row][context(v, c)];\n"
 			+ "\t}\n\n"
 			+ "\t/** Which column: the card's suit length in the hand, and the viewer's place in the bidding. */\n"

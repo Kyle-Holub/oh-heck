@@ -13,13 +13,13 @@ import ohheck.players.Player;
 import ohheck.players.Seating;
 import ohheck.util.Log;
 
-/* Statistics per difficulty and overall. */
+/* Statistics per difficulty and overall, in measures that mean the same whatever the rules: places, bids and points a hand. */
 public final class Stats {
 
 	public static final class Totals {
 		public int games, wins, streak, bestStreak, perfect;
-		long finalScores;
-		public int bestFinal = Integer.MIN_VALUE, worstFinal = Integer.MAX_VALUE;
+		public int places;
+		public long points;
 		public int hands, made, zeroBids, zeroMade, over, under, tricks;
 		public int bestHand = Integer.MIN_VALUE, worstHand = Integer.MAX_VALUE;
 		public final int[] beatenBy = new int[Player.idLimit()];
@@ -36,8 +36,12 @@ public final class Stats {
 			return games == 0 ? 0 : (double) wins / games;
 		}
 
-		public double averageFinal() {
-			return games == 0 ? 0 : (double) finalScores / games;
+		public double averagePlace() {
+			return games == 0 ? 0 : (double) places / games;
+		}
+
+		public double pointsPerHand() {
+			return hands == 0 ? 0 : (double) points / hands;
 		}
 
 		public double madeRate() {
@@ -92,6 +96,7 @@ public final class Stats {
 		for (Totals t : both(level)) {
 			t.hands++;
 			t.tricks += won;
+			t.points += points;
 			if (madeIt) {
 				t.made++;
 			} else if (won > bid) {
@@ -117,16 +122,15 @@ public final class Stats {
 		}
 		gameCounted = true;
 		int mine = finalScores[Seating.YOU];
-		boolean won = true;
+		int place = 1;
 		for (int s = 0; s < finalScores.length; s++) {
-			won &= s == Seating.YOU || finalScores[s] <= mine;
+			place += finalScores[s] > mine ? 1 : 0;
 		}
+		boolean won = place == 1;
 		boolean perfect = perfectSoFar && handsCounted == hands;
 		for (Totals t : both(level)) {
 			t.games++;
-			t.finalScores += mine;
-			t.bestFinal = Math.max(t.bestFinal, mine);
-			t.worstFinal = Math.min(t.worstFinal, mine);
+			t.places += place;
 			if (won) {
 				t.wins++;
 				t.streak++;
@@ -163,9 +167,8 @@ public final class Stats {
 			new Field("streak", t -> t.streak, (t, v) -> t.streak = (int) v),
 			new Field("bestStreak", t -> t.bestStreak, (t, v) -> t.bestStreak = (int) v),
 			new Field("perfect", t -> t.perfect, (t, v) -> t.perfect = (int) v),
-			new Field("finalScores", t -> t.finalScores, (t, v) -> t.finalScores = v),
-			new Field("bestFinal", t -> t.bestFinal, (t, v) -> t.bestFinal = (int) v),
-			new Field("worstFinal", t -> t.worstFinal, (t, v) -> t.worstFinal = (int) v),
+			new Field("places", t -> t.places, (t, v) -> t.places = (int) v),
+			new Field("points", t -> t.points, (t, v) -> t.points = v),
 			new Field("hands", t -> t.hands, (t, v) -> t.hands = (int) v),
 			new Field("made", t -> t.made, (t, v) -> t.made = (int) v),
 			new Field("zeroBids", t -> t.zeroBids, (t, v) -> t.zeroBids = (int) v),

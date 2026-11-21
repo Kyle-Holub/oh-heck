@@ -153,37 +153,57 @@ public class RulesTest {
 		assertEquals(Arrays.asList(c("10H"), c("JC")), cards("10H JC"));
 	}
 
-	private static final RuleSet DOUBLE_SHORT = new RuleSet("double-short") {
-		@Override
-		public int numberOfHands() {
-			return 5;
+	@Test
+	public void everyModePlaysToTheEnd() {
+		Bot bot = Bot.of(Difficulty.NORMAL, new java.util.Random(1));
+		for (GameMode mode : GameMode.values()) {
+			RuleSet rules = mode.rules(RuleSet.STANDARD.withOrder(HandOrder.DOWN));
+			Match m = Match.random(4, new java.util.Random(4), rules);
+			int hands = 0;
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				if (m.phase() == Match.Phase.BIDDING) {
+					assertEquals(rules.handSize(hands), m.handSize());
+					assertEquals(m.handSize() == 13, m.trumpCard() == null);
+					m.placeBid(m.currentSeat(), bot.chooseBid(m.view(m.currentSeat())));
+				} else if (m.phase() == Match.Phase.PLAYING) {
+					m.playCard(m.currentSeat(), bot.choosePlay(m.view(m.currentSeat())));
+				} else {
+					hands++;
+					m.nextHand();
+				}
+			}
+			assertEquals(mode.label, rules.numberOfHands(), hands);
 		}
-
-		@Override
-		public int made() {
-			return 20;
-		}
-	};
+	}
 
 	@Test
-	public void aVariantPlaysByItsOwnRules() {
-		Match m = Match.random(4, new java.util.Random(4), HandOrder.DOWN, DOUBLE_SHORT);
-		assertEquals(5, m.handSize());
-		assertEquals(24, m.rules().score(2, 2));
-		Bot bot = Bot.of(Difficulty.NORMAL, new java.util.Random(1));
-		int hands = 0;
-		while (m.phase() != Match.Phase.GAME_OVER) {
-			if (m.phase() == Match.Phase.BIDDING) {
-				m.placeBid(m.currentSeat(), bot.chooseBid(m.view(m.currentSeat())));
-			} else if (m.phase() == Match.Phase.PLAYING) {
-				m.playCard(m.currentSeat(), bot.choosePlay(m.view(m.currentSeat())));
-			} else {
-				hands++;
-				m.nextHand();
-			}
-		}
-		assertEquals(5, hands);
-		assertEquals("1 to 8", HandOrder.UP.label());
-		assertEquals("8 to 1", HandOrder.DOWN.label());
+	public void theModesDealTheirHands() {
+		assertEquals(8, GameMode.CLASSIC.rules(null).numberOfHands());
+		RuleSet marathon = GameMode.MARATHON.rules(null);
+		assertEquals(25, marathon.numberOfHands());
+		assertEquals(1, marathon.handSize(0));
+		assertEquals(13, marathon.handSize(12));
+		assertEquals(12, marathon.handSize(13));
+		assertEquals(1, marathon.handSize(24));
+		assertEquals("1 to 13 to 1", marathon.order.label(13));
+		assertEquals("8 to 1", HandOrder.DOWN.label(8));
+	}
+
+	@Test
+	public void bigBidsScoreTheSquare() {
+		RuleSet big = GameMode.HIGH_STAKES.rules(null);
+		assertEquals(10, big.score(0, 0));
+		assertEquals(19, big.score(3, 3));
+		assertEquals(74, big.score(8, 8));
+		assertEquals(-5, big.score(2, 3));
+	}
+
+	@Test
+	public void customRulesAreNamedByTheirCode() {
+		RuleSet r = new RuleSet(HandOrder.UP_AND_DOWN, 8, true);
+		assertEquals(r, RuleSet.parse(r.code()));
+		assertEquals(GameMode.CUSTOM, GameMode.of(r));
+		assertEquals(GameMode.MARATHON, GameMode.of(RuleSet.parse("UP_AND_DOWN/13")));
+		assertEquals(GameMode.CLASSIC, GameMode.of(RuleSet.STANDARD));
 	}
 }

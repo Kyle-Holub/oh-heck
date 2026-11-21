@@ -18,7 +18,7 @@ public class SavedGameTest {
 
 	@Test
 	public void theTableTravelsWithTheGame() {
-		Match m = new Match(4, new Random(3), 1, HandOrder.DOWN, RuleSet.STANDARD);
+		Match m = new Match(4, new Random(3), 1, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
 		String saved = new SavedGame(m, Difficulty.HARD, Seating.of(8, 9, 5)).encode();
 		SavedGame back = SavedGame.decode(saved, new Random(1));
 		assertEquals(Difficulty.HARD, back.level());

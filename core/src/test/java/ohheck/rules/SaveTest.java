@@ -1,7 +1,7 @@
 package ohheck.rules;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -70,7 +70,7 @@ public class SaveTest {
 	@Test
 	public void rejectsDamagedSaves() {
 		String good = Match.random(4, new Random(2)).save();
-		String[] bad = { "", "hello", good.replace("oh-heck-match-2", "something-else"),
+		String[] bad = { "", "hello", good.replace("oh-heck-match-3", "something-else"),
 				good.substring(0, good.length() / 2), good.replaceFirst("hand=0", "hand=12"),
 				good.replaceFirst("players=4", "players=x") };
 		for (String b : bad) {
@@ -112,12 +112,23 @@ public class SaveTest {
 	public void savesItsRules() {
 		Match m = new Match(4, new Random(5), 0);
 		String saved = m.save();
-		assertTrue(saved.contains("rules=standard"));
-		assertSame(RuleSet.STANDARD, Match.load(saved, new Random(1)).rules());
+		assertTrue(saved.contains("rules=UP/8"));
+		assertEquals(RuleSet.STANDARD, Match.load(saved, new Random(1)).rules());
 		try {
-			Match.load(saved.replace("rules=standard", "rules=madeup"), new Random(1));
+			Match.load(saved.replace("rules=UP/8", "rules=madeup"), new Random(1));
 			fail("a game by rules this build doesn't know");
 		} catch (IllegalArgumentException expected) {
 		}
+	}
+
+	@Test
+	public void aHandWithNoTrumpReadsBack() {
+		RuleSet rules = new RuleSet(HandOrder.DOWN, RuleSet.MOST_CARDS, true);
+		Match m = new Match(4, new Random(5), 0, rules);
+		assertNull(m.trumpCard());
+		Match back = Match.load(m.save(), new Random(1));
+		assertNull(back.trumpCard());
+		assertEquals(rules, back.rules());
+		assertEquals(m.save(), back.save());
 	}
 }

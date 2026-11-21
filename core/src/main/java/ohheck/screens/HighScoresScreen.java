@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import ohheck.players.Difficulty;
 import ohheck.records.HighScores;
 import ohheck.records.Stats;
+import ohheck.rules.GameMode;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.MenuChrome;
@@ -26,11 +27,12 @@ import ohheck.ui.Wording;
 /*
  * Your records: the high scores or the statistics, for every game or one difficulty. The
  * difficulty tabs down the left filter both; a switch at the top of the panel picks which.
+ * High scores are kept per game mode, picked by a row of buttons under the switch.
  */
 public class HighScoresScreen extends BaseScreen {
 
 	private static final float BADGE = 24, PAD = 22, SCROLLBAR_W = 4, FRAME = 6;
-	private static final float SWITCH_H = 40, SWITCH_ROOM = 58;
+	private static final float SWITCH_H = 40, SWITCH_ROOM = 58, MODE_H = 34, MODE_ROOM = 44, MODE_GAP = 8;
 	private static final float SCORE_ROW = 32, SCORE_HEADS_H = 34, STAT_ROW = 42, SECTION_H = 50;
 	private static final float RESET_W = 230, RESET_CONFIRM_TIME = 3f;
 	private static final float[] SCORE_COLS = { 0.07f, 0.2f, 0.38f, 0.58f };
@@ -44,6 +46,8 @@ public class HighScoresScreen extends BaseScreen {
 	private final Scroller scroller = new Scroller();
 	private final Color highlight = new Color();
 	private final List<HighScores.Entry> shown = new ArrayList<HighScores.Entry>();
+	private final Rectangle[] modeButtons = new Rectangle[GameMode.values().length];
+	private GameMode mode = GameMode.CLASSIC;
 	private boolean showStats;
 	private int filter = Stats.ALL, rowsFor = -1, scoresFor = -1, newestAt = -1;
 	private String[][] games, hands;
@@ -64,6 +68,9 @@ public class HighScoresScreen extends BaseScreen {
 			badges[i] = filterOf[i] == Stats.ALL ? null : assets.levelBadge[filterOf[i]];
 		}
 		filters = new SideTabs(paint, "Difficulty", names, badges);
+		for (int i = 0; i < modeButtons.length; i++) {
+			modeButtons[i] = new Rectangle();
+		}
 	}
 
 	public void highlight(int position) {
@@ -79,6 +86,7 @@ public class HighScoresScreen extends BaseScreen {
 		super.show();
 		list = game.records().highScores().entries();
 		newest = newestAt >= 0 && newestAt < list.size() ? list.get(newestAt) : null;
+		mode = newest != null ? newest.mode() : game.settings().mode();
 		rowsFor = -1;
 		scoresFor = -1;
 		confirmReset = 0;
@@ -111,7 +119,12 @@ public class HighScoresScreen extends BaseScreen {
 		filters.draw(w, h, page);
 		paint.frame(assets.panel, page.x, page.y, page.width, page.height);
 		drawSwitch();
-		inside.set(page.x + FRAME, page.y + FRAME, page.width - 2 * FRAME, page.height - SWITCH_ROOM - FRAME);
+		float top = SWITCH_ROOM;
+		if (!showStats) {
+			drawModes(page.y + page.height - SWITCH_ROOM - MODE_H);
+			top += MODE_ROOM;
+		}
+		inside.set(page.x + FRAME, page.y + FRAME, page.width - 2 * FRAME, page.height - top - FRAME);
 		float content = showStats ? statsHeight() : scoresHeight();
 		scroller.update(frameDelta(), Gdx.input.isTouched(), content - inside.height);
 		if (clipTo(inside)) {
@@ -146,17 +159,30 @@ public class HighScoresScreen extends BaseScreen {
 		area.set(cx - bw / 2, y, bw, SWITCH_H);
 	}
 
+	private void drawModes(float y) {
+		GameMode[] modes = GameMode.values();
+		float bw = (page.width - 2 * PAD - (modes.length - 1) * MODE_GAP) / modes.length, x = page.x + PAD;
+		for (GameMode m : modes) {
+			boolean on = m == mode;
+			paint.frame(on ? assets.button : assets.buttonAlt, x, y, bw, MODE_H);
+			paint.textIn(paint.ui(1f, on ? Palette.CREAM : Palette.MUTED), m.label, x, y, bw, MODE_H);
+			modeButtons[m.ordinal()].set(x, y, bw, MODE_H);
+			x += bw + MODE_GAP;
+		}
+	}
+
 	private void filterScores() {
-		if (scoresFor == filter) {
+		int key = filter * GameMode.values().length + mode.ordinal();
+		if (scoresFor == key) {
 			return;
 		}
 		shown.clear();
 		for (HighScores.Entry e : list) {
-			if (filter == Stats.ALL || e.level() != null && e.level().ordinal() == filter) {
+			if (e.mode() == mode && (filter == Stats.ALL || e.level().ordinal() == filter)) {
 				shown.add(e);
 			}
 		}
-		scoresFor = filter;
+		scoresFor = key;
 	}
 
 	private float scoresHeight() {
@@ -173,8 +199,8 @@ public class HighScoresScreen extends BaseScreen {
 		BitmapFont f = paint.ui(1.15f, Palette.MUTED);
 		float y = top - 8;
 		if (shown.isEmpty()) {
-			String note = filter == Stats.ALL ? "Finish a game to set your first high score"
-					: "No high scores at " + filterName(filter) + " yet";
+			String note = filter == Stats.ALL ? "No " + mode.label + " high scores yet"
+					: "No " + mode.label + " high scores at " + filterName(filter) + " yet";
 			paint.centred(f, note, page.x + page.width / 2, y - 6);
 			return;
 		}
@@ -182,7 +208,7 @@ public class HighScoresScreen extends BaseScreen {
 		paint.text(f, "Level", column(1), y, true);
 		paint.text(f, "Score", column(2), y, true);
 		paint.text(f, "Finished", column(3), y, true);
-		paint.text(f, "Date", page.x + page.width - PAD, y, false);
+		paint.text(f, mode == GameMode.CUSTOM ? "Rules" : "Date", page.x + page.width - PAD, y, false);
 		y = top - SCORE_HEADS_H;
 		float pulse = 0.5f + 0.5f * MathUtils.sin(shownFor * 3f);
 		for (int i = 0; i < shown.size(); i++) {
@@ -200,14 +226,12 @@ public class HighScoresScreen extends BaseScreen {
 		Color c = e == newest ? Palette.GOLD_LIGHT : i == 0 ? Palette.GOLD : Palette.CREAM;
 		BitmapFont f = paint.ui(1.15f, c);
 		paint.text(f, Numbers.text(i + 1), column(0), y, true);
-		if (e.level() != null) {
-			batch.draw(assets.levelBadge[e.level().ordinal()], column(1) - BADGE / 2, y - 18, BADGE, BADGE);
-		}
+		batch.draw(assets.levelBadge[e.level().ordinal()], column(1) - BADGE / 2, y - 18, BADGE, BADGE);
 		paint.text(f, Numbers.text(e.score()), column(2), y, true);
 		f.setColor(e.place() == 1 ? Palette.GOLD : c);
 		paint.text(f, e.place() == 1 ? "Won" : Wording.ordinal(e.place()), column(3), y, true);
 		f.setColor(e == newest ? Palette.GOLD_LIGHT : Palette.MUTED);
-		paint.text(f, e.date(), page.x + page.width - PAD, y, false);
+		paint.text(f, mode == GameMode.CUSTOM ? e.rules().describe() : e.date(), page.x + page.width - PAD, y, false);
 	}
 
 	private void statRows() {
@@ -267,6 +291,9 @@ public class HighScoresScreen extends BaseScreen {
 			view(false);
 		} else if (statsSwitch.contains(x, y) && !showStats) {
 			view(true);
+		} else if (!showStats && modeAt(x, y) != null) {
+			mode = modeAt(x, y);
+			scroller.reset();
 		} else {
 			int tab = filters.tabAt(x, y);
 			if (tab >= 0 && filterOf[tab] != filter) {
@@ -275,6 +302,15 @@ public class HighScoresScreen extends BaseScreen {
 				scroller.reset();
 			}
 		}
+	}
+
+	private GameMode modeAt(float x, float y) {
+		for (GameMode m : GameMode.values()) {
+			if (modeButtons[m.ordinal()].contains(x, y)) {
+				return m;
+			}
+		}
+		return null;
 	}
 
 	private void reset() {

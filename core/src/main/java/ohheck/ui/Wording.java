@@ -144,8 +144,7 @@ public final class Wording {
 				{ "Games played", String.valueOf(t.games) },
 				{ "Games won", g ? t.wins + "  (" + percent(t.winRate()) + ")" : NONE },
 				{ "Winning streak", g ? t.streak + "  (best " + t.bestStreak + ")" : NONE },
-				{ "Average score", g ? String.valueOf(Math.round(t.averageFinal())) : NONE },
-				{ "Best / worst score", g ? t.bestFinal + " / " + t.worstFinal : NONE },
+				{ "Average finish", g ? String.format(Locale.US, "%.1f", t.averagePlace()) : NONE },
 				{ "Perfect games", g ? String.valueOf(t.perfect) : NONE },
 				{ "Nemesis", t.nemesis() >= 0 ? Player.byId(t.nemesis()).name : NONE } };
 	}
@@ -159,6 +158,7 @@ public final class Wording {
 				{ "Zero bids made", t.zeroBids > 0 ? t.zeroMade + " of " + t.zeroBids : NONE },
 				{ "Misses: over / under", misses > 0 ? t.over + " / " + t.under : NONE },
 				{ "Tricks won", hd ? t.tricks + "  (" + String.format(Locale.US, "%.1f", t.tricksPerHand()) + " a hand)" : NONE },
+				{ "Points a hand", hd ? String.format(Locale.US, "%.1f", t.pointsPerHand()) : NONE },
 				{ "Best hand", hd ? t.bestHand + " points" : NONE },
 				{ "Worst hand", hd ? t.worstHand + " points" : NONE } };
 	}

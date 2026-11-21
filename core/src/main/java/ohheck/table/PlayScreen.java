@@ -15,7 +15,6 @@ import ohheck.players.Seating;
 import ohheck.records.SavedGame;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
-import ohheck.rules.RuleSet;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
@@ -171,7 +170,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		seatPlayers(Player.draw(level, streams.seating));
 		shower.clear();
 		end.reset();
-		Match m = Match.random(Seating.SEATS, streams.deck, game.settings().handOrder(), RuleSet.STANDARD);
+		Match m = Match.random(Seating.SEATS, streams.deck, game.settings().rules());
 		overlays.setMatch(m);
 		recorder.table(level, players, true);
 		flow.start(m);

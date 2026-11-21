@@ -1,6 +1,7 @@
 package ohheck.players;
 
 import ohheck.rules.Card;
+import ohheck.rules.RuleSet;
 import ohheck.rules.TableView;
 
 /**
@@ -21,7 +22,7 @@ final class BidTable {
 
 	/** The chance this card in the viewer's hand takes a trick this hand. */
 	static double chance(TableView v, Card c) {
-		int row = ((v.handSize() - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();
+		int row = ((Math.min(v.handSize(), RuleSet.USUAL_CARDS) - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();
 		return CHANCE[row][context(v, c)];
 	}
 
