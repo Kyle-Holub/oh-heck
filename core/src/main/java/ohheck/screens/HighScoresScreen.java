@@ -25,7 +25,7 @@ import ohheck.ui.Wording;
  * Your records: the high scores or the statistics, for every game or one difficulty. The
  * difficulty tabs down the left filter both; a switch at the top of the panel picks which.
  */
-public class HighScoresScreen extends BaseScreen implements TourStop {
+public class HighScoresScreen extends BaseScreen {
 
 	private static final float MAX_W = 940, MARGIN = 24, GAP = 18, TABS_W = 210, TAB_H = 50, TAB_GAP = 8;
 	private static final float BADGE = 24, BADGE_INSET = 14, PAD = 22, SCROLLBAR_W = 4, FRAME = 6;
@@ -65,16 +65,8 @@ public class HighScoresScreen extends BaseScreen implements TourStop {
 		newestAt = position;
 	}
 
-	@Override
-	public ScreenshotTour.Stop tourStop() {
-		return ScreenshotTour.Stop.HIGH_SCORES;
-	}
-
-	@Override
-	public void secondHalf(boolean on) {
-		if (on && !showStats) {
-			view(true);
-		}
+	public void showStatistics() {
+		view(true);
 	}
 
 	@Override

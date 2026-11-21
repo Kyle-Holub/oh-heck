@@ -11,7 +11,7 @@ import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 
 /* How to play: a step per scene, each with a caption; a tap moves on. */
-public class TutorialScreen extends BaseScreen implements TourStop {
+public class TutorialScreen extends BaseScreen {
 
 	private static final class Step {
 		final String heading, caption;
@@ -99,27 +99,7 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		batch.end();
 	}
 
-	@Override
-	protected float tourClock() {
-		return scenes.clock.shown();
-	}
-
-	@Override
-	public ScreenshotTour.Stop tourStop() {
-		return ScreenshotTour.Stop.TUTORIAL;
-	}
-
-	@Override
-	public boolean lastStep() {
-		return step == steps.length - 1;
-	}
-
-	@Override
-	public void nextStep() {
-		next();
-	}
-
-	void next() {
+	public void next() {
 		if (step < steps.length - 1) {
 			step++;
 			scenes.restart();

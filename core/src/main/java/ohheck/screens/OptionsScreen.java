@@ -17,7 +17,7 @@ import ohheck.ui.Palette;
 import ohheck.ui.TapAreas;
 
 /* The settings, a page per category: tabs down the left, the chosen page's settings on the right. */
-public class OptionsScreen extends BaseScreen implements TourStop {
+public class OptionsScreen extends BaseScreen {
 
 	private static final float MAX_W = 940, MARGIN = 24, GAP = 18, TABS_W = 210, TAB_H = 54, TAB_GAP = 10, PAGE_TOP = 18;
 	private static final Color DIVIDER = new Color(0.68f, 0.6f, 0.49f, 0.25f);
@@ -55,11 +55,6 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 				new OptionsPage("Learn",
 						OptionItem.link("How to play", "The rules, a step at a time.", game::showTutorial),
 						OptionItem.link("Roster", "The players you can meet at the table.", game::showPlayers)));
-	}
-
-	@Override
-	public ScreenshotTour.Stop tourStop() {
-		return ScreenshotTour.Stop.OPTIONS;
 	}
 
 	@Override
