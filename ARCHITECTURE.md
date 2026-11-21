@@ -21,7 +21,7 @@ first five have no libGDX and test in plain JUnit.
 
 | Package | What's in it |
 |---|---|
-| `ohheck.rules` | Cards, `Match`, `Trick`, `Move`, `MatchCodec`, `RuleSet`, `HandOrder`, `TableView` |
+| `ohheck.rules` | Cards, `Match`, `Trick`, `Move`, `MatchCodec`, `RuleSet`, `HandOrder`, `GameMode`, `TableView` |
 | `ohheck.players` | The roster (`Player`), who sits where (`Seating`), levels (`Difficulty`), habits (`Style`), the bots, `BidTable`; the arena lives here too |
 | `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
@@ -41,14 +41,17 @@ first five have no libGDX and test in plain JUnit.
   fresh match). Bots answer with a `Move` (`Bot.chooseMove`). A bid not yet made is
   `Match.NO_BID` (`hasBid(seat)`), never null. `save()` / `load()` go through
   `MatchCodec`, its text format.
-- `RuleSet` is the rules a game is played by: how many hands and how big, which card wins,
-  what may be bid and played, and the scoring. A `Match` holds its rules (`rules()`) and
-  `TableView` carries them to the bots. `RuleSet.STANDARD` is the game as it's always been;
-  a variant extends `RuleSet`, overrides what it changes, and is added to `RuleSet.ALL` so
-  saved games (which record `rules=<name>`) can find it. Turn order is `RuleSet.nextSeat`, and
+- `RuleSet` is the rules a game is played by: which way the hands run (`HandOrder`: up, down,
+  or up and down), the biggest hand (8, or 13 for a marathon, whose 13-card hand deals the
+  whole deck and so has no trump: `trump()` is null), and whether a made bid scores big (10
+  plus its square). It also says which card wins, what may be bid and played, and the score.
+  A `Match` holds its rules (`rules()`) and `TableView` carries them to the bots. A rule set is
+  a value written as a short code (`UP/8`, `UP_AND_DOWN/13/big`) into saves and high scores.
+  `GameMode` names three fixed sets (Classic, High Stakes, Marathon) and Custom, which plays
+  the rules the player chose; `GameMode.of(rules)` names any rule set. Turn order is `RuleSet.nextSeat`, and
   `Trick` decides when a trick is complete and who takes it, for `Match` and for the Hard
   bot's imagined games alike. Code without a game in hand (the tutorial) asks `RuleSet.STANDARD`.
-  `HandOrder` says which way the hands run, and `HandSort` how your hand is laid out (trumps first, then by suit or by rank). `BidTable` is learned for the standard rules.
+  `HandSort` how your hand is laid out (trumps first, then by suit or by rank). `BidTable` is learned for the standard rules; bigger hands use its 8-card rows.
 - `TableView` is what a player may know at a moment (`Match.view(seat)`). Bots decide from
   it alone and can only read it. A bot that imagines games (the Hard bot) fills its own
   views with a `TableView.Builder`.
@@ -148,10 +151,11 @@ first five have no libGDX and test in plain JUnit.
 `TitleScreen` (with `FallingCards`, the 3D shower), `TutorialScreen` (How to play: 13
 timed scenes, a tap each; each step names its scene in `TutorialScenes`, which draws with
 `TutorialStage`'s little table, and each scene's clock is an `ohheck.anim.Timeline`,
-tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`, each a list of
+tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`; the Rules page picks the game mode, and changing
+any rule there makes the game Custom; each a list of
 `OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
-statistics, a switch at the top of the panel picks which, and Reset statistics sits in the
-header; the panel scrolls, clipped with `BaseScreen.clipTo`).
+statistics, a switch at the top of the panel picks which, high scores have a button per game
+mode, and Reset statistics sits in the header; the panel scrolls, clipped with `BaseScreen.clipTo`).
 
 Facts the screens show come from the rules, not copied text: the Options difficulty note is
 `Wording.tableDescription` (from the matchmaking odds), the tutorial's players, points and
@@ -162,7 +166,9 @@ game's rules.
 
 `Settings` wraps the device's preferences: the options and the tutorial flag. Kept in the
 same preferences by `RecordPrefs`: the saved game (`SavedGame`, one text), statistics and
-high scores (`HighScores`, stored by field name).
+high scores (`HighScores`, stored by field name, ten kept per game mode). Statistics are
+kept per difficulty only, in measures that hold for any rules (places, bids made, points a
+hand), so every mode counts toward them.
 `Records` keeps statistics, high scores and the saved game behind one persist switch,
 writing to a `Records.Store` (`RecordPrefs` on the device); it has no libGDX and is tested in
 `RecordsTest` with an in-memory store. `Stats` lists each saved number once (`FIELDS`);

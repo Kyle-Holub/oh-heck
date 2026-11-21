@@ -12,6 +12,7 @@ import org.junit.Test;
 import ohheck.players.Difficulty;
 import ohheck.players.Seating;
 import ohheck.rules.Match;
+import ohheck.rules.RuleSet;
 
 public class RecordsTest {
 
@@ -55,7 +56,7 @@ public class RecordsTest {
 	public void keepsScoresAndGamesWhenPersisting() {
 		MemoryStore store = new MemoryStore();
 		Records r = new Records(store, true, null);
-		assertEquals(0, r.recordHighScore(50, 1, Difficulty.HARD, "2026-11-18"));
+		assertEquals(0, r.recordHighScore(50, 1, Difficulty.HARD, RuleSet.STANDARD, "2026-11-18"));
 		assertEquals(50, new Records(store, true, null).highScores().entries().get(0).score());
 
 		Match m = Match.random(4, new Random(1));
@@ -70,7 +71,7 @@ public class RecordsTest {
 	public void writesNothingWhenNotPersisting() {
 		MemoryStore store = new MemoryStore();
 		Records r = new Records(store, false, null);
-		assertEquals(-1, r.recordHighScore(50, 1, Difficulty.HARD, "2026-11-18"));
+		assertEquals(-1, r.recordHighScore(50, 1, Difficulty.HARD, RuleSet.STANDARD, "2026-11-18"));
 		r.stats().startGame();
 		r.saveStats();
 		r.saveGame(new SavedGame(Match.random(4, new Random(1)), Difficulty.EASY, Seating.of(0, 1, 2)));

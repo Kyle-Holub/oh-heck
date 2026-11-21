@@ -14,18 +14,17 @@ final class MatchCodec {
 	private MatchCodec() {
 	}
 
-	private static final String FORMAT = "oh-heck-match-2";
+	private static final String FORMAT = "oh-heck-match-3", NO_TRUMP = "-";
 
 	static String encode(Match m) {
 		StringBuilder sb = new StringBuilder(FORMAT).append('\n');
-		line(sb, "rules", m.rules().name);
+		line(sb, "rules", m.rules().code());
 		line(sb, "players", String.valueOf(m.players));
 		line(sb, "phase", m.phase.name());
 		line(sb, "hand", String.valueOf(m.handIndex));
-		line(sb, "order", m.order.name());
 		line(sb, "dealer", String.valueOf(m.dealer));
 		line(sb, "current", String.valueOf(m.current));
-		line(sb, "trump", code(m.trumpCard));
+		line(sb, "trump", m.trumpCard == null ? NO_TRUMP : code(m.trumpCard));
 		for (int s = 0; s < m.players; s++) {
 			line(sb, "hand" + s, cards(m.hands.get(s)));
 		}
@@ -55,7 +54,7 @@ final class MatchCodec {
 				throw new IllegalArgumentException("Not a saved game");
 			}
 			Map<String, String> v = keyValues(lines);
-			Match m = new Match(Integer.parseInt(req(v, "players")), rng, RuleSet.named(req(v, "rules")));
+			Match m = new Match(Integer.parseInt(req(v, "players")), rng, RuleSet.parse(req(v, "rules")));
 			readHand(m, v);
 			readSeats(m, v);
 			readTricks(m, v);
@@ -80,10 +79,10 @@ final class MatchCodec {
 	private static void readHand(Match m, Map<String, String> v) {
 		m.phase = Match.Phase.valueOf(req(v, "phase"));
 		m.handIndex = Integer.parseInt(req(v, "hand"));
-		m.order = HandOrder.valueOf(req(v, "order"));
 		m.dealer = Integer.parseInt(req(v, "dealer"));
 		m.current = Integer.parseInt(req(v, "current"));
-		m.trumpCard = card(req(v, "trump"));
+		String trump = req(v, "trump");
+		m.trumpCard = trump.equals(NO_TRUMP) ? null : card(trump);
 	}
 
 	private static void readSeats(Match m, Map<String, String> v) {

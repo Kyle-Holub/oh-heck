@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import ohheck.anim.Ease;
@@ -19,6 +20,7 @@ import ohheck.rules.Match;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
+import ohheck.ui.Palette;
 import ohheck.ui.PostProcessor;
 import ohheck.ui.TapAreas;
 
@@ -30,10 +32,11 @@ final class TableDrawing {
 	private static final Tween TRUMP_TURNING = Tween.over(TableFlow.TRUMP_FLIP_TIME, Ease.LINEAR),
 			TRUMP_LIGHTING = Tween.over(TRUMP_GLOW_IN, Ease.LINEAR).after(TableFlow.TRUMP_FLIP_TIME);
 	private static final float TALLY_X = 22, TALLY_DROP = 12;
-	private static final float HAND_LIFT = 5;
+	private static final float HAND_LIFT = 5, NO_TRUMP_LINE = 24;
 
 	private final TableScene scene;
 	private final PostProcessor post;
+	private final Painter paint;
 	private final SpriteBatch batch;
 	private final Assets assets;
 	private final TableLayout layout;
@@ -48,6 +51,7 @@ final class TableDrawing {
 		this.sort = sort;
 		this.scene = scene;
 		this.post = post;
+		this.paint = paint;
 		this.batch = paint.batch;
 		this.assets = paint.assets;
 		this.layout = scene.layout();
@@ -57,7 +61,7 @@ final class TableDrawing {
 	}
 
 	void updateMotes(float dt, boolean trumpShowing) {
-		motes.update(dt, trumpShowing, layout.trumpX(), layout.trumpY(), layout.trumpW(), layout.trumpH());
+		motes.update(dt, trumpShowing && scene.match().trumpCard() != null, layout.trumpX(), layout.trumpY(), layout.trumpW(), layout.trumpH());
 	}
 
 	void tally() {
@@ -83,6 +87,14 @@ final class TableDrawing {
 			return;
 		}
 		float x = layout.trumpX(), y = layout.trumpY(), cw = layout.trumpW(), ch = layout.trumpH();
+		if (scene.match().trumpCard() == null) {
+			if (!flow.isDealing()) {
+				BitmapFont f = paint.serif(1.2f, Palette.MUTED);
+				paint.textIn(f, "No", x, y + ch / 2, cw, NO_TRUMP_LINE);
+				paint.textIn(f, "trumps", x, y + ch / 2 - NO_TRUMP_LINE, cw, NO_TRUMP_LINE);
+			}
+			return;
+		}
 		art.shadow(x, y, cw, ch, TRUMP_LIFT);
 		float p = flow.isDealing() ? 0 : TRUMP_TURNING.progress(flow.trumpTime());
 		float lit = TRUMP_LIGHTING.progress(flow.trumpTime());

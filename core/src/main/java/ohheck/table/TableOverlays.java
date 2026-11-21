@@ -45,7 +45,7 @@ final class TableOverlays {
 	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
-	private static final float RESULTS_TITLE_DROP = 14, RESULTS_HEAD_DROP = 52, WON_CARD_SCALE = 0.7f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12,
+	private static final float RESULTS_TITLE_DROP = 14, RESULTS_HEAD_DROP = 52, WON_CARD_SCALE = 0.7f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12, WON_CARDS_INSET = 18,
 			TAP_NOTE_GAP = 16,
 			RESULT_NUMERAL_H = 26, RESULT_NUMERAL_X = 8, RESULT_NUMERAL_Y = 8;
 	private static final float GAME_OVER_LIFT = 6, GAME_OVER_ART_DROP = 50, GAME_OVER_ART_SCALE = 0.66f,
@@ -235,11 +235,14 @@ final class TableOverlays {
 			winningCardsOf = match.handIndex();
 		}
 		float cw = Assets.CARD_W * WON_CARD_SCALE, ch = Assets.CARD_H * WON_CARD_SCALE;
-		float rowW = winningCards.size() * (cw + WON_CARD_GAP) - WON_CARD_GAP, x = (layout.w - rowW) / 2;
+		int n = winningCards.size();
+		float room = RESULTS_W - 2 * WON_CARDS_INSET;
+		float step = n > 1 ? Math.min(cw + WON_CARD_GAP, (room - cw) / (n - 1)) : 0;
+		float x = (layout.w - (cw + step * (n - 1))) / 2;
 		for (Card c : winningCards) {
 			art.shadow(x, y, cw, ch, 2);
 			paint.batch.draw(paint.assets.face(c), x, y, cw, ch);
-			x += cw + WON_CARD_GAP;
+			x += step;
 		}
 	}
 

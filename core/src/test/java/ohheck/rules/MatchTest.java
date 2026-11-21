@@ -206,7 +206,7 @@ public class MatchTest {
 
 	@Test
 	public void handsCanCountDownFromEight() {
-		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
+		Match m = new Match(4, new Random(3), 2, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
 		assertEquals(8, m.handSize());
 		for (int s = 0; s < 4; s++) {
 			assertEquals(8, m.hand(s).size());
@@ -223,9 +223,9 @@ public class MatchTest {
 
 	@Test
 	public void theHandOrderIsSaved() {
-		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
+		Match m = new Match(4, new Random(3), 2, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
 		Match back = Match.load(m.save(), new Random(1));
-		assertEquals(HandOrder.DOWN, back.handOrder());
+		assertEquals(HandOrder.DOWN, back.rules().order);
 		assertEquals(8, back.handSize());
 	}
 
@@ -251,7 +251,7 @@ public class MatchTest {
 
 	@Test
 	public void theWinningCardsOfEachTrickInOrder() {
-		Match m = new Match(4, new java.util.Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
+		Match m = new Match(4, new java.util.Random(3), 2, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
 		java.util.List<Card> winners = new java.util.ArrayList<Card>();
 		for (int s = 0; s < 4; s++) {
 			m.placeBid(m.currentSeat(), m.isLegalBid(0) ? 0 : 1);

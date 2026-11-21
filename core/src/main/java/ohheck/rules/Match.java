@@ -31,7 +31,6 @@ public final class Match {
 
 	Phase phase;
 	int handIndex;
-	HandOrder order = HandOrder.UP;
 	int dealer;
 	int current;
 	Card trumpCard;
@@ -50,26 +49,25 @@ public final class Match {
 	int lastTrickWinner = -1;
 
 	public static Match random(int players, Random rng) {
-		return random(players, rng, HandOrder.UP, RuleSet.STANDARD);
+		return random(players, rng, RuleSet.STANDARD);
 	}
 
-	public static Match random(int players, Random rng, HandOrder order, RuleSet rules) {
-		return new Match(players, rng, rng.nextInt(players), order, rules);
+	public static Match random(int players, Random rng, RuleSet rules) {
+		return new Match(players, rng, rng.nextInt(players), rules);
 	}
 
 	public Match(int players, Random rng, int firstDealer) {
-		this(players, rng, firstDealer, HandOrder.UP, RuleSet.STANDARD);
+		this(players, rng, firstDealer, RuleSet.STANDARD);
 	}
 
-	public Match(int players, Random rng, int firstDealer, HandOrder order, RuleSet rules) {
+	public Match(int players, Random rng, int firstDealer, RuleSet rules) {
 		this(players, rng, rules);
-		this.order = order;
 		this.dealer = firstDealer;
 		startHand();
 	}
 
 	Match(int players, Random rng, RuleSet rules) {
-		if (players < 2 || players * rules.numberOfHands() >= Card.COUNT) {
+		if (players < 2 || players * rules.mostCards > Card.COUNT) {
 			throw new IllegalArgumentException("Unsupported number of players: " + players);
 		}
 		this.players = players;
@@ -121,7 +119,7 @@ public final class Match {
 		hand.remove(card);
 		history.add(card);
 		historySeats.add(seat);
-		int winner = trick.add(seat, card, trumpCard.suit());
+		int winner = trick.add(seat, card, trump());
 		if (winner < 0) {
 			current = next(seat);
 			return -1;
@@ -171,10 +169,6 @@ public final class Match {
 		return dealer;
 	}
 
-	public HandOrder handOrder() {
-		return order;
-	}
-
 	public int handIndex() {
 		return handIndex;
 	}
@@ -184,7 +178,7 @@ public final class Match {
 	}
 
 	public int handSize() {
-		return rules.handSize(order, handIndex);
+		return rules.handSize(handIndex);
 	}
 
 	public Card trumpCard() {
@@ -192,7 +186,7 @@ public final class Match {
 	}
 
 	public Suit trump() {
-		return trumpCard.suit();
+		return trumpCard == null ? null : trumpCard.suit();
 	}
 
 	public List<Card> hand(int seat) {
@@ -277,7 +271,7 @@ public final class Match {
 		into.clear();
 		for (int start = 0; start + players <= history.size(); start += players) {
 			List<Card> played = history.subList(start, start + players);
-			into.add(played.get(rules.trickWinner(played, trumpCard.suit())));
+			into.add(played.get(rules.trickWinner(played, trump())));
 		}
 	}
 
@@ -342,7 +336,9 @@ public final class Match {
 			throw new IllegalArgumentException("Inconsistent game state");
 		}
 		Set<Card> seen = new HashSet<Card>();
-		seen.add(trumpCard);
+		if (trumpCard != null) {
+			seen.add(trumpCard);
+		}
 		for (List<Card> h : hands) {
 			for (Card c : h) {
 				if (!seen.add(c)) {
@@ -365,7 +361,7 @@ public final class Match {
 			bids[seat] = NO_BID;
 			tricks[seat] = 0;
 		}
-		trumpCard = deck.deal();
+		trumpCard = deck.size() > 0 ? deck.deal() : null;
 		trick.clear();
 		history.clear();
 		historySeats.clear();

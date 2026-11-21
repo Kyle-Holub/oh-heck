@@ -362,7 +362,7 @@ final class HardBot implements Bot {
 			}
 			hands[seat].remove(c);
 			played[c.index()] = true;
-			int winner = trick.add(seat, c, trumpCard.suit());
+			int winner = trick.add(seat, c, trumpCard == null ? null : trumpCard.suit());
 			if (winner < 0) {
 				current = rules.nextSeat(seat, players);
 				return;

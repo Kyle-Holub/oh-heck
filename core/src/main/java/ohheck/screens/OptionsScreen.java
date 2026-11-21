@@ -9,6 +9,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import ohheck.platform.Audio;
 import ohheck.platform.Settings;
+import ohheck.rules.RuleSet;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.MenuChrome;
@@ -33,12 +34,21 @@ public class OptionsScreen extends BaseScreen {
 		pages = Arrays.asList(
 				new OptionsPage("Game",
 						new DifficultyOption(s),
-						OptionItem.choice("Hand progression", "How many cards each hand deals, first to last.",
-								() -> s.handOrder().label(), () -> s.setHandOrder(s.handOrder().flipped())),
 						OptionItem.choice("Sort your hand", "Trumps on the left, then by suit or by rank.",
 								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next())),
 						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
 								() -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame()))),
+				new OptionsPage("Rules",
+						OptionItem.choice("Game mode", "Changing a rule below makes the game Custom.",
+								() -> s.mode().label, () -> s.setMode(s.mode().next())),
+						OptionItem.choice("Hand progression", "How many cards each hand deals, first to last.",
+								() -> s.rules().order.label(s.rules().mostCards),
+								() -> s.customize(r -> r.withOrder(r.order.next()))),
+						OptionItem.toggle("Marathon", "Hands grow to " + RuleSet.MOST_CARDS + " cards, the whole deck, with no trumps.",
+								() -> s.rules().mostCards == RuleSet.MOST_CARDS,
+								() -> s.customize(r -> r.withMostCards(r.mostCards == RuleSet.MOST_CARDS ? RuleSet.USUAL_CARDS : RuleSet.MOST_CARDS))),
+						OptionItem.toggle("Big bids", "A made bid scores " + RuleSet.STANDARD.made() + " plus its square: bid big.",
+								() -> s.rules().bigBids, () -> s.customize(r -> r.withBigBids(!r.bigBids)))),
 				new OptionsPage("Sound & display",
 						OptionItem.toggle("Music", "The background music.", s::music, () -> {
 							s.setMusic(!s.music());

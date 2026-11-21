@@ -188,7 +188,7 @@ public class TableInputTest {
 
 	@Test
 	public void aTapOnANumberBids() {
-		Match m = new Match(4, new Random(4), 3, HandOrder.UP, RuleSet.STANDARD);
+		Match m = new Match(4, new Random(4), 3, RuleSet.STANDARD);
 		t.flow.start(m);
 		t.flow.skip();
 		assertEquals(TableState.TURN, t.flow.state());
@@ -203,7 +203,7 @@ public class TableInputTest {
 
 	@Test
 	public void aCardDraggedOntoTheTableIsPlayed() {
-		Match m = new Match(4, new Random(5), 3, HandOrder.UP, RuleSet.STANDARD);
+		Match m = new Match(4, new Random(5), 3, RuleSet.STANDARD);
 		t.flow.start(m);
 		t.flow.skip();
 		t.targets.bidsUpTo(m.handSize());
@@ -237,7 +237,7 @@ public class TableInputTest {
 	public void aCardThatDoesntFollowSuitGivesAHint() {
 		for (long seed = 1; seed < 50; seed++) {
 			FakeTable f = new FakeTable();
-			Match m = new Match(4, new Random(seed), 2, HandOrder.DOWN, RuleSet.STANDARD);
+			Match m = new Match(4, new Random(seed), 2, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
 			f.flow.start(m);
 			f.flow.skip();
 			while (!f.flow.yourTurnToPlay()) {

@@ -3,6 +3,7 @@ package ohheck.records;
 import java.util.Random;
 
 import ohheck.players.Difficulty;
+import ohheck.rules.RuleSet;
 import ohheck.util.Log;
 
 /* Statistics, high scores and the saved game, written to a Store only when persisting. */
@@ -55,12 +56,12 @@ public final class Records {
 		return HighScores.decode(persist ? store.highScores() : "");
 	}
 
-	public int recordHighScore(int score, int place, Difficulty level, String date) {
+	public int recordHighScore(int score, int place, Difficulty level, RuleSet rules, String date) {
 		if (!persist) {
 			return -1;
 		}
 		HighScores h = highScores();
-		int at = h.add(new HighScores.Entry(score, place, date, level));
+		int at = h.add(new HighScores.Entry(score, place, date, level, rules));
 		if (at >= 0) {
 			store.setHighScores(h.encode());
 		}
