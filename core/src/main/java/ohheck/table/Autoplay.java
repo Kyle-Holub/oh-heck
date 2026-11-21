@@ -59,7 +59,7 @@ final class Autoplay implements YourSeat {
 
 	@Override
 	public void update(float dt) {
-		FlowView flow = screen.flow();
+		TableFlow flow = screen.flow();
 		if (flow.yourTurnToBid() || flow.yourTurnToPlay()) {
 			yourTurn(dt);
 		} else if (flow.state() == TableState.RESULTS) {

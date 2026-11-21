@@ -127,7 +127,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
-	public FlowView flow() {
+	public TableFlow flow() {
 		return flow;
 	}
 

@@ -16,7 +16,7 @@ import ohheck.rules.Move;
 import ohheck.rules.TableView;
 
 /* The table's state machine and timing; asks the bots and tells its listeners what happens. */
-final class TableFlow implements FlowView {
+final class TableFlow {
 
 	interface Listener {
 		default void beforeDeal(Match m) {
@@ -88,48 +88,39 @@ final class TableFlow implements FlowView {
 		enter(m.phase() == Match.Phase.HAND_OVER ? TableState.HAND_END : TableState.TURN);
 	}
 
-	@Override
-	public Match match() {
+	Match match() {
 		return match;
 	}
 
-	@Override
-	public TableState state() {
+	TableState state() {
 		return state;
 	}
 
-	@Override
-	public float stateTime() {
+	float stateTime() {
 		return stateTime;
 	}
 
-	@Override
-	public float trumpTime() {
+	float trumpTime() {
 		return trumpTime;
 	}
 
-	@Override
-	public boolean isDealing() {
+	boolean isDealing() {
 		return state.isDealing();
 	}
 
-	@Override
-	public boolean trumpFaceUp() {
+	boolean trumpFaceUp() {
 		return !isDealing() && trumpTime >= TRUMP_FLIP_TIME;
 	}
 
-	@Override
-	public FlowView.Deal deal() {
+	DealAnimation deal() {
 		return deal;
 	}
 
-	@Override
-	public boolean yourTurnToBid() {
+	boolean yourTurnToBid() {
 		return state == TableState.TURN && match.phase() == Match.Phase.BIDDING && match.currentSeat() == Seating.YOU;
 	}
 
-	@Override
-	public boolean yourTurnToPlay() {
+	boolean yourTurnToPlay() {
 		return state == TableState.TURN && match.phase() == Match.Phase.PLAYING && match.currentSeat() == Seating.YOU;
 	}
 

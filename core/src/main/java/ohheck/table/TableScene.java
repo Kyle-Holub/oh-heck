@@ -10,7 +10,7 @@ import ohheck.rules.Match;
 /* The table as its parts read it. */
 interface TableScene {
 
-	FlowView flow();
+	TableFlow flow();
 
 	default Match match() {
 		return flow().match();

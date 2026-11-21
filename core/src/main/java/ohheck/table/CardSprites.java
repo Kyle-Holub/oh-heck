@@ -53,7 +53,7 @@ final class CardSprites {
 	void update(TableScene s, float now) {
 		Arrays.fill(seen, false);
 		framed = -1;
-		FlowView flow = s.flow();
+		TableFlow flow = s.flow();
 		Match m = s.match();
 		TableLayout layout = s.layout();
 		if (flow.state() != TableState.GAME_OVER) {
@@ -90,7 +90,7 @@ final class CardSprites {
 		}
 	}
 
-	private float dealt(FlowView flow, int seat, int j, CardSprite sp, CardSprite.Pose rest, float now) {
+	private float dealt(TableFlow flow, int seat, int j, CardSprite sp, CardSprite.Pose rest, float now) {
 		float since = flow.deal().dealTime() - flow.deal().startOf(seat, j);
 		if (flow.deal().isShuffling() || since < 0) {
 			return -1;
@@ -108,7 +108,7 @@ final class CardSprites {
 		return since;
 	}
 
-	private void fan(FlowView flow, Match m, TableLayout layout, int seat, float now) {
+	private void fan(TableFlow flow, Match m, TableLayout layout, int seat, float now) {
 		List<Card> hand = m.hand(seat);
 		int total = hand.size();
 		float y = layout.fanOrigin(seat).y;
@@ -124,7 +124,7 @@ final class CardSprites {
 		}
 	}
 
-	private void hand(TableScene s, FlowView flow, Match m, TableLayout layout, float now) {
+	private void hand(TableScene s, TableFlow flow, Match m, TableLayout layout, float now) {
 		List<Card> order = s.handOrder();
 		int n = order.size();
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
