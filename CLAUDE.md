@@ -20,8 +20,9 @@ the screenshot run, CI, the arena and the art tools.
 - **Screens depend on `GameHost`** (`Services` and `Navigator`), not `OhHeckGame`; helpers
   that draw take a `Painter`, not a screen; table parts read `TableScene` (the flow as a
   `FlowView`) and act through `TableActions`; taps find buttons in `OverlayTargets`.
-- **Saved formats must keep reading their older versions**, with a test for each:
-  `SavedGame`, `Stats`, `Match.save`, high scores.
+- **Saved data has no backward compatibility:** `SavedGame`, `Stats`, `Match.save` and high
+  scores read only their current format. Anything unreadable (an older save included) is
+  reported through `Log` and set aside. Test that each format reads back what it writes.
 - **Player ids are permanent.** Look players up with `Player.byId`. A new player gets the
   next unused id.
 - **AI changes:** measure them in the arena (`players`, `levels`) before and after, and

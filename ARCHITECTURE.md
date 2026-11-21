@@ -40,7 +40,7 @@ first five have no libGDX and test in plain JUnit.
   anything illegal throws. `moves()` lists every move made, and `Replay.onto` plays such a
   list onto a fresh match (`ReplayTest`). Bots answer with a `Move` (`Bot.chooseMove`). A bid not yet made is
   `Match.NO_BID` (`hasBid(seat)`), never null. `save()` / `load()` go through
-  `MatchCodec`, its text format (which reads the older format too).
+  `MatchCodec`, its text format.
 - `RuleSet` is the rules a game is played by: how many hands and how big, which card wins,
   what may be bid and played, and the scoring. A `Match` holds its rules (`rules()`) and
   `TableView` carries them to the bots. `RuleSet.STANDARD` is the game as it's always been;
@@ -169,9 +169,8 @@ high scores (`HighScores`, stored by field name).
 writing to a `Records.Store` (`RecordPrefs` on the device); it has no libGDX and is tested in
 `RecordsTest` with an in-memory store. `Stats` lists each saved number once (`FIELDS`);
 `StatsTest` checks every statistic is saved and comes back.
-Every format reads its older versions; the tests in `SavedGameTest`, `StatsTest`,
-`HighScoresTest` and `SaveTest` cover them. Keep it that way when
-changing a format. Damaged saves are reported through `Log` and set aside.
+Each format reads only its current version (`SavedGameTest`, `StatsTest`, `HighScoresTest`,
+`SaveTest`); anything else, an older save included, is reported through `Log` and set aside.
 
 ## Randomness
 

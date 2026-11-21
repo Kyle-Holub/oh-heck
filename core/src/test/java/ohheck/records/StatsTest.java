@@ -106,23 +106,6 @@ public class StatsTest {
 	}
 
 	@Test
-	public void readsTheFirstBuildsNumberedLines() {
-		StringBuilder line = new StringBuilder("3,2,1,2,0,150,60,40,24,15,4,3,5,4,30,20,-10");
-		for (int id = 0; id < 12; id++) {
-			line.append(',').append(id == 7 ? 2 : 0);
-		}
-		Stats s = Stats.decode("game=0,0,1\n3=" + line + "\n");
-		Stats.Totals t = s.totals(Stats.ALL);
-		assertEquals(3, t.games);
-		assertEquals(150 / 3.0, t.averageFinal(), 1e-9);
-		assertEquals(-10, t.worstHand);
-		assertEquals(7, t.nemesis());
-		Stats seats = Stats.decode("game=0,0,1\n3=3,2,1,2,0,150,60,40,24,15,4,3,5,4,30,20,-10,1,0,0\n");
-		assertEquals(3, seats.totals(Stats.ALL).games);
-		assertEquals(-1, seats.totals(Stats.ALL).nemesis());
-	}
-
-	@Test
 	public void everyStatisticIsSavedAndReadBack() throws Exception {
 		java.util.List<String> saved = Stats.fieldNames();
 		for (java.lang.reflect.Field f : Stats.Totals.class.getDeclaredFields()) {

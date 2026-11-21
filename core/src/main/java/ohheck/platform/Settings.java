@@ -13,8 +13,6 @@ public final class Settings {
 
 	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
 			HAND_ORDER = "handOrder", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen";
-	private static final String LEGACY_FAST = "fast", LEGACY_SPEED = "speed", LEGACY_DIFFICULTY = "difficulty";
-	private static final int LEGACY_FASTEST_SPEED = 2;
 
 	private static final float STANDARD_PACE = 0.6f, FAST_PACE = 1.4f;
 
@@ -50,11 +48,7 @@ public final class Settings {
 	}
 
 	public boolean fastGame() {
-		if (prefs.contains(FAST_GAME)) {
-			return prefs.getBoolean(FAST_GAME, false);
-		}
-		int legacy = prefs.getBoolean(LEGACY_FAST, false) ? LEGACY_FASTEST_SPEED : 0;
-		return prefs.getInteger(LEGACY_SPEED, legacy) >= LEGACY_FASTEST_SPEED;
+		return prefs.getBoolean(FAST_GAME, false);
 	}
 
 	public void setFastGame(boolean fast) {
@@ -66,7 +60,7 @@ public final class Settings {
 	}
 
 	public Difficulty difficulty() {
-		return Difficulty.fromSaved(prefs.getString(LEVEL, null), prefs.getInteger(LEGACY_DIFFICULTY, 1));
+		return Difficulty.named(prefs.getString(LEVEL, Difficulty.NORMAL.name()));
 	}
 
 	public void setDifficulty(Difficulty d) {
