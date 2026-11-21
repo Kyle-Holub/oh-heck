@@ -53,7 +53,7 @@ first five have no libGDX and test in plain JUnit.
   the rules the player chose; `GameMode.of(rules)` names any rule set. Turn order is `RuleSet.nextSeat`, and
   `Trick` decides when a trick is complete and who takes it, for `Match` and for the Hard
   bot's imagined games alike. Code without a game in hand (the tutorial) asks `RuleSet.STANDARD`.
-  `HandSort` how your hand is laid out (trumps first, then by suit or by rank). `BidTable` is learned for the standard rules; bigger hands use its 8-card rows.
+  `HandSort` how your hand is laid out (trumps first, then by suit or by rank). `BidTable` has rows for every hand size: 1 to 8 learned from standard games, 9 to 13 from games counting down from 13 (whose last-dealt 13-card hand has no trump).
 - `TableView` is what a player may know at a moment (`Match.view(seat)`). Bots decide from
   it alone and can only read it. A bot that imagines games (the Hard bot) fills its own
   views with a `TableView.Builder`.
@@ -61,7 +61,8 @@ first five have no libGDX and test in plain JUnit.
   table as an Options setting (each computer seat's chance of each level, `chanceAt`), and how strongly habits show. A new
   level is one more constant, plus its words for the Options note in `Wording`.
 - Bots: `Bot` (`Bot.of(level, rng)`), `EasyBot` (Normal that loses count, slips on bids and plays loosely), `NormalBot`
-  (bids from the learned `BidTable`, plays with card memory), `HardBot` (Monte Carlo over
+  (bids the best expected score under the game's rules from the learned `BidTable`, reading
+  the earlier bids except when bids are blind; plays with card memory), `HardBot` (Monte Carlo over
   imagined deals). Each `Style` writes its own habit (`bid` and `play` in its constant) and
   `StyledBot` applies it on top of the level's bot. A new habit is one more `Style` constant. `BotScenarioTest` asks every player positions with an obvious move (a zero bid never leads an ace, a made bid ducks when it can...) and checks each habit shows where it should.
 - `Player` is the roster of twelve: name, level, style, trait, and a **permanent id**.
@@ -247,12 +248,14 @@ with `OhHeckGame.VERSION` bumped.
 
 ## The arena
 
-`./gradlew core:arena -Parena="<experiment> N"`:
+`./gradlew core:arena -Parena="<experiment> N [rules]"`, where an optional rules code
+(`UP/8/blind`, `UP_AND_DOWN/13/big`) plays the experiment under those rules:
 
 | Experiment | What it does |
 |---|---|
 | `levels N` | the levels against each other |
 | `vs N` | head to head |
+| `variants N` | Easy, Normal and Hard across all 24 rule sets (progression, 8 or 13 cards, big and blind bids) |
 | `learn N` | regenerates `BidTable.java` |
 | `effort N` | Hard's strength at half, normal and double thinking |
 | `players N` | each of the twelve against three plain Normal players |

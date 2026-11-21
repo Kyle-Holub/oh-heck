@@ -50,7 +50,7 @@ final class NormalBot implements Bot {
 
 	static void adjustForTheTable(TableView v, double[] p) {
 		int before = ((v.seat() - v.dealer() - 1) % v.players() + v.players()) % v.players();
-		if (before == 0 || p.length == 0) {
+		if (before == 0 || p.length == 0 || v.rules().blindBids) {
 			return;
 		}
 		double over = v.bidsSoFar() - before * (double) v.handSize() / v.players();
