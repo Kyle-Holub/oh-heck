@@ -224,6 +224,42 @@ def card_back(out):
 
 # ---------------------------------------------------------------- table and UI
 
+def card_slot(out):
+    """An empty card's place: a dashed outline of a card, for a hand dealt with no trump card."""
+    W, H, r, line = CARD_W * SS, CARD_H * SS, 16 * SS, 5 * SS
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    inset = line
+    d.rounded_rectangle([inset, inset, W - 1 - inset, H - 1 - inset], r, fill=(12, 8, 5, 70))
+    x0, y0, x1, y1 = inset, inset, W - 1 - inset, H - 1 - inset
+    path = []
+    corners = [(x1 - r, y0 + r, -90), (x1 - r, y1 - r, 0), (x0 + r, y1 - r, 90), (x0 + r, y0 + r, 180)]
+    for cx, cy, start in corners:
+        for k in range(0, 91, 3):
+            a = math.radians(start + k)
+            path.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    path.append(path[0])
+    lengths = [0.0]
+    for (ax, ay), (bx, by) in zip(path, path[1:]):
+        lengths.append(lengths[-1] + math.hypot(bx - ax, by - ay))
+    total = lengths[-1]
+    dashes = 34
+    period = total / dashes
+
+    def point_at(s):
+        i = max(0, min(len(path) - 2, np.searchsorted(lengths, s) - 1))
+        t = (s - lengths[i]) / max(1e-6, lengths[i + 1] - lengths[i])
+        return (path[i][0] + (path[i + 1][0] - path[i][0]) * t, path[i][1] + (path[i + 1][1] - path[i][1]) * t)
+
+    for k in range(dashes):
+        start = k * period
+        pts = [point_at(start + period * 0.55 * j / 8) for j in range(9)]
+        d.line(pts, fill=CREAM_EDGE + (200,), width=line, joint="curve")
+        for p in (pts[0], pts[-1]):
+            d.ellipse([p[0] - line / 2, p[1] - line / 2, p[0] + line / 2, p[1] + line / 2], fill=CREAM_EDGE + (200,))
+    downsample(img, CARD_W, CARD_H).save(os.path.join(out, "card_slot.png"), optimize=True)
+
+
 def table(out):
     """Dark warm felt under a soft overhead spotlight, falling away to near-black."""
     W, H = 1280, 640
@@ -512,6 +548,7 @@ if __name__ == "__main__":
     os.makedirs(out, exist_ok=True)
     sheet = card_sheet(out)
     card_back(out)
+    card_slot(out)
     blurred_sheet(sheet, out)
     table(out)
     icons(out)

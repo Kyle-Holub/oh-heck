@@ -30,12 +30,10 @@ final class TableDrawing {
 	private static final Tween TRUMP_TURNING = Tween.over(TableFlow.TRUMP_FLIP_TIME, Ease.LINEAR),
 			TRUMP_LIGHTING = Tween.over(TRUMP_GLOW_IN, Ease.LINEAR).after(TableFlow.TRUMP_FLIP_TIME);
 	private static final float TALLY_X = 22, TALLY_DROP = 12;
-	private static final float HAND_LIFT = 5, DOT = 3, DOT_STEP = 9;
-	private static final Color DOTS = new Color(0.89f, 0.8f, 0.62f, 0.55f);
+	private static final float HAND_LIFT = 5;
 
 	private final TableScene scene;
 	private final PostProcessor post;
-	private final Painter paint;
 	private final SpriteBatch batch;
 	private final Assets assets;
 	private final TableLayout layout;
@@ -50,7 +48,6 @@ final class TableDrawing {
 		this.sort = sort;
 		this.scene = scene;
 		this.post = post;
-		this.paint = paint;
 		this.batch = paint.batch;
 		this.assets = paint.assets;
 		this.layout = scene.layout();
@@ -88,7 +85,7 @@ final class TableDrawing {
 		float x = layout.trumpX(), y = layout.trumpY(), cw = layout.trumpW(), ch = layout.trumpH();
 		if (scene.match().trumpCard() == null) {
 			if (!flow.isDealing()) {
-				dottedOutline(x, y, cw, ch);
+				batch.draw(assets.cardSlot, x, y, cw, ch);
 			}
 			return;
 		}
@@ -112,17 +109,6 @@ final class TableDrawing {
 			post.light((x + cw / 2) / layout.w, (y + ch / 2) / layout.h, 0.3f, lit);
 		}
 		motes.draw(batch, assets.glow);
-	}
-
-	private void dottedOutline(float x, float y, float w, float h) {
-		for (float d = 0; d < w; d += DOT_STEP) {
-			paint.rect(x + d, y, DOT, DOT, DOTS);
-			paint.rect(x + d, y + h - DOT, DOT, DOT, DOTS);
-		}
-		for (float d = DOT_STEP; d < h - DOT; d += DOT_STEP) {
-			paint.rect(x, y + d, DOT, DOT, DOTS);
-			paint.rect(x + w - DOT, y + d, DOT, DOT, DOTS);
-		}
 	}
 
 	void seat(int seat) {
