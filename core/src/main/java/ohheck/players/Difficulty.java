@@ -53,14 +53,12 @@ public enum Difficulty {
 		return name().toLowerCase();
 	}
 
-	public static Difficulty fromSaved(String name, int legacyOrdinal) {
-		if (name != null) {
-			for (Difficulty d : values()) {
-				if (d.name().equals(name)) {
-					return d;
-				}
+	public static Difficulty named(String name) {
+		for (Difficulty d : values()) {
+			if (d.name().equals(name)) {
+				return d;
 			}
 		}
-		return legacyOrdinal >= 0 && legacyOrdinal < values().length ? values()[legacyOrdinal] : NORMAL;
+		return NORMAL;
 	}
 }

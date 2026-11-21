@@ -19,7 +19,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import ohheck.anim.FixedSteps;
 
 /* The base of every screen: fixed-step updates, the viewport and touches. */
-public abstract class BaseScreen extends ScreenAdapter implements Tagged {
+public abstract class BaseScreen extends ScreenAdapter {
 
 	public static final float WORLD_W = 800, WORLD_H = 480;
 
@@ -87,9 +87,6 @@ public abstract class BaseScreen extends ScreenAdapter implements Tagged {
 		frameDelta = Math.min(delta, MAX_FRAME);
 		for (int n = steps.frame(delta); n > 0; n--) {
 			update(STEP);
-			if (!hidden && game.tour() != null) {
-				game.tour().step(this, tourClock());
-			}
 			if (hidden) {
 				return;
 			}
@@ -101,9 +98,7 @@ public abstract class BaseScreen extends ScreenAdapter implements Tagged {
 
 	protected abstract void draw();
 
-	protected float tourClock() {
-		return shownFor;
-	}
+	public abstract String stateTag();
 
 	protected float frameDelta() {
 		return frameDelta;

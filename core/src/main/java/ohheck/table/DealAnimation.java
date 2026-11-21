@@ -11,7 +11,7 @@ import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 
 /* The shuffle and the deal's timing. */
-final class DealAnimation implements FlowView.Deal {
+final class DealAnimation {
 
 	static final float FLIP_TIME = 0.32f;
 	static final float DEAL_INTERVAL = 0.09f, DEAL_FLIGHT = 0.4f;
@@ -50,8 +50,7 @@ final class DealAnimation implements FlowView.Deal {
 		return false;
 	}
 
-	@Override
-	public boolean isShuffling() {
+	boolean isShuffling() {
 		return t < shuffleLength;
 	}
 
@@ -59,19 +58,16 @@ final class DealAnimation implements FlowView.Deal {
 		return t >= length;
 	}
 
-	@Override
-	public float dealTime() {
+	float dealTime() {
 		return Math.max(0, t - shuffleLength);
 	}
 
-	@Override
-	public float startOf(int seat, int j) {
+	float startOf(int seat, int j) {
 		int k = ((seat - dealer - 1) % 4 + 4) % 4 + 4 * j;
 		return k * DEAL_INTERVAL;
 	}
 
-	@Override
-	public int dealer() {
+	int dealer() {
 		return dealer;
 	}
 
@@ -83,8 +79,7 @@ final class DealAnimation implements FlowView.Deal {
 		return DECK - Math.min(cardsDealt(), (int) (dealTime / DEAL_INTERVAL) + 1);
 	}
 
-	@Override
-	public void drawDeck(SpriteBatch batch, Assets assets, CardArt art, TableLayout layout) {
+	void drawDeck(SpriteBatch batch, Assets assets, CardArt art, TableLayout layout) {
 		float cw = Assets.CARD_W * DECK_SCALE, ch = Assets.CARD_H * DECK_SCALE;
 		Vector2 home = layout.deckSpot(dealer);
 		float hx = home.x, hy = home.y;

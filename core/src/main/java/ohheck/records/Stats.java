@@ -231,9 +231,6 @@ public final class Stats {
 					lines.put(line.substring(0, eq), line.substring(eq + 1).trim());
 				}
 			}
-			if (lines.containsKey("game")) {
-				return decodeNumbered(lines);
-			}
 			if (!lines.containsKey("game.handsCounted")) {
 				return new Stats();
 			}
@@ -253,35 +250,5 @@ public final class Stats {
 			Log.warn("Stats", "Unreadable statistics; starting afresh", e);
 			return new Stats();
 		}
-	}
-
-	private static final int LEGACY_PLAYERS = 12;
-	private static final List<String> NUMBERED_FORMAT = Arrays.asList("games", "wins", "streak", "bestStreak",
-			"perfect", "finalScores", "bestFinal", "worstFinal", "hands", "made", "zeroBids", "zeroMade", "over", "under",
-			"tricks", "bestHand", "worstHand");
-
-	private static Stats decodeNumbered(Map<String, String> lines) {
-		Stats s = new Stats();
-		String[] g = lines.get("game").split(",");
-		s.handsCounted = Integer.parseInt(g[0]);
-		s.gameCounted = g[1].equals("1");
-		s.perfectSoFar = g[2].equals("1");
-		String[] names = NUMBERED_FORMAT.toArray(new String[0]);
-		for (int i = 0; i < s.totals.length; i++) {
-			String line = lines.get(String.valueOf(i));
-			if (line == null) {
-				continue;
-			}
-			String[] f = line.split(",");
-			for (int j = 0; j < names.length && j < f.length; j++) {
-				set(s.totals[i], names[j], Long.parseLong(f[j]));
-			}
-			if (f.length == names.length + LEGACY_PLAYERS) {
-				for (int id = 0; id < LEGACY_PLAYERS; id++) {
-					set(s.totals[i], "beatenBy." + id, Long.parseLong(f[names.length + id]));
-				}
-			}
-		}
-		return s;
 	}
 }

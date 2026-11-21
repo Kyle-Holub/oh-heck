@@ -75,7 +75,7 @@ final class TableDrawing {
 	}
 
 	void trump(boolean gone) {
-		FlowView flow = scene.flow();
+		TableFlow flow = scene.flow();
 		if (flow.state() == TableState.SHUFFLE || gone) {
 			if (gone) {
 				motes.draw(batch, assets.glow);
@@ -106,7 +106,7 @@ final class TableDrawing {
 	}
 
 	void seat(int seat) {
-		FlowView flow = scene.flow();
+		TableFlow flow = scene.flow();
 		Match m = scene.match();
 		boolean turn = flow.state() == TableState.TURN && m.currentSeat() == seat;
 		state.reset().named(scene.name(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(m.dealer() == seat)
@@ -114,14 +114,14 @@ final class TableDrawing {
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
 	}
 
-	static int scoreShown(FlowView flow, Match m, int seat) {
+	static int scoreShown(TableFlow flow, Match m, int seat) {
 		boolean pending = m.phase() == Match.Phase.HAND_OVER
 				&& (flow.state() == TableState.TRICK || flow.state() == TableState.HAND_END);
 		return m.score(seat) - (pending ? m.lastHandPoints(seat) : 0);
 	}
 
 	void layoutHand() {
-		FlowView flow = scene.flow();
+		TableFlow flow = scene.flow();
 		Match m = scene.match();
 		List<Card> order = scene.handOrder();
 		order.clear();

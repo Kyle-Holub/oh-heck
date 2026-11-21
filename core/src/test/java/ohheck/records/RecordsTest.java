@@ -39,7 +39,7 @@ public class RecordsTest {
 		}
 
 		public SavedGame savedGame(Random rng) {
-			return saved.isEmpty() ? null : SavedGame.decode(saved, rng, Difficulty.NORMAL, null);
+			return saved.isEmpty() ? null : SavedGame.decode(saved, rng);
 		}
 
 		public void saveGame(SavedGame game) {

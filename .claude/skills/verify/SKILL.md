@@ -23,6 +23,6 @@ Run the checks that fit what changed, and report what they printed (not just "pa
      change you meant. An unexpected one is a bug - fix it before going on.
    - Open `build/dev/shots/phone-view.png` for anything about size, contrast or
      readability: it is the table at a phone's size, which is what the player sees.
-4. **Saved formats changed:** the old-format tests in `SavedGameTest`, `StatsTest`,
-   `HighScoresTest`, `SaveTest` still pass, and there's a new one for the new format.
+4. **Saved formats changed:** `SavedGameTest`, `StatsTest`, `HighScoresTest` and `SaveTest`
+   show the new format reads back what it writes (older formats are not read at all).
 5. `python3 tools/dev/imports.py` before committing (tidies imports).

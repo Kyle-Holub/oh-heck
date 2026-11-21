@@ -12,7 +12,7 @@ import ohheck.platform.Settings;
 import ohheck.players.Player;
 import ohheck.rules.Card;
 import ohheck.rules.Rank;
-import ohheck.rules.Rules;
+import ohheck.rules.RuleSet;
 import ohheck.rules.Suit;
 import ohheck.table.Counters;
 import ohheck.table.PlayerPanel;
@@ -27,7 +27,7 @@ import ohheck.ui.Palette;
 abstract class TutorialStage {
 
 	static final float CAPTION_H = 92, CW = Assets.CARD_W, CH = Assets.CARD_H;
-	static final String HANDS = String.valueOf(Rules.numberOfHands());
+	static final String HANDS = String.valueOf(RuleSet.STANDARD.numberOfHands());
 
 	final Painter paint;
 	final SpriteBatch batch;

@@ -21,13 +21,13 @@ first five have no libGDX and test in plain JUnit.
 
 | Package | What's in it |
 |---|---|
-| `ohheck.rules` | Cards, `Match`, `Trick`, `Move` and `Replay`, `MatchCodec`, `RuleSet` / `Rules`, `HandOrder`, `TableView` |
+| `ohheck.rules` | Cards, `Match`, `Trick`, `Move`, `MatchCodec`, `RuleSet`, `HandOrder`, `TableView` |
 | `ohheck.players` | The roster (`Player`), who sits where (`Seating`), levels (`Difficulty`), habits (`Style`), the bots, `BidTable`; the arena lives here too |
 | `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
 | `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Timeline`, and `FixedSteps` (the game loop's clock) |
 | `ohheck.platform` | The device: `Settings` (preferences) and `RecordPrefs` (where the records are kept), `Audio`, `GameOptions` (how a launcher runs the game) |
-| `ohheck.ui` | What every screen shares: `BaseScreen`, `Painter`, `MenuChrome`, `Assets`, `Palette`, `CardArt`, `PostProcessor`, `Wording`, `Numbers`, `Scroller`, `TapAreas`, and `GameHost` (`Services` and `Navigator`; the screenshot run's `Tour` and `Tagged`) |
+| `ohheck.ui` | What every screen shares: `BaseScreen`, `Painter`, `MenuChrome`, `Assets`, `Palette`, `CardArt`, `PostProcessor`, `Wording`, `Numbers`, `Scroller`, `TapAreas`, `SideTabs` (the tab column of Options and Records) and `GameHost` |
 | `ohheck.fx` | Effects: `Sparks`, `Fireworks`, `Motes`, `Glints`, `FallingCards` |
 | `ohheck.table` | The table screen and its parts |
 | `ohheck.screens` | Title, Options, Roster, High scores, the tutorial, and the screenshot tour |
@@ -37,19 +37,17 @@ first five have no libGDX and test in plain JUnit.
 
 - `Match` is a whole game: hands, bids, tricks, scores, whose turn. Moves are made with
   `placeBid` and `playCard`, or as `Move`s (`Move.Bid`, `Move.Play`) through `apply`;
-  anything illegal throws. `moves()` lists every move made, and `Replay.onto` plays such a
-  list onto a fresh match (`ReplayTest`). Bots answer with a `Move` (`Bot.chooseMove`). A bid not yet made is
+  anything illegal throws. `moves()` lists every move made (`ReplayTest` plays them back onto a
+  fresh match). Bots answer with a `Move` (`Bot.chooseMove`). A bid not yet made is
   `Match.NO_BID` (`hasBid(seat)`), never null. `save()` / `load()` go through
-  `MatchCodec`, its text format (which reads the older format too).
+  `MatchCodec`, its text format.
 - `RuleSet` is the rules a game is played by: how many hands and how big, which card wins,
   what may be bid and played, and the scoring. A `Match` holds its rules (`rules()`) and
   `TableView` carries them to the bots. `RuleSet.STANDARD` is the game as it's always been;
   a variant extends `RuleSet`, overrides what it changes, and is added to `RuleSet.ALL` so
   saved games (which record `rules=<name>`) can find it. Turn order is `RuleSet.nextSeat`, and
   `Trick` decides when a trick is complete and who takes it, for `Match` and for the Hard
-  bot's imagined games alike. `Rules` holds the standard rules' numbers (scores, hands), for
-  code without a game in hand (the tutorial's captions and its little table);
-  anything else without a game asks `RuleSet.STANDARD`.
+  bot's imagined games alike. Code without a game in hand (the tutorial) asks `RuleSet.STANDARD`.
   `HandOrder` says which way the hands run, and `HandSort` how your hand is laid out (trumps first, then by suit or by rank). `BidTable` is learned for the standard rules.
 - `TableView` is what a player may know at a moment (`Match.view(seat)`). Bots decide from
   it alone and can only read it. A bot that imagines games (the Hard bot) fills its own
@@ -76,8 +74,8 @@ first five have no libGDX and test in plain JUnit.
   screenshot run leaves the tint out so it captures screens settled.
   Long-lived screens are made once through `kept(...)`; the table (`PlayScreen`) is made per
   game (`PlayScreen.fresh` / `PlayScreen.resume`). Screens don't depend on it: they get a
-  `GameHost`, which `OhHeckGame` implements: the shared things (`Services`) and the way to
-  the other screens (`Navigator`); a helper that needs one half takes only that. A
+  `GameHost`, which `OhHeckGame` implements: the shared things and the way to the other
+  screens. A
   `FramePacer` drops to 30 fps while nothing moves.
 - `BaseScreen` is the base for every screen. Its `render` is the game loop: it moves the
   screen on in fixed steps of `STEP` (1/60 s) by calling `update(step)` as many times as the
@@ -106,9 +104,9 @@ first five have no libGDX and test in plain JUnit.
 
 - `TableFlow` runs the table's state machine:
   `SHUFFLE → DEAL → TURN ⇄ TRICK → HAND_END → RESULTS → (SHUFFLE | GAME_OVER)`. Each
-  `TableState` constant holds its own behaviour (`entered`, `update`, `skip`), and its
-  `StateView` holds what the screen does in it (the overlay, what a tap does, whether it is
-  still moving, the screenshot tag); a new state is a constant in each (`StateViewTest`).
+  `TableState` constant holds its own behaviour (`entered`, `update`, `skip`) and what the
+  screen does in it (the overlay, what a tap does, whether it is still moving, the
+  screenshot tag).
   The flow holds the timing, makes moves as `Move`s, and asks the bots through a `Thinker`:
   `Thinker.background()` in play, so a slow Hard bot never stalls a frame (the table waits
   while it thinks), and `Thinker.AT_ONCE` in tests and the screenshot run. It tells its
@@ -121,7 +119,7 @@ first five have no libGDX and test in plain JUnit.
   differs (its clock, the paused menu, whether bots think at once), never which it is.
 - `PlayScreen` is the table screen. It holds the game and composes each frame from the
   pieces below. Those pieces don't hold the screen: they read the table through
-  `TableScene` (the flow only as a read-only `FlowView`) and act through `TableActions`
+  `TableScene` and act through `TableActions`
   (your bid and card, skipping on, hints, the ways off the table), both implemented by
   `PlayScreen`. `TableInput` takes its touches: tapping or dragging a card, bidding, moving
   the table on, and the pause menu, whose choices are `MenuItem`s (tested in
@@ -157,7 +155,7 @@ header; the panel scrolls, clipped with `BaseScreen.clipTo`).
 
 Facts the screens show come from the rules, not copied text: the Options difficulty note is
 `Wording.tableDescription` (from the matchmaking odds), the tutorial's players, points and
-hand counts come from the roster (`Player.byId`) and `Rules`, and the tally from the
+hand counts come from the roster (`Player.byId`) and `RuleSet.STANDARD`, and the tally from the
 game's rules.
 
 ### Saving
@@ -169,9 +167,8 @@ high scores (`HighScores`, stored by field name).
 writing to a `Records.Store` (`RecordPrefs` on the device); it has no libGDX and is tested in
 `RecordsTest` with an in-memory store. `Stats` lists each saved number once (`FIELDS`);
 `StatsTest` checks every statistic is saved and comes back.
-Every format reads its older versions; the tests in `SavedGameTest`, `StatsTest`,
-`HighScoresTest` and `SaveTest` cover them. Keep it that way when
-changing a format. Damaged saves are reported through `Log` and set aside.
+Each format reads only its current version (`SavedGameTest`, `StatsTest`, `HighScoresTest`,
+`SaveTest`); anything else, an older save included, is reported through `Log` and set aside.
 
 ## Randomness
 
@@ -191,11 +188,9 @@ wanted state appears:
 - `WANTED` lists state prefixes, as screens report them in `stateTag()` (for example
   `options`, `tutorial:8`, `bid:3`, `gameover`).
 - `settleFrames` sets how many frames to wait in a state before capturing it.
-- `ScreenshotTour` (in `ohheck.screens`) moves the run from screen to screen, with all its
-  timings in one place: title, high scores, statistics, options, roster, each tutorial step,
-  then the game. `plan` decides each move (tested in `ScreenshotTourTest`); each screen it
-  stops at is a `TourStop` (which stop, its second half, its next step), and `BaseScreen`
-  steps the tour after each update. It's null in normal play.
+- `ScreenshotLauncher.Walk` moves the run from screen to screen as a timed script: title,
+  high scores, statistics, options, roster, each tutorial step, then the game. Each step
+  waits in a state for its time, then does one thing (open a screen, scroll, next page).
 - Each captured frame is 0.1 s of game time (`fixedStep`), which the screens take as six
   steps of 1/60 s, exactly as on a device.
 - `./gradlew lwjgl3:screenshots -Pshots=options,tutorial` captures only those and stops.

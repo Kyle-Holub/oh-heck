@@ -227,8 +227,6 @@ public class MatchTest {
 		Match back = Match.load(m.save(), new Random(1));
 		assertEquals(HandOrder.DOWN, back.handOrder());
 		assertEquals(8, back.handSize());
-		String old = new Match(4, new Random(3), 2).save().replaceAll("order=UP\n", "");
-		assertEquals(HandOrder.UP, Match.load(old, new Random(1)).handOrder());
 	}
 
 	private void bidAll(Match m) {

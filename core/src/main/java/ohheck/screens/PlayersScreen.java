@@ -14,7 +14,7 @@ import ohheck.ui.Palette;
 import ohheck.ui.Scroller;
 
 /* The roster of computer players. */
-public class PlayersScreen extends BaseScreen implements TourStop {
+public class PlayersScreen extends BaseScreen {
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 
@@ -23,14 +23,8 @@ public class PlayersScreen extends BaseScreen implements TourStop {
 	private final Rectangle backButton = new Rectangle();
 	private final Scroller scroller = new Scroller();
 
-	@Override
-	public ScreenshotTour.Stop tourStop() {
-		return ScreenshotTour.Stop.ROSTER;
-	}
-
-	@Override
-	public void secondHalf(boolean on) {
-		scroller.scrollTo(on ? 9999 : 0);
+	public void scrollToEnd() {
+		scroller.scrollTo(Float.MAX_VALUE);
 	}
 
 	public PlayersScreen(GameHost game) {
