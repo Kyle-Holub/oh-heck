@@ -3,8 +3,8 @@ package ohheck.rules;
 import java.util.Comparator;
 
 /*
- * How your hand is laid out, left to right: trumps first, then the other suits in turn (their
- * colours alternating), or every card by rank. Low to high either way.
+ * How your hand is laid out, left to right, trumps first: by suit (the other suits in turn, their
+ * colours alternating, each low to high), or by rank (trumps high to low, then aces, kings and so on).
  */
 public enum HandSort {
 	SUIT("Suit"), RANK("Rank");
@@ -41,7 +41,7 @@ public enum HandSort {
 				if (at != bt) {
 					return at ? -1 : 1;
 				}
-				int byRank = a.rank().strength() - b.rank().strength();
+				int byRank = b.rank().strength() - a.rank().strength();
 				return byRank != 0 ? byRank : place(a.suit(), trump) - place(b.suit(), trump);
 			};
 		}

@@ -31,12 +31,12 @@ import ohheck.ui.Wording;
  */
 public class HighScoresScreen extends BaseScreen {
 
-	private static final float BADGE = 24, PAD = 22, SCROLLBAR_W = 4, FRAME = 6;
+	private static final float BADGE = 24, PAD = 22, FRAME = 6;
 	private static final float SWITCH_H = 40, SWITCH_ROOM = 58, MODE_H = 34, MODE_ROOM = 44, MODE_GAP = 8;
 	private static final float SCORE_ROW = 32, SCORE_HEADS_H = 34, STAT_ROW = 42, SECTION_H = 50;
 	private static final float RESET_W = 230, RESET_CONFIRM_TIME = 3f;
 	private static final float[] SCORE_COLS = { 0.07f, 0.2f, 0.38f, 0.58f };
-	private static final Color DIVIDER = new Color(0.68f, 0.6f, 0.49f, 0.25f), SCROLLBAR = new Color(0.89f, 0.72f, 0.37f, 0.5f);
+	private static final Color DIVIDER = new Color(0.68f, 0.6f, 0.49f, 0.25f);
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final Rectangle backButton = new Rectangle(), resetButton = new Rectangle(), page = new Rectangle(),
@@ -136,7 +136,7 @@ public class HighScoresScreen extends BaseScreen {
 			}
 			unclip();
 		}
-		drawScrollbar(content);
+		scroller.drawBar(paint, inside, content);
 		chrome.header("High scores", backButton, w, h);
 		chrome.headerButton(resetButton, confirmReset > 0 ? "Tap to confirm" : "Reset statistics", RESET_W, confirmReset > 0,
 				w, h);
@@ -269,16 +269,6 @@ public class HighScoresScreen extends BaseScreen {
 			}
 		}
 		return y;
-	}
-
-	private void drawScrollbar(float content) {
-		if (content <= inside.height) {
-			return;
-		}
-		float track = inside.height - PAD, bar = Math.max(30, track * inside.height / content);
-		float travel = content - inside.height, at = scroller.offset() / travel;
-		paint.rect(page.x + page.width - PAD / 2 - SCROLLBAR_W, inside.y + PAD / 2 + (track - bar) * (1 - at), SCROLLBAR_W,
-				bar, SCROLLBAR);
 	}
 
 	@Override

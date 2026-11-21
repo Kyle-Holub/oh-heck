@@ -6,7 +6,6 @@ import java.util.function.Supplier;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import ohheck.anim.Ease;
@@ -20,7 +19,6 @@ import ohheck.rules.Match;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
-import ohheck.ui.Palette;
 import ohheck.ui.PostProcessor;
 import ohheck.ui.TapAreas;
 
@@ -32,7 +30,8 @@ final class TableDrawing {
 	private static final Tween TRUMP_TURNING = Tween.over(TableFlow.TRUMP_FLIP_TIME, Ease.LINEAR),
 			TRUMP_LIGHTING = Tween.over(TRUMP_GLOW_IN, Ease.LINEAR).after(TableFlow.TRUMP_FLIP_TIME);
 	private static final float TALLY_X = 22, TALLY_DROP = 12;
-	private static final float HAND_LIFT = 5, NO_TRUMP_LINE = 24;
+	private static final float HAND_LIFT = 5, DOT = 3, DOT_STEP = 9;
+	private static final Color DOTS = new Color(0.89f, 0.8f, 0.62f, 0.55f);
 
 	private final TableScene scene;
 	private final PostProcessor post;
@@ -75,7 +74,7 @@ final class TableDrawing {
 		float x0 = TALLY_X - Counters.TALLY_W / 2;
 		float avail = layout.panelX(2) - 14 - x0;
 		counters.tracker(x0, layout.h - 12 - Counters.TALLY_H - Counters.TRACKER_BELOW_TALLY, avail, m.handSize(),
-				m.bidsSoFar(), 1f);
+				m.bidsSeenBy(Seating.YOU), 1f);
 	}
 
 	void trump(boolean gone) {
@@ -89,9 +88,7 @@ final class TableDrawing {
 		float x = layout.trumpX(), y = layout.trumpY(), cw = layout.trumpW(), ch = layout.trumpH();
 		if (scene.match().trumpCard() == null) {
 			if (!flow.isDealing()) {
-				BitmapFont f = paint.serif(1.2f, Palette.MUTED);
-				paint.textIn(f, "No", x, y + ch / 2, cw, NO_TRUMP_LINE);
-				paint.textIn(f, "trumps", x, y + ch / 2 - NO_TRUMP_LINE, cw, NO_TRUMP_LINE);
+				dottedOutline(x, y, cw, ch);
 			}
 			return;
 		}
@@ -117,12 +114,23 @@ final class TableDrawing {
 		motes.draw(batch, assets.glow);
 	}
 
+	private void dottedOutline(float x, float y, float w, float h) {
+		for (float d = 0; d < w; d += DOT_STEP) {
+			paint.rect(x + d, y, DOT, DOT, DOTS);
+			paint.rect(x + d, y + h - DOT, DOT, DOT, DOTS);
+		}
+		for (float d = DOT_STEP; d < h - DOT; d += DOT_STEP) {
+			paint.rect(x, y + d, DOT, DOT, DOTS);
+			paint.rect(x + w - DOT, y + d, DOT, DOT, DOTS);
+		}
+	}
+
 	void seat(int seat) {
 		TableFlow flow = scene.flow();
 		Match m = scene.match();
 		boolean turn = flow.state() == TableState.TURN && m.currentSeat() == seat;
 		state.reset().named(scene.name(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(m.dealer() == seat)
-				.bid(m.bid(seat)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
+				.bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
 	}
 

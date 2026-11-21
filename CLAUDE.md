@@ -46,7 +46,7 @@ the screenshot run, CI, the arena and the art tools.
 - **Facts shown on screen** (scores, odds, player names, hand counts) come from the rules
   and the roster, not copied text.
 - **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
-  constant, a rule a field of `RuleSet` (in its code) with a toggle on the Rules page, a preset a
+  constant, a rule a field of `RuleSet` (in its code) with a toggle on the Game page, a preset a
   `GameMode` constant, and a new reaction
   to table events a `TableFlow.Listener`, a new table state a `TableState` constant, a pause-menu choice a `MenuItem` constant, a setting an `OptionItem` on its `OptionsPage`
   (a new category is one more page), and a screenshot-run stop a

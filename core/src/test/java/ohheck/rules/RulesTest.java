@@ -200,10 +200,19 @@ public class RulesTest {
 
 	@Test
 	public void customRulesAreNamedByTheirCode() {
-		RuleSet r = new RuleSet(HandOrder.UP_AND_DOWN, 8, true);
+		RuleSet r = new RuleSet(HandOrder.UP_AND_DOWN, 8, true, true);
 		assertEquals(r, RuleSet.parse(r.code()));
 		assertEquals(GameMode.CUSTOM, GameMode.of(r));
 		assertEquals(GameMode.MARATHON, GameMode.of(RuleSet.parse("UP_AND_DOWN/13")));
 		assertEquals(GameMode.CLASSIC, GameMode.of(RuleSet.STANDARD));
+		assertEquals(GameMode.POKER_FACE, GameMode.of(RuleSet.parse("UP/8/blind")));
+		assertEquals("UP/8/big/blind", RuleSet.STANDARD.withBlindBids(true).withBigBids(true).code());
+		for (String bad : new String[] { "UP/8/blind/big", "UP/8/big/big", "UP/8/huge", "UP" }) {
+			try {
+				RuleSet.parse(bad);
+				org.junit.Assert.fail(bad);
+			} catch (IllegalArgumentException expected) {
+			}
+		}
 	}
 }
