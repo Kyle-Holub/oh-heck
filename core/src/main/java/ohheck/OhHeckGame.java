@@ -1,5 +1,7 @@
 package ohheck;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import com.badlogic.gdx.Game;
@@ -7,37 +9,53 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import rules.Difficulty;
-import rules.Match;
-import rules.Stats;
+import ohheck.platform.Audio;
+import ohheck.platform.GameOptions;
+import ohheck.platform.Settings;
+import ohheck.records.Records;
+import ohheck.records.SavedGame;
+import ohheck.screens.HighScoresScreen;
+import ohheck.screens.OptionsScreen;
+import ohheck.screens.PlayersScreen;
+import ohheck.screens.ScreenshotTour;
+import ohheck.screens.TitleScreen;
+import ohheck.screens.TutorialScreen;
+import ohheck.table.PlayScreen;
+import ohheck.ui.Assets;
+import ohheck.ui.BaseScreen;
+import ohheck.ui.GameHost;
+import ohheck.ui.PostProcessor;
+import ohheck.ui.Tagged;
+import ohheck.ui.Tour;
+import ohheck.util.Log;
 
-/** The libGDX entry point shared by Android and desktop; switches between screens. */
-public class OhHeckGame extends Game {
+/* The libGDX entry point for Android and desktop: owns the shared services and the screens. */
+public class OhHeckGame extends Game implements GameHost {
 
-	public static final String VERSION = "alpha-1.0.8";
-	/** The CI build ("dev-0042") from assets/build.txt, or "" for a local build. */
-	String build = "";
+	public static final String VERSION = "alpha-1.0.9";
 
-	/** A screen that can describe itself for automated screenshots. */
-	public interface Tagged {
-		String stateTag();
-	}
+	private final GameOptions options;
+	private final ScreenshotTour tour;
 
-	final GameOptions options;
-	/** The one sprite batch all screens draw with. */
-	SpriteBatch batch;
-	Assets assets;
-	Settings settings;
-	Audio audio;
-	PostProcessor post;
+	private String build = "";
+	private SpriteBatch batch;
+	private Assets assets;
+	private Settings settings;
+	private Audio audio;
+	private PostProcessor post;
+	private Records records;
 
+	private final Screens screens = new Screens(this);
 	private TitleScreen title;
 	private TutorialScreen tutorial;
 	private OptionsScreen optionsScreen;
 	private HighScoresScreen highScoresScreen;
 	private PlayersScreen playersScreen;
-	private Stats stats = new Stats();
+	private final List<Screen> keptScreens = new ArrayList<Screen>();
 	private PlayScreen play;
+
+	private final FramePacer pacer = new FramePacer();
+	private boolean capturing;
 
 	public OhHeckGame() {
 		this(new GameOptions());
@@ -45,214 +63,199 @@ public class OhHeckGame extends Game {
 
 	public OhHeckGame(GameOptions options) {
 		this.options = options;
+		this.tour = options.autoplayHuman ? new ScreenshotTour(this) : null;
 	}
-
-	/** Screens to return to with Back: Options, How to play and High scores open over where you were. */
-	private final java.util.ArrayDeque<Screen> backStack = new java.util.ArrayDeque<Screen>();
 
 	@Override
 	public void create() {
+		Log.to((tag, message, cause) -> {
+			if (cause != null) {
+				Gdx.app.error(tag, message, cause);
+			} else {
+				Gdx.app.error(tag, message);
+			}
+		});
 		batch = new SpriteBatch();
 		if (Gdx.files.internal("build.txt").exists()) {
 			build = Gdx.files.internal("build.txt").readString("UTF-8").trim();
 		}
 		assets = new Assets();
 		settings = new Settings();
-		stats = options.stats != null ? options.stats : Stats.decode(options.persist ? settings.stats() : "");
+		records = new Records(settings.recordStore(), options.persist, options.stats);
 		audio = new Audio(settings);
 		post = new PostProcessor();
-		title = new TitleScreen(this);
-		tutorial = new TutorialScreen(this);
-		optionsScreen = new OptionsScreen(this);
-		highScoresScreen = new HighScoresScreen(this);
-		playersScreen = new PlayersScreen(this);
-		setScreen(title);
+		title = kept(new TitleScreen(this));
+		tutorial = kept(new TutorialScreen(this));
+		optionsScreen = kept(new OptionsScreen(this));
+		highScoresScreen = kept(new HighScoresScreen(this));
+		playersScreen = kept(new PlayersScreen(this));
+		screens.replaceAll(title);
 	}
 
-	/** Frame length when nothing is moving: 30 fps, to save battery. */
-	private static final long IDLE_FRAME_NS = 1000000000L / 30;
-	private long frameStart;
-	private boolean idle, capturing;
+	private <T extends Screen> T kept(T screen) {
+		keptScreens.add(screen);
+		return screen;
+	}
 
 	@Override
 	public void render() {
-		long now = System.nanoTime();
-		if (idle) {
-			long wait = frameStart + IDLE_FRAME_NS - now;
-			if (wait > 0) {
-				try {
-					Thread.sleep(wait / 1000000, (int) (wait % 1000000));
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-				now = System.nanoTime();
-			}
-		}
-		frameStart = now;
+		pacer.startFrame();
 		boolean effects = settings.effects() && post.begin();
 		capturing = effects;
-		float delta = options.fixedStep > 0 ? options.fixedStep : Gdx.graphics.getDeltaTime();
+		boolean fixed = options.fixedStep > 0;
+		float delta = fixed ? options.fixedStep : Gdx.graphics.getDeltaTime();
 		if (getScreen() != null) {
 			getScreen().render(delta);
+		}
+		if (!fixed) {
+			screens.drawChange(batch, assets, delta);
 		}
 		if (effects) {
 			post.end(delta);
 		}
 		capturing = false;
 		Screen s = getScreen();
-		idle = options.fixedStep <= 0 && s instanceof BaseScreen && !((BaseScreen) s).animating();
+		pacer.endFrame(!fixed && !screens.changing() && s instanceof BaseScreen && !((BaseScreen) s).animating());
 		if (options.frameListener != null && s instanceof Tagged) {
 			options.frameListener.onFrame(((Tagged) s).stateTag());
 		}
 	}
 
-	/** While the effects pass is capturing a frame, draw into its (smaller) buffer rather than the screen. */
-	void fitViewportToTarget() {
+	@Override
+	public String version() {
+		return VERSION;
+	}
+
+	@Override
+	public String build() {
+		return build;
+	}
+
+	@Override
+	public GameOptions options() {
+		return options;
+	}
+
+	@Override
+	public SpriteBatch batch() {
+		return batch;
+	}
+
+	@Override
+	public Assets assets() {
+		return assets;
+	}
+
+	@Override
+	public Settings settings() {
+		return settings;
+	}
+
+	@Override
+	public Audio audio() {
+		return audio;
+	}
+
+	@Override
+	public PostProcessor post() {
+		return post;
+	}
+
+	@Override
+	public Records records() {
+		return records;
+	}
+
+	@Override
+	public Tour tour() {
+		return tour;
+	}
+
+	@Override
+	public void fitViewportToTarget() {
 		if (capturing) {
 			Gdx.gl.glViewport(0, 0, post.sceneWidth(), post.sceneHeight());
 		}
 	}
 
-	/** Opens a screen over the current one; {@link #back()} returns to it. */
-	private void open(Screen s) {
-		if (getScreen() != null) {
-			backStack.push(getScreen());
-		}
-		setScreen(s);
+	@Override
+	public void back() {
+		screens.back(title);
 	}
 
-	/** Back to the screen that opened this one, or the title screen. */
-	void back() {
-		setScreen(backStack.isEmpty() ? title : backStack.pop());
+	@Override
+	public void showTitle() {
+		screens.replaceAll(title);
 	}
 
-	void showTitle() {
-		backStack.clear();
-		setScreen(title);
-	}
-
-	/** How to play, from Options: the tutorial, with Back. */
-	void showTutorial() {
+	@Override
+	public void showTutorial() {
 		tutorial.open(false);
-		open(tutorial);
+		screens.open(tutorial);
 	}
 
-	/** Play (a new game): the tutorial first if you've never seen it (it then starts the game). */
-	void play() {
+	@Override
+	public void play() {
 		if (!settings.tutorialSeen() && !options.autoplayHuman) {
 			tutorial.open(true);
-			open(tutorial);
+			screens.open(tutorial);
 		} else {
 			newGame();
 		}
 	}
 
-	void showOptions() {
-		open(optionsScreen);
+	@Override
+	public void showOptions() {
+		screens.open(optionsScreen);
 	}
 
-	void showPlayers() {
-		open(playersScreen);
+	@Override
+	public void showPlayers() {
+		screens.open(playersScreen);
 	}
 
-	/** The high score table; newest is the position just added (-1 for none) to pick out. */
-	void showHighScores(int newest) {
+	@Override
+	public void showHighScores(int newest) {
 		highScoresScreen.highlight(newest);
-		open(highScoresScreen);
+		screens.open(highScoresScreen);
 	}
 
-	/** High scores in memory; persisted only for real games. */
-	HighScores highScores() {
-		return HighScores.decode(options.persist ? settings.highScores() : "");
-	}
-
-	/** Records your finished game, played at the given difficulty; returns its place in the table, or -1. */
-	int recordHighScore(int score, int place, Difficulty level) {
-		if (!options.persist) {
-			return -1;
-		}
-		HighScores h = highScores();
-		java.util.Calendar c = java.util.Calendar.getInstance();
-		String date = String.format(java.util.Locale.US, "%04d-%02d-%02d", c.get(java.util.Calendar.YEAR),
-				c.get(java.util.Calendar.MONTH) + 1, c.get(java.util.Calendar.DAY_OF_MONTH));
-		int at = h.add(new HighScores.Entry(score, place, date, level.ordinal()));
-		if (at >= 0) {
-			settings.setHighScores(h.encode());
-		}
-		return at;
-	}
-
-	/** Your statistics (kept only in memory when nothing is saved, as in the screenshot run). */
-	public Stats stats() {
-		return stats;
-	}
-
-	/** Saves the statistics after a change. */
-	void saveStats() {
-		if (options.persist) {
-			settings.setStats(stats.encode());
-		}
-	}
-
-	/** Starts the statistics afresh. */
-	void resetStats() {
-		stats = new Stats();
-		saveStats();
-	}
-
-	void newGame() {
+	@Override
+	public void newGame() {
 		if (play != null) {
 			play.dispose();
 		}
-		play = new PlayScreen(this, null, null, null);
-		backStack.clear();
-		setScreen(play);
+		play = PlayScreen.fresh(this);
+		screens.replaceAll(play);
 	}
 
-	/** Back to the game in progress, or the saved one after the app was closed. */
-	void continueGame() {
+	@Override
+	public void continueGame() {
 		if (play == null) {
-			Match saved = loadSavedGame();
+			SavedGame saved = records.savedGame(new Random());
 			if (saved == null) {
 				newGame();
 				return;
 			}
-			play = new PlayScreen(this, saved, Difficulty.values()[settings.savedGameDifficulty()],
-					settings.savedGamePlayers());
+			play = PlayScreen.resume(this, saved);
 		}
-		backStack.clear();
-		setScreen(play);
+		screens.replaceAll(play);
 	}
 
-	boolean hasGameInProgress() {
+	@Override
+	public boolean hasGameInProgress() {
 		if (play != null) {
 			return !play.isGameOver();
 		}
-		return options.persist && settings.savedGame() != null;
-	}
-
-	private Match loadSavedGame() {
-		String s = options.persist ? settings.savedGame() : null;
-		if (s == null) {
-			return null;
-		}
-		try {
-			return Match.load(s, new Random());
-		} catch (IllegalArgumentException e) {
-			Gdx.app.error("OhHeck", "Discarding unreadable saved game", e);
-			settings.clearSavedGame();
-			return null;
-		}
+		return records.hasSavedGame();
 	}
 
 	@Override
 	public void dispose() {
 		super.dispose();
-		title.dispose();
-		tutorial.dispose();
-		optionsScreen.dispose();
-		highScoresScreen.dispose();
-		playersScreen.dispose();
+		for (Screen s : keptScreens) {
+			s.dispose();
+		}
 		if (play != null) {
 			play.dispose();
 		}

@@ -1,0 +1,199 @@
+package ohheck.ui;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Disposable;
+
+import ohheck.players.Difficulty;
+import ohheck.rules.Card;
+
+public final class Assets implements Disposable {
+
+	public static final int CARD_W = 73, CARD_H = 98;
+	private static final int SHEET_W = 219, SHEET_H = 294;
+	public static final int BLUR_PAD = 24;
+
+	public static final float UI_BASE = 16f / 42f, SERIF_BASE = 16f / 52f;
+
+	public final Texture table;
+	public final Texture cardSheet, cardBack, cardSheetBlur, cardBackBlur;
+	public final Texture shadow;
+	public final Texture glow;
+	public final NinePatch panel, panelTurn, panelWait, button, buttonAlt, buttonOff;
+	public final Texture titleText;
+	public final Texture bidTricksText, setText, trickWonText, makeBidText, gameOverText;
+	public final Texture bidOpen, bidTaken, bidOver;
+	public final Texture[] levelBadge = new Texture[Difficulty.values().length];
+	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon, waitingIcon;
+	public final Texture bidDigits;
+	private final TextureRegion[] digits = new TextureRegion[10];
+	public final Texture white;
+	public final Texture stroke;
+	public final BitmapFont font;
+	public final BitmapFont serif;
+
+	private final TextureRegion[][] faces = new TextureRegion[4][13];
+	private final TextureRegion back, backBlur;
+	private final TextureRegion[][] blurred = new TextureRegion[4][13];
+
+	private final Array<Disposable> owned = new Array<Disposable>();
+
+	private <T extends Disposable> T own(T d) {
+		owned.add(d);
+		return d;
+	}
+
+	public Assets() {
+		table = linear(own(new Texture(Gdx.files.internal("images/table.jpg"))));
+		cardSheet = mipmapped("images/cards_hd.png");
+		cardBack = mipmapped("images/back_hd.png");
+		cardSheetBlur = mipmapped("images/cards_blur.png");
+		cardBackBlur = mipmapped("images/back_blur.png");
+		shadow = linear(own(new Texture(Gdx.files.internal("images/shadow.png"))));
+		glow = mipmapped("images/glow.png");
+		panel = ninePatch("panel");
+		panelTurn = ninePatch("panel_turn");
+		panelWait = ninePatch("panel_wait");
+		button = ninePatch("button");
+		buttonAlt = ninePatch("button_alt");
+		buttonOff = ninePatch("button_off");
+		titleText = mipmapped("images/titleText.png");
+		bidTricksText = mipmapped("images/bidTricks.png");
+		setText = mipmapped("images/setText.png");
+		trickWonText = mipmapped("images/trickWonText.png");
+		makeBidText = mipmapped("images/makeBidText.png");
+		gameOverText = mipmapped("images/gameOver.png");
+		dealerIcon = mipmapped("images/icon_dealer.png");
+		trickIcon = mipmapped("images/icon_trick.png");
+		overIcon = mipmapped("images/icon_over.png");
+		zeroIcon = mipmapped("images/icon_zero.png");
+		waitingIcon = mipmapped("images/icon_waiting.png");
+		bidDigits = mipmapped("images/bid_digits.png");
+		cutDigits();
+		bidOpen = mipmapped("images/bid_open.png");
+		bidTaken = mipmapped("images/bid_taken.png");
+		bidOver = mipmapped("images/bid_over.png");
+		for (Difficulty d : Difficulty.values()) {
+			levelBadge[d.ordinal()] = mipmapped("images/level_" + d.key() + ".png");
+		}
+		cutCards();
+		back = new TextureRegion(cardBack);
+		backBlur = new TextureRegion(cardBackBlur);
+		white = own(whitePixel());
+		stroke = own(strokeTexture(32, 160));
+		font = bitmapFont("ui");
+		serif = bitmapFont("serif");
+	}
+	private void cutDigits() {
+		for (int i = 0; i < 10; i++) {
+			digits[i] = new TextureRegion(bidDigits, i * DIGIT_W, 0, DIGIT_W, DIGIT_H);
+		}
+	}
+
+	private void cutCards() {
+		int bw = cardSheetBlur.getWidth() / 13, bh = cardSheetBlur.getHeight() / 4;
+		for (int suit = 0; suit < 4; suit++) {
+			for (int rank = 0; rank < 13; rank++) {
+				faces[suit][rank] = new TextureRegion(cardSheet, rank * SHEET_W, suit * SHEET_H, SHEET_W, SHEET_H);
+				blurred[suit][rank] = new TextureRegion(cardSheetBlur, rank * bw, suit * bh, bw, bh);
+			}
+		}
+	}
+
+	private static Texture whitePixel() {
+		Pixmap p = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+		p.setColor(Color.WHITE);
+		p.fill();
+		Texture t = new Texture(p);
+		p.dispose();
+		return t;
+	}
+
+	private static Texture strokeTexture(int w, int h) {
+		Pixmap p = new Pixmap(w, h, Pixmap.Format.RGBA8888);
+		p.setBlending(Pixmap.Blending.None);
+		float r = w / 2f - 2f;
+		for (int y = 0; y < h; y++) {
+			for (int x = 0; x < w; x++) {
+				float px = x + 0.5f - w / 2f, py = y + 0.5f;
+				float cy = Math.max(r + 2f, Math.min(h - r - 2f, py));
+				float d = (float) Math.sqrt(px * px + (py - cy) * (py - cy));
+				float a = Math.max(0f, Math.min(1f, r - d + 0.5f));
+				p.drawPixel(x, y, Color.rgba8888(1f, 1f, 1f, a));
+			}
+		}
+		Texture t = new Texture(p, true);
+		t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+		p.dispose();
+		return t;
+	}
+
+	public TextureRegion face(Card c) {
+		return faces[c.suit().ordinal()][c.rank().ordinal()];
+	}
+
+	public TextureRegion back() {
+		return back;
+	}
+
+	public TextureRegion blurredFace(Card c) {
+		return blurred[c.suit().ordinal()][c.rank().ordinal()];
+	}
+
+	public TextureRegion blurredBack() {
+		return backBlur;
+	}
+
+	public static float blurMarginX() {
+		return BLUR_PAD / (float) (SHEET_W + 2 * BLUR_PAD);
+	}
+
+	public static float blurMarginY() {
+		return BLUR_PAD / (float) (SHEET_H + 2 * BLUR_PAD);
+	}
+
+	private NinePatch ninePatch(String name) {
+		Texture t = own(new Texture(Gdx.files.internal("images/" + name + ".png")));
+		t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+		NinePatch p = new NinePatch(t, 16, 16, 16, 16);
+		return p;
+	}
+
+	private BitmapFont bitmapFont(String name) {
+		Texture t = mipmapped("fonts/" + name + ".png");
+		BitmapFont f = own(new BitmapFont(Gdx.files.internal("fonts/" + name + ".fnt"), new TextureRegion(t), false));
+		f.setUseIntegerPositions(false);
+		return f;
+	}
+
+	public static final int DIGIT_W = 64, DIGIT_H = 88;
+
+	public TextureRegion digit(int n) {
+		return digits[n];
+	}
+
+	private Texture mipmapped(String path) {
+		Texture t = own(new Texture(Gdx.files.internal(path), true));
+		t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+		return t;
+	}
+
+	private static Texture linear(Texture t) {
+		t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+		return t;
+	}
+
+	@Override
+	public void dispose() {
+		for (Disposable d : owned) {
+			d.dispose();
+		}
+		owned.clear();
+	}
+}

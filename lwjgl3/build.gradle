@@ -1,8 +1,8 @@
 apply plugin: 'application'
 
 java {
-  sourceCompatibility = JavaVersion.VERSION_1_8
-  targetCompatibility = JavaVersion.VERSION_1_8
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
 }
 
 application {
@@ -38,10 +38,11 @@ tasks.register('dist', Jar) {
   exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/INDEX.LIST'
 }
 
-// Plays a scripted game and saves screenshots of key moments (used by CI)
+// Plays a scripted game and saves screenshots of key moments (used by CI).
+// -Pshots=options,tutorial keeps only the states starting with those, and stops once they're taken.
 tasks.register('screenshots', JavaExec) {
   mainClass = 'ohheck.lwjgl3.ScreenshotLauncher'
   classpath = sourceSets.main.runtimeClasspath
   workingDir = assetsDir
-  args = [rootProject.file('build/screenshots').absolutePath]
+  args = [rootProject.file('build/screenshots').absolutePath, (project.findProperty('shots') ?: '').toString()]
 }

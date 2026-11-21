@@ -7,9 +7,11 @@ Writes an adaptive icon (background + foreground layers, so launchers can mask
 it to any shape), a one-colour version for Android 13 themed icons, and plain
 icons for older Android versions.
 
-Usage: python3 tools/make_icon.py   (run make_art.py first; needs Pillow and NumPy)
+Usage: python3 tools/make_icon.py [images dir, default assets/images] [res dir, default android/res]
+(run make_art.py first; needs Pillow and NumPy)
 """
 import os
+import sys
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
@@ -101,6 +103,11 @@ def legacy(bg, fg, size):
 
 
 def main():
+    global IMAGES, RES
+    if len(sys.argv) > 1:
+        IMAGES = sys.argv[1]
+    if len(sys.argv) > 2:
+        RES = sys.argv[2]
     bg, fg, mono = background(), foreground(), monochrome()
     for name, scale in DENSITIES.items():
         d = os.path.join(RES, "mipmap-" + name)
@@ -134,7 +141,7 @@ def main():
         t.putalpha(m)
         prev.alpha_composite(t, (10 + i * (S + 10), 10))
     prev.alpha_composite(legacy(bg, fg, S - 60), (10 + 2 * (S + 10) + 30, 40))
-    prev.save("/tmp/icon_preview.png")
+    prev.save(os.path.join(os.environ.get("TMPDIR", "/tmp"), "icon_preview.png"))
     print("icon written")
 
 
