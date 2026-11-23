@@ -40,6 +40,10 @@ public interface GameHost {
 
 	void play();
 
+	void showPlayMenu();
+
+	void showGameSetup();
+
 	void showOptions();
 
 	void showPlayers();

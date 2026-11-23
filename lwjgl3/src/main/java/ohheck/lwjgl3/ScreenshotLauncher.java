@@ -32,7 +32,6 @@ import ohheck.rules.Match;
 import ohheck.screens.CampaignScreen;
 import ohheck.screens.HighScoresScreen;
 import ohheck.screens.PlayersScreen;
-import ohheck.screens.TitleScreen;
 import ohheck.screens.TutorialScreen;
 
 /*
@@ -41,7 +40,7 @@ import ohheck.screens.TutorialScreen;
  */
 public class ScreenshotLauncher {
 
-	private static final String[] WANTED = { "intro", "title", "title:play", "highscores", "statistics", "badges", "options", "players", "campaign", "chapter:1", "shot:lone-ace", "tutorial:1", "tutorial:3", "tutorial:5", "tutorial:6", "tutorial:8", "tutorial:9", "tutorial:10", "tutorial:11", "tutorial:13", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "play", "setup", "highscores", "statistics", "badges", "options", "players", "campaign", "chapter:1", "shot:lone-ace", "tutorial:1", "tutorial:3", "tutorial:5", "tutorial:6", "tutorial:8", "tutorial:9", "tutorial:10", "tutorial:11", "tutorial:13", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "play:8:",
 			"tossing", "gameover" };
 
@@ -221,8 +220,9 @@ public class ScreenshotLauncher {
 		private float waited;
 
 		Walk(OhHeckGame game) {
-			then("title", 3.5f, s -> ((TitleScreen) s).showPlayMenu());
-			then("title:play", 1.0f, s -> game.showHighScores(-1));
+			then("title", 3.5f, s -> game.showPlayMenu());
+			then("play", 1.5f, s -> game.showGameSetup());
+			then("setup", 1.5f, s -> game.showHighScores(-1));
 			then("highscores", 1.5f, s -> ((HighScoresScreen) s).showStatistics());
 			then("statistics", 1.5f, s -> ((HighScoresScreen) s).showBadges());
 			then("badges", 1.5f, s -> game.showOptions());

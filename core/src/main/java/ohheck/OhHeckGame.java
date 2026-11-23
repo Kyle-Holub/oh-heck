@@ -19,6 +19,7 @@ import ohheck.records.SavedGame;
 import ohheck.screens.CampaignScreen;
 import ohheck.screens.HighScoresScreen;
 import ohheck.screens.OptionsScreen;
+import ohheck.screens.PlayMenuScreen;
 import ohheck.screens.PlayersScreen;
 import ohheck.screens.TitleScreen;
 import ohheck.screens.TrickShotScreen;
@@ -48,7 +49,8 @@ public class OhHeckGame extends Game implements GameHost {
 	private final Screens screens = new Screens(this);
 	private TitleScreen title;
 	private TutorialScreen tutorial;
-	private OptionsScreen optionsScreen;
+	private OptionsScreen optionsScreen, setupScreen;
+	private PlayMenuScreen playMenu;
 	private HighScoresScreen highScoresScreen;
 	private PlayersScreen playersScreen;
 	private CampaignScreen campaignScreen;
@@ -88,7 +90,9 @@ public class OhHeckGame extends Game implements GameHost {
 		post = new PostProcessor();
 		title = kept(new TitleScreen(this));
 		tutorial = kept(new TutorialScreen(this));
-		optionsScreen = kept(new OptionsScreen(this));
+		optionsScreen = kept(OptionsScreen.options(this));
+		setupScreen = kept(OptionsScreen.setup(this));
+		playMenu = kept(new PlayMenuScreen(this));
 		highScoresScreen = kept(new HighScoresScreen(this));
 		playersScreen = kept(new PlayersScreen(this));
 		campaignScreen = kept(new CampaignScreen(this));
@@ -199,8 +203,18 @@ public class OhHeckGame extends Game implements GameHost {
 			tutorial.open(true);
 			screens.open(tutorial);
 		} else {
-			newGame();
+			showGameSetup();
 		}
+	}
+
+	@Override
+	public void showPlayMenu() {
+		screens.open(playMenu);
+	}
+
+	@Override
+	public void showGameSetup() {
+		screens.open(setupScreen);
 	}
 
 	@Override
