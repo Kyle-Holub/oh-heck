@@ -18,25 +18,44 @@ import ohheck.ui.Palette;
 import ohheck.ui.Scroller;
 import ohheck.ui.SideTabs;
 
-/* The settings, a page per category: tabs down the left, the chosen page's settings on the right. */
+/*
+ * Settings, a page per category: tabs down the left, the chosen page's settings on the right.
+ * Two screens are built this way: Options, and the setup before a custom game, whose header
+ * carries the button that deals it.
+ */
 public class OptionsScreen extends BaseScreen {
 
-	private static final float PAGE_TOP = 18, FRAME = 6;
+	private static final float PAGE_TOP = 18, FRAME = 6, DEAL_W = 140;
 	private static final Color DIVIDER = new Color(0.68f, 0.6f, 0.49f, 0.25f);
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final Rectangle backButton = new Rectangle(), page = new Rectangle(), inside = new Rectangle();
 	private final Scroller scroller = new Scroller();
+	private final Rectangle dealButton = new Rectangle();
+	private final String title, tag;
 	private final List<OptionsPage> pages;
+	private final Runnable deal;
 	private final SideTabs tabs;
 	private OptionItem dragging;
 
-	public OptionsScreen(GameHost game) {
+	private OptionsScreen(GameHost game, String title, String tag, Runnable deal, OptionsPage... pages) {
 		super(game);
+		this.title = title;
+		this.tag = tag;
+		this.deal = deal;
+		this.pages = Arrays.asList(pages);
+		String[] names = new String[this.pages.size()];
+		for (int i = 0; i < names.length; i++) {
+			names[i] = this.pages.get(i).name;
+		}
+		tabs = new SideTabs(paint, null, names, null);
+	}
+
+	public static OptionsScreen setup(GameHost game) {
 		Settings s = game.settings();
-		pages = Arrays.asList(
-				new OptionsPage("Game",
-						new DifficultyOption(s),
+		return new OptionsScreen(game, "Custom game", "setup", game::newGame,
+				new OptionsPage("Table", new DifficultyOption(s)),
+				new OptionsPage("Rules",
 						OptionItem.choice("Game mode", "Changing a rule below makes the game Custom.",
 								() -> s.mode().label, () -> s.setMode(s.mode().next())),
 						OptionItem.choice("Hand progression", "How many cards each hand deals, first to last.",
@@ -48,7 +67,12 @@ public class OptionsScreen extends BaseScreen {
 						OptionItem.toggle("Big bids", "Bigger bids are worth more.",
 								() -> s.rules().bigBids, () -> s.customize(r -> r.withBigBids(!r.bigBids))),
 						OptionItem.toggle("Blind bids", "Bids are made unseen and shown together; the dealer may bid anything.",
-								() -> s.rules().blindBids, () -> s.customize(r -> r.withBlindBids(!r.blindBids)))),
+								() -> s.rules().blindBids, () -> s.customize(r -> r.withBlindBids(!r.blindBids)))));
+	}
+
+	public static OptionsScreen options(GameHost game) {
+		Settings s = game.settings();
+		return new OptionsScreen(game, "Options", "options", null,
 				new OptionsPage("Preferences",
 						OptionItem.heading("Sound"),
 						OptionItem.toggle("Mute all", "Silences the music and sound effects.", s::muted, () -> {
@@ -81,11 +105,6 @@ public class OptionsScreen extends BaseScreen {
 				new OptionsPage("Tutorial",
 						OptionItem.link("How to play", "The rules, a step at a time.", game::showTutorial),
 						OptionItem.link("Roster", "The players you can meet at the table.", game::showPlayers)));
-		String[] names = new String[pages.size()];
-		for (int i = 0; i < names.length; i++) {
-			names[i] = pages.get(i).name;
-		}
-		tabs = new SideTabs(paint, null, names, null);
 	}
 
 	@Override
@@ -100,7 +119,10 @@ public class OptionsScreen extends BaseScreen {
 		batch.draw(assets.table, 0, 0, w, h);
 		tabs.draw(w, h, page);
 		drawPage(pages.get(tabs.chosen()));
-		chrome.header("Options", backButton, w, h);
+		chrome.header(title, backButton, w, h);
+		if (deal != null) {
+			chrome.headerButton(dealButton, "Deal", DEAL_W, true, w, h);
+		}
 		batch.end();
 	}
 
@@ -172,6 +194,10 @@ public class OptionsScreen extends BaseScreen {
 			back();
 			return;
 		}
+		if (deal != null && dealButton.contains(x, y)) {
+			deal.run();
+			return;
+		}
 		int tab = tabs.tabAt(x, y);
 		if (tab >= 0) {
 			tabs.choose(tab);
@@ -196,6 +222,6 @@ public class OptionsScreen extends BaseScreen {
 
 	@Override
 	public String stateTag() {
-		return "options";
+		return tag;
 	}
 }

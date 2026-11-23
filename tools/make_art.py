@@ -609,6 +609,54 @@ def campaign_art(out):
     icon("pip_off", pip_off)
 
 
+def play_menu_icons(out):
+    """Gold icons for the Play screen's cards: continue, campaign, custom game, high scores."""
+    def icon(name, draw_it):
+        S = 108 * SS
+        im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        draw_it(ImageDraw.Draw(im), S)
+        downsample(im, 108, 108).save(os.path.join(out, name + ".png"))
+
+    gold, dark, light = GOLD + (255,), GOLD_DARK + (255,), GOLD_LIGHT + (255,)
+
+    def resume(d, S):
+        c, r = S / 2, S * 0.42
+        d.ellipse([c - r, c - r, c + r, c + r], outline=gold, width=6 * SS)
+        d.polygon([(c - r * 0.35, c - r * 0.5), (c + r * 0.55, c), (c - r * 0.35, c + r * 0.5)], fill=light)
+
+    def campaign(d, S):
+        d.line([(S * 0.3, S * 0.12), (S * 0.3, S * 0.9)], fill=dark, width=6 * SS)
+        d.polygon([(S * 0.32, S * 0.14), (S * 0.82, S * 0.28), (S * 0.32, S * 0.44)], fill=gold)
+        suit_shape(d, "spades", S * 0.46, S * 0.29, S * 0.16, dark)
+        d.ellipse([S * 0.22, S * 0.84, S * 0.38, S * 0.94], fill=gold)
+
+    def custom(d, S):
+        for k, at in enumerate((0.3, 0.6, 0.45)):
+            y = S * (0.25 + 0.25 * k)
+            d.line([(S * 0.14, y), (S * 0.86, y)], fill=dark, width=6 * SS)
+            x = S * (0.14 + 0.72 * at)
+            d.ellipse([x - S * 0.08, y - S * 0.08, x + S * 0.08, y + S * 0.08], fill=gold, outline=light, width=2 * SS)
+
+    def scores(d, S):
+        d.pieslice([S * 0.22, S * 0.02, S * 0.78, S * 0.6], 0, 180, fill=gold)
+        d.rectangle([S * 0.22, S * 0.08, S * 0.78, S * 0.31], fill=gold)
+        d.arc([S * 0.08, S * 0.12, S * 0.32, S * 0.42], 90, 270, fill=gold, width=5 * SS)
+        d.arc([S * 0.68, S * 0.12, S * 0.92, S * 0.42], 270, 90, fill=gold, width=5 * SS)
+        d.rectangle([S * 0.45, S * 0.58, S * 0.55, S * 0.76], fill=dark)
+        d.rounded_rectangle([S * 0.3, S * 0.76, S * 0.7, S * 0.9], 4 * SS, fill=gold)
+        points = []
+        for k in range(10):
+            ang = math.pi / 2 + k * math.pi / 5
+            rr = S * (0.1 if k % 2 == 0 else 0.045)
+            points.append((S / 2 + rr * math.cos(ang), S * 0.27 - rr * math.sin(ang)))
+        d.polygon(points, fill=light)
+
+    icon("menu_continue", resume)
+    icon("menu_campaign", campaign)
+    icon("menu_custom", custom)
+    icon("menu_scores", scores)
+
+
 def badge(out):
     """A gold medal with a star, for the badges on Records; unearned ones are drawn dim."""
     S = 108 * SS
@@ -648,6 +696,7 @@ if __name__ == "__main__":
     card_blank(out)
     chapter_cosmetics(out)
     campaign_art(out)
+    play_menu_icons(out)
     badge(out)
     blurred_sheet(sheet, out)
     table(out)

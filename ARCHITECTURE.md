@@ -155,9 +155,12 @@ first six have no libGDX and test in plain JUnit.
 `TitleScreen` (with `FallingCards`, the 3D shower), `TutorialScreen` (How to play: 13
 timed scenes, a tap each; each step names its scene in `TutorialScenes`, which draws with
 `TutorialStage`'s little table, and each scene's clock is an `ohheck.anim.Timeline`,
-tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long; the Game page picks the
-game mode under the difficulty, and changing any rule there makes the game Custom; each a list of
-`OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
+tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long, each a list of
+`OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`; built twice:
+`options` for Preferences and Tutorial, and `setup`, the screen before a custom game, whose
+Table and Rules pages pick the difficulty and the game mode, where changing any rule makes the
+game Custom, and whose header deals the game), `PlayMenuScreen` (where to play, as a row of
+cards: Continue, Campaign, Custom game, High scores), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
 statistics, a switch at the top of the panel picks which, high scores have a button per game
 mode, and Reset statistics sits in the header; the panel scrolls, clipped with `BaseScreen.clipTo`).
 
@@ -168,7 +171,8 @@ game's rules.
 
 ### The campaign
 
-The title's **Play** opens **Campaign** and **Custom game** (today's game, saved as it goes).
+The title's **Play** opens the Play screen: **Campaign**, **Custom game** (set up, then saved as it
+goes), High scores, and Continue when a custom game is in progress.
 The campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
 three steps in order: table play (a normal game against the chapter's rivals), trick shots
 (`TrickShotScreen`, a fixed deal with every hand face up, three undos and every card gliding

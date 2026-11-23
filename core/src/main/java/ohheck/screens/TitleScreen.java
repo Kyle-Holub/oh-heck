@@ -18,7 +18,7 @@ import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 import ohheck.ui.TapAreas;
 
-/* The main menu, over falling cards: Play opens a second list of ways to play. */
+/* The main menu, over falling cards. */
 public class TitleScreen extends BaseScreen {
 
 	private final FallingCards cards;
@@ -29,9 +29,7 @@ public class TitleScreen extends BaseScreen {
 	private static final Tween SCENE_IN = Tween.over(SCENE_FADE, Ease.LINEAR).after(SCENE_START),
 			TITLE_IN = Tween.over(TITLE_FADE, Ease.SMOOTH).after(TITLE_START),
 			MENU_IN = Tween.over(MENU_FADE, Ease.SMOOTH).after(MENU_START);
-	private static final Tween SWAP_IN = Tween.over(0.3f, Ease.OUT);
-	private float introT, swappedFor = 1;
-	private boolean playMenu;
+	private float introT;
 	private final List<String> items = new ArrayList<String>();
 	private final List<Rectangle> hits = new ArrayList<Rectangle>();
 	private final Color black = new Color();
@@ -44,29 +42,9 @@ public class TitleScreen extends BaseScreen {
 
 	private void buildItems() {
 		items.clear();
-		if (playMenu) {
-			if (game.hasGameInProgress()) {
-				items.add("Continue");
-			}
-			items.add("Campaign");
-			items.add("Custom game");
-			items.add("Back");
-		} else {
-			items.add("Play");
-			items.add("Records");
-			items.add("Options");
-			items.add("Quit");
-		}
-	}
-
-	public void showPlayMenu() {
-		swapMenu(true);
-	}
-
-	private void swapMenu(boolean play) {
-		playMenu = play;
-		swappedFor = 0;
-		buildItems();
+		items.add("Play");
+		items.add("Options");
+		items.add("Quit");
 	}
 
 	@Override
@@ -75,7 +53,6 @@ public class TitleScreen extends BaseScreen {
 		if (introT > 0) {
 			introT = Math.max(introT, INTRO_END);
 		}
-		playMenu = false;
 		buildItems();
 		if (introT >= INTRO_END) {
 			game.audio().startMusic();
@@ -100,7 +77,7 @@ public class TitleScreen extends BaseScreen {
 			drawScene();
 		}
 		float titleY = drawTitle();
-		paint.fade(MENU_IN.progress(introT) * SWAP_IN.progress(swappedFor));
+		paint.fade(MENU_IN.progress(introT));
 		TapAreas.sizeTo(hits, items.size());
 		if (paint.fade() > 0) {
 			drawMenu(titleY);
@@ -120,7 +97,6 @@ public class TitleScreen extends BaseScreen {
 		}
 		if (introT >= INTRO_END) {
 			shownFor += dt;
-			swappedFor += dt;
 		}
 	}
 
@@ -182,17 +158,7 @@ public class TitleScreen extends BaseScreen {
 
 	private void choose(String item) {
 		if (item.equals("Play")) {
-			swapMenu(true);
-		} else if (item.equals("Back")) {
-			swapMenu(false);
-		} else if (item.equals("Continue")) {
-			game.continueGame();
-		} else if (item.equals("Campaign")) {
-			game.showCampaign();
-		} else if (item.equals("Custom game")) {
-			game.play();
-		} else if (item.equals("Records")) {
-			game.showHighScores(-1);
+			game.showPlayMenu();
 		} else if (item.equals("Options")) {
 			game.showOptions();
 		} else if (item.equals("Quit")) {
@@ -202,15 +168,11 @@ public class TitleScreen extends BaseScreen {
 
 	@Override
 	protected void back() {
-		if (playMenu) {
-			swapMenu(false);
-		} else {
-			Gdx.app.exit();
-		}
+		Gdx.app.exit();
 	}
 
 	@Override
 	public String stateTag() {
-		return introT < INTRO_END ? "intro" : playMenu ? "title:play" : "title";
+		return introT < INTRO_END ? "intro" : "title";
 	}
 }

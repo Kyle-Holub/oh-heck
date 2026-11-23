@@ -158,7 +158,7 @@ public class HighScoresScreen extends BaseScreen {
 			unclip();
 		}
 		scroller.drawBar(paint, inside, content);
-		chrome.header("Records", backButton, w, h);
+		chrome.header("High scores", backButton, w, h);
 		chrome.headerButton(resetButton, confirmReset > 0 ? "Tap to confirm" : "Reset statistics", RESET_W, confirmReset > 0,
 				w, h);
 		batch.end();

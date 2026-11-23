@@ -26,6 +26,7 @@ public final class Assets implements Disposable {
 	public Texture table;
 	public final Texture cardSheet, cardSheetBlur, cardSlot, cardBlank, badge;
 	public final Texture campaignFace, stepTable, stepShots, stepDuel, pipOn, pipOff;
+	public final Texture menuContinue, menuCampaign, menuCustom, menuScores;
 	private final Texture[] emblems = new Texture[Suit.values().length];
 	private final Texture[] tables = new Texture[Cosmetic.values().length], backs = new Texture[Cosmetic.values().length],
 			backBlurs = new Texture[Cosmetic.values().length];
@@ -70,6 +71,10 @@ public final class Assets implements Disposable {
 		stepDuel = mipmapped("images/step_duel.png");
 		pipOn = mipmapped("images/pip_on.png");
 		pipOff = mipmapped("images/pip_off.png");
+		menuContinue = mipmapped("images/menu_continue.png");
+		menuCampaign = mipmapped("images/menu_campaign.png");
+		menuCustom = mipmapped("images/menu_custom.png");
+		menuScores = mipmapped("images/menu_scores.png");
 		for (Suit s : Suit.values()) {
 			emblems[s.ordinal()] = mipmapped("images/emblem_" + s.name().toLowerCase() + ".png");
 		}
