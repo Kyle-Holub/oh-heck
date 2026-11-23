@@ -3,7 +3,7 @@ package ohheck.ui;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import ohheck.campaign.Chapter;
-import ohheck.campaign.Study;
+import ohheck.campaign.TrickShot;
 import ohheck.platform.Audio;
 import ohheck.platform.GameOptions;
 import ohheck.platform.Settings;
@@ -52,7 +52,7 @@ public interface GameHost {
 
 	void playCampaign(Chapter chapter, boolean duel);
 
-	void playStudy(Study study);
+	void playTrickShot(TrickShot shot);
 
 	void newGame();
 

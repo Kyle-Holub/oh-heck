@@ -11,27 +11,27 @@ import ohheck.rules.Match;
 import ohheck.rules.Move;
 
 /*
- * One attempt at a study: your moves, the others' replies as they come, and the undos left. An
+ * One attempt at a trick shot: your moves, the others' replies as they come, and the undos left. An
  * undo takes back your last move by dealing again and replaying the ones before it; running out
- * of undos on a failed attempt starts the study over with them all back.
+ * of undos on a failed attempt starts the trick shot over with them all back.
  */
-public final class StudyPlay {
+public final class TrickShotPlay {
 
 	public static final int UNDOS = 3;
 
-	private final Study study;
+	private final TrickShot shot;
 	private final Bot others = Bot.of(Difficulty.NORMAL, new Random(0));
 	private final List<Move> yours = new ArrayList<Move>();
 	private Match match;
 	private int undosLeft;
 
-	public StudyPlay(Study study) {
-		this.study = study;
+	public TrickShotPlay(TrickShot shot) {
+		this.shot = shot;
 		restart();
 	}
 
-	public Study study() {
-		return study;
+	public TrickShot shot() {
+		return shot;
 	}
 
 	public Match match() {
@@ -45,7 +45,7 @@ public final class StudyPlay {
 	public void restart() {
 		yours.clear();
 		undosLeft = UNDOS;
-		match = study.deal();
+		match = shot.deal();
 	}
 
 	public boolean yourTurn() {
@@ -61,7 +61,7 @@ public final class StudyPlay {
 	}
 
 	public boolean solved() {
-		return over() && study.reached(match);
+		return over() && shot.reached(match);
 	}
 
 	public void move(Move m) {
@@ -95,7 +95,7 @@ public final class StudyPlay {
 		undosLeft--;
 		List<Move> keep = new ArrayList<Move>(yours.subList(0, yours.size() - 1));
 		yours.clear();
-		match = study.deal();
+		match = shot.deal();
 		for (Move m : keep) {
 			finishOthers();
 			move(m);

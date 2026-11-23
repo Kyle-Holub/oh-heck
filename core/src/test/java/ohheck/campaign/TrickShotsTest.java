@@ -15,16 +15,16 @@ import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Move;
 
-public class StudiesTest {
+public class TrickShotsTest {
 
-	private static int[] lines(Study s) {
+	private static int[] lines(TrickShot s) {
 		int[] solvedAndAll = new int[2];
 		walk(s, new ArrayList<Move>(), solvedAndAll);
 		return solvedAndAll;
 	}
 
-	private static void walk(Study s, List<Move> mine, int[] solvedAndAll) {
-		StudyPlay p = new StudyPlay(s);
+	private static void walk(TrickShot s, List<Move> mine, int[] solvedAndAll) {
+		TrickShotPlay p = new TrickShotPlay(s);
 		for (Move m : mine) {
 			p.finishOthers();
 			p.move(m);
@@ -54,8 +54,8 @@ public class StudiesTest {
 	}
 
 	@Test
-	public void everyStudyHasALineThatWorksAndMostLinesDont() {
-		for (Study s : Studies.ALL) {
+	public void everyTrickShotHasALineThatWorksAndMostLinesDont() {
+		for (TrickShot s : TrickShots.ALL) {
 			int[] r = lines(s);
 			assertTrue(s.id + " has no solution", r[0] > 0);
 			assertTrue(s.id + " is solved by " + r[0] + " of " + r[1] + " lines", r[0] * 4 <= r[1]);
@@ -63,35 +63,35 @@ public class StudiesTest {
 	}
 
 	@Test
-	public void studiesHaveUniqueIdsAndChapterOneHasSome() {
+	public void trickShotsHaveUniqueIdsAndChapterOneHasSome() {
 		Set<String> ids = new HashSet<String>();
-		for (Study s : Studies.ALL) {
+		for (TrickShot s : TrickShots.ALL) {
 			assertTrue(s.id, ids.add(s.id));
 		}
-		assertTrue(Studies.of(Chapter.ONE).size() >= 4);
+		assertTrue(TrickShots.of(Chapter.ONE).size() >= 4);
 	}
 
 	@Test
 	public void anUndoTakesBackYourLastCard() {
-		StudyPlay p = new StudyPlay(Studies.ALL.get(0));
+		TrickShotPlay p = new TrickShotPlay(TrickShots.ALL.get(0));
 		p.finishOthers();
 		Card first = p.match().legalPlays(0).get(0);
 		p.move(new Move.Play(0, first));
 		p.finishOthers();
 		p.undo();
-		assertEquals(StudyPlay.UNDOS - 1, p.undosLeft());
+		assertEquals(TrickShotPlay.UNDOS - 1, p.undosLeft());
 		assertTrue(p.match().hand(0).contains(first));
 		assertTrue(p.yourTurn());
 	}
 
 	@Test
 	public void restartingGivesTheUndosBack() {
-		StudyPlay p = new StudyPlay(Studies.ALL.get(0));
+		TrickShotPlay p = new TrickShotPlay(TrickShots.ALL.get(0));
 		p.finishOthers();
 		p.move(new Move.Play(0, p.match().legalPlays(0).get(0)));
 		p.undo();
 		p.restart();
-		assertEquals(StudyPlay.UNDOS, p.undosLeft());
+		assertEquals(TrickShotPlay.UNDOS, p.undosLeft());
 		assertFalse(p.canUndo());
 	}
 }

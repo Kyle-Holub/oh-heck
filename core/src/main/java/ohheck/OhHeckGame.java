@@ -10,7 +10,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import ohheck.campaign.Chapter;
-import ohheck.campaign.Study;
+import ohheck.campaign.TrickShot;
 import ohheck.platform.Audio;
 import ohheck.platform.GameOptions;
 import ohheck.platform.Settings;
@@ -20,8 +20,8 @@ import ohheck.screens.CampaignScreen;
 import ohheck.screens.HighScoresScreen;
 import ohheck.screens.OptionsScreen;
 import ohheck.screens.PlayersScreen;
-import ohheck.screens.StudyScreen;
 import ohheck.screens.TitleScreen;
+import ohheck.screens.TrickShotScreen;
 import ohheck.screens.TutorialScreen;
 import ohheck.table.PlayScreen;
 import ohheck.ui.Assets;
@@ -52,7 +52,7 @@ public class OhHeckGame extends Game implements GameHost {
 	private HighScoresScreen highScoresScreen;
 	private PlayersScreen playersScreen;
 	private CampaignScreen campaignScreen;
-	private StudyScreen studyScreen;
+	private TrickShotScreen trickShotScreen;
 	private final List<Screen> keptScreens = new ArrayList<Screen>();
 	private PlayScreen play, campaignPlay;
 
@@ -92,7 +92,7 @@ public class OhHeckGame extends Game implements GameHost {
 		highScoresScreen = kept(new HighScoresScreen(this));
 		playersScreen = kept(new PlayersScreen(this));
 		campaignScreen = kept(new CampaignScreen(this));
-		studyScreen = kept(new StudyScreen(this));
+		trickShotScreen = kept(new TrickShotScreen(this));
 		screens.replaceAll(title);
 	}
 
@@ -232,10 +232,8 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void startCampaign() {
-		screens.replaceAll(title);
 		campaignScreen.openChapter(Chapter.ONE);
-		screens.open(campaignScreen);
-		playStudy(records.campaign().nextStudy(Chapter.ONE));
+		playCampaign(Chapter.ONE, false);
 	}
 
 	@Override
@@ -250,9 +248,9 @@ public class OhHeckGame extends Game implements GameHost {
 	}
 
 	@Override
-	public void playStudy(Study study) {
-		studyScreen.open(study);
-		screens.open(studyScreen);
+	public void playTrickShot(TrickShot shot) {
+		trickShotScreen.open(shot);
+		screens.open(trickShotScreen);
 	}
 
 	@Override

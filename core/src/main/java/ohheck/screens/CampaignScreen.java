@@ -10,7 +10,7 @@ import ohheck.anim.Ease;
 import ohheck.anim.Tween;
 import ohheck.campaign.Campaign;
 import ohheck.campaign.Chapter;
-import ohheck.campaign.Studies;
+import ohheck.campaign.TrickShots;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
@@ -20,16 +20,17 @@ import ohheck.ui.Palette;
 /*
  * The campaign as a hand of chapter cards: open chapters face up with a pip for each step done,
  * the rest face down, the chapter in play lifted and lit. A tapped chapter lays its three steps
- * (studies, table, duel) on the felt like a trick.
+ * (table, trick shots, duel) on the felt like a trick.
  */
 public class CampaignScreen extends BaseScreen {
 
 	private static final float CARD_W = 142, CARD_H = CARD_W * 98 / 73, CARD_GAP = 22, ARC = 6, LIFT = 26;
-	private static final float STEP_W = 130, STEP_H = STEP_W * 98 / 73, STEP_GAP = 36, PIP = 10, PIP_GAP = 20;
+	private static final float STEP_W = 136, STEP_H = STEP_W * 98 / 73, STEP_GAP = 36, PIP = 16, PIP_GAP = 24, EMBLEM = 46, ICON = 64;
 	private static final float GLOW_W = 1.9f, GLOW_H = 1.6f;
-	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f), PIP_OFF = new Color(0.17f, 0.13f, 0.1f, 0.25f);
+	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f);
 	private static final Tween LAYING = Tween.over(0.35f, Ease.OUT);
-	private static final String[] STEPS = { "Studies", "Table", "Duel" };
+	private static final int TABLE = 0, SHOTS = 1, DUEL = 2;
+	private static final String[] STEPS = { "Table", "Trick shots", "Duel" };
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final CardArt art;
@@ -120,53 +121,62 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	private void drawChapterFace(Campaign progress, Chapter c, float x, float y) {
-		batch.draw(assets.cardBlank, x, y, CARD_W, CARD_H);
-		paint.textIn(paint.serif(1.15f, Palette.INK), "Chapter " + c.number(), x, y + CARD_H - 40, CARD_W, 28);
-		paint.textIn(paint.serif(1.4f, Palette.INK), c.mode.label, x, y + CARD_H / 2 + 4, CARD_W, 30);
-		paint.textIn(paint.ui(0.85f, Palette.INK), "Champion", x, y + CARD_H / 2 - 26, CARD_W, 18);
-		paint.textIn(paint.ui(1.0f, Palette.INK), c.champion().name, x, y + CARD_H / 2 - 44, CARD_W, 20);
-		boolean[] done = { progress.allSolved(c), progress.tableWon(c), progress.cleared(c) };
-		float px = x + CARD_W / 2 - PIP_GAP;
+		batch.draw(assets.campaignFace, x, y, CARD_W, CARD_H);
+		float cx = x + CARD_W / 2;
+		paint.centred(paint.ui(0.8f, Palette.GOLD), "CHAPTER", cx, y + CARD_H - 20);
+		paint.numeral(c.number(), cx, y + CARD_H - 56, 40, Palette.GOLD_LIGHT);
+		batch.draw(assets.emblem(c.emblem), cx - EMBLEM / 2, y + CARD_H / 2 - EMBLEM / 2 - 12, EMBLEM, EMBLEM);
+		paint.centred(paint.serif(1.3f, Palette.GOLD_LIGHT), c.mode.label, cx, y + 58);
+		pips(cx, y + 18, progress.tableWon(c), progress.allMade(c), progress.cleared(c));
+	}
+
+	private void pips(float cx, float y, boolean... done) {
 		for (int i = 0; i < done.length; i++) {
-			paint.rect(px + i * PIP_GAP - PIP / 2, y + 16, PIP, PIP, done[i] ? Palette.GOLD : PIP_OFF);
+			float px = cx + (i - (done.length - 1) / 2f) * PIP_GAP - PIP / 2;
+			batch.draw(done[i] ? assets.pipOn : assets.pipOff, px, y, PIP, PIP);
 		}
 	}
 
 	private void drawChapter(Campaign progress, Chapter c) {
 		float top = h - MenuChrome.HEADER_H;
 		paint.centred(paint.serif(1.5f, Palette.GOLD_LIGHT), c.mode.label, w / 2, top - 26);
-		paint.centred(paint.ui(1.0f, Palette.MUTED), "Beat " + c.champion().name + " in a duel to clear the chapter", w / 2,
-				top - 58);
+		paint.centred(paint.ui(1.0f, Palette.MUTED), "Win the table, sharpen up with trick shots, then beat "
+				+ c.champion().name + " in a duel", w / 2, top - 58);
 		float span = STEPS.length * STEP_W + (STEPS.length - 1) * STEP_GAP, x0 = (w - span) / 2;
 		float laid = LAYING.progress(chosenFor), y = (top - 80) / 2 - STEP_H / 2 + 20 - (1 - laid) * 40;
 		for (int i = 0; i < STEPS.length; i++) {
 			float x = x0 + i * (STEP_W + STEP_GAP);
 			stepCards[i].set(x, y, STEP_W, STEP_H);
 			art.shadow(x, y, STEP_W, STEP_H, 4);
-			boolean faceUp = i < 2 || progress.duelOpen(c);
+			boolean faceUp = i == TABLE || progress.shotsOpen(c);
 			batch.setColor(1, 1, 1, laid);
 			if (faceUp) {
-				batch.draw(assets.cardBlank, x, y, STEP_W, STEP_H);
+				drawStepFace(progress, c, i, x, y, laid);
 			} else {
 				batch.draw(assets.back(), x, y, STEP_W, STEP_H);
+				batch.setColor(Color.WHITE);
+				paint.textIn(paint.ui(0.9f, Palette.MUTED, laid), "Win the table first", x - 20, y - 26, STEP_W + 40, 20);
 			}
 			batch.setColor(Color.WHITE);
-			if (faceUp) {
-				paint.textIn(paint.serif(1.25f, Palette.INK, laid), STEPS[i], x, y + STEP_H - 44, STEP_W, 28);
-				paint.textIn(paint.ui(0.9f, Palette.INK, laid), stepNote(progress, c, i), x, y + 18, STEP_W, 20);
-			}
-			paint.textIn(paint.ui(0.9f, Palette.MUTED, laid), faceUp ? "" : "Win the table first", x - 20, y - 26, STEP_W + 40, 20);
 		}
 	}
 
+	private void drawStepFace(Campaign progress, Chapter c, int step, float x, float y, float alpha) {
+		batch.draw(assets.campaignFace, x, y, STEP_W, STEP_H);
+		batch.draw(step == TABLE ? assets.stepTable : step == SHOTS ? assets.stepShots : assets.stepDuel,
+				x + STEP_W / 2 - ICON / 2, y + STEP_H / 2 - ICON / 2 + 4, ICON, ICON);
+		batch.setColor(Color.WHITE);
+		paint.textIn(paint.serif(1.25f, Palette.GOLD_LIGHT, alpha), STEPS[step], x, y + STEP_H - 46, STEP_W, 28);
+		boolean done = step == TABLE ? progress.tableWon(c) : step == SHOTS ? progress.allMade(c) : progress.cleared(c);
+		paint.textIn(paint.ui(0.9f, done ? Palette.GOLD : Palette.CREAM, alpha), stepNote(progress, c, step), x, y + 18, STEP_W, 20);
+	}
+
 	private String stepNote(Campaign progress, Chapter c, int step) {
-		if (step == 0) {
-			return progress.solvedIn(c) + " of " + Studies.of(c).size() + " solved";
+		if (step == SHOTS) {
+			return progress.madeIn(c) + " of " + TrickShots.of(c).size() + " made";
 		}
-		if (step == 1) {
-			return progress.tableWon(c) ? "Won" : "Play";
-		}
-		return progress.cleared(c) ? "Won" : "Play";
+		boolean won = step == TABLE ? progress.tableWon(c) : progress.cleared(c);
+		return won ? "Won" : "Play";
 	}
 
 	private void glow(float x, float y, float cw, float ch) {
@@ -195,11 +205,11 @@ public class CampaignScreen extends BaseScreen {
 			}
 			return;
 		}
-		if (stepCards[0].contains(x, y)) {
-			game.playStudy(progress.nextStudy(chosen));
-		} else if (stepCards[1].contains(x, y)) {
+		if (stepCards[TABLE].contains(x, y)) {
 			game.playCampaign(chosen, false);
-		} else if (stepCards[2].contains(x, y) && progress.duelOpen(chosen)) {
+		} else if (stepCards[SHOTS].contains(x, y) && progress.shotsOpen(chosen)) {
+			game.playTrickShot(progress.nextTrickShot(chosen));
+		} else if (stepCards[DUEL].contains(x, y) && progress.duelOpen(chosen)) {
 			game.playCampaign(chosen, true);
 		}
 	}

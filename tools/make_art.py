@@ -546,6 +546,69 @@ def chapter_cosmetics(out):
     table(out, "table_ch1.jpg", dark=(6, 18, 12), lit=(30, 86, 56))
 
 
+def campaign_art(out):
+    """The campaign's cards: a dark face framed in gold for chapters and steps, a gold emblem per
+    suit (each chapter has one), an icon per step, and the diamond pips that mark steps done."""
+    W, H = CARD_W * SS, CARD_H * SS
+    y = np.linspace(0, 1, H)[:, None, None]
+    x = np.linspace(0, 1, W)[None, :, None]
+    r = np.sqrt((x - 0.5) ** 2 + (y - 0.45) ** 2)
+    face = np.array((58, 26, 20), float) * (1.2 - 0.7 * r)
+    img = Image.fromarray(np.clip(face, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+    d = ImageDraw.Draw(img)
+    inset = 10 * SS
+    d.rounded_rectangle([inset, inset, W - inset, H - inset], 10 * SS, outline=GOLD, width=3 * SS)
+    d.rounded_rectangle([inset + 7 * SS, inset + 7 * SS, W - inset - 7 * SS, H - inset - 7 * SS], 7 * SS, outline=GOLD_DARK, width=SS)
+    for cx, cy in [(inset + 7 * SS, inset + 7 * SS), (W - inset - 7 * SS, inset + 7 * SS), (inset + 7 * SS, H - inset - 7 * SS), (W - inset - 7 * SS, H - inset - 7 * SS)]:
+        suit_shape(d, "diamonds", cx, cy, 16 * SS, GOLD)
+    d.rounded_rectangle([SS, SS, W - 1 - SS, H - 1 - SS], 15 * SS, outline=GOLD_DARK, width=4 * SS)
+    img.putalpha(rounded_mask(W, H, 16 * SS))
+    downsample(img, CARD_W, CARD_H).save(os.path.join(out, "campaign_face.png"), optimize=True)
+
+    def icon(name, draw_it):
+        S = 108 * SS
+        im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        draw_it(ImageDraw.Draw(im), S)
+        downsample(im, 108, 108).save(os.path.join(out, name + ".png"))
+
+    for suit in ("spades", "diamonds", "hearts", "clubs"):
+        icon("emblem_" + suit, lambda dr, S, suit=suit: suit_shape(dr, suit, S / 2, S / 2, S * 0.86, GOLD + (255,)))
+
+    def small_card(dr, cx, cy, w, h, angle, fill):
+        pts = [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2)]
+        a = math.radians(angle)
+        rot = [(cx + px * math.cos(a) - py * math.sin(a), cy + px * math.sin(a) + py * math.cos(a)) for px, py in pts]
+        dr.polygon(rot, fill=fill, outline=GOLD_DARK + (255,), width=3 * SS)
+
+    def table_icon(dr, S):
+        for k, ang in enumerate((-22, 0, 22)):
+            small_card(dr, S / 2 + (k - 1) * S * 0.14, S * 0.56, S * 0.32, S * 0.46, ang, GOLD + (255,))
+        suit_shape(dr, "spades", S / 2, S * 0.52, S * 0.18, GOLD_DARK + (255,))
+
+    def shots_icon(dr, S):
+        c = S / 2
+        for rr, col in ((0.44, GOLD), (0.32, GOLD_DARK), (0.2, GOLD), (0.08, GOLD_DARK)):
+            dr.ellipse([c - rr * S, c - rr * S, c + rr * S, c + rr * S], fill=col + (255,))
+        dr.line([(S * 0.86, S * 0.14), (c + 2 * SS, c - 2 * SS)], fill=GOLD_LIGHT + (255,), width=5 * SS)
+        dr.polygon([(c, c), (c + 0.1 * S, c - 0.03 * S), (c + 0.03 * S, c - 0.1 * S)], fill=GOLD_LIGHT + (255,))
+
+    def duel_icon(dr, S):
+        small_card(dr, S * 0.4, S * 0.52, S * 0.36, S * 0.52, -18, GOLD + (255,))
+        small_card(dr, S * 0.6, S * 0.48, S * 0.36, S * 0.52, 18, GOLD_LIGHT + (255,))
+        suit_shape(dr, "hearts", S * 0.6, S * 0.48, S * 0.16, GOLD_DARK + (255,))
+
+    icon("step_table", table_icon)
+    icon("step_shots", shots_icon)
+    icon("step_duel", duel_icon)
+    icon("pip_on", lambda dr, S: suit_shape(dr, "diamonds", S / 2, S / 2, S * 0.9, GOLD_LIGHT + (255,)))
+
+    def pip_off(dr, S):
+        c = S / 2
+        dr.polygon([(c, c - 0.45 * S), (c + 0.32 * S, c), (c, c + 0.45 * S), (c - 0.32 * S, c)], outline=GOLD_DARK + (255,), width=8 * SS)
+
+    icon("pip_off", pip_off)
+
+
 def badge(out):
     """A gold medal with a star, for the badges on Records; unearned ones are drawn dim."""
     S = 108 * SS
@@ -584,6 +647,7 @@ if __name__ == "__main__":
     card_slot(out)
     card_blank(out)
     chapter_cosmetics(out)
+    campaign_art(out)
     badge(out)
     blurred_sheet(sheet, out)
     table(out)

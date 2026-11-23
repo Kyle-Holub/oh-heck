@@ -4,24 +4,27 @@ import ohheck.players.Player;
 import ohheck.players.Seating;
 import ohheck.rules.GameMode;
 import ohheck.rules.RuleSet;
+import ohheck.rules.Suit;
 
 /*
- * A chapter of the campaign: its game mode, the three rivals at its table, and the champion
- * who must be beaten in a duel to move on. Only ready chapters can be played yet.
+ * A chapter of the campaign: its game mode, the suit on its card, the three rivals at its table,
+ * and the champion who must be beaten in a duel to move on. Only ready chapters can be played yet.
  */
 public enum Chapter {
-	ONE(GameMode.CLASSIC, Seating.of(0, 1, 3), 2, true),
-	TWO(GameMode.HIGH_STAKES, Seating.of(4, 6, 7), 5, false),
-	THREE(GameMode.POKER_FACE, Seating.of(9, 11, 5), 10, false),
-	FOUR(GameMode.MARATHON, Seating.of(9, 10, 11), 8, false);
+	ONE(GameMode.CLASSIC, Suit.SPADES, Seating.of(0, 1, 3), 2, true),
+	TWO(GameMode.HIGH_STAKES, Suit.DIAMONDS, Seating.of(4, 6, 7), 5, false),
+	THREE(GameMode.POKER_FACE, Suit.HEARTS, Seating.of(9, 11, 5), 10, false),
+	FOUR(GameMode.MARATHON, Suit.CLUBS, Seating.of(9, 10, 11), 8, false);
 
 	public final GameMode mode;
+	public final Suit emblem;
 	public final Seating rivals;
 	public final int championId;
 	public final boolean ready;
 
-	Chapter(GameMode mode, Seating rivals, int championId, boolean ready) {
+	Chapter(GameMode mode, Suit emblem, Seating rivals, int championId, boolean ready) {
 		this.mode = mode;
+		this.emblem = emblem;
 		this.rivals = rivals;
 		this.championId = championId;
 		this.ready = ready;

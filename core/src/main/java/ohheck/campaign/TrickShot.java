@@ -12,7 +12,7 @@ import ohheck.rules.Match;
  * line of play. The other players bid as written and play as a Normal player would, so the same
  * moves always meet the same replies. Hands are written seat by seat from you, clockwise.
  */
-public final class Study {
+public final class TrickShot {
 
 	public enum Goal {
 		MAKE_IT("Make your bid exactly"), SET_THEM("Stop %s making their bid"), CHOOSE_THE_BID("Choose a bid you can make");
@@ -33,7 +33,7 @@ public final class Study {
 	private final int dealer;
 	private final int[] bids;
 
-	Study(String id, String title, Chapter chapter, Goal goal, int rival, String trump, int dealer, int[] bids, String... hands) {
+	TrickShot(String id, String title, Chapter chapter, Goal goal, int rival, String trump, int dealer, int[] bids, String... hands) {
 		this.id = id;
 		this.title = title;
 		this.chapter = chapter;
