@@ -48,7 +48,7 @@ the screenshot run, CI, the arena and the art tools.
   and the roster, not copied text.
 - **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
   constant, a rule a field of `RuleSet` (in its code) with a toggle on the Game page, a preset a
-  `GameMode` constant, a campaign chapter a `Chapter` constant, a study an entry in `Studies`
+  `GameMode` constant, a campaign chapter a `Chapter` constant, a trick shot an entry in `TrickShots`
   (its test checks it can be solved), a badge a `Badge` constant, a card back or felt a
   `Cosmetic` constant, and a new reaction
   to table events a `TableFlow.Listener`, a new table state a `TableState` constant, a pause-menu choice a `MenuItem` constant, a setting an `OptionItem` on its `OptionsPage`

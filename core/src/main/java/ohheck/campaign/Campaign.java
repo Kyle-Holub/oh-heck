@@ -7,17 +7,17 @@ import java.util.TreeSet;
 import ohheck.util.Log;
 
 /*
- * How far the campaign has got: the chapters whose table and duel are won, the studies solved and
+ * How far the campaign has got: the chapters whose table and duel are won, the trick shots made and
  * the badges earned. Saved as "key=value" lines, current format only.
  */
 public final class Campaign {
 
-	private static final String FORMAT = "oh-heck-campaign-1";
+	private static final String FORMAT = "oh-heck-campaign-2";
 
 	private final Set<Badge> badges = EnumSet.noneOf(Badge.class);
 
 	private final Set<Chapter> tablesWon = EnumSet.noneOf(Chapter.class), duelsWon = EnumSet.noneOf(Chapter.class);
-	private final Set<String> studiesSolved = new TreeSet<String>();
+	private final Set<String> shotsMade = new TreeSet<String>();
 
 	public boolean open(Chapter c) {
 		return c.ready && (c.ordinal() == 0 || cleared(Chapter.values()[c.ordinal() - 1]));
@@ -25,6 +25,10 @@ public final class Campaign {
 
 	public boolean tableWon(Chapter c) {
 		return tablesWon.contains(c);
+	}
+
+	public boolean shotsOpen(Chapter c) {
+		return open(c) && tableWon(c);
 	}
 
 	public boolean duelOpen(Chapter c) {
@@ -35,29 +39,29 @@ public final class Campaign {
 		return duelsWon.contains(c);
 	}
 
-	public boolean solved(String study) {
-		return studiesSolved.contains(study);
+	public boolean solved(String shot) {
+		return shotsMade.contains(shot);
 	}
 
-	public int solvedIn(Chapter c) {
+	public int madeIn(Chapter c) {
 		int n = 0;
-		for (Study s : Studies.of(c)) {
+		for (TrickShot s : TrickShots.of(c)) {
 			n += solved(s.id) ? 1 : 0;
 		}
 		return n;
 	}
 
-	public boolean allSolved(Chapter c) {
-		return solvedIn(c) == Studies.of(c).size();
+	public boolean allMade(Chapter c) {
+		return madeIn(c) == TrickShots.of(c).size();
 	}
 
-	public Study nextStudy(Chapter c) {
-		for (Study s : Studies.of(c)) {
+	public TrickShot nextTrickShot(Chapter c) {
+		for (TrickShot s : TrickShots.of(c)) {
 			if (!solved(s.id)) {
 				return s;
 			}
 		}
-		return Studies.of(c).get(0);
+		return TrickShots.of(c).get(0);
 	}
 
 	public void winTable(Chapter c) {
@@ -69,8 +73,8 @@ public final class Campaign {
 		duelsWon.add(c);
 	}
 
-	public void solve(String study) {
-		studiesSolved.add(study);
+	public void solve(String shot) {
+		shotsMade.add(shot);
 	}
 
 	public boolean has(Badge b) {
@@ -82,8 +86,8 @@ public final class Campaign {
 	}
 
 	public String encode() {
-		return FORMAT + "\ntables=" + names(tablesWon) + "\nduels=" + names(duelsWon) + "\nstudies="
-				+ String.join(",", studiesSolved) + "\nbadges=" + names(badges) + "\n";
+		return FORMAT + "\ntables=" + names(tablesWon) + "\nduels=" + names(duelsWon) + "\nshots="
+				+ String.join(",", shotsMade) + "\nbadges=" + names(badges) + "\n";
 	}
 
 	public static Campaign decode(String saved) {
@@ -107,8 +111,8 @@ public final class Campaign {
 						c.tablesWon.add(Chapter.valueOf(item));
 					} else if (key.equals("duels")) {
 						c.duelsWon.add(Chapter.valueOf(item));
-					} else if (key.equals("studies")) {
-						c.studiesSolved.add(item);
+					} else if (key.equals("shots")) {
+						c.shotsMade.add(item);
 					} else if (key.equals("badges")) {
 						c.badges.add(Badge.valueOf(item));
 					}

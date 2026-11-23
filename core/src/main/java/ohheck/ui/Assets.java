@@ -13,6 +13,7 @@ import com.badlogic.gdx.utils.Disposable;
 import ohheck.campaign.Cosmetic;
 import ohheck.players.Difficulty;
 import ohheck.rules.Card;
+import ohheck.rules.Suit;
 
 public final class Assets implements Disposable {
 
@@ -24,6 +25,8 @@ public final class Assets implements Disposable {
 
 	public Texture table;
 	public final Texture cardSheet, cardSheetBlur, cardSlot, cardBlank, badge;
+	public final Texture campaignFace, stepTable, stepShots, stepDuel, pipOn, pipOff;
+	private final Texture[] emblems = new Texture[Suit.values().length];
 	private final Texture[] tables = new Texture[Cosmetic.values().length], backs = new Texture[Cosmetic.values().length],
 			backBlurs = new Texture[Cosmetic.values().length];
 	public final Texture shadow;
@@ -61,6 +64,15 @@ public final class Assets implements Disposable {
 		table = tables[0];
 		cardSheet = mipmapped("images/cards_hd.png");
 		badge = mipmapped("images/badge.png");
+		campaignFace = mipmapped("images/campaign_face.png");
+		stepTable = mipmapped("images/step_table.png");
+		stepShots = mipmapped("images/step_shots.png");
+		stepDuel = mipmapped("images/step_duel.png");
+		pipOn = mipmapped("images/pip_on.png");
+		pipOff = mipmapped("images/pip_off.png");
+		for (Suit s : Suit.values()) {
+			emblems[s.ordinal()] = mipmapped("images/emblem_" + s.name().toLowerCase() + ".png");
+		}
 		cardSlot = mipmapped("images/card_slot.png");
 		cardBlank = mipmapped("images/card_blank.png");
 		cardSheetBlur = mipmapped("images/cards_blur.png");
@@ -151,6 +163,10 @@ public final class Assets implements Disposable {
 		table = tables[felt.ordinal()];
 		back.setRegion(backs[cardBack.ordinal()]);
 		backBlur.setRegion(backBlurs[cardBack.ordinal()]);
+	}
+
+	public Texture emblem(Suit s) {
+		return emblems[s.ordinal()];
 	}
 
 	public TextureRegion back() {

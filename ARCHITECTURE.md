@@ -23,7 +23,7 @@ first six have no libGDX and test in plain JUnit.
 |---|---|
 | `ohheck.rules` | Cards, `Match`, `Trick`, `Move`, `MatchCodec`, `RuleSet`, `HandOrder`, `GameMode`, `TableView` |
 | `ohheck.players` | The roster (`Player`), who sits where (`Seating`), levels (`Difficulty`), habits (`Style`), the bots, `BidTable`; the arena lives here too |
-| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion), `Campaign` (progress, saved), `Study`, `Studies` and `StudyPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won) |
+| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion), `Campaign` (progress, saved), `TrickShot`, `TrickShots` and `TrickShotPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won) |
 | `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them and the campaign's progress |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
 | `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Timeline`, and `FixedSteps` (the game loop's clock) |
@@ -168,16 +168,18 @@ game's rules.
 
 ### The campaign
 
-The title offers **Campaign** and **Custom game** (today's game, saved as it goes). The
-campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
-three steps: studies (`StudyScreen`, a fixed deal with every hand face up and three undos),
-table play (a normal game against the chapter's rivals) and a duel against its champion
+The title's **Play** opens **Campaign** and **Custom game** (today's game, saved as it goes).
+The campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
+three steps in order: table play (a normal game against the chapter's rivals), trick shots
+(`TrickShotScreen`, a fixed deal with every hand face up, three undos and every card gliding
+into place), open once the table is won as practice for the duel, and a duel against its champion
 (`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
 bid made after two made running). Winning the duel clears the chapter and wins its card back
 and felt (`Cosmetic`, chosen in Preferences). `PlayScreen.campaign` plays the table and the
 duel; campaign games are not saved and don't touch the statistics or high scores, but every
 game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
-the top (`TableLayout.spot`). The plan the campaign follows is `docs/CAMPAIGN.md`.
+the top (`TableLayout.spot`). The tutorial, finished for the first time, sits you at chapter 1's
+table. The plan the campaign follows is `docs/CAMPAIGN.md`.
 
 ### Saving
 
