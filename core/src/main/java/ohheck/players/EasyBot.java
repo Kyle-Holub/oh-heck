@@ -39,7 +39,7 @@ final class EasyBot implements Bot {
 	public Card choosePlay(TableView v) {
 		TableView remembered = forgetful(v);
 		Card card = normal.choosePlay(remembered);
-		if (rng.nextDouble() >= LOOSE_PLAY) {
+		if (rng.nextDouble() >= LOOSE_PLAY || NormalBot.isSure(remembered, card)) {
 			return card;
 		}
 		List<Card> alike = alike(remembered, card);
