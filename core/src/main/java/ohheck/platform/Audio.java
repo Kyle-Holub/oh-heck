@@ -48,7 +48,7 @@ public final class Audio implements Disposable {
 
 	public void play(Effect e) {
 		Sound s = sounds[e.ordinal()];
-		if (s != null && settings.sound() && !settings.muted()) {
+		if (s != null && settings.sound()) {
 			s.play(e.volume);
 		}
 	}
@@ -57,7 +57,7 @@ public final class Audio implements Disposable {
 		if (music == null) {
 			return;
 		}
-		if (settings.music() && !settings.muted()) {
+		if (settings.music()) {
 			if (!music.isPlaying()) {
 				music.play();
 			}
