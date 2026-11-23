@@ -1,29 +1,30 @@
 package ohheck.rules;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
-/* A Match as "key=value" text, reading the first format (cards as numbers) too. */
+/* A Match as "key=value" lines, for saving. */
 final class MatchCodec {
 
 	private MatchCodec() {
 	}
 
-	private static final String FORMAT = "oh-heck-match-2";
-	private static final String FORMAT_1 = "oh-heck-match-1";
+	private static final String FORMAT = "oh-heck-match-3", NO_TRUMP = "-";
 
 	static String encode(Match m) {
 		StringBuilder sb = new StringBuilder(FORMAT).append('\n');
-		line(sb, "rules", m.rules().name);
+		line(sb, "rules", m.rules().code());
 		line(sb, "players", String.valueOf(m.players));
 		line(sb, "phase", m.phase.name());
 		line(sb, "hand", String.valueOf(m.handIndex));
-		line(sb, "order", m.order.name());
 		line(sb, "dealer", String.valueOf(m.dealer));
 		line(sb, "current", String.valueOf(m.current));
-		line(sb, "trump", code(m.trumpCard));
+		line(sb, "trump", m.trumpCard == null ? NO_TRUMP : code(m.trumpCard));
 		for (int s = 0; s < m.players; s++) {
 			line(sb, "hand" + s, cards(m.hands.get(s)));
 		}
@@ -49,16 +50,14 @@ final class MatchCodec {
 		try {
 			String[] lines = saved.split("\n");
 			String format = lines[0].trim();
-			if (!format.equals(FORMAT) && !format.equals(FORMAT_1)) {
+			if (!format.equals(FORMAT)) {
 				throw new IllegalArgumentException("Not a saved game");
 			}
-			boolean legacy = format.equals(FORMAT_1);
-			java.util.Map<String, String> v = keyValues(lines);
-			RuleSet rules = v.containsKey("rules") ? RuleSet.named(v.get("rules")) : RuleSet.STANDARD;
-			Match m = new Match(Integer.parseInt(req(v, "players")), rng, rules);
-			readHand(m, v, legacy);
-			readSeats(m, v, legacy);
-			readTricks(m, v, legacy);
+			Map<String, String> v = keyValues(lines);
+			Match m = new Match(Integer.parseInt(req(v, "players")), rng, RuleSet.parse(req(v, "rules")));
+			readHand(m, v);
+			readSeats(m, v);
+			readTricks(m, v);
 			m.check();
 			return m;
 		} catch (RuntimeException e) {
@@ -66,8 +65,8 @@ final class MatchCodec {
 		}
 	}
 
-	private static java.util.Map<String, String> keyValues(String[] lines) {
-		java.util.Map<String, String> v = new java.util.HashMap<String, String>();
+	private static Map<String, String> keyValues(String[] lines) {
+		Map<String, String> v = new HashMap<String, String>();
 		for (int i = 1; i < lines.length; i++) {
 			int eq = lines[i].indexOf('=');
 			if (eq > 0) {
@@ -77,18 +76,18 @@ final class MatchCodec {
 		return v;
 	}
 
-	private static void readHand(Match m, java.util.Map<String, String> v, boolean legacy) {
+	private static void readHand(Match m, Map<String, String> v) {
 		m.phase = Match.Phase.valueOf(req(v, "phase"));
 		m.handIndex = Integer.parseInt(req(v, "hand"));
-		m.order = v.containsKey("order") ? HandOrder.valueOf(v.get("order")) : HandOrder.UP;
 		m.dealer = Integer.parseInt(req(v, "dealer"));
 		m.current = Integer.parseInt(req(v, "current"));
-		m.trumpCard = card(req(v, "trump"), legacy);
+		String trump = req(v, "trump");
+		m.trumpCard = trump.equals(NO_TRUMP) ? null : card(trump);
 	}
 
-	private static void readSeats(Match m, java.util.Map<String, String> v, boolean legacy) {
+	private static void readSeats(Match m, Map<String, String> v) {
 		for (int s = 0; s < m.players; s++) {
-			m.hands.set(s, parseCards(req(v, "hand" + s), legacy));
+			m.hands.set(s, parseCards(req(v, "hand" + s)));
 		}
 		String[] b = req(v, "bids").split(",");
 		int[] t = parseInts(req(v, "tricks"), m.players), sc = parseInts(req(v, "scores"), m.players),
@@ -101,23 +100,21 @@ final class MatchCodec {
 		}
 	}
 
-	private static void readTricks(Match m, java.util.Map<String, String> v, boolean legacy) {
-		m.trick.cards.addAll(parseCards(req(v, "trick"), legacy));
+	private static void readTricks(Match m, Map<String, String> v) {
+		m.trick.cards.addAll(parseCards(req(v, "trick")));
 		m.trick.seats.addAll(parseSeats(req(v, "trickSeats")));
-		m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last"), legacy));
+		m.lastTrick = Collections.unmodifiableList(parseCards(req(v, "last")));
 		m.lastTrickSeats = Collections.unmodifiableList(parseSeats(req(v, "lastSeats")));
 		m.lastTrickWinner = Integer.parseInt(req(v, "lastWinner"));
-		if (v.containsKey("history") && v.containsKey("historySeats")) {
-			m.history.addAll(parseCards(v.get("history"), legacy));
-			m.historySeats.addAll(parseSeats(v.get("historySeats")));
-		}
+		m.history.addAll(parseCards(req(v, "history")));
+		m.historySeats.addAll(parseSeats(req(v, "historySeats")));
 	}
 
 	private static void line(StringBuilder sb, String key, String value) {
 		sb.append(key).append('=').append(value).append('\n');
 	}
 
-	private static String req(java.util.Map<String, String> v, String key) {
+	private static String req(Map<String, String> v, String key) {
 		String s = v.get(key);
 		if (s == null) {
 			throw new IllegalArgumentException("Missing " + key);
@@ -128,19 +125,12 @@ final class MatchCodec {
 	private static final String[] RANK_CODES = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
 	private static final String SUIT_CODES = "CDHS";
 	private static final Suit[] SUITS_BY_CODE = { Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES };
-	private static final Rank[] LEGACY_RANKS = { Rank.ACE, Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX,
-			Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING };
-	private static final Suit[] LEGACY_SUITS = { Suit.CLUBS, Suit.SPADES, Suit.HEARTS, Suit.DIAMONDS };
 
 	private static String code(Card c) {
-		return RANK_CODES[c.rank().strength()] + SUIT_CODES.charAt(java.util.Arrays.asList(SUITS_BY_CODE).indexOf(c.suit()));
+		return RANK_CODES[c.rank().strength()] + SUIT_CODES.charAt(Arrays.asList(SUITS_BY_CODE).indexOf(c.suit()));
 	}
 
-	private static Card card(String code, boolean legacy) {
-		if (legacy) {
-			int n = Integer.parseInt(code);
-			return Card.of(LEGACY_RANKS[n % 13], LEGACY_SUITS[n / 13]);
-		}
+	private static Card card(String code) {
 		int suit = SUIT_CODES.indexOf(code.charAt(code.length() - 1));
 		String rank = code.substring(0, code.length() - 1);
 		for (Rank r : Rank.values()) {
@@ -159,10 +149,10 @@ final class MatchCodec {
 		return sb.toString();
 	}
 
-	private static List<Card> parseCards(String s, boolean legacy) {
+	private static List<Card> parseCards(String s) {
 		List<Card> list = new ArrayList<Card>();
 		for (String p : s.isEmpty() ? new String[0] : s.split(",")) {
-			list.add(card(p.trim(), legacy));
+			list.add(card(p.trim()));
 		}
 		return list;
 	}

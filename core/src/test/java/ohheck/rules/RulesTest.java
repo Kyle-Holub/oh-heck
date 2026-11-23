@@ -48,10 +48,10 @@ public class RulesTest {
 
 	@Test
 	public void eightHandsOfOneToEightCardsEitherWay() {
-		assertEquals(8, Rules.numberOfHands());
+		assertEquals(8, RuleSet.STANDARD.numberOfHands());
 		for (int i = 0; i < 8; i++) {
-			assertEquals(i + 1, HandOrder.UP.handSize(i));
-			assertEquals(8 - i, HandOrder.DOWN.handSize(i));
+			assertEquals(i + 1, HandOrder.UP.handSize(i, 8));
+			assertEquals(8 - i, HandOrder.DOWN.handSize(i, 8));
 		}
 	}
 
@@ -136,16 +136,16 @@ public class RulesTest {
 
 	@Test
 	public void makingBidScoresTenPlusTwoPerTrick() {
-		assertEquals(10, Rules.score(0, 0));
-		assertEquals(16, Rules.score(3, 3));
-		assertEquals(26, Rules.score(8, 8));
+		assertEquals(10, RuleSet.STANDARD.score(0, 0));
+		assertEquals(16, RuleSet.STANDARD.score(3, 3));
+		assertEquals(26, RuleSet.STANDARD.score(8, 8));
 	}
 
 	@Test
 	public void missingBidLosesFivePerTrickOff() {
-		assertEquals(-5, Rules.score(2, 3));
-		assertEquals(-5, Rules.score(2, 1));
-		assertEquals(-15, Rules.score(0, 3));
+		assertEquals(-5, RuleSet.STANDARD.score(2, 3));
+		assertEquals(-5, RuleSet.STANDARD.score(2, 1));
+		assertEquals(-15, RuleSet.STANDARD.score(0, 3));
 	}
 
 	@Test
@@ -153,37 +153,68 @@ public class RulesTest {
 		assertEquals(Arrays.asList(c("10H"), c("JC")), cards("10H JC"));
 	}
 
-	private static final RuleSet DOUBLE_SHORT = new RuleSet("double-short") {
-		@Override
-		public int numberOfHands() {
-			return 5;
+	@Test
+	public void everyModePlaysToTheEnd() {
+		Bot bot = Bot.of(Difficulty.NORMAL, new java.util.Random(1));
+		for (GameMode mode : GameMode.values()) {
+			RuleSet rules = mode.rules(RuleSet.STANDARD.withOrder(HandOrder.DOWN));
+			Match m = Match.random(4, new java.util.Random(4), rules);
+			int hands = 0;
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				if (m.phase() == Match.Phase.BIDDING) {
+					assertEquals(rules.handSize(hands), m.handSize());
+					assertEquals(m.handSize() == 13, m.trumpCard() == null);
+					m.placeBid(m.currentSeat(), bot.chooseBid(m.view(m.currentSeat())));
+				} else if (m.phase() == Match.Phase.PLAYING) {
+					m.playCard(m.currentSeat(), bot.choosePlay(m.view(m.currentSeat())));
+				} else {
+					hands++;
+					m.nextHand();
+				}
+			}
+			assertEquals(mode.label, rules.numberOfHands(), hands);
 		}
-
-		@Override
-		public int made() {
-			return 20;
-		}
-	};
+	}
 
 	@Test
-	public void aVariantPlaysByItsOwnRules() {
-		Match m = Match.random(4, new java.util.Random(4), HandOrder.DOWN, DOUBLE_SHORT);
-		assertEquals(5, m.handSize());
-		assertEquals(24, m.rules().score(2, 2));
-		Bot bot = Bot.of(Difficulty.NORMAL, new java.util.Random(1));
-		int hands = 0;
-		while (m.phase() != Match.Phase.GAME_OVER) {
-			if (m.phase() == Match.Phase.BIDDING) {
-				m.placeBid(m.currentSeat(), bot.chooseBid(m.view(m.currentSeat())));
-			} else if (m.phase() == Match.Phase.PLAYING) {
-				m.playCard(m.currentSeat(), bot.choosePlay(m.view(m.currentSeat())));
-			} else {
-				hands++;
-				m.nextHand();
+	public void theModesDealTheirHands() {
+		assertEquals(8, GameMode.CLASSIC.rules(null).numberOfHands());
+		RuleSet marathon = GameMode.MARATHON.rules(null);
+		assertEquals(25, marathon.numberOfHands());
+		assertEquals(1, marathon.handSize(0));
+		assertEquals(13, marathon.handSize(12));
+		assertEquals(12, marathon.handSize(13));
+		assertEquals(1, marathon.handSize(24));
+		assertEquals("1 to 13 to 1", marathon.order.label(13));
+		assertEquals("8 to 1", HandOrder.DOWN.label(8));
+	}
+
+	@Test
+	public void bigBidsDoubleWithEachTrick() {
+		RuleSet big = GameMode.HIGH_STAKES.rules(null);
+		int[] made = { 8, 12, 16, 24, 40, 72 };
+		for (int b = 0; b < made.length; b++) {
+			assertEquals("bid " + b, made[b], big.score(b, b));
+		}
+		assertEquals(-5, big.score(2, 3));
+		assertEquals(-10, big.score(0, 2));
+	}
+
+	@Test
+	public void customRulesAreNamedByTheirCode() {
+		RuleSet r = new RuleSet(HandOrder.UP_AND_DOWN, 8, true, true);
+		assertEquals(r, RuleSet.parse(r.code()));
+		assertEquals(GameMode.CUSTOM, GameMode.of(r));
+		assertEquals(GameMode.MARATHON, GameMode.of(RuleSet.parse("UP_AND_DOWN/13")));
+		assertEquals(GameMode.CLASSIC, GameMode.of(RuleSet.STANDARD));
+		assertEquals(GameMode.POKER_FACE, GameMode.of(RuleSet.parse("UP/8/blind")));
+		assertEquals("UP/8/big/blind", RuleSet.STANDARD.withBlindBids(true).withBigBids(true).code());
+		for (String bad : new String[] { "UP/8/blind/big", "UP/8/big/big", "UP/8/huge", "UP" }) {
+			try {
+				RuleSet.parse(bad);
+				org.junit.Assert.fail(bad);
+			} catch (IllegalArgumentException expected) {
 			}
 		}
-		assertEquals(5, hands);
-		assertEquals("1 to 8", HandOrder.UP.label());
-		assertEquals("8 to 1", HandOrder.DOWN.label());
 	}
 }

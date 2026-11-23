@@ -7,14 +7,19 @@ import java.util.List;
 import java.util.Map;
 
 import ohheck.players.Difficulty;
+import ohheck.rules.GameMode;
+import ohheck.rules.RuleSet;
 import ohheck.util.Log;
 
-/* The ten best finished games. */
+/* The ten best finished games of each game mode. */
 public final class HighScores {
 
 	static final int KEEP = 10;
 
-	public record Entry(int score, int place, String date, Difficulty level) {
+	public record Entry(int score, int place, String date, Difficulty level, RuleSet rules) {
+		public GameMode mode() {
+			return GameMode.of(rules);
+		}
 	}
 
 	private final List<Entry> entries = new ArrayList<Entry>();
@@ -23,19 +28,27 @@ public final class HighScores {
 		return Collections.unmodifiableList(entries);
 	}
 
+	public List<Entry> of(GameMode mode) {
+		List<Entry> mine = new ArrayList<Entry>();
+		for (Entry e : entries) {
+			if (e.mode() == mode) {
+				mine.add(e);
+			}
+		}
+		return mine;
+	}
+
 	int add(Entry e) {
 		int at = 0;
 		while (at < entries.size() && entries.get(at).score() >= e.score()) {
 			at++;
 		}
-		if (at >= KEEP) {
-			return -1;
-		}
 		entries.add(at, e);
-		while (entries.size() > KEEP) {
-			entries.remove(entries.size() - 1);
+		List<Entry> same = of(e.mode());
+		if (same.size() > KEEP) {
+			entries.remove(same.get(same.size() - 1));
 		}
-		return at;
+		return entries.indexOf(e);
 	}
 
 	String encode() {
@@ -44,9 +57,8 @@ public final class HighScores {
 			if (b.length() > 0) {
 				b.append(';');
 			}
-			String level = e.level() != null ? e.level().name() : "-";
 			b.append("score:").append(e.score()).append(",place:").append(e.place()).append(",date:").append(e.date())
-					.append(",level:").append(level);
+					.append(",level:").append(e.level().name()).append(",rules:").append(e.rules().code());
 		}
 		return b.toString();
 	}
@@ -58,7 +70,7 @@ public final class HighScores {
 		}
 		for (String part : s.split(";")) {
 			try {
-				Entry e = part.contains(":") ? named(part) : numbered(part);
+				Entry e = named(part);
 				if (e != null) {
 					h.add(e);
 				}
@@ -77,25 +89,11 @@ public final class HighScores {
 				f.put(kv.substring(0, c).trim(), kv.substring(c + 1).trim());
 			}
 		}
-		if (!f.containsKey("score") || !f.containsKey("place") || !f.containsKey("date")) {
+		if (!f.containsKey("score") || !f.containsKey("place") || !f.containsKey("date") || !f.containsKey("level")
+				|| !f.containsKey("rules")) {
 			return null;
 		}
-		String l = f.get("level");
-		Difficulty level = l == null || l.equals("-") ? null : Difficulty.valueOf(l);
-		return new Entry(Integer.parseInt(f.get("score")), Integer.parseInt(f.get("place")), f.get("date"), level);
-	}
-
-	private static Entry numbered(String part) {
-		String[] f = part.split(",");
-		if (f.length != 3 && f.length != 4) {
-			return null;
-		}
-		Difficulty level = f.length == 4 ? byOrdinal(Integer.parseInt(f[3].trim())) : null;
-		return new Entry(Integer.parseInt(f[0].trim()), Integer.parseInt(f[1].trim()), f[2].trim(), level);
-	}
-
-	private static Difficulty byOrdinal(int ordinal) {
-		Difficulty[] all = Difficulty.values();
-		return ordinal >= 0 && ordinal < all.length ? all[ordinal] : null;
+		return new Entry(Integer.parseInt(f.get("score")), Integer.parseInt(f.get("place")), f.get("date"),
+				Difficulty.valueOf(f.get("level")), RuleSet.parse(f.get("rules")));
 	}
 }

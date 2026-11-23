@@ -4,19 +4,13 @@ import java.util.Random;
 
 import com.badlogic.gdx.Preferences;
 
-import ohheck.players.Difficulty;
-import ohheck.players.Seating;
 import ohheck.records.Records;
 import ohheck.records.SavedGame;
 
-/*
- * Records.Store on the device's preferences, including the keys older builds saved the game
- * under.
- */
+/* Records.Store on the device's preferences. */
 final class RecordPrefs implements Records.Store {
 
 	private static final String STATS = "stats", HIGH_SCORES = "highScores", SAVED_GAME = "savedGame";
-	private static final String LEGACY_SAVED_LEVEL = "savedGameDifficulty", LEGACY_SAVED_PLAYERS = "savedGamePlayers";
 
 	private final Preferences prefs;
 
@@ -55,17 +49,12 @@ final class RecordPrefs implements Records.Store {
 		if (s.isEmpty()) {
 			return null;
 		}
-		Difficulty legacyLevel = Difficulty.fromSaved(null, prefs.getInteger(LEGACY_SAVED_LEVEL, 1));
-		String legacyPlayers = prefs.getString(LEGACY_SAVED_PLAYERS, "");
-		return SavedGame.decode(s, rng, legacyLevel, legacyPlayers.isEmpty() ? null : Seating.parse(legacyPlayers));
+		return SavedGame.decode(s, rng);
 	}
 
 	@Override
 	public void saveGame(SavedGame game) {
-		prefs.putString(SAVED_GAME, game.encode());
-		prefs.remove(LEGACY_SAVED_LEVEL);
-		prefs.remove(LEGACY_SAVED_PLAYERS);
-		prefs.flush();
+		prefs.putString(SAVED_GAME, game.encode()).flush();
 	}
 
 	@Override

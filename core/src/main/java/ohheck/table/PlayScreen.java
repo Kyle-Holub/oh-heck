@@ -15,7 +15,6 @@ import ohheck.players.Seating;
 import ohheck.records.SavedGame;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
-import ohheck.rules.RuleSet;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
@@ -127,7 +126,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
-	public FlowView flow() {
+	public TableFlow flow() {
 		return flow;
 	}
 
@@ -171,7 +170,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		seatPlayers(Player.draw(level, streams.seating));
 		shower.clear();
 		end.reset();
-		Match m = Match.random(Seating.SEATS, streams.deck, game.settings().handOrder(), RuleSet.STANDARD);
+		Match m = Match.random(Seating.SEATS, streams.deck, game.settings().rules());
 		overlays.setMatch(m);
 		recorder.table(level, players, true);
 		flow.start(m);
@@ -219,7 +218,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (input.menuOpen()) {
 			return false;
 		}
-		if (StateView.of(flow.state()).animating(this)) {
+		if (flow.state().animating(this)) {
 			return true;
 		}
 		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || shower.active();
@@ -372,12 +371,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	private void drawOverlay() {
-		StateView.of(flow.state()).drawOverlay(this, overlays, recorder.newHighScore());
+		flow.state().drawOverlay(this, overlays, recorder.newHighScore());
 	}
 
 	@Override
 	public String stateTag() {
-		return StateView.describe(this);
+		return TableState.describe(this);
 	}
 
 	private boolean gameOver() {

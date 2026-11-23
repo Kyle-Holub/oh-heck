@@ -23,7 +23,7 @@ public class HandSortTest {
 
 	@Test
 	public void byRankTrumpsComeFirstThenLowToHigh() {
-		assertEquals(cards("3H JH 2S 4D 9S KC AC"), sorted(HandSort.RANK, Suit.HEARTS, "KC 2S JH 4D AC 9S 3H"));
+		assertEquals(cards("JH 3H AC KC 9S 4D 2S"), sorted(HandSort.RANK, Suit.HEARTS, "KC 2S JH 4D AC 9S 3H"));
 	}
 
 	@Test

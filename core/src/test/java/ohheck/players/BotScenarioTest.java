@@ -114,6 +114,14 @@ public class BotScenarioTest {
 	}
 
 	@Test
+	public void theTrumpAceIsNeverBidAsZero() {
+		Position first = Position.deal(5, "2S").me(0, "AS 3C 4D 5H 2H").bids(-1, -1, -1, -1);
+		everyoneBids(first, "held the trump ace", b -> b >= 1);
+		Position hooked = Position.deal(4, "2S").me(3, "AS 3C 4D 5H").bids(1, 1, 1, -1);
+		everyoneBids(hooked, "held the trump ace with a bid of one barred", b -> b >= 2);
+	}
+
+	@Test
 	public void aWeakHandBidsLittle() {
 		Position p = Position.deal(5, "AS").me(0, "2C 3D 4C 2H 3H");
 		everyoneBids(p, "held five low side cards", b -> b <= 1);

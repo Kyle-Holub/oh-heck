@@ -1,11 +1,16 @@
 package ohheck.lwjgl3;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Consumer;
 
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.files.FileHandle;
@@ -22,6 +27,9 @@ import ohheck.players.Player;
 import ohheck.players.Seating;
 import ohheck.records.Stats;
 import ohheck.rules.Match;
+import ohheck.screens.HighScoresScreen;
+import ohheck.screens.PlayersScreen;
+import ohheck.screens.TutorialScreen;
 
 /*
  * Plays a seeded game with a bot in your seat at fixed time steps, saving a screenshot the
@@ -48,7 +56,7 @@ public class ScreenshotLauncher {
 
 	private static final Integer[] SKIP = { 2, 5, 6 };
 
-	private static final float STEP = 0.1f;
+	private static final float STEP = 0.1f, SPEED = 2f;
 
 	private static int settleFrames(String state) {
 		if (state.equals("intro")) {
@@ -89,15 +97,18 @@ public class ScreenshotLauncher {
 		config.disableAudio(true);
 		config.useVsync(false);
 		config.setForegroundFPS(0);
-		new Lwjgl3Application(new OhHeckGame(scriptedRun(new Capture(outDir, list))), config);
+		Capture capture = new Capture(outDir, list);
+		OhHeckGame game = new OhHeckGame(scriptedRun(capture));
+		capture.walk = new Walk(game);
+		new Lwjgl3Application(game, config);
 	}
 
 	private static GameOptions scriptedRun(GameOptions.FrameListener capture) {
 		GameOptions o = new GameOptions();
-		o.seed = 20261184L;
+		o.seed = 20261201L;
 		o.autoplayHuman = true;
 		o.persist = false;
-		o.speed = 2f;
+		o.speed = SPEED;
 		o.fixedStep = STEP;
 		o.skipHands.addAll(Arrays.asList(SKIP));
 		o.stats = someStats();
@@ -114,6 +125,7 @@ public class ScreenshotLauncher {
 		private final long start = System.nanoTime();
 		private int frames, framesInState;
 		private String state = "";
+		Walk walk;
 
 		Capture(String outDir, String[] list) {
 			this.outDir = outDir;
@@ -123,6 +135,7 @@ public class ScreenshotLauncher {
 
 		@Override
 		public void onFrame(String now) {
+			walk.onFrame(now, STEP * SPEED);
 			frames++;
 			if (!now.equals(state)) {
 				state = now;
@@ -192,5 +205,45 @@ public class ScreenshotLauncher {
 		PixmapIO.writePNG(f, p);
 		p.dispose();
 		System.out.println("Saved " + path);
+	}
+
+	private static final class Walk {
+		private static final int TUTORIAL_STEPS = 13;
+
+		private final List<String> states = new ArrayList<String>();
+		private final List<Float> waits = new ArrayList<Float>();
+		private final List<Consumer<Screen>> actions = new ArrayList<Consumer<Screen>>();
+		private int next;
+		private float waited;
+
+		Walk(OhHeckGame game) {
+			then("title", 3.5f, s -> game.showHighScores(-1));
+			then("highscores", 1.5f, s -> ((HighScoresScreen) s).showStatistics());
+			then("statistics", 1.5f, s -> game.showOptions());
+			then("options", 1.5f, s -> game.showPlayers());
+			then("players", 1.0f, s -> ((PlayersScreen) s).scrollToEnd());
+			then("players", 1.2f, s -> game.showTutorial());
+			for (int step = 1; step < TUTORIAL_STEPS; step++) {
+				then("tutorial:" + step, 4.0f, s -> ((TutorialScreen) s).next());
+			}
+			then("tutorial:" + TUTORIAL_STEPS, 4.0f, s -> game.newGame());
+		}
+
+		private void then(String state, float seconds, Consumer<Screen> action) {
+			states.add(state);
+			waits.add(seconds);
+			actions.add(action);
+		}
+
+		void onFrame(String state, float elapsed) {
+			if (next >= actions.size() || !state.equals(states.get(next))) {
+				return;
+			}
+			waited += elapsed;
+			if (waited >= waits.get(next)) {
+				waited = 0;
+				actions.get(next++).accept(((Game) Gdx.app.getApplicationListener()).getScreen());
+			}
+		}
 	}
 }

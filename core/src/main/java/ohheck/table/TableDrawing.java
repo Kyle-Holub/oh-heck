@@ -57,7 +57,7 @@ final class TableDrawing {
 	}
 
 	void updateMotes(float dt, boolean trumpShowing) {
-		motes.update(dt, trumpShowing, layout.trumpX(), layout.trumpY(), layout.trumpW(), layout.trumpH());
+		motes.update(dt, trumpShowing && scene.match().trumpCard() != null, layout.trumpX(), layout.trumpY(), layout.trumpW(), layout.trumpH());
 	}
 
 	void tally() {
@@ -71,11 +71,11 @@ final class TableDrawing {
 		float x0 = TALLY_X - Counters.TALLY_W / 2;
 		float avail = layout.panelX(2) - 14 - x0;
 		counters.tracker(x0, layout.h - 12 - Counters.TALLY_H - Counters.TRACKER_BELOW_TALLY, avail, m.handSize(),
-				m.bidsSoFar(), 1f);
+				m.bidsSeenBy(Seating.YOU), 1f);
 	}
 
 	void trump(boolean gone) {
-		FlowView flow = scene.flow();
+		TableFlow flow = scene.flow();
 		if (flow.state() == TableState.SHUFFLE || gone) {
 			if (gone) {
 				motes.draw(batch, assets.glow);
@@ -83,6 +83,12 @@ final class TableDrawing {
 			return;
 		}
 		float x = layout.trumpX(), y = layout.trumpY(), cw = layout.trumpW(), ch = layout.trumpH();
+		if (scene.match().trumpCard() == null) {
+			if (!flow.isDealing()) {
+				batch.draw(assets.cardSlot, x, y, cw, ch);
+			}
+			return;
+		}
 		art.shadow(x, y, cw, ch, TRUMP_LIFT);
 		float p = flow.isDealing() ? 0 : TRUMP_TURNING.progress(flow.trumpTime());
 		float lit = TRUMP_LIGHTING.progress(flow.trumpTime());
@@ -106,22 +112,22 @@ final class TableDrawing {
 	}
 
 	void seat(int seat) {
-		FlowView flow = scene.flow();
+		TableFlow flow = scene.flow();
 		Match m = scene.match();
 		boolean turn = flow.state() == TableState.TURN && m.currentSeat() == seat;
 		state.reset().named(scene.name(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(m.dealer() == seat)
-				.bid(m.bid(seat)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
+				.bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
 	}
 
-	static int scoreShown(FlowView flow, Match m, int seat) {
+	static int scoreShown(TableFlow flow, Match m, int seat) {
 		boolean pending = m.phase() == Match.Phase.HAND_OVER
 				&& (flow.state() == TableState.TRICK || flow.state() == TableState.HAND_END);
 		return m.score(seat) - (pending ? m.lastHandPoints(seat) : 0);
 	}
 
 	void layoutHand() {
-		FlowView flow = scene.flow();
+		TableFlow flow = scene.flow();
 		Match m = scene.match();
 		List<Card> order = scene.handOrder();
 		order.clear();

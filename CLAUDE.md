@@ -5,6 +5,11 @@ the screenshot run, CI, the arena and the art tools.
 
 ## Conventions
 
+- **Keep it simple (KISS):** write the simplest code that does the job. A plain method or
+  class beats a new interface, pattern or layer; add an abstraction only when two real uses
+  need it today, not for a future that may not come. Delete what isn't used, and prefer
+  fewer files and fewer hops between them to clever generality. When a change makes the
+  code simpler, that's a reason to make it.
 - **Branches:** work on `feature/…` or `refactor/…` (CI previews the screenshots), then
   merge into the current `develop/alpha-X.Y.Z` (CI publishes a dev build). Don't commit
   straight to `develop/` or `main`.
@@ -12,15 +17,17 @@ the screenshot run, CI, the arena and the art tools.
   the map, never one below (no cycles); anything may use `ohheck.util` and `ohheck.anim`. `ohheck.rules`, `ohheck.players`, `ohheck.records`,
   `ohheck.util` and `ohheck.anim` stay libGDX-free, so they run in plain JUnit. Put new game logic and timing
   there, or in small gdx-free classes like `GameEnd`, and test it.
-- **Screens depend on `GameHost`** (`Services` and `Navigator`), not `OhHeckGame`; helpers
-  that draw take a `Painter`, not a screen; table parts read `TableScene` (the flow as a
-  `FlowView`) and act through `TableActions`; taps find buttons in `OverlayTargets`.
-- **Saved formats must keep reading their older versions**, with a test for each:
-  `SavedGame`, `Stats`, `Match.save`, high scores.
+- **Screens depend on `GameHost`**, not `OhHeckGame`; helpers that draw take a `Painter`,
+  not a screen; table parts read `TableScene` and act through `TableActions`; taps find
+  buttons in `OverlayTargets`. A menu screen with categories uses `SideTabs`.
+- **Saved data has no backward compatibility:** `SavedGame`, `Stats`, `Match.save` and high
+  scores read only their current format. Anything unreadable (an older save included) is
+  reported through `Log` and set aside. Test that each format reads back what it writes.
 - **Player ids are permanent.** Look players up with `Player.byId`. A new player gets the
   next unused id.
 - **AI changes:** measure them in the arena (`players`, `levels`) before and after, and
-  keep each level's win rate in its band. Don't make Easy harder.
+  keep each level's win rate in its band. Don't make Easy harder. Bots play every rule set:
+  check a change across them with `variants` (or any experiment followed by a rules code).
 - **Game loop and motion:** screens implement `update(step)` and `draw()`, never `render`;
   timing goes in `update`, so it runs in fixed steps. Name each movement as a `Tween`
   (`ohheck.anim`), and move table cards by setting `CardSprites` targets. Don't make new
@@ -40,11 +47,11 @@ the screenshot run, CI, the arena and the art tools.
 - **Facts shown on screen** (scores, odds, player names, hand counts) come from the rules
   and the roster, not copied text.
 - **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
-  constant, a rules variant a `RuleSet` subclass listed in `RuleSet.ALL`, and a new reaction
-  to table events a `TableFlow.Listener`, a new table state a `TableState` constant with
-  its `StateView`, a pause-menu choice a `MenuItem` constant, a setting an `OptionItem` on its `OptionsPage`
-  (a new category is one more page), and a screenshot-tour stop a
-  screen implementing `TourStop`. Code playing a game asks `match.rules()`, not `Rules`.
+  constant, a rule a field of `RuleSet` (in its code) with a toggle on the Game page, a preset a
+  `GameMode` constant, and a new reaction
+  to table events a `TableFlow.Listener`, a new table state a `TableState` constant, a pause-menu choice a `MenuItem` constant, a setting an `OptionItem` on its `OptionsPage`
+  (a new category is one more page), and a screenshot-run stop a
+  step in `ScreenshotLauncher.Walk`. Code playing a game asks `match.rules()`.
 - **Seats:** you are `Seating.YOU`; who sits in the other seats is a `Seating`, not an
   `int[]`.
 
@@ -52,7 +59,8 @@ the screenshot run, CI, the arena and the art tools.
 
 **Ship every finished change without asking:** once a request's change is verified, merge
 it into the current `develop/` and publish the dev build (the `ship` skill), then report
-the build number.
+the build number. Once the build is out and the request is done, send a push notification
+naming the build and what it brings (one line, e.g. "dev-0094 ready: Poker Face mode").
 
 Use the `verify` skill after every change and the `ship` skill to merge; the scripts are in
 `tools/dev` (see "Developer tools" in `ARCHITECTURE.md`):

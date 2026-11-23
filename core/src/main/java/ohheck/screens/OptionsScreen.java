@@ -1,32 +1,34 @@
 package ohheck.screens;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import ohheck.platform.Audio;
 import ohheck.platform.Settings;
+import ohheck.rules.RuleSet;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.MenuChrome;
 import ohheck.ui.Palette;
-import ohheck.ui.TapAreas;
+import ohheck.ui.Scroller;
+import ohheck.ui.SideTabs;
 
 /* The settings, a page per category: tabs down the left, the chosen page's settings on the right. */
-public class OptionsScreen extends BaseScreen implements TourStop {
+public class OptionsScreen extends BaseScreen {
 
-	private static final float MAX_W = 940, MARGIN = 24, GAP = 18, TABS_W = 210, TAB_H = 54, TAB_GAP = 10, PAGE_TOP = 18;
+	private static final float PAGE_TOP = 18, FRAME = 6;
 	private static final Color DIVIDER = new Color(0.68f, 0.6f, 0.49f, 0.25f);
 
 	private final MenuChrome chrome = new MenuChrome(paint);
-	private final Rectangle backButton = new Rectangle(), page = new Rectangle();
-	private final List<Rectangle> tabs = new ArrayList<Rectangle>();
+	private final Rectangle backButton = new Rectangle(), page = new Rectangle(), inside = new Rectangle();
+	private final Scroller scroller = new Scroller();
 	private final List<OptionsPage> pages;
-	private int current;
+	private final SideTabs tabs;
 	private OptionItem dragging;
 
 	public OptionsScreen(GameHost game) {
@@ -35,13 +37,24 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 		pages = Arrays.asList(
 				new OptionsPage("Game",
 						new DifficultyOption(s),
+						OptionItem.choice("Game mode", "Changing a rule below makes the game Custom.",
+								() -> s.mode().label, () -> s.setMode(s.mode().next())),
 						OptionItem.choice("Hand progression", "How many cards each hand deals, first to last.",
-								() -> s.handOrder().label(), () -> s.setHandOrder(s.handOrder().flipped())),
-						OptionItem.choice("Sort your hand", "Trumps on the left, then by suit or by rank.",
-								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next())),
-						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
-								() -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame()))),
-				new OptionsPage("Sound & display",
+								() -> s.rules().order.label(s.rules().mostCards),
+								() -> s.customize(r -> r.withOrder(r.order.next()))),
+						OptionItem.toggle("Marathon", "Hands grow to " + RuleSet.MOST_CARDS + " cards, the whole deck.",
+								() -> s.rules().mostCards == RuleSet.MOST_CARDS,
+								() -> s.customize(r -> r.withMostCards(r.mostCards == RuleSet.MOST_CARDS ? RuleSet.USUAL_CARDS : RuleSet.MOST_CARDS))),
+						OptionItem.toggle("Big bids", "Bigger bids are worth more.",
+								() -> s.rules().bigBids, () -> s.customize(r -> r.withBigBids(!r.bigBids))),
+						OptionItem.toggle("Blind bids", "Bids are made unseen and shown together; the dealer may bid anything.",
+								() -> s.rules().blindBids, () -> s.customize(r -> r.withBlindBids(!r.blindBids)))),
+				new OptionsPage("Preferences",
+						OptionItem.heading("Sound"),
+						OptionItem.toggle("Mute all", "Silences the music and sound effects.", s::muted, () -> {
+							s.setMuted(!s.muted());
+							game.audio().startMusic();
+						}),
 						OptionItem.toggle("Music", "The background music.", s::music, () -> {
 							s.setMusic(!s.music());
 							game.audio().startMusic();
@@ -50,16 +63,21 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 							s.setSound(!s.sound());
 							game.audio().play(Audio.Effect.PLAY_CARD);
 						}),
+						OptionItem.heading("Display"),
+						OptionItem.choice("Hand sort", "Trumps on the left, then by suit or by rank.",
+								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next())),
+						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
+								() -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame())),
 						OptionItem.toggle("Visual effects", "Glow, vignette and film grain.", s::effects,
 								() -> s.setEffects(!s.effects()))),
-				new OptionsPage("Learn",
+				new OptionsPage("Tutorial",
 						OptionItem.link("How to play", "The rules, a step at a time.", game::showTutorial),
 						OptionItem.link("Roster", "The players you can meet at the table.", game::showPlayers)));
-	}
-
-	@Override
-	public ScreenshotTour.Stop tourStop() {
-		return ScreenshotTour.Stop.OPTIONS;
+		String[] names = new String[pages.size()];
+		for (int i = 0; i < names.length; i++) {
+			names[i] = pages.get(i).name;
+		}
+		tabs = new SideTabs(paint, null, names, null);
 	}
 
 	@Override
@@ -72,45 +90,50 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
-		float width = Math.min(MAX_W, w - 2 * MARGIN), left = (w - width) / 2;
-		float top = h - MenuChrome.HEADER_H - GAP, bottom = MARGIN;
-		drawTabs(left, top);
-		page.set(left + TABS_W + GAP, bottom, width - TABS_W - GAP, top - bottom);
-		drawPage(pages.get(current));
+		tabs.draw(w, h, page);
+		drawPage(pages.get(tabs.chosen()));
 		chrome.header("Options", backButton, w, h);
 		batch.end();
 	}
 
-	private void drawTabs(float left, float top) {
-		TapAreas.sizeTo(tabs, pages.size());
-		for (int i = 0; i < pages.size(); i++) {
-			Rectangle tab = tabs.get(i).set(left, top - (i + 1) * TAB_H - i * TAB_GAP, TABS_W, TAB_H);
-			boolean chosen = i == current;
-			paint.frame(chosen ? assets.button : assets.buttonAlt, tab.x, tab.y, tab.width, tab.height);
-			paint.textIn(paint.serif(1.3f, chosen ? Palette.CREAM : Palette.MUTED), pages.get(i).name, tab.x, tab.y,
-					tab.width, tab.height);
-		}
-	}
-
 	private void drawPage(OptionsPage p) {
 		paint.frame(assets.panel, page.x, page.y, page.width, page.height);
-		float y = page.y + page.height - PAGE_TOP;
+		inside.set(page.x + FRAME, page.y + FRAME, page.width - 2 * FRAME, page.height - 2 * FRAME);
+		float content = PAGE_TOP + FRAME;
+		for (OptionItem item : p.items) {
+			content += item.height();
+		}
+		scroller.update(frameDelta(), Gdx.input.isTouched(), content - inside.height);
+		if (clipTo(inside)) {
+			drawItems(p, page.y + page.height - PAGE_TOP + scroller.offset());
+			unclip();
+		}
+		scroller.drawBar(paint, inside, content);
+	}
+
+	private void drawItems(OptionsPage p, float top) {
+		float y = top;
 		for (int i = 0; i < p.items.size(); i++) {
 			OptionItem item = p.items.get(i);
 			y -= item.height();
 			item.draw(paint, page.x, y, page.width);
-			if (i < p.items.size() - 1) {
+			if (i < p.items.size() - 1 && item.dividedBelow() && p.items.get(i + 1).dividedBelow()) {
 				paint.rect(page.x + OptionItem.PAD, y, page.width - 2 * OptionItem.PAD, 1, DIVIDER);
 			}
 		}
 	}
 
 	@Override
+	protected void drag(float dy) {
+		scroller.drag(dy);
+	}
+
+	@Override
 	protected void touchDown(float x, float y) {
 		super.touchDown(x, y);
 		dragging = null;
-		for (OptionItem item : pages.get(current).items) {
-			if (item.grabs(x, y)) {
+		for (OptionItem item : pages.get(tabs.chosen()).items) {
+			if (inside.contains(x, y) && item.grabs(x, y)) {
 				dragging = item;
 				item.dragTo(x);
 			}
@@ -141,13 +164,16 @@ public class OptionsScreen extends BaseScreen implements TourStop {
 			back();
 			return;
 		}
-		for (int i = 0; i < tabs.size(); i++) {
-			if (tabs.get(i).contains(x, y)) {
-				current = i;
-				return;
-			}
+		int tab = tabs.tabAt(x, y);
+		if (tab >= 0) {
+			tabs.choose(tab);
+			scroller.reset();
+			return;
 		}
-		for (OptionItem item : pages.get(current).items) {
+		if (!inside.contains(x, y)) {
+			return;
+		}
+		for (OptionItem item : pages.get(tabs.chosen()).items) {
 			if (item.bounds.contains(x, y)) {
 				item.tap(x, y);
 				return;

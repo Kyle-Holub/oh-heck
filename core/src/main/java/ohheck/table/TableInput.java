@@ -97,7 +97,7 @@ final class TableInput {
 	}
 
 	private void tapTable(float x, float y) {
-		StateView.of(scene.state()).tap(this, x, y);
+		scene.state().tap(this, x, y);
 	}
 
 	void skip() {

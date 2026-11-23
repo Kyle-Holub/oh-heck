@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 
+import ohheck.rules.RuleSet;
 import ohheck.ui.Assets;
 import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
@@ -14,10 +15,21 @@ public final class PlayerPanel {
 
 	public static final float W = 214, H = 80;
 
-	private static final float ICON_MAX_W = 28, ICON_GAP = 3;
+	private static final float ICON_MAX_W = 28, ICON_GAP = 3, ICON_ROOM_H = 42, ICON_ASPECT = 18f / 14f;
+
+	private static int rows(int handSize) {
+		return handSize > RuleSet.USUAL_CARDS ? 2 : 1;
+	}
+
+	private static int perRow(int handSize) {
+		return (Math.max(1, handSize) + rows(handSize) - 1) / rows(handSize);
+	}
 
 	private static float iconWidth(int handSize) {
-		return Math.min(ICON_MAX_W, (W - 20) / Math.max(1, handSize) - ICON_GAP);
+		int rows = rows(handSize);
+		float fitsRow = (W - 20) / perRow(handSize) - ICON_GAP;
+		float fitsRows = ((ICON_ROOM_H - (rows - 1) * ICON_GAP) / rows) / ICON_ASPECT;
+		return Math.min(ICON_MAX_W, Math.min(fitsRow, fitsRows));
 	}
 	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.32f);
 	private static final Color WAIT_TEXT = new Color(0.72f, 0.66f, 0.58f, 1f), WAIT_SCORE = new Color(0.62f, 0.5f, 0.3f, 1f);
@@ -63,7 +75,7 @@ public final class PlayerPanel {
 
 	private void drawHourglass(SeatState seat, float x, float y, float time) {
 		float a = seat.turn ? 0.75f + 0.25f * MathUtils.sin(time * 4f) : 0.55f;
-		float iw = iconWidth(seat.handSize), ih = iw * 18f / 14f;
+		float iw = iconWidth(seat.handSize), ih = iw * ICON_ASPECT;
 		paint.batch.setColor(1f, 1f, 1f, a);
 		paint.batch.draw(paint.assets.waitingIcon, x, y, iw, ih);
 		paint.batch.setColor(Color.WHITE);
@@ -73,20 +85,23 @@ public final class PlayerPanel {
 		Assets assets = paint.assets;
 		int bid = seat.bid, won = seat.won;
 		int tricks = Math.max(bid, won), first = bid == 0 && won == 0 ? 1 : 0;
-		float iw = iconWidth(seat.handSize), ih = iw * 18f / 14f;
+		float iw = iconWidth(seat.handSize), ih = iw * ICON_ASPECT;
+		int rows = rows(seat.handSize), perRow = perRow(seat.handSize);
+		float topRow = y + (rows - 1) * (ih + ICON_GAP);
 		if (first == 1) {
-			paint.batch.draw(assets.zeroIcon, x, y, iw, ih);
+			paint.batch.draw(assets.zeroIcon, x, topRow, iw, ih);
 		}
 		for (int i = 0; i < tricks; i++) {
-			float ix = x + (first + i) * (iw + ICON_GAP);
+			int k = first + i;
+			float ix = x + (k % perRow) * (iw + ICON_GAP), iy = topRow - (k / perRow) * (ih + ICON_GAP);
 			if (i < Math.min(bid, won)) {
-				paint.batch.draw(assets.trickIcon, ix, y, iw, ih);
+				paint.batch.draw(assets.trickIcon, ix, iy, iw, ih);
 			} else if (i < bid) {
 				paint.batch.setColor(BID_FADE);
-				paint.batch.draw(assets.trickIcon, ix, y, iw, ih);
+				paint.batch.draw(assets.trickIcon, ix, iy, iw, ih);
 				paint.batch.setColor(Color.WHITE);
 			} else {
-				paint.batch.draw(assets.overIcon, ix, y, iw, ih);
+				paint.batch.draw(assets.overIcon, ix, iy, iw, ih);
 			}
 		}
 	}

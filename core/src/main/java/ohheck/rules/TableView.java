@@ -40,7 +40,7 @@ public final class TableView {
 	}
 
 	public Suit trump() {
-		return trumpCard.suit();
+		return trumpCard == null ? null : trumpCard.suit();
 	}
 
 	public Suit leadSuit() {

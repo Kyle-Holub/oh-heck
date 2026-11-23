@@ -41,7 +41,7 @@ final class GameRecorder implements TableFlow.Listener {
 
 	@Override
 	public void gameEnded(Match m) {
-		newHighScore = records.recordHighScore(m.score(Seating.YOU), m.placeOf(Seating.YOU), level, Dates.today());
+		newHighScore = records.recordHighScore(m.score(Seating.YOU), m.placeOf(Seating.YOU), level, m.rules(), Dates.today());
 		int[] finals = new int[m.players()];
 		for (int s = 0; s < finals.length; s++) {
 			finals[s] = m.score(s);

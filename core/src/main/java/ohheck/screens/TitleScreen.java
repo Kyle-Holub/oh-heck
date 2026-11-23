@@ -19,7 +19,7 @@ import ohheck.ui.Palette;
 import ohheck.ui.TapAreas;
 
 /* The main menu, over falling cards. */
-public class TitleScreen extends BaseScreen implements TourStop {
+public class TitleScreen extends BaseScreen {
 
 	private final FallingCards cards;
 
@@ -104,11 +104,6 @@ public class TitleScreen extends BaseScreen implements TourStop {
 		if (introT >= INTRO_END) {
 			shownFor += dt;
 		}
-	}
-
-	@Override
-	public ScreenshotTour.Stop tourStop() {
-		return ScreenshotTour.Stop.TITLE;
 	}
 
 	private void drawScene() {

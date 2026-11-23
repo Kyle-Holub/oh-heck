@@ -17,7 +17,6 @@ import ohheck.records.SavedGame;
 import ohheck.screens.HighScoresScreen;
 import ohheck.screens.OptionsScreen;
 import ohheck.screens.PlayersScreen;
-import ohheck.screens.ScreenshotTour;
 import ohheck.screens.TitleScreen;
 import ohheck.screens.TutorialScreen;
 import ohheck.table.PlayScreen;
@@ -25,17 +24,14 @@ import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.PostProcessor;
-import ohheck.ui.Tagged;
-import ohheck.ui.Tour;
 import ohheck.util.Log;
 
 /* The libGDX entry point for Android and desktop: owns the shared services and the screens. */
 public class OhHeckGame extends Game implements GameHost {
 
-	public static final String VERSION = "alpha-1.0.9";
+	public static final String VERSION = "alpha-1.0.10";
 
 	private final GameOptions options;
-	private final ScreenshotTour tour;
 
 	private String build = "";
 	private SpriteBatch batch;
@@ -63,7 +59,6 @@ public class OhHeckGame extends Game implements GameHost {
 
 	public OhHeckGame(GameOptions options) {
 		this.options = options;
-		this.tour = options.autoplayHuman ? new ScreenshotTour(this) : null;
 	}
 
 	@Override
@@ -116,8 +111,8 @@ public class OhHeckGame extends Game implements GameHost {
 		capturing = false;
 		Screen s = getScreen();
 		pacer.endFrame(!fixed && !screens.changing() && s instanceof BaseScreen && !((BaseScreen) s).animating());
-		if (options.frameListener != null && s instanceof Tagged) {
-			options.frameListener.onFrame(((Tagged) s).stateTag());
+		if (options.frameListener != null && s instanceof BaseScreen) {
+			options.frameListener.onFrame(((BaseScreen) s).stateTag());
 		}
 	}
 
@@ -164,11 +159,6 @@ public class OhHeckGame extends Game implements GameHost {
 	@Override
 	public Records records() {
 		return records;
-	}
-
-	@Override
-	public Tour tour() {
-		return tour;
 	}
 
 	@Override

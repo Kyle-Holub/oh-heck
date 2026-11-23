@@ -1,7 +1,7 @@
 package ohheck.rules;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -70,7 +70,7 @@ public class SaveTest {
 	@Test
 	public void rejectsDamagedSaves() {
 		String good = Match.random(4, new Random(2)).save();
-		String[] bad = { "", "hello", good.replace("oh-heck-match-2", "something-else"),
+		String[] bad = { "", "hello", good.replace("oh-heck-match-3", "something-else"),
 				good.substring(0, good.length() / 2), good.replaceFirst("hand=0", "hand=12"),
 				good.replaceFirst("players=4", "players=x") };
 		for (String b : bad) {
@@ -99,24 +99,6 @@ public class SaveTest {
 	private static final String FORMAT_1 = "oh-heck-match-1\n" + "players=4\n" + "phase=PLAYING\n" + "hand=2\n" + "dealer=0\n" + "current=3\n" + "trump=40\n" + "hand0=45,29,49\n" + "hand1=33,4\n" + "hand2=39,47\n" + "hand3=46,31,0\n" + "bids=2,0,2,2\n" + "tricks=0,0,0,0\n" + "scores=5,7,20,20\n" + "points=-5,12,10,10\n" + "trick=17,5\n" + "trickSeats=1,2\n" + "last=23,12,21,16\n" + "lastSeats=0,1,2,3\n" + "lastWinner=1\n";
 
 	@Test
-	public void readsTheFirstFormat() {
-		Match m = Match.load(FORMAT_1, new Random(3));
-		assertEquals(Card.of(Rank.TWO, Suit.DIAMONDS), m.trumpCard());
-		assertEquals(2, m.handIndex());
-		assertEquals(2, m.currentTrick().size());
-		String again = m.save();
-		assertTrue(again.startsWith("oh-heck-match-2"));
-		assertEquals(again, Match.load(again, new Random(3)).save());
-		while (m.phase() != Match.Phase.GAME_OVER) {
-			if (m.phase() == Match.Phase.HAND_OVER) {
-				m.nextHand();
-			} else {
-				move(m);
-			}
-		}
-	}
-
-	@Test
 	public void cardsAreWrittenAsText() {
 		String s = Match.random(4, new Random(8)).save();
 		for (String line : s.split("\n")) {
@@ -127,17 +109,26 @@ public class SaveTest {
 	}
 
 	@Test
-	public void savesItsRulesAndReadsOlderSavesAsStandard() {
+	public void savesItsRules() {
 		Match m = new Match(4, new Random(5), 0);
 		String saved = m.save();
-		assertTrue(saved.contains("rules=standard"));
-		assertSame(RuleSet.STANDARD, Match.load(saved, new Random(1)).rules());
-		String older = saved.replace("rules=standard\n", "");
-		assertSame(RuleSet.STANDARD, Match.load(older, new Random(1)).rules());
+		assertTrue(saved.contains("rules=UP/8"));
+		assertEquals(RuleSet.STANDARD, Match.load(saved, new Random(1)).rules());
 		try {
-			Match.load(saved.replace("rules=standard", "rules=madeup"), new Random(1));
+			Match.load(saved.replace("rules=UP/8", "rules=madeup"), new Random(1));
 			fail("a game by rules this build doesn't know");
 		} catch (IllegalArgumentException expected) {
 		}
+	}
+
+	@Test
+	public void aHandWithNoTrumpReadsBack() {
+		RuleSet rules = new RuleSet(HandOrder.DOWN, RuleSet.MOST_CARDS, true, true);
+		Match m = new Match(4, new Random(5), 0, rules);
+		assertNull(m.trumpCard());
+		Match back = Match.load(m.save(), new Random(1));
+		assertNull(back.trumpCard());
+		assertEquals(rules, back.rules());
+		assertEquals(m.save(), back.save());
 	}
 }

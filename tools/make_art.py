@@ -224,6 +224,42 @@ def card_back(out):
 
 # ---------------------------------------------------------------- table and UI
 
+def card_slot(out):
+    """An empty card's place: a dashed outline of a card, for a hand dealt with no trump card."""
+    W, H, r, line = CARD_W * SS, CARD_H * SS, 16 * SS, 5 * SS
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    inset = line
+    d.rounded_rectangle([inset, inset, W - 1 - inset, H - 1 - inset], r, fill=(12, 8, 5, 70))
+    x0, y0, x1, y1 = inset, inset, W - 1 - inset, H - 1 - inset
+    path = []
+    corners = [(x1 - r, y0 + r, -90), (x1 - r, y1 - r, 0), (x0 + r, y1 - r, 90), (x0 + r, y0 + r, 180)]
+    for cx, cy, start in corners:
+        for k in range(0, 91, 3):
+            a = math.radians(start + k)
+            path.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    path.append(path[0])
+    lengths = [0.0]
+    for (ax, ay), (bx, by) in zip(path, path[1:]):
+        lengths.append(lengths[-1] + math.hypot(bx - ax, by - ay))
+    total = lengths[-1]
+    dashes = 34
+    period = total / dashes
+
+    def point_at(s):
+        i = max(0, min(len(path) - 2, np.searchsorted(lengths, s) - 1))
+        t = (s - lengths[i]) / max(1e-6, lengths[i + 1] - lengths[i])
+        return (path[i][0] + (path[i + 1][0] - path[i][0]) * t, path[i][1] + (path[i + 1][1] - path[i][1]) * t)
+
+    for k in range(dashes):
+        start = k * period
+        pts = [point_at(start + period * 0.55 * j / 8) for j in range(9)]
+        d.line(pts, fill=CREAM_EDGE + (200,), width=line, joint="curve")
+        for p in (pts[0], pts[-1]):
+            d.ellipse([p[0] - line / 2, p[1] - line / 2, p[0] + line / 2, p[1] + line / 2], fill=CREAM_EDGE + (200,))
+    downsample(img, CARD_W, CARD_H).save(os.path.join(out, "card_slot.png"), optimize=True)
+
+
 def table(out):
     """Dark warm felt under a soft overhead spotlight, falling away to near-black."""
     W, H = 1280, 640
@@ -415,14 +451,15 @@ NUMERAL_FONT = "/usr/share/texmf/fonts/opentype/public/tex-gyre/texgyrepagella-b
 
 
 def bid_digits(out):
-    """Bid numerals 0-9 in one strip: gold, shaded darker toward the foot, with a dark
-    edge and an engraved shadow; the 0 is struck through like the zero-bid icon.
+    """Bid numerals 0-9 in one strip, then a plain 0 for the tens: gold, shaded darker toward
+    the foot, with a dark edge and an engraved shadow; the first 0 (a bid of zero) is struck
+    through like the zero-bid icon.
     The numeral font must be TeX Gyre Pagella: its empty-set sign is the slashed zero."""
     CW, CH = 64, 88
     W, H = CW * SS, CH * SS
     font = ImageFont.truetype(NUMERAL_FONT, 80 * SS)
-    strip = Image.new("RGBA", (CW * 10, CH), (0, 0, 0, 0))
-    for n in range(10):
+    strip = Image.new("RGBA", (CW * 11, CH), (0, 0, 0, 0))
+    for n in range(11):
         mask = Image.new("L", (W, H), 0)
         md = ImageDraw.Draw(mask)
         cx, cy = W / 2, H / 2 + 2 * SS
@@ -433,7 +470,7 @@ def bid_digits(out):
             l, t, r, b = md.textbbox((0, 0), "\u2205", font=zero)
             md.text((cx - (l + r) / 2, H / 2 - (t + b) / 2), "\u2205", font=zero, fill=255)
         else:
-            md.text((cx, cy), str(n), font=font, fill=255, anchor="mm")
+            md.text((cx, cy), str(n % 10), font=font, fill=255, anchor="mm")
         edge = mask.filter(ImageFilter.MaxFilter(2 * (2 * SS) + 1))
         img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         # engraved shadow, then a dark edge, then the gold
@@ -512,6 +549,7 @@ if __name__ == "__main__":
     os.makedirs(out, exist_ok=True)
     sheet = card_sheet(out)
     card_back(out)
+    card_slot(out)
     blurred_sheet(sheet, out)
     table(out)
     icons(out)

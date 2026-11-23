@@ -1,20 +1,21 @@
 package ohheck.platform;
 
+import java.util.function.UnaryOperator;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
 import ohheck.players.Difficulty;
 import ohheck.records.Records;
-import ohheck.rules.HandOrder;
+import ohheck.rules.GameMode;
 import ohheck.rules.HandSort;
+import ohheck.rules.RuleSet;
 
 /* The player's options, in the device's preferences. */
 public final class Settings {
 
 	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
-			HAND_ORDER = "handOrder", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen";
-	private static final String LEGACY_FAST = "fast", LEGACY_SPEED = "speed", LEGACY_DIFFICULTY = "difficulty";
-	private static final int LEGACY_FASTEST_SPEED = 2;
+			MODE = "mode", CUSTOM_RULES = "customRules", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen";
 
 	private static final float STANDARD_PACE = 0.6f, FAST_PACE = 1.4f;
 
@@ -41,6 +42,14 @@ public final class Settings {
 		prefs.putBoolean(SOUND, on).flush();
 	}
 
+	public boolean muted() {
+		return !music() && !sound();
+	}
+
+	public void setMuted(boolean muted) {
+		prefs.putBoolean(MUSIC, !muted).putBoolean(SOUND, !muted).flush();
+	}
+
 	public boolean effects() {
 		return prefs.getBoolean(EFFECTS, true);
 	}
@@ -50,11 +59,7 @@ public final class Settings {
 	}
 
 	public boolean fastGame() {
-		if (prefs.contains(FAST_GAME)) {
-			return prefs.getBoolean(FAST_GAME, false);
-		}
-		int legacy = prefs.getBoolean(LEGACY_FAST, false) ? LEGACY_FASTEST_SPEED : 0;
-		return prefs.getInteger(LEGACY_SPEED, legacy) >= LEGACY_FASTEST_SPEED;
+		return prefs.getBoolean(FAST_GAME, false);
 	}
 
 	public void setFastGame(boolean fast) {
@@ -66,19 +71,36 @@ public final class Settings {
 	}
 
 	public Difficulty difficulty() {
-		return Difficulty.fromSaved(prefs.getString(LEVEL, null), prefs.getInteger(LEGACY_DIFFICULTY, 1));
+		return Difficulty.named(prefs.getString(LEVEL, Difficulty.NORMAL.name()));
 	}
 
 	public void setDifficulty(Difficulty d) {
 		prefs.putString(LEVEL, d.name()).flush();
 	}
 
-	public HandOrder handOrder() {
-		return prefs.getString(HAND_ORDER, "").equals(HandOrder.DOWN.name()) ? HandOrder.DOWN : HandOrder.UP;
+	public GameMode mode() {
+		return GameMode.named(prefs.getString(MODE, GameMode.CLASSIC.name()));
 	}
 
-	public void setHandOrder(HandOrder order) {
-		prefs.putString(HAND_ORDER, order.name()).flush();
+	public void setMode(GameMode mode) {
+		prefs.putString(MODE, mode.name()).flush();
+	}
+
+	public RuleSet customRules() {
+		try {
+			return RuleSet.parse(prefs.getString(CUSTOM_RULES, RuleSet.STANDARD.code()));
+		} catch (IllegalArgumentException e) {
+			return RuleSet.STANDARD;
+		}
+	}
+
+	public RuleSet rules() {
+		return mode().rules(customRules());
+	}
+
+	public void customize(UnaryOperator<RuleSet> change) {
+		prefs.putString(CUSTOM_RULES, change.apply(rules()).code());
+		prefs.putString(MODE, GameMode.CUSTOM.name()).flush();
 	}
 
 	public HandSort handSort() {

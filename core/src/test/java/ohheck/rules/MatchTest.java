@@ -206,7 +206,7 @@ public class MatchTest {
 
 	@Test
 	public void handsCanCountDownFromEight() {
-		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
+		Match m = new Match(4, new Random(3), 2, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
 		assertEquals(8, m.handSize());
 		for (int s = 0; s < 4; s++) {
 			assertEquals(8, m.hand(s).size());
@@ -223,12 +223,10 @@ public class MatchTest {
 
 	@Test
 	public void theHandOrderIsSaved() {
-		Match m = new Match(4, new Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
+		Match m = new Match(4, new Random(3), 2, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
 		Match back = Match.load(m.save(), new Random(1));
-		assertEquals(HandOrder.DOWN, back.handOrder());
+		assertEquals(HandOrder.DOWN, back.rules().order);
 		assertEquals(8, back.handSize());
-		String old = new Match(4, new Random(3), 2).save().replaceAll("order=UP\n", "");
-		assertEquals(HandOrder.UP, Match.load(old, new Random(1)).handOrder());
 	}
 
 	private void bidAll(Match m) {
@@ -253,7 +251,7 @@ public class MatchTest {
 
 	@Test
 	public void theWinningCardsOfEachTrickInOrder() {
-		Match m = new Match(4, new java.util.Random(3), 2, HandOrder.DOWN, RuleSet.STANDARD);
+		Match m = new Match(4, new java.util.Random(3), 2, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
 		java.util.List<Card> winners = new java.util.ArrayList<Card>();
 		for (int s = 0; s < 4; s++) {
 			m.placeBid(m.currentSeat(), m.isLegalBid(0) ? 0 : 1);
@@ -268,5 +266,23 @@ public class MatchTest {
 			m.winningCards(winners);
 			assertEquals(expected, winners);
 		}
+	}
+
+	@Test
+	public void blindBidsAreHiddenUntilAllAreIn() {
+		Match m = new Match(4, new Random(1), 0, GameMode.POKER_FACE.rules(null));
+		m.placeBid(1, 1);
+		m.placeBid(2, 0);
+		m.placeBid(3, 0);
+		assertEquals(-1, m.forbiddenBid());
+		assertTrue("the dealer may make the bids add up", m.isLegalBid(0));
+		assertFalse(m.view(0).hasBid(1));
+		assertEquals(0, m.view(0).bidsSoFar());
+		assertEquals(1, m.view(1).bid(1));
+		assertEquals(0, m.bidsSeenBy(0));
+		m.placeBid(0, 0);
+		assertEquals(Match.Phase.PLAYING, m.phase());
+		assertEquals(1, m.view(0).bid(1));
+		assertEquals(1, m.bidsSeenBy(0));
 	}
 }

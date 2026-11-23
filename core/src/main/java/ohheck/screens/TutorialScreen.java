@@ -5,13 +5,13 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import ohheck.rules.Rules;
+import ohheck.rules.RuleSet;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 
 /* How to play: a step per scene, each with a caption; a tap moves on. */
-public class TutorialScreen extends BaseScreen implements TourStop {
+public class TutorialScreen extends BaseScreen {
 
 	private static final class Step {
 		final String heading, caption;
@@ -56,8 +56,8 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 					scenes::dealersHook, 5.5f),
 			new Step("The counters", "Top left of the table: tally marks count the " + HANDS
 					+ " hands, and under them one card per trick shows how many the table has bid.", scenes::counters, 9f),
-			new Step("Scoring", "Make your bid exactly: " + Rules.MADE + " points, plus " + Rules.PER_TRICK_BID
-					+ " for each trick you bid. Miss it, high or low: lose " + Rules.PER_TRICK_OFF + " for each trick off.",
+			new Step("Scoring", "Make your bid exactly: " + RuleSet.STANDARD.made() + " points, plus " + RuleSet.STANDARD.perTrickBid()
+					+ " for each trick you bid. Miss it, high or low: lose " + RuleSet.STANDARD.perTrickOff() + " for each trick off.",
 					scenes::scoring, 9f),
 			new Step("Ready", "Highest total after " + HANDS + " hands wins. Good luck!", scenes::ready, 5f, false) };
 
@@ -99,27 +99,7 @@ public class TutorialScreen extends BaseScreen implements TourStop {
 		batch.end();
 	}
 
-	@Override
-	protected float tourClock() {
-		return scenes.clock.shown();
-	}
-
-	@Override
-	public ScreenshotTour.Stop tourStop() {
-		return ScreenshotTour.Stop.TUTORIAL;
-	}
-
-	@Override
-	public boolean lastStep() {
-		return step == steps.length - 1;
-	}
-
-	@Override
-	public void nextStep() {
-		next();
-	}
-
-	void next() {
+	public void next() {
 		if (step < steps.length - 1) {
 			step++;
 			scenes.restart();
