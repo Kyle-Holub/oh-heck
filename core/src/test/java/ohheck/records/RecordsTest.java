@@ -17,7 +17,7 @@ import ohheck.rules.RuleSet;
 public class RecordsTest {
 
 	static final class MemoryStore implements Records.Store {
-		String stats = "", highScores = "", saved = "";
+		String stats = "", highScores = "", saved = "", campaign = "";
 
 		public String stats() {
 			return stats;
@@ -49,6 +49,14 @@ public class RecordsTest {
 
 		public void clearSavedGame() {
 			saved = "";
+		}
+
+		public String campaign() {
+			return campaign;
+		}
+
+		public void setCampaign(String encoded) {
+			campaign = encoded;
 		}
 	}
 

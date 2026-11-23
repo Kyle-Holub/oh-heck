@@ -1,7 +1,6 @@
 package ohheck.rules;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +13,7 @@ final class MatchCodec {
 	private MatchCodec() {
 	}
 
-	private static final String FORMAT = "oh-heck-match-3", NO_TRUMP = "-";
+	private static final String FORMAT = "oh-heck-match-4", NO_TRUMP = "-";
 
 	static String encode(Match m) {
 		StringBuilder sb = new StringBuilder(FORMAT).append('\n');
@@ -24,7 +23,7 @@ final class MatchCodec {
 		line(sb, "hand", String.valueOf(m.handIndex));
 		line(sb, "dealer", String.valueOf(m.dealer));
 		line(sb, "current", String.valueOf(m.current));
-		line(sb, "trump", m.trumpCard == null ? NO_TRUMP : code(m.trumpCard));
+		line(sb, "trump", m.trumpCard == null ? NO_TRUMP : m.trumpCard.code());
 		for (int s = 0; s < m.players; s++) {
 			line(sb, "hand" + s, cards(m.hands.get(s)));
 		}
@@ -36,6 +35,7 @@ final class MatchCodec {
 		line(sb, "tricks", ints(m.tricks));
 		line(sb, "scores", ints(m.scores));
 		line(sb, "points", ints(m.lastHandPoints));
+		line(sb, "streaks", ints(m.streaks));
 		line(sb, "trick", cards(m.trick.cards));
 		line(sb, "trickSeats", seats(m.trick.seats));
 		line(sb, "last", cards(m.lastTrick));
@@ -82,7 +82,7 @@ final class MatchCodec {
 		m.dealer = Integer.parseInt(req(v, "dealer"));
 		m.current = Integer.parseInt(req(v, "current"));
 		String trump = req(v, "trump");
-		m.trumpCard = trump.equals(NO_TRUMP) ? null : card(trump);
+		m.trumpCard = trump.equals(NO_TRUMP) ? null : Card.parse(trump);
 	}
 
 	private static void readSeats(Match m, Map<String, String> v) {
@@ -91,12 +91,13 @@ final class MatchCodec {
 		}
 		String[] b = req(v, "bids").split(",");
 		int[] t = parseInts(req(v, "tricks"), m.players), sc = parseInts(req(v, "scores"), m.players),
-				pt = parseInts(req(v, "points"), m.players);
+				pt = parseInts(req(v, "points"), m.players), st = parseInts(req(v, "streaks"), m.players);
 		for (int s = 0; s < m.players; s++) {
 			m.bids[s] = b[s].equals("-") ? Match.NO_BID : Integer.parseInt(b[s]);
 			m.tricks[s] = t[s];
 			m.scores[s] = sc[s];
 			m.lastHandPoints[s] = pt[s];
+			m.streaks[s] = st[s];
 		}
 	}
 
@@ -122,29 +123,10 @@ final class MatchCodec {
 		return s;
 	}
 
-	private static final String[] RANK_CODES = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
-	private static final String SUIT_CODES = "CDHS";
-	private static final Suit[] SUITS_BY_CODE = { Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES };
-
-	private static String code(Card c) {
-		return RANK_CODES[c.rank().strength()] + SUIT_CODES.charAt(Arrays.asList(SUITS_BY_CODE).indexOf(c.suit()));
-	}
-
-	private static Card card(String code) {
-		int suit = SUIT_CODES.indexOf(code.charAt(code.length() - 1));
-		String rank = code.substring(0, code.length() - 1);
-		for (Rank r : Rank.values()) {
-			if (RANK_CODES[r.strength()].equals(rank) && suit >= 0) {
-				return Card.of(r, SUITS_BY_CODE[suit]);
-			}
-		}
-		throw new IllegalArgumentException("Not a card: " + code);
-	}
-
 	private static String cards(List<Card> cs) {
 		StringBuilder sb = new StringBuilder();
 		for (Card c : cs) {
-			sb.append(sb.length() > 0 ? "," : "").append(code(c));
+			sb.append(sb.length() > 0 ? "," : "").append(c.code());
 		}
 		return sb.toString();
 	}
@@ -152,7 +134,7 @@ final class MatchCodec {
 	private static List<Card> parseCards(String s) {
 		List<Card> list = new ArrayList<Card>();
 		for (String p : s.isEmpty() ? new String[0] : s.split(",")) {
-			list.add(card(p.trim()));
+			list.add(Card.parse(p.trim()));
 		}
 		return list;
 	}

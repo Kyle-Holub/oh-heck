@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
+import ohheck.campaign.Cosmetic;
 import ohheck.players.Difficulty;
 import ohheck.rules.Card;
 
@@ -21,8 +22,10 @@ public final class Assets implements Disposable {
 
 	public static final float UI_BASE = 16f / 42f, SERIF_BASE = 16f / 52f;
 
-	public final Texture table;
-	public final Texture cardSheet, cardBack, cardSheetBlur, cardBackBlur, cardSlot;
+	public Texture table;
+	public final Texture cardSheet, cardSheetBlur, cardSlot, cardBlank, badge;
+	private final Texture[] tables = new Texture[Cosmetic.values().length], backs = new Texture[Cosmetic.values().length],
+			backBlurs = new Texture[Cosmetic.values().length];
 	public final Texture shadow;
 	public final Texture glow;
 	public final NinePatch panel, panelTurn, panelWait, button, buttonAlt, buttonOff;
@@ -50,12 +53,17 @@ public final class Assets implements Disposable {
 	}
 
 	public Assets() {
-		table = linear(own(new Texture(Gdx.files.internal("images/table.jpg"))));
+		for (Cosmetic c : Cosmetic.values()) {
+			tables[c.ordinal()] = linear(own(new Texture(Gdx.files.internal("images/" + c.felt + ".jpg"))));
+			backs[c.ordinal()] = mipmapped("images/" + c.back + ".png");
+			backBlurs[c.ordinal()] = mipmapped("images/" + c.backBlur + ".png");
+		}
+		table = tables[0];
 		cardSheet = mipmapped("images/cards_hd.png");
-		cardBack = mipmapped("images/back_hd.png");
+		badge = mipmapped("images/badge.png");
 		cardSlot = mipmapped("images/card_slot.png");
+		cardBlank = mipmapped("images/card_blank.png");
 		cardSheetBlur = mipmapped("images/cards_blur.png");
-		cardBackBlur = mipmapped("images/back_blur.png");
 		shadow = linear(own(new Texture(Gdx.files.internal("images/shadow.png"))));
 		glow = mipmapped("images/glow.png");
 		panel = ninePatch("panel");
@@ -84,8 +92,8 @@ public final class Assets implements Disposable {
 			levelBadge[d.ordinal()] = mipmapped("images/level_" + d.key() + ".png");
 		}
 		cutCards();
-		back = new TextureRegion(cardBack);
-		backBlur = new TextureRegion(cardBackBlur);
+		back = new TextureRegion(backs[0]);
+		backBlur = new TextureRegion(backBlurs[0]);
 		white = own(whitePixel());
 		stroke = own(strokeTexture(32, 160));
 		font = bitmapFont("ui");
@@ -137,6 +145,12 @@ public final class Assets implements Disposable {
 
 	public TextureRegion face(Card c) {
 		return faces[c.suit().ordinal()][c.rank().ordinal()];
+	}
+
+	public void dress(Cosmetic cardBack, Cosmetic felt) {
+		table = tables[felt.ordinal()];
+		back.setRegion(backs[cardBack.ordinal()]);
+		backBlur.setRegion(backBlurs[cardBack.ordinal()]);
 	}
 
 	public TextureRegion back() {

@@ -13,6 +13,7 @@ public final class Palette {
 	public static final Color CREAM = new Color(0.95f, 0.91f, 0.83f, 1f);
 	public static final Color MUTED = new Color(0.68f, 0.6f, 0.49f, 1f);
 	public static final Color RED = new Color(0.9f, 0.42f, 0.36f, 1f);
+	public static final Color INK = new Color(0.17f, 0.13f, 0.1f, 1f);
 	public static final Color CARD_DIM = new Color(0.5f, 0.46f, 0.42f, 1f);
 	public static final Color BACKDROP = new Color(0.03f, 0.02f, 0.01f, 0.8f);
 	public static final Color SHADE = new Color(0.03f, 0.02f, 0.01f, 0.35f);

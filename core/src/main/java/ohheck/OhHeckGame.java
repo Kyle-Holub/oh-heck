@@ -9,14 +9,18 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import ohheck.campaign.Chapter;
+import ohheck.campaign.Study;
 import ohheck.platform.Audio;
 import ohheck.platform.GameOptions;
 import ohheck.platform.Settings;
 import ohheck.records.Records;
 import ohheck.records.SavedGame;
+import ohheck.screens.CampaignScreen;
 import ohheck.screens.HighScoresScreen;
 import ohheck.screens.OptionsScreen;
 import ohheck.screens.PlayersScreen;
+import ohheck.screens.StudyScreen;
 import ohheck.screens.TitleScreen;
 import ohheck.screens.TutorialScreen;
 import ohheck.table.PlayScreen;
@@ -47,8 +51,10 @@ public class OhHeckGame extends Game implements GameHost {
 	private OptionsScreen optionsScreen;
 	private HighScoresScreen highScoresScreen;
 	private PlayersScreen playersScreen;
+	private CampaignScreen campaignScreen;
+	private StudyScreen studyScreen;
 	private final List<Screen> keptScreens = new ArrayList<Screen>();
-	private PlayScreen play;
+	private PlayScreen play, campaignPlay;
 
 	private final FramePacer pacer = new FramePacer();
 	private boolean capturing;
@@ -78,12 +84,15 @@ public class OhHeckGame extends Game implements GameHost {
 		settings = new Settings();
 		records = new Records(settings.recordStore(), options.persist, options.stats);
 		audio = new Audio(settings);
+		assets.dress(settings.cardBack(), settings.felt());
 		post = new PostProcessor();
 		title = kept(new TitleScreen(this));
 		tutorial = kept(new TutorialScreen(this));
 		optionsScreen = kept(new OptionsScreen(this));
 		highScoresScreen = kept(new HighScoresScreen(this));
 		playersScreen = kept(new PlayersScreen(this));
+		campaignScreen = kept(new CampaignScreen(this));
+		studyScreen = kept(new StudyScreen(this));
 		screens.replaceAll(title);
 	}
 
@@ -211,6 +220,42 @@ public class OhHeckGame extends Game implements GameHost {
 	}
 
 	@Override
+	public void showCampaign() {
+		if (!settings.tutorialSeen() && !options.autoplayHuman) {
+			tutorial.open(true);
+			screens.open(tutorial);
+			return;
+		}
+		screens.replaceAll(title);
+		screens.open(campaignScreen);
+	}
+
+	@Override
+	public void startCampaign() {
+		screens.replaceAll(title);
+		campaignScreen.openChapter(Chapter.ONE);
+		screens.open(campaignScreen);
+		playStudy(records.campaign().nextStudy(Chapter.ONE));
+	}
+
+	@Override
+	public void playCampaign(Chapter chapter, boolean duel) {
+		if (campaignPlay != null) {
+			campaignPlay.dispose();
+		}
+		campaignPlay = PlayScreen.campaign(this, chapter, duel);
+		screens.replaceAll(title);
+		screens.open(campaignScreen);
+		screens.open(campaignPlay);
+	}
+
+	@Override
+	public void playStudy(Study study) {
+		studyScreen.open(study);
+		screens.open(studyScreen);
+	}
+
+	@Override
 	public void newGame() {
 		if (play != null) {
 			play.dispose();
@@ -248,6 +293,9 @@ public class OhHeckGame extends Game implements GameHost {
 		}
 		if (play != null) {
 			play.dispose();
+		}
+		if (campaignPlay != null) {
+			campaignPlay.dispose();
 		}
 		audio.dispose();
 		post.dispose();

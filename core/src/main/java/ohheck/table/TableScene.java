@@ -38,6 +38,10 @@ interface TableScene {
 
 	boolean isMenuOpen();
 
+	default boolean inCampaign() {
+		return false;
+	}
+
 	boolean isDragging();
 
 	Card pressedCard();

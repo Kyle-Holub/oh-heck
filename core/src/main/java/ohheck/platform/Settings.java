@@ -5,6 +5,7 @@ import java.util.function.UnaryOperator;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
+import ohheck.campaign.Cosmetic;
 import ohheck.players.Difficulty;
 import ohheck.records.Records;
 import ohheck.rules.GameMode;
@@ -15,7 +16,7 @@ import ohheck.rules.RuleSet;
 public final class Settings {
 
 	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
-			MODE = "mode", CUSTOM_RULES = "customRules", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen";
+			MODE = "mode", CUSTOM_RULES = "customRules", CARD_BACK = "cardBack", FELT = "felt", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen";
 
 	private static final float STANDARD_PACE = 0.6f, FAST_PACE = 1.4f;
 
@@ -109,6 +110,22 @@ public final class Settings {
 
 	public void setHandSort(HandSort sort) {
 		prefs.putString(HAND_SORT, sort.name()).flush();
+	}
+
+	public Cosmetic cardBack() {
+		return Cosmetic.named(prefs.getString(CARD_BACK, Cosmetic.CLASSIC.name()));
+	}
+
+	public void setCardBack(Cosmetic c) {
+		prefs.putString(CARD_BACK, c.name()).flush();
+	}
+
+	public Cosmetic felt() {
+		return Cosmetic.named(prefs.getString(FELT, Cosmetic.CLASSIC.name()));
+	}
+
+	public void setFelt(Cosmetic c) {
+		prefs.putString(FELT, c.name()).flush();
 	}
 
 	public boolean tutorialSeen() {

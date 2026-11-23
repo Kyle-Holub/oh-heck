@@ -44,10 +44,9 @@ public class TitleScreen extends BaseScreen {
 		items.clear();
 		if (game.hasGameInProgress()) {
 			items.add("Continue");
-			items.add("New game");
-		} else {
-			items.add("Play");
 		}
+		items.add("Campaign");
+		items.add("Custom game");
 		items.add("High scores");
 		items.add("Options");
 		items.add("Quit");
@@ -165,7 +164,9 @@ public class TitleScreen extends BaseScreen {
 	private void choose(String item) {
 		if (item.equals("Continue")) {
 			game.continueGame();
-		} else if (item.equals("Play") || item.equals("New game")) {
+		} else if (item.equals("Campaign")) {
+			game.showCampaign();
+		} else if (item.equals("Custom game")) {
 			game.play();
 		} else if (item.equals("High scores")) {
 			game.showHighScores(-1);

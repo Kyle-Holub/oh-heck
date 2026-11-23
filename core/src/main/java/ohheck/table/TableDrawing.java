@@ -116,7 +116,7 @@ final class TableDrawing {
 		Match m = scene.match();
 		boolean turn = flow.state() == TableState.TURN && m.currentSeat() == seat;
 		state.reset().named(scene.name(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(m.dealer() == seat)
-				.bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
+				.doubled(m.onMomentum(seat)).bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
 	}
 

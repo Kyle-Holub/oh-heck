@@ -70,7 +70,7 @@ public class SaveTest {
 	@Test
 	public void rejectsDamagedSaves() {
 		String good = Match.random(4, new Random(2)).save();
-		String[] bad = { "", "hello", good.replace("oh-heck-match-3", "something-else"),
+		String[] bad = { "", "hello", good.replace("oh-heck-match-4", "something-else"),
 				good.substring(0, good.length() / 2), good.replaceFirst("hand=0", "hand=12"),
 				good.replaceFirst("players=4", "players=x") };
 		for (String b : bad) {

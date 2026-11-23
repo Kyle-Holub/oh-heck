@@ -67,7 +67,7 @@ final class TableFlow {
 	}
 
 	void seat(Seating players, Random rng) {
-		for (int s = 0; s < bots.length; s++) {
+		for (int s = 0; s < players.players(); s++) {
 			if (s != Seating.YOU) {
 				bots[s] = players.at(s).bot(new Random(rng.nextLong()));
 			}
@@ -173,7 +173,7 @@ final class TableFlow {
 			return;
 		}
 		trumpTime = 0;
-		deal.start(match.handSize(), match.dealer(), match.handIndex() == 0);
+		deal.start(match.handSize(), match.dealer(), match.players(), match.handIndex() == 0);
 		enter(TableState.SHUFFLE);
 	}
 

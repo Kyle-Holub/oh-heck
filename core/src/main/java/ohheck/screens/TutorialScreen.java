@@ -111,7 +111,7 @@ public class TutorialScreen extends BaseScreen {
 	private void finish() {
 		if (firstRun) {
 			game.settings().setTutorialSeen(true);
-			game.newGame();
+			game.startCampaign();
 		} else {
 			game.back();
 		}
@@ -162,7 +162,7 @@ public class TutorialScreen extends BaseScreen {
 		sb.append(step + 1).append(" / ").append(steps.length);
 		paint.text(m, sb.toString(), x + cw - 20, y + CAPTION_H - 14, false);
 		if (step == steps.length - 1) {
-			paint.button(doneButton, "Ready to play", w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
+			paint.button(doneButton, "Start the campaign", w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
 		} else {
 			paint.text(m, "Tap to continue", x + cw - 20, y + 22, false);
 		}

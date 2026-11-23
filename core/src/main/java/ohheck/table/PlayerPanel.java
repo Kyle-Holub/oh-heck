@@ -31,6 +31,7 @@ public final class PlayerPanel {
 		float fitsRows = ((ICON_ROOM_H - (rows - 1) * ICON_GAP) / rows) / ICON_ASPECT;
 		return Math.min(ICON_MAX_W, Math.min(fitsRow, fitsRows));
 	}
+	private static final String DOUBLED = "x2";
 	private static final Color BID_FADE = new Color(1f, 1f, 1f, 0.32f);
 	private static final Color WAIT_TEXT = new Color(0.72f, 0.66f, 0.58f, 1f), WAIT_SCORE = new Color(0.62f, 0.5f, 0.3f, 1f);
 
@@ -70,7 +71,12 @@ public final class PlayerPanel {
 			paint.batch.draw(paint.assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
 		}
 		f.setColor(waiting && !seat.turn ? WAIT_SCORE : Palette.GOLD);
-		paint.text(f, Numbers.text(seat.score), x + W - 10, top - 9, false);
+		String score = Numbers.text(seat.score);
+		paint.text(f, score, x + W - 10, top - 9, false);
+		if (seat.doubled) {
+			paint.glyphs.setText(f, score);
+			paint.text(paint.ui(1.0f, Palette.GOLD_LIGHT), DOUBLED, x + W - 18 - paint.glyphs.width, top - 11, false);
+		}
 	}
 
 	private void drawHourglass(SeatState seat, float x, float y, float time) {

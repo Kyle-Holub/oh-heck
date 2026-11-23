@@ -64,6 +64,14 @@ public class OptionsScreen extends BaseScreen {
 							game.audio().play(Audio.Effect.PLAY_CARD);
 						}),
 						OptionItem.heading("Display"),
+						OptionItem.choice("Card back", "Won by clearing campaign chapters.", () -> s.cardBack().label, () -> {
+							s.setCardBack(s.cardBack().nextOwned(game.records().campaign()));
+							game.assets().dress(s.cardBack(), s.felt());
+						}),
+						OptionItem.choice("Table felt", "Won by clearing campaign chapters.", () -> s.felt().label, () -> {
+							s.setFelt(s.felt().nextOwned(game.records().campaign()));
+							game.assets().dress(s.cardBack(), s.felt());
+						}),
 						OptionItem.choice("Hand sort", "Trumps on the left, then by suit or by rank.",
 								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next())),
 						OptionItem.choice("Game speed", "How fast the cards and the other players move.",

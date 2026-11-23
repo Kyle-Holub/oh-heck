@@ -8,7 +8,7 @@ import ohheck.ui.BaseScreen;
 
 /*
  * Where everything sits on the table for the current screen size. Seat 0 is you at the bottom,
- * then left, top and right.
+ * then left, top and right; in a duel the one other player sits at the top.
  */
 final class TableLayout {
 
@@ -31,9 +31,19 @@ final class TableLayout {
 
 	private final Vector2 fan = new Vector2(), anchor = new Vector2(), slot = new Vector2();
 
+	private int players = Seating.SEATS;
+
 	void resize(float w, float h) {
 		this.w = w;
 		this.h = h;
+	}
+
+	void seat(int players) {
+		this.players = players;
+	}
+
+	int spot(int seat) {
+		return players == Seating.DUEL_SEATS && seat == 1 ? 2 : seat;
 	}
 
 	static float handCardW() {
@@ -53,14 +63,17 @@ final class TableLayout {
 	}
 
 	float panelX(int seat) {
+		seat = spot(seat);
 		return seat == Seating.YOU || seat == 1 ? EDGE : seat == 2 ? w / 2 - PANEL_W / 2 : w - EDGE - PANEL_W;
 	}
 
 	float panelTop(int seat) {
+		seat = spot(seat);
 		return seat == Seating.YOU ? EDGE + PANEL_H : seat == 2 ? h - TOP_PANEL_INSET : h / 2 + SIDE_PANEL_RAISE;
 	}
 
 	Vector2 fanOrigin(int seat) {
+		seat = spot(seat);
 		float x = panelX(seat), top = panelTop(seat);
 		if (seat == 2) {
 			return fan.set(x + PANEL_W + FAN_GAP, top - PANEL_H / 2 - backH() / 2);
@@ -69,6 +82,7 @@ final class TableLayout {
 	}
 
 	float fanCardX(int seat, int i, int n) {
+		seat = spot(seat);
 		float x = fanOrigin(seat).x;
 		return seat == 3 ? x - backW() - (n - 1 - i) * FAN_STEP : x + i * FAN_STEP;
 	}
@@ -81,6 +95,7 @@ final class TableLayout {
 	}
 
 	Vector2 seatAnchor(int seat) {
+		seat = spot(seat);
 		if (seat == Seating.YOU) {
 			return anchor.set(w / 2, HAND_ANCHOR_Y);
 		}
@@ -89,6 +104,7 @@ final class TableLayout {
 	}
 
 	Vector2 deckSpot(int seat) {
+		seat = spot(seat);
 		if (seat == Seating.YOU) {
 			return anchor.set(panelX(Seating.YOU) + PANEL_W - backW(), panelTop(Seating.YOU) + FAN_DROP + backH() / 2);
 		}
@@ -109,6 +125,7 @@ final class TableLayout {
 	}
 
 	Vector2 trickSlot(int seat) {
+		seat = spot(seat);
 		float cx = w / 2, cy = h / 2 + TRICK_RAISE;
 		float x = cx - Assets.CARD_W / 2f + (seat == 1 ? -TRICK_DX : seat == 3 ? TRICK_DX : 0);
 		float y = cy - Assets.CARD_H / 2f + (seat == Seating.YOU ? -TRICK_DY : seat == 2 ? TRICK_DY : 0);

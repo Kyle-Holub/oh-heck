@@ -17,13 +17,14 @@ where things live, how they connect, and the tools around them.
 
 Each package uses only those above it in this list, never one below, so there are no
 cycles; `ohheck.util` and `ohheck.anim` depend on nothing, and anything may use them. The
-first five have no libGDX and test in plain JUnit.
+first six have no libGDX and test in plain JUnit.
 
 | Package | What's in it |
 |---|---|
 | `ohheck.rules` | Cards, `Match`, `Trick`, `Move`, `MatchCodec`, `RuleSet`, `HandOrder`, `GameMode`, `TableView` |
 | `ohheck.players` | The roster (`Player`), who sits where (`Seating`), levels (`Difficulty`), habits (`Style`), the bots, `BidTable`; the arena lives here too |
-| `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them |
+| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion), `Campaign` (progress, saved), `Study`, `Studies` and `StudyPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won) |
+| `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them and the campaign's progress |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
 | `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Timeline`, and `FixedSteps` (the game loop's clock) |
 | `ohheck.platform` | The device: `Settings` (preferences) and `RecordPrefs` (where the records are kept), `Audio`, `GameOptions` (how a launcher runs the game) |
@@ -165,6 +166,19 @@ Facts the screens show come from the rules, not copied text: the Options difficu
 hand counts come from the roster (`Player.byId`) and `RuleSet.STANDARD`, and the tally from the
 game's rules.
 
+### The campaign
+
+The title offers **Campaign** and **Custom game** (today's game, saved as it goes). The
+campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
+three steps: studies (`StudyScreen`, a fixed deal with every hand face up and three undos),
+table play (a normal game against the chapter's rivals) and a duel against its champion
+(`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
+bid made after two made running). Winning the duel clears the chapter and wins its card back
+and felt (`Cosmetic`, chosen in Preferences). `PlayScreen.campaign` plays the table and the
+duel; campaign games are not saved and don't touch the statistics or high scores, but every
+game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
+the top (`TableLayout.spot`). The plan the campaign follows is `docs/CAMPAIGN.md`.
+
 ### Saving
 
 `Settings` wraps the device's preferences: the options and the tutorial flag. Kept in the
@@ -255,6 +269,8 @@ with `OhHeckGame.VERSION` bumped.
 |---|---|
 | `levels N` | the levels against each other |
 | `vs N` | head to head |
+| `duel N` | the levels and every roster player one-on-one under the duel's rules |
+| `learn-duel N` | regenerates `DuelBidTable.java`, the bid odds for duels, leaving `BidTable` alone |
 | `variants N` | Easy, Normal and Hard across all 24 rule sets (progression, 8 or 13 cards, big and blind bids) |
 | `learn N` | regenerates `BidTable.java` |
 | `effort N` | Hard's strength at half, normal and double thinking |
