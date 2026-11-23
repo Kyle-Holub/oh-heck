@@ -10,7 +10,9 @@ import ohheck.rules.TableView;
 /*
  * Bids the best expected score from BidTable's per-card odds, adjusted for the bids before it.
  * Plays with card memory: cashes winners and trumps in when it wants tricks, ducks and sheds
- * high cards when it doesn't. The tuning constants were measured in the arena.
+ * high cards when it doesn't. Top trumps in hand are sure tricks: once they cover what it still
+ * needs, it keeps out of every other trick and takes its last ones with them. The tuning
+ * constants were measured in the arena.
  */
 final class NormalBot implements Bot {
 
@@ -91,7 +93,45 @@ final class NormalBot implements Bot {
 			return legal.get(0);
 		}
 		boolean want = v.need() > 0;
+		Card sure = lowestSure(legal, v);
+		if (want && sure != null && v.need() <= sureTricks(v)) {
+			return v.trick().isEmpty() ? sure : coverWithSureTricks(v, legal, sure);
+		}
 		return v.trick().isEmpty() ? lead(v, legal, want) : follow(v, legal, want);
+	}
+
+	static boolean isSure(TableView v, Card c) {
+		return c.suit() == v.trump() && isBoss(v, c);
+	}
+
+	static int sureTricks(TableView v) {
+		int n = 0;
+		for (Card c : v.hand()) {
+			n += isSure(v, c) ? 1 : 0;
+		}
+		return n;
+	}
+
+	private static Card lowestSure(List<Card> legal, TableView v) {
+		Card best = null;
+		for (Card c : legal) {
+			if (isSure(v, c) && (best == null || best.rank().outranks(c.rank()))) {
+				best = c;
+			}
+		}
+		return best;
+	}
+
+	private Card coverWithSureTricks(TableView v, List<Card> legal, Card sure) {
+		Suit trump = v.trump();
+		Card winning = v.trick().get(v.rules().trickWinner(v.trick(), trump));
+		Card highestLoser = null;
+		for (Card c : legal) {
+			if (!v.rules().beats(c, winning, trump) && (highestLoser == null || cheaper(highestLoser, c, trump))) {
+				highestLoser = c;
+			}
+		}
+		return highestLoser != null ? highestLoser : sure;
 	}
 
 	private Card lead(TableView v, List<Card> legal, boolean want) {
