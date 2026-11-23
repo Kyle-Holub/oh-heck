@@ -183,7 +183,7 @@ final class TableOverlays {
 				scale = LABEL_OPPONENT;
 				paint.glyphs.setText(paint.serif(scale), s);
 				Vector2 o = layout.fanOrigin(seat);
-				x = seat == 3 ? o.x - paint.glyphs.width : o.x;
+				x = layout.spot(seat) == 3 ? o.x - paint.glyphs.width : o.x;
 				y = o.y + TableLayout.backH() / 2 + paint.glyphs.height / 2;
 			}
 			BitmapFont f = paint.serif(scale);
@@ -279,7 +279,7 @@ final class TableOverlays {
 		}
 		float bw = END_BUTTON_W, bh = END_BUTTON_H, by = py + END_BUTTONS_RISE;
 		paint.button(targets.button(OverlayTargets.Button.PLAY_AGAIN), "Play again", layout.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
-		paint.button(targets.button(OverlayTargets.Button.HIGH_SCORES), "High scores", layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
+		paint.button(targets.button(OverlayTargets.Button.HIGH_SCORES), scene.inCampaign() ? "Campaign" : "High scores", layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
 	}
 
 	private String winnersLine() {

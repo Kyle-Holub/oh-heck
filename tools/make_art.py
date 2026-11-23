@@ -191,12 +191,12 @@ def card_sheet(out):
     return sheet
 
 
-def card_back(out):
+def card_back(out, name="back_hd.png", colour=OXBLOOD, deep=OXBLOOD_DARK, suit="spades"):
     W, H = CARD_W * SS, CARD_H * SS
     y = np.linspace(0, 1, H)[:, None, None]
     x = np.linspace(0, 1, W)[None, :, None]
     r = np.sqrt((x - 0.5) ** 2 + (y - 0.5) ** 2)
-    base = np.array(OXBLOOD, float) * (1.15 - 0.6 * r) + np.array(OXBLOOD_DARK, float) * 0.0
+    base = np.array(colour, float) * (1.15 - 0.6 * r)
     img = Image.fromarray(np.clip(base, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
     d = ImageDraw.Draw(img)
     inset = 14 * SS
@@ -214,15 +214,20 @@ def card_back(out):
     d.rounded_rectangle([inset + 6 * SS, inset + 6 * SS, W - inset - 6 * SS, H - inset - 6 * SS], 8 * SS, outline=GOLD_DARK, width=SS)
     # medallion
     cx, cy, rad = W / 2, H / 2, 38 * SS
-    d.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=OXBLOOD_DARK, outline=GOLD, width=3 * SS)
+    d.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=deep, outline=GOLD, width=3 * SS)
     d.ellipse([cx - rad + 7 * SS, cy - rad + 7 * SS, cx + rad - 7 * SS, cy + rad - 7 * SS], outline=GOLD_DARK, width=SS)
-    suit_shape(d, "spades", cx, cy, 40 * SS, GOLD)
+    suit_shape(d, suit, cx, cy, 40 * SS, GOLD)
     d.rounded_rectangle([SS, SS, W - 1 - SS, H - 1 - SS], 15 * SS, outline=CREAM_EDGE, width=5 * SS)
     img.putalpha(rounded_mask(W, H, 16 * SS))
-    downsample(img, CARD_W, CARD_H).save(os.path.join(out, "back_hd.png"), optimize=True)
+    downsample(img, CARD_W, CARD_H).save(os.path.join(out, name), optimize=True)
 
 
 # ---------------------------------------------------------------- table and UI
+
+def card_blank(out):
+    """A card face with nothing printed on it, for the campaign's chapter and step cards."""
+    downsample(card_base(77), CARD_W, CARD_H).save(os.path.join(out, "card_blank.png"), optimize=True)
+
 
 def card_slot(out):
     """An empty card's place: a dashed outline of a card, for a hand dealt with no trump card."""
@@ -260,7 +265,7 @@ def card_slot(out):
     downsample(img, CARD_W, CARD_H).save(os.path.join(out, "card_slot.png"), optimize=True)
 
 
-def table(out):
+def table(out, name="table.jpg", dark=(20, 12, 8), lit=(92, 58, 38)):
     """Dark warm felt under a soft overhead spotlight, falling away to near-black."""
     W, H = 1280, 640
     rng = np.random.default_rng(7)
@@ -268,14 +273,14 @@ def table(out):
     x = np.linspace(-1, 1, W)[None, :]
     r = np.sqrt((x / 1.25) ** 2 + ((y + 0.05) / 0.95) ** 2)
     light = np.clip(1 - r, 0, 1) ** 1.6
-    dark = np.array([20, 12, 8], float)
-    lit = np.array([92, 58, 38], float)
+    dark = np.array(dark, float)
+    lit = np.array(lit, float)
     img = dark[None, None, :] + (lit - dark)[None, None, :] * light[..., None]
     fibre = rng.normal(0, 1, (H, W)).astype(np.float32)
     fibre = np.clip(fibre * 40 + 128, 0, 255).astype(np.uint8)
     fibre = (np.asarray(Image.fromarray(fibre, "L").filter(ImageFilter.GaussianBlur(0.8))).astype(float) - 128) / 40
     img += fibre[..., None] * 6
-    Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, "table.jpg"), quality=90, optimize=True)
+    Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, name), quality=90, optimize=True)
 
 
 def nine_patch(name, out, fill, border, width=2, radius=12, size=48, glow=None):
@@ -525,10 +530,37 @@ def blurred_sheet(sheet, out, pad=24, radius=7):
         for c in range(13):
             half.paste(bl.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch)).resize((hw, hh), Image.LANCZOS), (c * hw, r * hh))
     half.save(os.path.join(out, "cards_blur.png"), optimize=True)
-    back = Image.open(os.path.join(out, "back_hd.png"))
-    cell = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
-    cell.paste(back, (pad, pad))
-    premultiplied_blur(cell, radius).save(os.path.join(out, "back_blur.png"))
+    blurred_back(out, "back_hd.png", "back_blur.png", pad, radius)
+
+
+def blurred_back(out, src, dst, pad=24, radius=7):
+    cell = Image.new("RGBA", (CARD_W + 2 * pad, CARD_H + 2 * pad), (0, 0, 0, 0))
+    cell.paste(Image.open(os.path.join(out, src)), (pad, pad))
+    premultiplied_blur(cell, radius).save(os.path.join(out, dst))
+
+
+def chapter_cosmetics(out):
+    """Each chapter's prize: a card back and a felt. Chapter 1: emerald and club, a card-room green."""
+    card_back(out, "back_ch1.png", colour=(22, 92, 58), deep=(10, 48, 30), suit="clubs")
+    blurred_back(out, "back_ch1.png", "back_ch1_blur.png")
+    table(out, "table_ch1.jpg", dark=(6, 18, 12), lit=(30, 86, 56))
+
+
+def badge(out):
+    """A gold medal with a star, for the badges on Records; unearned ones are drawn dim."""
+    S = 108 * SS
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    c, r = S / 2, S / 2 - 4 * SS
+    d.ellipse([c - r, c - r, c + r, c + r], fill=GOLD_DARK + (255,))
+    d.ellipse([c - r + 6 * SS, c - r + 6 * SS, c + r - 6 * SS, c + r - 6 * SS], fill=GOLD + (255,), outline=GOLD_LIGHT + (255,), width=2 * SS)
+    points = []
+    for k in range(10):
+        a = math.pi / 2 + k * math.pi / 5
+        rr = (r - 18 * SS) if k % 2 == 0 else (r - 18 * SS) * 0.45
+        points.append((c + rr * math.cos(a), c - rr * math.sin(a)))
+    d.polygon(points, fill=GOLD_LIGHT + (255,), outline=GOLD_DARK + (255,))
+    downsample(img, 108, 108).save(os.path.join(out, "badge.png"))
 
 
 def premultiplied_blur(img, radius):
@@ -550,6 +582,9 @@ if __name__ == "__main__":
     sheet = card_sheet(out)
     card_back(out)
     card_slot(out)
+    card_blank(out)
+    chapter_cosmetics(out)
+    badge(out)
     blurred_sheet(sheet, out)
     table(out)
     icons(out)

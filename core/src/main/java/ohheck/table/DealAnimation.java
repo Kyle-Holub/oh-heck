@@ -26,12 +26,13 @@ final class DealAnimation {
 			LEAVING = Tween.over(EXIT, Ease.IN);
 	private static final Phases PASS_STAGES = new Phases(SPLIT, RIFFLE, SETTLE);
 
-	private int handSize, dealer, passes, soundsPlayed;
+	private int handSize, dealer, players, passes, soundsPlayed;
 	private float t, shuffleLength, exitStart, length;
 
-	void start(int handSize, int dealer, boolean newGame) {
+	void start(int handSize, int dealer, int players, boolean newGame) {
 		this.handSize = handSize;
 		this.dealer = dealer;
+		this.players = players;
 		passes = newGame ? 2 : 1;
 		shuffleLength = GATHER + passes * PASS;
 		float cardsLanded = cardsDealt() * DEAL_INTERVAL + DEAL_FLIGHT + FLIP_TIME + 0.1f;
@@ -63,7 +64,7 @@ final class DealAnimation {
 	}
 
 	float startOf(int seat, int j) {
-		int k = ((seat - dealer - 1) % 4 + 4) % 4 + 4 * j;
+		int k = ((seat - dealer - 1) % players + players) % players + players * j;
 		return k * DEAL_INTERVAL;
 	}
 
@@ -72,7 +73,7 @@ final class DealAnimation {
 	}
 
 	private int cardsDealt() {
-		return 4 * handSize;
+		return players * handSize;
 	}
 
 	private int cardsLeftIn(float dealTime) {

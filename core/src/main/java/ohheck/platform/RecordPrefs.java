@@ -10,7 +10,7 @@ import ohheck.records.SavedGame;
 /* Records.Store on the device's preferences. */
 final class RecordPrefs implements Records.Store {
 
-	private static final String STATS = "stats", HIGH_SCORES = "highScores", SAVED_GAME = "savedGame";
+	private static final String STATS = "stats", HIGH_SCORES = "highScores", SAVED_GAME = "savedGame", CAMPAIGN = "campaign";
 
 	private final Preferences prefs;
 
@@ -36,6 +36,16 @@ final class RecordPrefs implements Records.Store {
 	@Override
 	public void setHighScores(String encoded) {
 		prefs.putString(HIGH_SCORES, encoded).flush();
+	}
+
+	@Override
+	public String campaign() {
+		return prefs.getString(CAMPAIGN, "");
+	}
+
+	@Override
+	public void setCampaign(String encoded) {
+		prefs.putString(CAMPAIGN, encoded).flush();
 	}
 
 	@Override

@@ -11,6 +11,9 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import ohheck.campaign.Badge;
+import ohheck.campaign.Campaign;
+import ohheck.campaign.Chapter;
 import ohheck.players.Difficulty;
 import ohheck.records.HighScores;
 import ohheck.records.Stats;
@@ -25,14 +28,14 @@ import ohheck.ui.SideTabs;
 import ohheck.ui.Wording;
 
 /*
- * Your records: the high scores or the statistics, for every game or one difficulty. The
- * difficulty tabs down the left filter both; a switch at the top of the panel picks which.
- * High scores are kept per game mode, picked by a row of buttons under the switch.
+ * Your records: the high scores, the statistics or the badges. A switch at the top of the panel
+ * picks which; the difficulty tabs down the left filter the scores and statistics. High scores are
+ * kept per game mode, picked by a row of buttons under the switch.
  */
 public class HighScoresScreen extends BaseScreen {
 
 	private static final float BADGE = 24, PAD = 22, FRAME = 6;
-	private static final float SWITCH_H = 40, SWITCH_ROOM = 58, MODE_H = 34, MODE_ROOM = 44, MODE_GAP = 8;
+	private static final float BADGE_ROW = 56, SWITCH_H = 40, SWITCH_ROOM = 58, MODE_H = 34, MODE_ROOM = 44, MODE_GAP = 8;
 	private static final float SCORE_ROW = 32, SCORE_HEADS_H = 34, STAT_ROW = 42, SECTION_H = 50;
 	private static final float RESET_W = 230, RESET_CONFIRM_TIME = 3f;
 	private static final float[] SCORE_COLS = { 0.07f, 0.2f, 0.38f, 0.58f };
@@ -40,7 +43,8 @@ public class HighScoresScreen extends BaseScreen {
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final Rectangle backButton = new Rectangle(), resetButton = new Rectangle(), page = new Rectangle(),
-			inside = new Rectangle(), scoresSwitch = new Rectangle(), statsSwitch = new Rectangle();
+			inside = new Rectangle();
+	private final Rectangle[] switches = { new Rectangle(), new Rectangle(), new Rectangle() };
 	private final SideTabs filters;
 	private final int[] filterOf = new int[Stats.ALL + 1];
 	private final Scroller scroller = new Scroller();
@@ -48,7 +52,18 @@ public class HighScoresScreen extends BaseScreen {
 	private final List<HighScores.Entry> shown = new ArrayList<HighScores.Entry>();
 	private final Rectangle[] modeButtons = new Rectangle[GameMode.values().length];
 	private GameMode mode = GameMode.CLASSIC;
-	private boolean showStats;
+	private enum View {
+		SCORES("High scores", "highscores"), STATS("Statistics", "statistics"), BADGES("Badges", "badges");
+
+		final String label, tag;
+
+		View(String label, String tag) {
+			this.label = label;
+			this.tag = tag;
+		}
+	}
+
+	private View view = View.SCORES;
 	private int filter = Stats.ALL, rowsFor = -1, scoresFor = -1, newestAt = -1;
 	private String[][] games, hands;
 	private float confirmReset;
@@ -78,7 +93,11 @@ public class HighScoresScreen extends BaseScreen {
 	}
 
 	public void showStatistics() {
-		view(true);
+		view(View.STATS);
+	}
+
+	public void showBadges() {
+		view(View.BADGES);
 	}
 
 	@Override
@@ -92,11 +111,11 @@ public class HighScoresScreen extends BaseScreen {
 		confirmReset = 0;
 		filter = Stats.ALL;
 		filters.choose(0);
-		view(false);
+		view(View.SCORES);
 	}
 
-	private void view(boolean stats) {
-		showStats = stats;
+	private void view(View v) {
+		view = v;
 		scroller.reset();
 	}
 
@@ -120,17 +139,19 @@ public class HighScoresScreen extends BaseScreen {
 		paint.frame(assets.panel, page.x, page.y, page.width, page.height);
 		drawSwitch();
 		float top = SWITCH_ROOM;
-		if (!showStats) {
+		if (view == View.SCORES) {
 			drawModes(page.y + page.height - SWITCH_ROOM - MODE_H);
 			top += MODE_ROOM;
 		}
 		inside.set(page.x + FRAME, page.y + FRAME, page.width - 2 * FRAME, page.height - top - FRAME);
-		float content = showStats ? statsHeight() : scoresHeight();
+		float content = view == View.STATS ? statsHeight() : view == View.BADGES ? badgesHeight() : scoresHeight();
 		scroller.update(frameDelta(), Gdx.input.isTouched(), content - inside.height);
 		if (clipTo(inside)) {
 			float listTop = inside.y + inside.height + scroller.offset();
-			if (showStats) {
+			if (view == View.STATS) {
 				drawStats(listTop);
+			} else if (view == View.BADGES) {
+				drawBadges(listTop);
 			} else {
 				drawScores(listTop);
 			}
@@ -148,9 +169,11 @@ public class HighScoresScreen extends BaseScreen {
 	}
 
 	private void drawSwitch() {
-		float half = (page.width - 2 * PAD) / 2, y = page.y + page.height - PAD / 2 - SWITCH_H;
-		switchButton(scoresSwitch, "High scores", page.x + PAD + half / 2, y, half, !showStats);
-		switchButton(statsSwitch, "Statistics", page.x + PAD + half * 1.5f, y, half, showStats);
+		View[] all = View.values();
+		float third = (page.width - 2 * PAD) / all.length, y = page.y + page.height - PAD / 2 - SWITCH_H;
+		for (View v : all) {
+			switchButton(switches[v.ordinal()], v.label, page.x + PAD + third * (v.ordinal() + 0.5f), y, third, view == v);
+		}
 	}
 
 	private void switchButton(Rectangle area, String label, float cx, float y, float bw, boolean on) {
@@ -277,11 +300,11 @@ public class HighScoresScreen extends BaseScreen {
 			back();
 		} else if (resetButton.contains(x, y)) {
 			reset();
-		} else if (scoresSwitch.contains(x, y) && showStats) {
-			view(false);
-		} else if (statsSwitch.contains(x, y) && !showStats) {
-			view(true);
-		} else if (!showStats && modeAt(x, y) != null) {
+		} else if (switchAt(x, y) != null) {
+			if (switchAt(x, y) != view) {
+				view(switchAt(x, y));
+			}
+		} else if (view == View.SCORES && modeAt(x, y) != null) {
 			mode = modeAt(x, y);
 			scroller.reset();
 		} else {
@@ -292,6 +315,42 @@ public class HighScoresScreen extends BaseScreen {
 				scroller.reset();
 			}
 		}
+	}
+
+	private View switchAt(float x, float y) {
+		for (View v : View.values()) {
+			if (switches[v.ordinal()].contains(x, y)) {
+				return v;
+			}
+		}
+		return null;
+	}
+
+	private float badgesHeight() {
+		return (Chapter.values().length + Badge.values().length) * BADGE_ROW + PAD;
+	}
+
+	private void drawBadges(float top) {
+		Campaign progress = game.records().campaign();
+		float y = top - 8;
+		for (Chapter c : Chapter.values()) {
+			drawBadge(y, "Beat " + c.champion().name, c.ready ? "Win chapter " + c.number() + "'s duel" : "Coming soon",
+					progress.cleared(c));
+			y -= BADGE_ROW;
+		}
+		for (Badge b : Badge.values()) {
+			drawBadge(y, b.title, b.how, progress.has(b));
+			y -= BADGE_ROW;
+		}
+	}
+
+	private void drawBadge(float top, String title, String how, boolean earned) {
+		float x = page.x + PAD, icon = BADGE_ROW - 14;
+		batch.setColor(1, 1, 1, earned ? 1 : 0.25f);
+		batch.draw(assets.badge, x, top - icon - 4, icon, icon);
+		batch.setColor(Color.WHITE);
+		paint.serif(1.3f, earned ? Palette.GOLD_LIGHT : Palette.MUTED).draw(batch, title, x + icon + 14, top - 8);
+		paint.ui(0.95f, earned ? Palette.CREAM : Palette.MUTED).draw(batch, how, x + icon + 14, top - 30);
 	}
 
 	private GameMode modeAt(float x, float y) {
@@ -321,6 +380,6 @@ public class HighScoresScreen extends BaseScreen {
 
 	@Override
 	public String stateTag() {
-		return showStats ? "statistics" : "highscores";
+		return view.tag;
 	}
 }

@@ -20,6 +20,8 @@ import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import ohheck.OhHeckGame;
+import ohheck.campaign.Chapter;
+import ohheck.campaign.Studies;
 import ohheck.platform.GameOptions;
 import ohheck.players.Bot;
 import ohheck.players.Difficulty;
@@ -27,6 +29,7 @@ import ohheck.players.Player;
 import ohheck.players.Seating;
 import ohheck.records.Stats;
 import ohheck.rules.Match;
+import ohheck.screens.CampaignScreen;
 import ohheck.screens.HighScoresScreen;
 import ohheck.screens.PlayersScreen;
 import ohheck.screens.TutorialScreen;
@@ -37,7 +40,7 @@ import ohheck.screens.TutorialScreen;
  */
 public class ScreenshotLauncher {
 
-	private static final String[] WANTED = { "intro", "title", "highscores", "statistics", "options", "players", "tutorial:1", "tutorial:3", "tutorial:5", "tutorial:6", "tutorial:8", "tutorial:9", "tutorial:10", "tutorial:11", "tutorial:13", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "highscores", "statistics", "badges", "options", "players", "campaign", "chapter:1", "study:lone-ace", "tutorial:1", "tutorial:3", "tutorial:5", "tutorial:6", "tutorial:8", "tutorial:9", "tutorial:10", "tutorial:11", "tutorial:13", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "play:8:",
 			"tossing", "gameover" };
 
@@ -219,10 +222,14 @@ public class ScreenshotLauncher {
 		Walk(OhHeckGame game) {
 			then("title", 3.5f, s -> game.showHighScores(-1));
 			then("highscores", 1.5f, s -> ((HighScoresScreen) s).showStatistics());
-			then("statistics", 1.5f, s -> game.showOptions());
+			then("statistics", 1.5f, s -> ((HighScoresScreen) s).showBadges());
+			then("badges", 1.5f, s -> game.showOptions());
 			then("options", 1.5f, s -> game.showPlayers());
 			then("players", 1.0f, s -> ((PlayersScreen) s).scrollToEnd());
-			then("players", 1.2f, s -> game.showTutorial());
+			then("players", 1.2f, s -> game.showCampaign());
+			then("campaign", 1.5f, s -> ((CampaignScreen) s).openChapter(Chapter.ONE));
+			then("chapter:1", 1.5f, s -> game.playStudy(Studies.ALL.get(0)));
+			then("study:lone-ace", 1.5f, s -> game.showTutorial());
 			for (int step = 1; step < TUTORIAL_STEPS; step++) {
 				then("tutorial:" + step, 4.0f, s -> ((TutorialScreen) s).next());
 			}

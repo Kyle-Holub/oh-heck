@@ -22,6 +22,9 @@ final class BidTable {
 
 	/** The chance this card in the viewer's hand takes a trick this hand. */
 	static double chance(TableView v, Card c) {
+		if (v.players() == 2) {
+			return DuelBidTable.chance(v, c);
+		}
 		int row = ((v.handSize() - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();
 		return CHANCE[row][context(v, c)];
 	}

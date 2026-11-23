@@ -39,16 +39,18 @@ the screenshot run, CI, the arena and the art tools.
   (a saved format's order, a platform limit) goes in the class comment.
 - **No javadoc:** never write `/** */`, `{@link}`, `{@code}`, `@param` or HTML in comments.
   Name things so the signature says what a method takes and returns.
-- Generated files (`BidTable.java`) are exempt from the comment rules.
+- Generated files (`BidTable.java`, `DuelBidTable.java`) are exempt from the comment rules.
 - **Text and spacing:** the game font has no Unicode minus sign. Use "-".
-- **Generated files:** `BidTable.java` comes from the arena's `learn`; the images, fonts and
+- **Generated files:** `BidTable.java` comes from the arena's `learn`, `DuelBidTable.java` from `learn-duel`; the images, fonts and
   launcher icons come from `python3 tools/build_art.py` (`--check` to compare). Regenerate
   them; don't edit by hand.
 - **Facts shown on screen** (scores, odds, player names, hand counts) come from the rules
   and the roster, not copied text.
 - **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
   constant, a rule a field of `RuleSet` (in its code) with a toggle on the Game page, a preset a
-  `GameMode` constant, and a new reaction
+  `GameMode` constant, a campaign chapter a `Chapter` constant, a study an entry in `Studies`
+  (its test checks it can be solved), a badge a `Badge` constant, a card back or felt a
+  `Cosmetic` constant, and a new reaction
   to table events a `TableFlow.Listener`, a new table state a `TableState` constant, a pause-menu choice a `MenuItem` constant, a setting an `OptionItem` on its `OptionsPage`
   (a new category is one more page), and a screenshot-run stop a
   step in `ScreenshotLauncher.Walk`. Code playing a game asks `match.rules()`.

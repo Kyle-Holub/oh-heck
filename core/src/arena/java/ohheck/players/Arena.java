@@ -35,6 +35,7 @@ public final class Arena {
 	}
 
 	static RuleSet rules = RuleSet.STANDARD;
+	static int players = 4;
 
 	static final class Stats {
 		static final int SIZES = RuleSet.MOST_CARDS + 1;
@@ -45,11 +46,11 @@ public final class Arena {
 	}
 
 	static void game(long deal, int seat, Maker test, Maker field, Stats st) {
-		Bot[] bots = new Bot[4];
-		for (int i = 0; i < 4; i++) {
+		Bot[] bots = new Bot[players];
+		for (int i = 0; i < players; i++) {
 			bots[i] = (i == seat ? test : field).make(deal * 4 + i);
 		}
-		Match m = Match.random(4, new Random(deal), rules);
+		Match m = Match.random(players, new Random(deal), rules);
 		double expected = 0;
 		while (m.phase() != Match.Phase.GAME_OVER) {
 			if (m.phase() == Match.Phase.HAND_OVER) {
@@ -96,7 +97,7 @@ public final class Arena {
 	static Stats run(int deals, Maker test, Maker field) {
 		Stats st = new Stats();
 		for (int d = 0; d < deals; d++) {
-			for (int seat = 0; seat < 4; seat++) {
+			for (int seat = 0; seat < players; seat++) {
 				game(5000 + d, seat, test, field, st);
 			}
 		}
@@ -138,11 +139,11 @@ public final class Arena {
 
 	private static final double PRIOR = 40;
 
-	static void watch(RuleSet r, int games, long seeds, int smallest, double[][][] won, double[][][] dealt,
+	static void watch(RuleSet r, int players, int games, long seeds, int smallest, double[][][] won, double[][][] dealt,
 			double[][][][] fineWon, double[][][][] fineDealt) {
 		Bot bot = Bot.of(Difficulty.NORMAL, new Random(1));
 		for (int g = 0; g < games; g++) {
-			Match m = Match.random(4, new Random(seeds + g), r);
+			Match m = Match.random(players, new Random(seeds + g), r);
 			Map<Card, int[]> dealtAs = new HashMap<Card, int[]>();
 			while (m.phase() != Match.Phase.GAME_OVER) {
 				if (m.phase() == Match.Phase.HAND_OVER) {
@@ -153,7 +154,7 @@ public final class Arena {
 				int s = m.currentSeat();
 				if (m.phase() == Match.Phase.BIDDING) {
 					if (dealtAs.isEmpty()) {
-						for (int q = 0; q < 4; q++) {
+						for (int q = 0; q < players; q++) {
 							TableView v = m.view(q);
 							for (Card c : v.hand()) {
 								dealtAs.put(c, new int[] { c.suit() == m.trump() ? 1 : 0, BidTable.context(v, c) });
@@ -186,8 +187,30 @@ public final class Arena {
 		double[][][] won = new double[sizes][2][13], dealt = new double[sizes][2][13];
 		double[][][][] fineWon = new double[sizes][2][13][BidTable.CONTEXTS], fineDealt = new double[sizes][2][13][BidTable.CONTEXTS];
 		RuleSet bigHands = RuleSet.STANDARD.withOrder(HandOrder.DOWN).withMostCards(RuleSet.MOST_CARDS);
-		watch(RuleSet.STANDARD, games, 900000, 1, won, dealt, fineWon, fineDealt);
-		watch(bigHands, games, 1900000, RuleSet.USUAL_CARDS + 1, won, dealt, fineWon, fineDealt);
+		watch(RuleSet.STANDARD, 4, games, 900000, 1, won, dealt, fineWon, fineDealt);
+		watch(bigHands, 4, games, 1900000, RuleSet.USUAL_CARDS + 1, won, dealt, fineWon, fineDealt);
+		String src = TEMPLATE.replace("$GAMES", String.valueOf(games)).replace("$ROWS", rows(sizes, won, dealt, fineWon, fineDealt));
+		File out = new File("core/src/main/java/ohheck/players/BidTable.java");
+		FileWriter w = new FileWriter(out);
+		w.write(src);
+		w.close();
+		System.out.println("Wrote " + out.getPath());
+	}
+
+	static void learnDuel(int games) throws IOException {
+		int sizes = RuleSet.DUEL_HANDS + 1;
+		double[][][] won = new double[sizes][2][13], dealt = new double[sizes][2][13];
+		double[][][][] fineWon = new double[sizes][2][13][BidTable.CONTEXTS], fineDealt = new double[sizes][2][13][BidTable.CONTEXTS];
+		watch(RuleSet.DUEL, 2, games, 2900000, 1, won, dealt, fineWon, fineDealt);
+		String src = DUEL_TEMPLATE.replace("$GAMES", String.valueOf(games)).replace("$ROWS", rows(sizes, won, dealt, fineWon, fineDealt));
+		File out = new File("core/src/main/java/ohheck/players/DuelBidTable.java");
+		FileWriter w = new FileWriter(out);
+		w.write(src);
+		w.close();
+		System.out.println("Wrote " + out.getPath());
+	}
+
+	static String rows(int sizes, double[][][] won, double[][][] dealt, double[][][][] fineWon, double[][][][] fineDealt) {
 		StringBuilder rows = new StringBuilder();
 		for (int n = 1; n < sizes; n++) {
 			for (int t = 0; t < 2; t++) {
@@ -202,13 +225,29 @@ public final class Arena {
 				}
 			}
 		}
-		String src = TEMPLATE.replace("$GAMES", String.valueOf(games)).replace("$ROWS", rows.toString());
-		File out = new File("core/src/main/java/ohheck/players/BidTable.java");
-		FileWriter w = new FileWriter(out);
-		w.write(src);
-		w.close();
-		System.out.println("Wrote " + out.getPath());
+		return rows.toString();
 	}
+
+	private static final String DUEL_TEMPLATE = "package ohheck.players;\n\n"
+			+ "import ohheck.rules.Card;\n"
+			+ "import ohheck.rules.TableView;\n\n"
+			+ "/**\n"
+			+ " * BidTable for duels: how often a card takes a trick in a two-player short-deck game, learned\n"
+			+ " * from $GAMES simulated duels between Normal players, by the same rows and columns as BidTable.\n"
+			+ " * <p>\n"
+			+ " * Generated by {@code ./gradlew core:arena -Parena=\"learn-duel $GAMES\"}; don't edit the numbers by\n"
+			+ " * hand. Regenerate (twice) after changing how the computer players play.\n"
+			+ " */\n"
+			+ "final class DuelBidTable {\n\n"
+			+ "\tprivate DuelBidTable() {\n\t}\n\n"
+			+ "\tstatic double chance(TableView v, Card c) {\n"
+			+ "\t\tint row = ((v.handSize() - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();\n"
+			+ "\t\treturn CHANCE[row][BidTable.context(v, c)];\n"
+			+ "\t}\n\n"
+			+ "\tprivate static final double[][] CHANCE = {\n"
+			+ "$ROWS"
+			+ "\t};\n"
+			+ "}\n";
 
 	private static final String TEMPLATE = "package ohheck.players;\n\n"
 			+ "import ohheck.rules.Card;\n"
@@ -228,6 +267,9 @@ public final class Arena {
 			+ "\tstatic final int CONTEXTS = 12;\n\n"
 			+ "\t/** The chance this card in the viewer's hand takes a trick this hand. */\n"
 			+ "\tstatic double chance(TableView v, Card c) {\n"
+			+ "\t\tif (v.players() == 2) {\n"
+			+ "\t\t\treturn DuelBidTable.chance(v, c);\n"
+			+ "\t\t}\n"
 			+ "\t\tint row = ((v.handSize() - 1) * 2 + (c.suit() == v.trump() ? 1 : 0)) * 13 + c.rank().strength();\n"
 			+ "\t\treturn CHANCE[row][context(v, c)];\n"
 			+ "\t}\n\n"
@@ -265,8 +307,24 @@ public final class Arena {
 			report("Normal vs 3 Easy", run(n, level(Difficulty.NORMAL), level(Difficulty.EASY)));
 			report("Hard vs 3 Normal", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.NORMAL)));
 			report("Hard vs 3 Easy", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.EASY)));
+		} else if (what.equals("duel")) {
+			rules = RuleSet.DUEL;
+			players = 2;
+			report("Normal vs Easy", run(n, level(Difficulty.NORMAL), level(Difficulty.EASY)));
+			report("Hard vs Normal", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.NORMAL)));
+			report("Hard vs Easy", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.EASY)));
+			for (final Player p : Player.ALL) {
+				report(p.name + " (" + p.level.label + ", " + p.style.label + ") vs Normal", run(p.level == Difficulty.HARD ? n / 4 + 1 : n, new Maker() {
+					@Override
+					public Bot make(long seed) {
+						return p.bot(new Random(seed));
+					}
+				}, level(Difficulty.NORMAL)));
+			}
 		} else if (what.equals("variants")) {
 			variants(n);
+		} else if (what.equals("learn-duel")) {
+			learnDuel(n);
 		} else if (what.equals("learn")) {
 			learn(n);
 		} else if (what.equals("players")) {
