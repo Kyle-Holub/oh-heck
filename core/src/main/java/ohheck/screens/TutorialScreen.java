@@ -51,21 +51,21 @@ public class TutorialScreen extends BaseScreen {
 					+ ". The deal passes to the next player each hand.", scenes::theDeal, 6.5f),
 			new Step("Bidding", "Before playing, everyone bids how many tricks they'll win. Look at your cards and count your winners.",
 					scenes::bidding, 9.5f),
-			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", scenes::biddingZero, 8.4f),
+			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", scenes::biddingZero, 9.4f),
 			new Step("Getting set", "Miss your bid, high or low, and you're set. Here you bid 1, but both tricks go elsewhere.",
 					scenes::gettingSet, 7.2f),
 			new Step("The dealer's hook", "The dealer bids last and has an extra rule: they can't bid a number that makes the total bids"
 					+ " equal the total tricks. So every hand, at least one player is set.", scenes::dealersHook, 5.5f),
 			new Step("Scoring", "Make your bid exactly: " + RuleSet.STANDARD.made() + " points, plus " + RuleSet.STANDARD.perTrickBid()
 					+ " for each trick you bid. Miss it, high or low: lose " + RuleSet.STANDARD.perTrickOff() + " for each trick off.",
-					scenes::scoring, 9f),
-			new Step("A hand of Classic", "Each of the " + HANDS + " hands runs: deal, turn up trump, bid, play, score. Top left,"
-					+ " tally marks count the hands and cards count the bids.", scenes::counters, 9f),
-			new Step("Ready", "Highest total after " + HANDS + " hands wins. Good luck!", scenes::ready, 5f, false) };
+					scenes::scoring, 10f),
+			new Step("The counters", "During a classic game, tally marks count the hands and card icons count the bids.",
+					scenes::counters, 9f),
+			new Step("Ready", "Highest total points at the end wins. Good luck!", scenes::ready, 5f, false) };
 
 	private static final float HOLD = 1.6f;
 
-	private final Rectangle cornerButton = new Rectangle(), doneButton = new Rectangle(), backButton = new Rectangle();
+	private final Rectangle doneButton = new Rectangle(), backButton = new Rectangle();
 	private boolean firstRun;
 	private int step;
 	private final StringBuilder sb = new StringBuilder();
@@ -130,14 +130,6 @@ public class TutorialScreen extends BaseScreen {
 			previous();
 			return;
 		}
-		if (cornerButton.contains(x, y)) {
-			if (firstRun) {
-				finish();
-			} else {
-				game.back();
-			}
-			return;
-		}
 		next();
 	}
 
@@ -164,7 +156,6 @@ public class TutorialScreen extends BaseScreen {
 		} else {
 			backButton.set(0, 0, 0, 0);
 		}
-		paint.button(cornerButton, firstRun ? "Skip tutorial" : "Close", w - 110, h - 52, 190, 40, assets.buttonAlt);
 	}
 
 	private void caption(Step s) {
@@ -179,7 +170,7 @@ public class TutorialScreen extends BaseScreen {
 		sb.append(step + 1).append(" / ").append(steps.length);
 		paint.text(m, sb.toString(), x + cw - 20, y + CAPTION_H - 14, false);
 		if (step == steps.length - 1) {
-			paint.button(doneButton, "Start", w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
+			paint.button(doneButton, firstRun ? "Start" : "Done", w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
 		} else {
 			paint.text(m, "Tap to continue", x + cw - 20, y + 22, false);
 		}

@@ -31,7 +31,6 @@ final class TableOverlays {
 
 	private static final float MENU_BUTTON_W = 80, MENU_BUTTON_H = 38;
 	private static final float PAUSE_BUTTON_W = 260, PAUSE_BUTTON_H = 56, PAUSE_GAP = 14;
-	private static final float RESULTS_W = 540, RESULTS_H = 262, RESULTS_ROW = 26;
 	private static final float GAME_OVER_W = 420, GAME_OVER_H = 306, GAME_OVER_ROW = 27;
 	private static final float END_BUTTON_W = 170, END_BUTTON_H = 42;
 	private static final float HINT_H = 40, HINT_PAD = 16;
@@ -42,9 +41,8 @@ final class TableOverlays {
 	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
-	private static final float RESULTS_TITLE_DROP = 14, RESULTS_HEAD_DROP = 52, WON_CARD_SCALE = 0.7f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12, WON_CARDS_INSET = 18,
-			TAP_NOTE_GAP = 16,
-			RESULT_NUMERAL_H = 26, RESULT_NUMERAL_X = 8, RESULT_NUMERAL_Y = 8;
+	private static final float WON_CARD_SCALE = 0.7f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12, WON_CARDS_INSET = 18,
+			TAP_NOTE_GAP = 16;
 	private static final float GAME_OVER_LIFT = 6, GAME_OVER_ART_DROP = 50, GAME_OVER_ART_SCALE = 0.66f,
 			GAME_OVER_RESULT_DROP = 94, GAME_OVER_ROWS_DROP = 130, GAME_OVER_PLACE_X = 60, GAME_OVER_NAME_X = 120,
 			GAME_OVER_SCORE_FROM_RIGHT = 140, NEW_BEST_FROM_RIGHT = 128, END_BUTTONS_RISE = 16, END_BUTTONS_GAP = 16;
@@ -56,6 +54,7 @@ final class TableOverlays {
 	private final TableLayout layout;
 	private final CardArt art;
 	private final BidPopup bidPopup;
+	private final ScoreCard scoreCard;
 	private final IntPredicate legalBid = b -> this.match.isLegalBid(b);
 	private String hint = "";
 	private float hintTime;
@@ -76,6 +75,7 @@ final class TableOverlays {
 		this.layout = layout;
 		this.art = art;
 		this.bidPopup = new BidPopup(paint, art);
+		this.scoreCard = new ScoreCard(paint);
 	}
 
 	void setMatch(Match match) {
@@ -187,32 +187,7 @@ final class TableOverlays {
 	}
 
 	void drawHandResults() {
-		float pw = RESULTS_W, ph = RESULTS_H;
-		float px = (layout.w - pw) / 2, py = layout.centreY() - ph / 2;
-		paint.frame(paint.assets.panel, px, py, pw, ph);
-		BitmapFont f = paint.ui(1.3f, Palette.CREAM);
-		paint.text(f, Wording.handResults(match.handIndex() + 1), layout.w / 2, py + ph - RESULTS_TITLE_DROP, true);
-
-		BitmapFont t = paint.ui(1.1f);
-		float[] cols = RESULT_COLS;
-		float y = py + ph - RESULTS_HEAD_DROP;
-		t.setColor(Palette.MUTED);
-		for (int c = 0; c < cols.length; c++) {
-			t.draw(paint.batch, RESULT_HEAD[c], px + cols[c], y);
-		}
-		for (int seat : ranked()) {
-			y -= RESULTS_ROW;
-			int pts = match.lastHandPoints(seat);
-			t.setColor(Palette.MUTED);
-			t.draw(paint.batch, Wording.ordinal(match.placeOf(seat)), px + cols[0], y);
-			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
-			t.draw(paint.batch, scene.name(seat) + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
-			paint.numeral(match.bid(seat), px + cols[2] + RESULT_NUMERAL_X, y - RESULT_NUMERAL_Y, RESULT_NUMERAL_H, Color.WHITE);
-			t.draw(paint.batch, Numbers.text(match.tricksWon(seat)), px + cols[3], y);
-			t.draw(paint.batch, Numbers.signed(pts), px + cols[4], y);
-			t.setColor(match.placeOf(seat) == 1 ? Palette.GOLD : Palette.CREAM);
-			t.draw(paint.batch, Numbers.text(match.score(seat)), px + cols[5], y);
-		}
+		float py = scoreCard.draw(layout.w / 2, layout.centreY(), Wording.handResults(match.handIndex() + 1), resultRows(), 1f);
 		drawWinningCards(py + WON_CARDS_RISE);
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
 		Rectangle win = targets.button(OverlayTargets.Button.FORCE_WIN);
@@ -228,7 +203,7 @@ final class TableOverlays {
 		}
 		float cw = Assets.CARD_W * WON_CARD_SCALE, ch = Assets.CARD_H * WON_CARD_SCALE;
 		int n = winningCards.size();
-		float room = RESULTS_W - 2 * WON_CARDS_INSET;
+		float room = ScoreCard.W - 2 * WON_CARDS_INSET;
 		float step = n > 1 ? Math.min(cw + WON_CARD_GAP, (room - cw) / (n - 1)) : 0;
 		float x = (layout.w - (cw + step * (n - 1))) / 2;
 		for (Card c : winningCards) {
@@ -242,8 +217,22 @@ final class TableOverlays {
 	private final List<Card> winningCards = new ArrayList<Card>();
 	private int winningCardsOf = -1;
 
-	private static final float[] RESULT_COLS = { 22, 62, 255, 315, 380, 465 };
-	private static final String[] RESULT_HEAD = { "", "Player", "Bid", "Won", "Points", "Total" };
+	private final List<ScoreCard.Row> resultRows = new ArrayList<ScoreCard.Row>();
+	private Match resultsOf;
+	private int resultsHand = -1;
+
+	private List<ScoreCard.Row> resultRows() {
+		if (resultsOf != match || resultsHand != match.handIndex()) {
+			resultsOf = match;
+			resultsHand = match.handIndex();
+			resultRows.clear();
+			for (int seat : ranked()) {
+				resultRows.add(new ScoreCard.Row(match.placeOf(seat), scene.name(seat), match.madeBid(seat), match.bid(seat),
+						match.tricksWon(seat), match.lastHandPoints(seat), match.score(seat)));
+			}
+		}
+		return resultRows;
+	}
 
 	void drawGameOver(int newHighScore) {
 		float pw = GAME_OVER_W, ph = GAME_OVER_H;
