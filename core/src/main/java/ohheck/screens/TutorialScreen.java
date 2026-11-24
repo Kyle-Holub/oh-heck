@@ -55,19 +55,19 @@ public class TutorialScreen extends BaseScreen {
 			new Step("Follow suit", "You must play the suit that was led if you can. Here, a heart.", scenes::followSuit, 4.5f),
 			new Step("Can't follow? Play anything", "No cards of the suit led? Play any card, but only the suit led can win, unless…",
 					scenes::cantFollow, 5.5f),
-			new Step("Trump", "…you play a *trump*. The card turned up after the deal sets the trump suit, and any trump beats every other suit.",
+			new Step("Trump", "…you play a *trump*. The card turned up after the deal sets the trump suit, and any trump beats every other suit. Here a 2 beats an ace!",
 					scenes::trump, 6f),
-			new Step("The deal", "There are " + HANDS + " hands. The first deals 1 card each, the next 2, and so on up to " + HANDS
-					+ ". The deal passes to the next player each hand.", scenes::theDeal, 6.5f),
 			new Step("Bidding", "Before playing, everyone bids how many tricks they'll win. Look at your cards and count your winners.",
-					scenes::bidding, 9.5f),
-			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", scenes::biddingZero, 9.4f),
+					scenes::bidding, 6.5f, false),
+			new Step("Bidding zero", "Zero is a real bid. A weak hand can score by winning nothing at all. Here you still scored with 0 tricks.", scenes::biddingZero, 9.4f),
 			new Step("Getting set", "Miss your bid, high or low, and you're *set*. Here you bid 1, but both tricks go elsewhere.",
 					scenes::gettingSet, 7.2f),
+			new Step("The classic deal", "In a classic game, there are " + HANDS + " hands. The first deals 1 card each, the next 2,"
+					+ " and so on up to " + HANDS + ".", scenes::theDeal, 6.5f),
 			new Step("The dealer", "The first dealer is picked at random, then the deal passes clockwise each hand. The dealer bids"
 					+ " last and has an extra rule\u2026", scenes::theDealer, 8.5f),
 			new Step("The dealer's hook", "The dealer cannot bid a number which makes the total bids equal the cards in hand. Someone"
-					+ " always gets an unexpected trick, thus how the game got its name: Oh Heck!", scenes::dealersHook, 5.5f),
+					+ " always gets an unexpected trick, thus how the game got its name: Oh Heck!", scenes::dealersHook, 5.5f, false),
 			new Step("Scoring", "Make your bid exactly: " + RuleSet.STANDARD.made() + " points, plus " + RuleSet.STANDARD.perTrickBid()
 					+ " for each trick you bid. Miss it, high or low: lose " + RuleSet.STANDARD.perTrickOff() + " for each trick off.",
 					scenes::scoring, 10f),

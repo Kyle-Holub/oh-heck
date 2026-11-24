@@ -282,27 +282,27 @@ final class TutorialScenes extends TutorialStage {
 	private final List<Rectangle> bidButtons = new ArrayList<Rectangle>();
 	private final IntPredicate anyBid = b -> true, notOne = b -> b != 1;
 
+	private static final float BID_PICKED = 5.2f;
+
 	void bidding() {
 		Card[] hand = { card(Rank.ACE, Suit.SPADES), card(Rank.KING, Suit.HEARTS), card(Rank.FOUR, Suit.CLUBS) };
-		int[] seats = { 0, 1, 3 }, bids = { 2, 1, 0 };
-		float[] when = { 6.4f, 7.2f, 7.9f };
-		for (int i = 0; i < 3; i++) {
-			boolean bid = t >= when[i];
-			seat(seats[i], (bid ? bidOf(bids[i]) : waiting()).turn(i == 0 && !bid).cards(3));
-		}
+		boolean bid = t >= BID_PICKED;
+		seat(1, bidOf(1).cards(3));
+		seat(3, bidOf(0).cards(3));
+		seat(0, (bid ? bidOf(2) : waiting()).turn(!bid).cards(3));
 		float counting = 1 - at(4.0f, 4.3f);
 		for (int i = 0; i < 3; i++) {
 			float x = handX(i, 3), y = handY();
 			float g = i < 2 ? at(0.5f + i * 1.0f, 0.9f + i * 1.0f) * counting : 0;
 			glow(x, y, g);
-			card(hand[i], x, y, 2, i == 2 ? 1 - 0.4f * at(0.5f, 0.9f) * counting : 1, 1);
+			card(hand[i], x, y, 2, i == 2 ? 1 - 0.4f * at(0.5f, 0.9f) : 1, 1);
 			if (i < 2 && g > 0) {
 				paint.numeral(i + 1, x + CW / 2, y + CH + 22, 30, tint.set(1, 1, 1, g));
 			}
 		}
 		BitmapFont f = paint.ui(1.05f, Palette.GOLD_LIGHT, at(1.8f, 2.2f));
 		f.draw(batch, "The Ace of spades and a King:\ntwo likely winners", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
-		bidPopup.draw(cx(), popupOverHand(), 3, anyBid, t >= 5.2f ? 2 : -1, at(4.4f, 4.8f) * (1 - at(6.2f, 6.4f)), bidButtons);
+		bidPopup.draw(cx(), popupOverHand(), 3, anyBid, bid ? 2 : -1, at(4.4f, 4.8f), bidButtons);
 	}
 
 	private static final Card[] ZERO_HAND = { card(Rank.THREE, Suit.CLUBS), card(Rank.TWO, Suit.DIAMONDS) };
