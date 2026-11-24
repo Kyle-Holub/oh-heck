@@ -11,7 +11,7 @@ import ohheck.ui.TapAreas;
 final class OverlayTargets {
 
 	enum Button {
-		MENU, PLAY_AGAIN, HIGH_SCORES
+		MENU, PLAY_AGAIN, HIGH_SCORES, FORCE_WIN
 	}
 
 	private final Rectangle[] buttons = new Rectangle[Button.values().length];
