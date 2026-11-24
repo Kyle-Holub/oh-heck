@@ -25,7 +25,7 @@ import ohheck.ui.Palette;
 
 /*
  * The fanfare for clearing a chapter: fireworks and a title, then each prize lies face down and
- * is turned over in turn, shaking, flaring and flipping to show what was won (its card back, its
+ * is turned over in turn, shaking, flashing and flipping to show what was won (its card back, its
  * felt, its champion's badge). Once all are shown the new look is put on. A tap hurries the next prize along.
  */
 public class ChapterClearedScreen extends BaseScreen {
@@ -36,7 +36,8 @@ public class ChapterClearedScreen extends BaseScreen {
 	private static final Phases PRIZE = new Phases(SHAKE_LEN, FLASH_LEN, FLIP_LEN, HOLD_LEN);
 	private static final int SHAKE = 0, FLASH = 1, FLIP = 2;
 	private static final Tween TITLE_IN = Tween.over(0.6f, Ease.OUT), BUTTONS_IN = Tween.over(0.4f, Ease.OUT);
-	private static final Color GLOW = new Color(1f, 0.85f, 0.45f, 0.5f);
+	private static final Color GLOW = new Color(1f, 0.85f, 0.45f, 0.5f), FLASH_TINT = new Color(1f, 0.9f, 0.72f, 1f);
+	private static final float FLASH_PEAK = 0.35f;
 
 	private record Prize(String kind, String name, Texture face, boolean felt) {
 	}
@@ -149,6 +150,7 @@ public class ChapterClearedScreen extends BaseScreen {
 			drawPrize(i);
 		}
 		sparks.draw(batch, assets.glow);
+		drawFlash();
 		drawButtons();
 		batch.end();
 	}
@@ -210,6 +212,19 @@ public class ChapterClearedScreen extends BaseScreen {
 		batch.draw(assets.glow, cx - gw / 2, cy - gh / 2, gw, gh);
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		batch.setColor(Color.WHITE);
+	}
+
+	private void drawFlash() {
+		float t = revealT();
+		if (t < 0 || revealed()) {
+			return;
+		}
+		float within = t % PRIZE.length();
+		if (PRIZE.at(within) == FLASH) {
+			paint.fade(FLASH_PEAK * (1 - PRIZE.into(within) / FLASH_LEN));
+			paint.rect(0, 0, w, h, FLASH_TINT);
+			paint.fade(1f);
+		}
 	}
 
 	private void drawButtons() {
