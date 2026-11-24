@@ -250,8 +250,7 @@ public class OhHeckGame extends Game implements GameHost {
 	@Override
 	public void startCampaign() {
 		screens.replaceAll(title);
-		campaignScreen.openChapter(Chapter.ONE);
-		campaignScreen.briefTable(Chapter.ONE);
+		campaignScreen.briefChapter(Chapter.ONE);
 		screens.open(campaignScreen);
 	}
 

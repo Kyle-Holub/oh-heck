@@ -215,7 +215,7 @@ public class ChapterClearedScreen extends BaseScreen {
 		}
 		float within = t % PRIZE.length();
 		if (PRIZE.at(within) == FLASH) {
-			paint.fade(0.55f * (1 - PRIZE.into(within) / FLASH_LEN));
+			paint.fade(0.3f * (1 - PRIZE.into(within) / FLASH_LEN));
 			paint.rect(0, 0, w, h, Color.WHITE);
 			paint.fade(1f);
 		}

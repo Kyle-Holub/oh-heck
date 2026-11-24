@@ -15,6 +15,7 @@ import ohheck.campaign.Briefing;
 import ohheck.campaign.Campaign;
 import ohheck.campaign.Chapter;
 import ohheck.campaign.TrickShots;
+import ohheck.players.Player;
 import ohheck.rules.Card;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
@@ -49,10 +50,11 @@ public class CampaignScreen extends BaseScreen {
 	private final Rectangle[] chapterCards = new Rectangle[Chapter.values().length];
 	private final Rectangle[] stepCards = new Rectangle[STEPS.length];
 	private final Rectangle goButton = new Rectangle();
+	private final Rectangle[] rivalCards = { new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle() };
 	private final StringBuilder pageCount = new StringBuilder();
 	private Chapter chosen;
 	private float chosenFor, briefedFor;
-	private int page;
+	private int page, rival;
 	private Briefing briefing;
 	private Runnable afterBriefing;
 
@@ -78,6 +80,7 @@ public class CampaignScreen extends BaseScreen {
 		afterBriefing = then;
 		briefedFor = 0;
 		page = 0;
+		rival = 0;
 	}
 
 	public void briefChapter(Chapter c) {
@@ -141,8 +144,9 @@ public class CampaignScreen extends BaseScreen {
 		drawPicture(p, midY, a);
 		paint.frame(assets.panel, x, y, cw, CAPTION_H);
 		paint.fade(1f);
-		paint.serif(1.35f, Palette.GOLD, a).draw(batch, p.heading(), x + 22, y + CAPTION_H - 12);
-		paint.ui(1.1f, Palette.CREAM, a).draw(batch, p.line(), x + 22, y + CAPTION_H - 44, cw - 44, Align.left, true);
+		Player shown = rival > 0 ? briefing.chapter().rivals.at(rival) : null;
+		paint.serif(1.35f, Palette.GOLD, a).draw(batch, shown != null ? shown.name : p.heading(), x + 22, y + CAPTION_H - 12);
+		paint.ui(1.1f, Palette.CREAM, a).draw(batch, shown != null ? shown.trait : p.line(), x + 22, y + CAPTION_H - 44, cw - 44, Align.left, true);
 		BitmapFont m = paint.ui(0.9f, Palette.MUTED, a);
 		pageCount.setLength(0);
 		pageCount.append(page + 1).append(" / ").append(briefing.pages().size());
@@ -165,15 +169,25 @@ public class CampaignScreen extends BaseScreen {
 		case SCORING:
 			paint.centred(paint.serif(3.2f, Palette.GOLD_LIGHT, a), p.figure(), w / 2, cy + 30);
 			break;
-		case STEPS:
-			for (int i = 0; i < STEPS.length; i++) {
-				smallCard(w / 2 + (i - 1) * (SMALL_W + STEP_GAP), cy, stepIcon(i), STEPS[i], a);
+		case HANDS:
+			int n = c.rules().mostCards;
+			float hw = DECK_W * 0.8f, hh = hw * 98 / 73, fan = hw * 0.42f, hx = w / 2 - (hw + fan * (n - 1)) / 2;
+			for (int i = 0; i < n; i++) {
+				float off = i - (n - 1) / 2f;
+				batch.setColor(1, 1, 1, a);
+				batch.draw(assets.back(), hx + i * fan, cy - hh / 2 - 30 - off * off * 1.5f, hw / 2, hh / 2, hw, hh, 1, 1, -off * 3f);
 			}
+			batch.setColor(Color.WHITE);
+			paint.centred(paint.serif(2.4f, Palette.GOLD_LIGHT, a), p.figure(), w / 2, cy + hh / 2 + 10);
 			break;
 		case RIVALS:
 			for (int seat = 1; seat <= 3; seat++) {
-				smallCard(w / 2 + (seat - 2) * (SMALL_W + STEP_GAP), cy, assets.levelBadge[c.rivals.at(seat).level.ordinal()],
-						c.rivals.at(seat).name, a);
+				float rx = w / 2 + (seat - 2) * (SMALL_W + STEP_GAP), ry = cy + (seat == rival ? LIFT : 0);
+				rivalCards[seat].set(rx - SMALL_W / 2, ry - SMALL_H / 2, SMALL_W, SMALL_H);
+				if (seat == rival) {
+					glow(rx - SMALL_W / 2, ry - SMALL_H / 2, SMALL_W, SMALL_H);
+				}
+				smallCard(rx, ry, assets.levelBadge[c.rivals.at(seat).level.ordinal()], c.rivals.at(seat).name, a);
 			}
 			break;
 		case WIN:
@@ -325,13 +339,26 @@ public class CampaignScreen extends BaseScreen {
 		batch.setColor(Color.WHITE);
 	}
 
+	private int rivalAt(float x, float y) {
+		for (int seat = 1; seat <= 3; seat++) {
+			if (rivalCards[seat].contains(x, y)) {
+				return seat;
+			}
+		}
+		return 0;
+	}
+
 	@Override
 	protected void tap(float x, float y) {
 		if (briefing != null) {
+			int tapped = briefing.pages().get(page).picture() == Briefing.Picture.RIVALS ? rivalAt(x, y) : 0;
 			if (backButton.contains(x, y)) {
 				briefing = null;
+			} else if (tapped > 0) {
+				rival = tapped == rival ? 0 : tapped;
 			} else if (page < briefing.pages().size() - 1) {
 				page++;
+				rival = 0;
 				briefedFor = LAYING.end() / 2;
 			} else if (goButton.contains(x, y)) {
 				go();

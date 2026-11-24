@@ -17,7 +17,8 @@ public class BriefingTest {
 	@Test
 	public void briefingsNameTheRulesAndThePlayers() {
 		String chapter = text(Briefing.chapter(Chapter.ONE));
-		assertTrue(chapter, chapter.contains("1 to 8") && chapter.contains("Nathaniel"));
+		assertTrue(chapter, chapter.contains("1 to 8") && chapter.contains("Nathaniel")
+				&& chapter.contains("Edmund, Barnaby and Horatio"));
 		String table = text(Briefing.table(Chapter.ONE));
 		assertTrue(table, table.contains("8 hands") && table.contains("Edmund, Barnaby and Horatio"));
 		assertTrue(text(Briefing.trickShots(Chapter.ONE, new Campaign())).contains("0 of 3 made"));
