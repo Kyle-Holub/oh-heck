@@ -28,8 +28,7 @@ import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 
 /*
- * A trick shot: every hand face up around the table, the goal above, your undos as three small
- * cards that turn over as they are spent. Every card glides to where it belongs: from a hand into
+ * A trick shot: every hand face up around the table, the goal above. Every card glides to where it belongs: from a hand into
  * the trick, and from a finished trick, after a moment, to its winner. The others reply one card
  * at a time; nothing can be tapped while a trick is being gathered.
  */
@@ -38,13 +37,13 @@ public class TrickShotScreen extends BaseScreen {
 	private static final float YOURS = 1.0f, THEIRS = 0.72f, TRICK = 0.75f, PILE = 0.3f;
 	private static final float OTHER_STEP = 0.55f, TRICK_HOLD = 0.8f, GATHER = 0.35f;
 	private static final float TOP_HAND_Y = 300, SIDE_HAND_DROP = 20, TRICK_DROP = 24, LABEL_GAP = 16, LIFT = 10;
-	private static final float BUTTON_W = 120, BUTTON_H = 40, UNDO_CARD = 0.34f, BID_SIZE = 46, BID_GAP = 10;
+	private static final float BUTTON_W = 120, BUTTON_H = 40, BID_SIZE = 46, BID_GAP = 10;
 	private static final Tween GLIDE = Tween.over(0.28f, Ease.OUT), BANNER_IN = Tween.over(0.4f, Ease.OUT);
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final CardArt art;
 	private final Sparks sparks = new Sparks();
-	private final Rectangle backButton = new Rectangle(), undoButton = new Rectangle(), restartButton = new Rectangle(),
+	private final Rectangle backButton = new Rectangle(), restartButton = new Rectangle(),
 			nextButton = new Rectangle();
 	private final List<Rectangle> handRects = new ArrayList<Rectangle>(), bidRects = new ArrayList<Rectangle>();
 	private final float[] fromX = new float[Card.COUNT], fromY = new float[Card.COUNT], fromW = new float[Card.COUNT],
@@ -130,7 +129,6 @@ public class TrickShotScreen extends BaseScreen {
 		Match m = play.match();
 		float top = h - MenuChrome.HEADER_H;
 		paint.centred(paint.serif(1.2f, Palette.GOLD_LIGHT), play.shot().goalText(name(play.shot().rival)), w / 2, top - 18);
-		drawUndos(top);
 		drawTrump(m, top);
 		for (int i = 0; i < Card.COUNT; i++) {
 			drawn[i] = false;
@@ -285,19 +283,6 @@ public class TrickShotScreen extends BaseScreen {
 		}
 	}
 
-	private void drawUndos(float top) {
-		float cw = cardW(UNDO_CARD), ch = cardH(UNDO_CARD), x = 20, y = top - 16 - ch;
-		for (int i = 0; i < TrickShotPlay.UNDOS; i++) {
-			float cx = x + i * (cw + 6);
-			if (i < play.undosLeft()) {
-				batch.draw(assets.campaignFace, cx, y, cw, ch);
-			} else {
-				batch.draw(assets.back(), cx, y, cw, ch);
-			}
-		}
-		paint.ui(0.85f, Palette.MUTED).draw(batch, "Undos", x, y - 6);
-	}
-
 	private void drawButtons() {
 		float x = w - 20 - BUTTON_W / 2, y = 14;
 		if (overAt >= 0) {
@@ -309,8 +294,7 @@ public class TrickShotScreen extends BaseScreen {
 		} else {
 			nextButton.set(0, 0, 0, 0);
 		}
-		paint.button(undoButton, "Undo", x, y, BUTTON_W, BUTTON_H, play.canUndo() ? assets.buttonAlt : assets.buttonOff);
-		paint.button(restartButton, "Restart", x - BUTTON_W - 10, y, BUTTON_W, BUTTON_H, assets.buttonAlt);
+		paint.button(restartButton, "Restart", x, y, BUTTON_W, BUTTON_H, assets.buttonAlt);
 	}
 
 	private TrickShot nextTrickShot() {
@@ -335,9 +319,6 @@ public class TrickShotScreen extends BaseScreen {
 			} else {
 				back();
 			}
-		} else if (undoButton.contains(x, y) && play.canUndo()) {
-			play.undo();
-			reset();
 		} else if (restartButton.contains(x, y)) {
 			play.restart();
 			reset();

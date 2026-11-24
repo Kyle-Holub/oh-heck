@@ -104,7 +104,19 @@ public class OptionsScreen extends BaseScreen {
 								() -> s.setEffects(!s.effects()))),
 				new OptionsPage("Tutorial",
 						OptionItem.link("How to play", "The rules, a step at a time.", game::showTutorial),
-						OptionItem.link("Roster", "The players you can meet at the table.", game::showPlayers)));
+						OptionItem.link("Roster", "The players you can meet at the table.", game::showPlayers),
+						OptionItem.confirmed("Start fresh", "Forget everything, as a new player: tutorial, campaign, scores, settings.",
+								game::startFresh)));
+	}
+
+	@Override
+	public void show() {
+		super.show();
+		for (OptionsPage p : pages) {
+			for (OptionItem item : p.items) {
+				item.shown();
+			}
+		}
 	}
 
 	@Override

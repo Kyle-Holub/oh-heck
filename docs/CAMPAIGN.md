@@ -41,12 +41,11 @@ The campaign is shown as a hand of cards, one large card per chapter, fanned acr
 
 ## 4. Trick shots
 
-Trick shots are hand-built puzzles: every hand is face up, the deal is fixed, and there is a right line of play. No stars; you get a limited number of undos instead.
+Trick shots are hand-built puzzles: every hand is face up, the deal is fixed, and there is a right line of play. No stars and no undo: a restart deals the shot again.
 
 - **Goals** rotate: *Make it* (make exactly your bid), *Set them* (stop a named rival making theirs), *Choose the bid* (the one bid you can guarantee).
-- **Undos:** 3 per puzzle. Run out and the puzzle restarts.
 - **Teaching:** each chapter's puzzles use its mode, so they rehearse what the table and duel will ask (a big-bid gamble in chapter 2, reading blind bids in chapter 3).
-- **Supply:** hand-written, about 4 to 6 per chapter. No generator for now.
+- **Supply:** hand-written, three per chapter, one of each goal. No generator for now.
 - Each puzzle is checked by a small solver in the tests, so every puzzle is solvable.
 
 ## 5. Table play
@@ -106,7 +105,7 @@ The MVP is the Campaign / Custom game split with chapter 1 playable end to end; 
 1. **Title split:** Campaign and Custom game buttons; Custom game is today's Play.
 2. **Duel:** a two-player short-deck rule set with momentum, champion quirks and the four duel variations; bots learn two-player bidding and pass the arena.
 3. **Campaign chapter 1:** the chapter hand screen, table play with fixed rivals, the duel gate, saved progress.
-4. **Trick shots:** the puzzle screen with 3 undos, 4 to 6 Classic puzzles, and the solver test.
+4. **Trick shots:** the puzzle screen, 3 Classic puzzles (one of each goal), and the solver test.
 5. **Tutorial hand-off:** the tutorial's last page sits you at chapter 1's table.
 6. **Badges and unlockables:** the first badges on Records (including the chapter 1 champion's), chapter 1's card back and felt.
 7. **Chapters 2 to 4.**
@@ -116,7 +115,7 @@ The MVP is the Campaign / Custom game split with chapter 1 playable end to end; 
 Settled for the MVP.
 
 - Rival line-ups per chapter: as in section 2.
-- Undos: 3 per puzzle, every chapter.
+- No undo in trick shots; three per chapter, one of each goal.
 - A lost duel can be retried at once, at no cost.
 - Every mode stays open in Custom game; the campaign unlocks champions, card backs and felts, not modes.
 - Cosmetics: card backs and table felts, one of each per chapter, as generated images.

@@ -47,6 +47,10 @@ public class TitleScreen extends BaseScreen {
 		items.add("Quit");
 	}
 
+	public void replayIntro() {
+		introT = 0;
+	}
+
 	@Override
 	public void show() {
 		super.show();

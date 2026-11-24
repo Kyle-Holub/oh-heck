@@ -4,10 +4,12 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
+import ohheck.campaign.Briefing;
 import ohheck.campaign.Campaign;
 import ohheck.campaign.Chapter;
 import ohheck.campaign.TrickShots;
@@ -20,7 +22,8 @@ import ohheck.ui.Palette;
 /*
  * The campaign as a hand of chapter cards: open chapters face up with a pip for each step done,
  * the rest face down, the chapter in play lifted and lit. A tapped chapter lays its three steps
- * (table, trick shots, duel) on the felt like a trick.
+ * (table, trick shots, duel) on the felt like a trick. A chapter, and each step, opens with a
+ * briefing of what is about to happen.
  */
 public class CampaignScreen extends BaseScreen {
 
@@ -29,6 +32,7 @@ public class CampaignScreen extends BaseScreen {
 	private static final float GLOW_W = 1.9f, GLOW_H = 1.6f;
 	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f);
 	private static final Tween LAYING = Tween.over(0.35f, Ease.OUT);
+	private static final float BRIEF_W = 560, BRIEF_H = 290, BRIEF_PAD = 28, BRIEF_BUTTON_W = 160;
 	private static final int TABLE = 0, SHOTS = 1, DUEL = 2;
 	private static final String[] STEPS = { "Table", "Trick shots", "Duel" };
 
@@ -37,8 +41,11 @@ public class CampaignScreen extends BaseScreen {
 	private final Rectangle backButton = new Rectangle();
 	private final Rectangle[] chapterCards = new Rectangle[Chapter.values().length];
 	private final Rectangle[] stepCards = new Rectangle[STEPS.length];
+	private final Rectangle briefPanel = new Rectangle(), goButton = new Rectangle(), stayButton = new Rectangle();
 	private Chapter chosen;
-	private float chosenFor;
+	private float chosenFor, briefedFor;
+	private Briefing briefing;
+	private Runnable afterBriefing;
 
 	public CampaignScreen(GameHost game) {
 		super(game);
@@ -54,6 +61,27 @@ public class CampaignScreen extends BaseScreen {
 	public void openChapter(Chapter c) {
 		chosen = c;
 		chosenFor = 0;
+		briefing = null;
+	}
+
+	public void brief(Briefing b, Runnable then) {
+		briefing = b;
+		afterBriefing = then;
+		briefedFor = 0;
+	}
+
+	public void briefChapter(Chapter c) {
+		brief(Briefing.chapter(c), () -> openChapter(c));
+	}
+
+	public void briefTable(Chapter c) {
+		brief(Briefing.table(c), () -> game.playCampaign(c, false));
+	}
+
+	public void go() {
+		Runnable then = afterBriefing;
+		briefing = null;
+		then.run();
 	}
 
 	@Override
@@ -66,11 +94,12 @@ public class CampaignScreen extends BaseScreen {
 	protected void update(float step) {
 		shownFor += step * game.options().speed;
 		chosenFor += step * game.options().speed;
+		briefedFor += step * game.options().speed;
 	}
 
 	@Override
 	public boolean animating() {
-		return chosen != null && !LAYING.done(chosenFor);
+		return chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor);
 	}
 
 	@Override
@@ -84,8 +113,23 @@ public class CampaignScreen extends BaseScreen {
 		} else {
 			drawChapter(progress, chosen);
 		}
+		if (briefing != null) {
+			drawBriefing();
+		}
 		chrome.header(chosen == null ? "Campaign" : "Chapter " + chosen.number(), backButton, w, h);
 		batch.end();
+	}
+
+	private void drawBriefing() {
+		float a = LAYING.progress(briefedFor);
+		paint.rect(0, 0, w, h, Palette.BACKDROP);
+		float pw = Math.min(BRIEF_W, w - 40), ph = BRIEF_H, px = (w - pw) / 2, py = (h - MenuChrome.HEADER_H - ph) / 2 - (1 - a) * 30;
+		briefPanel.set(px, py, pw, ph);
+		paint.frame(assets.panel, px, py, pw, ph);
+		paint.centred(paint.serif(1.5f, Palette.GOLD_LIGHT, a), briefing.title(), w / 2, py + ph - 22);
+		paint.ui(1.05f, Palette.CREAM, a).draw(batch, briefing.body(), px + BRIEF_PAD, py + ph - 70, pw - 2 * BRIEF_PAD, Align.left, true);
+		paint.button(goButton, briefing.go(), w / 2 + BRIEF_BUTTON_W / 2 + 8, py + 18, BRIEF_BUTTON_W, 42, assets.button);
+		paint.button(stayButton, "Back", w / 2 - BRIEF_BUTTON_W / 2 - 8, py + 18, BRIEF_BUTTON_W, 42, assets.buttonAlt);
 	}
 
 	private Chapter current(Campaign progress) {
@@ -190,6 +234,14 @@ public class CampaignScreen extends BaseScreen {
 
 	@Override
 	protected void tap(float x, float y) {
+		if (briefing != null) {
+			if (goButton.contains(x, y)) {
+				go();
+			} else if (stayButton.contains(x, y) || !briefPanel.contains(x, y)) {
+				briefing = null;
+			}
+			return;
+		}
 		if (backButton.contains(x, y)) {
 			back();
 			return;
@@ -199,24 +251,27 @@ public class CampaignScreen extends BaseScreen {
 			for (int i = 0; i < chapterCards.length; i++) {
 				Chapter c = Chapter.values()[i];
 				if (chapterCards[i].contains(x, y) && progress.open(c)) {
-					openChapter(c);
+					briefChapter(c);
 					return;
 				}
 			}
 			return;
 		}
+		Chapter c = chosen;
 		if (stepCards[TABLE].contains(x, y)) {
-			game.playCampaign(chosen, false);
-		} else if (stepCards[SHOTS].contains(x, y) && progress.shotsOpen(chosen)) {
-			game.playTrickShot(progress.nextTrickShot(chosen));
-		} else if (stepCards[DUEL].contains(x, y) && progress.duelOpen(chosen)) {
-			game.playCampaign(chosen, true);
+			briefTable(c);
+		} else if (stepCards[SHOTS].contains(x, y) && progress.shotsOpen(c)) {
+			brief(Briefing.trickShots(c, progress), () -> game.playTrickShot(progress.nextTrickShot(c)));
+		} else if (stepCards[DUEL].contains(x, y) && progress.duelOpen(c)) {
+			brief(Briefing.duel(c), () -> game.playCampaign(c, true));
 		}
 	}
 
 	@Override
 	protected void back() {
-		if (chosen != null) {
+		if (briefing != null) {
+			briefing = null;
+		} else if (chosen != null) {
 			chosen = null;
 		} else {
 			game.back();
@@ -225,6 +280,9 @@ public class CampaignScreen extends BaseScreen {
 
 	@Override
 	public String stateTag() {
+		if (briefing != null) {
+			return briefing.tag();
+		}
 		return chosen == null ? "campaign" : "chapter:" + chosen.number();
 	}
 }

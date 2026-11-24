@@ -246,8 +246,10 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void startCampaign() {
+		screens.replaceAll(title);
 		campaignScreen.openChapter(Chapter.ONE);
-		playCampaign(Chapter.ONE, false);
+		campaignScreen.briefTable(Chapter.ONE);
+		screens.open(campaignScreen);
 	}
 
 	@Override
@@ -287,6 +289,23 @@ public class OhHeckGame extends Game implements GameHost {
 			play = PlayScreen.resume(this, saved);
 		}
 		screens.replaceAll(play);
+	}
+
+	@Override
+	public void startFresh() {
+		settings.forgetEverything();
+		records = new Records(settings.recordStore(), options.persist, null);
+		assets.dress(settings.cardBack(), settings.felt());
+		for (PlayScreen p : new PlayScreen[] { play, campaignPlay }) {
+			if (p != null) {
+				p.dispose();
+			}
+		}
+		play = campaignPlay = null;
+		campaignScreen.openChapter(null);
+		title.replayIntro();
+		screens.replaceAll(title);
+		audio.startMusic();
 	}
 
 	@Override

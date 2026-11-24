@@ -175,15 +175,17 @@ The title's **Play** opens the Play screen: **Campaign**, **Custom game** (set u
 goes), High scores, and Continue when a custom game is in progress.
 The campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
 three steps in order: table play (a normal game against the chapter's rivals), trick shots
-(`TrickShotScreen`, a fixed deal with every hand face up, three undos and every card gliding
+(`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding
 into place), open once the table is won as practice for the duel, and a duel against its champion
 (`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
 bid made after two made running). Winning the duel clears the chapter and wins its card back
 and felt (`Cosmetic`, chosen in Preferences). `PlayScreen.campaign` plays the table and the
 duel; campaign games are not saved and don't touch the statistics or high scores, but every
 game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
-the top (`TableLayout.spot`). The tutorial, finished for the first time, sits you at chapter 1's
-table. The plan the campaign follows is `docs/CAMPAIGN.md`.
+the top (`TableLayout.spot`). A chapter and each step open with a `Briefing` (what is about to
+happen, worded from the rules and the roster). The tutorial, finished for the first time, ends at
+chapter 1's table briefing. Options, Tutorial, Start fresh forgets everything (preferences,
+records, campaign) and replays the intro, as for a new player. The plan the campaign follows is `docs/CAMPAIGN.md`.
 
 ### Saving
 
