@@ -218,11 +218,6 @@ final class TutorialScenes extends TutorialStage {
 		float deckX = w - 60 - CW, deckY = cy() - CH / 2 - 20;
 		art.stack(deckX + CW / 2, deckY + CH / 2, 12, CW, CH, 0);
 		float[] rowYs = { seatTop(0) - PlayerPanel.H / 2 - dh / 2, seatTop(1) - PlayerPanel.H / 2 - dh / 2 };
-		int dealer = Math.max(0, clock.count(starts) - 1), before = Math.max(0, dealer - 1);
-		float move = dealer > 0 ? at(starts[dealer] - 0.1f, starts[dealer] + CHIP_MOVE) : 1;
-		float chipX = cx() - 1.5f * gap - CHIP_BESIDE - MathUtils.sin(move * MathUtils.PI) * 40;
-		float chipY = MathUtils.lerp(rowYs[before % 2], rowYs[dealer % 2], move) + dh / 2 - CHIP / 2;
-		batch.draw(assets.dealerIcon, chipX, chipY, CHIP, CHIP);
 		for (int round = 0; round < 3; round++) {
 			int n = round + 1;
 			float a = starts[round], end = round < 2 ? starts[round + 1] - 0.15f : 99f;
@@ -248,7 +243,35 @@ final class TutorialScenes extends TutorialStage {
 		paint.centred(f, "\u2026 and so on, up to " + HANDS, cx(), h - 70);
 	}
 
-	private static final float CHIP = 30, CHIP_MOVE = 0.45f, CHIP_BESIDE = 50;
+	private static final float[] PICKING = { 0, 0.1f, 0.2f, 0.3f, 0.42f, 0.56f, 0.72f, 0.92f, 1.16f, 1.46f };
+	private static final float FIRST_DEAL = 1.9f, NEXT_DEAL = 1.5f;
+	private static final int FIRST_DEALER = 1, SEATS = 4;
+	private static final String[] DEALS = new String[SEATS];
+	static {
+		for (int k = 0; k < SEATS; k++) {
+			int seat = (FIRST_DEALER + k) % SEATS;
+			DEALS[k] = "Hand " + (k + 1) + ": " + (seat == 0 ? "you deal" : NAMES[seat] + " deals");
+		}
+	}
+
+	void theDealer() {
+		int dealt = t < FIRST_DEAL ? -1 : Math.min(SEATS - 1, (int) ((t - FIRST_DEAL) / NEXT_DEAL));
+		int picking = (FIRST_DEALER + clock.count(PICKING) - PICKING.length) % SEATS + SEATS;
+		int dealer = dealt < 0 ? -1 : (FIRST_DEALER + dealt) % SEATS;
+		for (int s = 0; s < SEATS; s++) {
+			seat(s, plain().dealer(s == dealer).turn(dealt < 0 && s == picking % SEATS));
+		}
+		if (dealt >= 0) {
+			if (passed(FIRST_DEAL + dealt * NEXT_DEAL) && settings.effects()) {
+				sparks.burst(seatX(dealer) + 30, seatTop(dealer) - 20, 30);
+			}
+			BitmapFont f = paint.serif(1.5f, Palette.GOLD, at(FIRST_DEAL + dealt * NEXT_DEAL, FIRST_DEAL + dealt * NEXT_DEAL + 0.3f));
+			paint.centred(f, DEALS[dealt], cx(), cy() + 10);
+		} else {
+			BitmapFont f = paint.serif(1.5f, Palette.GOLD, at(0, 0.3f));
+			paint.centred(f, "Picking the first dealer\u2026", cx(), cy() + 10);
+		}
+	}
 
 	private float popupOverHand() {
 		return handY() + CH + 12 + BidPopup.H / 2;
@@ -393,9 +416,9 @@ final class TutorialScenes extends TutorialStage {
 
 	void scoring() {
 		int mine = clock.count(0.8f, 1.6f), his = clock.count(4.8f, 5.6f);
-		seat(0, bidOf(2).won(mine).score(t >= 2.2f ? RuleSet.STANDARD.score(2, 2) : 0).cards(3));
-		seat(3, bidOf(1).won(his).score(t >= 6.4f ? RuleSet.STANDARD.score(1, 2) : 0).cards(3));
-		seat(1, bidOf(0).score(t >= ZERO_SCORED ? RuleSet.STANDARD.score(0, 0) : 0).cards(3));
+		scoredSeat(0, bidOf(2).won(mine).score(t >= 2.2f ? RuleSet.STANDARD.score(2, 2) : 0).cards(3));
+		scoredSeat(3, bidOf(1).won(his).score(t >= 6.4f ? RuleSet.STANDARD.score(1, 2) : 0).cards(3));
+		scoredSeat(1, bidOf(0).score(t >= ZERO_SCORED ? RuleSet.STANDARD.score(0, 0) : 0).cards(3));
 		float rx = seatX(1) + PlayerPanel.W / 2;
 		if (passed(ZERO_SCORED)) {
 			sparks.burst(rx, seatTop(1) - PlayerPanel.H / 2, 70);

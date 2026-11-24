@@ -71,6 +71,9 @@ public final class PlayerPanel {
 			float chip = 26, mid = top - 9 - nameH / 2;
 			paint.batch.draw(paint.assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
 		}
+		if (!seat.scored) {
+			return;
+		}
 		f.setColor(waiting && !seat.turn ? WAIT_SCORE : Palette.GOLD);
 		String score = Numbers.text(seat.score);
 		paint.text(f, score, x + W - 10, top - 9, false);
