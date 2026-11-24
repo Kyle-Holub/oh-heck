@@ -28,7 +28,8 @@ import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 
 /*
- * A trick shot: every hand face up around the table, the goal above. Every card glides to where it belongs: from a hand into
+ * A trick shot: every hand face up around the table, the goal in the header. Its title and goal pop up on the felt
+ * when it opens and fade, and the bids wait for them. Every card glides to where it belongs: from a hand into
  * the trick, and from a finished trick, after a moment, to its winner. The others reply one card
  * at a time; nothing can be tapped while a trick is being gathered.
  */
@@ -36,9 +37,14 @@ public class TrickShotScreen extends BaseScreen {
 
 	private static final float YOURS = 1.0f, THEIRS = 0.72f, TRICK = 0.75f, PILE = 0.3f;
 	private static final float OTHER_STEP = 0.55f, TRICK_HOLD = 0.8f, GATHER = 0.35f;
-	private static final float TOP_HAND_Y = 300, SIDE_HAND_DROP = 20, TRICK_DROP = 24, LABEL_GAP = 16, LIFT = 10;
-	private static final float BUTTON_W = 120, BUTTON_H = 40, BID_SIZE = 46, BID_GAP = 10;
-	private static final Tween GLIDE = Tween.over(0.28f, Ease.OUT), BANNER_IN = Tween.over(0.4f, Ease.OUT);
+	private static final float TOP_HAND_Y = 320, SIDE_HAND_DROP = 20, TRICK_DROP = 24, LABEL_GAP = 16, LIFT = 10;
+	private static final float BUTTON_W = 120, BUTTON_H = 40;
+	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190, BID_TITLE_TOP = 12,
+			BID_TITLE_SCALE = 0.92f, BID_ROW_RISE = 20, BID_PANEL_MARGIN = 40, BID_NUMERAL_OF_BUTTON = 0.66f;
+	private static final float INTRO_HOLD = 2.2f, INTRO_W = 560, INTRO_H = 150;
+	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
+	private static final Tween GLIDE = Tween.over(0.28f, Ease.OUT), BANNER_IN = Tween.over(0.4f, Ease.OUT),
+			INTRO_IN = Tween.over(0.3f, Ease.OUT), INTRO_OUT = Tween.over(0.5f, Ease.IN);
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final CardArt art;
@@ -51,7 +57,8 @@ public class TrickShotScreen extends BaseScreen {
 	private final boolean[] placed = new boolean[Card.COUNT], drawn = new boolean[Card.COUNT];
 	private final Vector2 spot = new Vector2();
 	private TrickShotPlay play;
-	private float time, untilOther, trickDoneAt = -99, overAt = -1, lastMotion = -99;
+	private float time, untilOther, trickDoneAt = -99, overAt = -1, lastMotion = -99, introAt = -99;
+	private String goal = "";
 	private boolean recorded;
 
 	public TrickShotScreen(GameHost game) {
@@ -61,6 +68,7 @@ public class TrickShotScreen extends BaseScreen {
 
 	public void open(TrickShot s) {
 		play = new TrickShotPlay(s);
+		goal = s.goalText(name(s.rival));
 		reset();
 	}
 
@@ -69,9 +77,14 @@ public class TrickShotScreen extends BaseScreen {
 		trickDoneAt = -99;
 		overAt = -1;
 		recorded = false;
+		introAt = time;
 		for (int i = 0; i < Card.COUNT; i++) {
 			placed[i] = false;
 		}
+	}
+
+	private boolean introducing() {
+		return time < introAt + INTRO_HOLD + INTRO_OUT.end();
 	}
 
 	private boolean gathering() {
@@ -84,7 +97,7 @@ public class TrickShotScreen extends BaseScreen {
 		shownFor += dt;
 		time += dt;
 		sparks.step(dt);
-		if (gathering()) {
+		if (gathering() || introducing()) {
 			return;
 		}
 		if (play.othersToMove()) {
@@ -117,7 +130,7 @@ public class TrickShotScreen extends BaseScreen {
 
 	@Override
 	public boolean animating() {
-		return gathering() || play.othersToMove() || GLIDE.active(time - lastMotion) || sparks.active()
+		return introducing() || gathering() || play.othersToMove() || GLIDE.active(time - lastMotion) || sparks.active()
 				|| overAt >= 0 && BANNER_IN.active(time - overAt);
 	}
 
@@ -128,7 +141,6 @@ public class TrickShotScreen extends BaseScreen {
 		batch.draw(assets.table, 0, 0, w, h);
 		Match m = play.match();
 		float top = h - MenuChrome.HEADER_H;
-		paint.centred(paint.serif(1.2f, Palette.GOLD_LIGHT), play.shot().goalText(name(play.shot().rival)), w / 2, top - 18);
 		drawTrump(m, top);
 		for (int i = 0; i < Card.COUNT; i++) {
 			drawn[i] = false;
@@ -141,12 +153,13 @@ public class TrickShotScreen extends BaseScreen {
 		for (int i = 0; i < Card.COUNT; i++) {
 			placed[i] &= drawn[i];
 		}
-		if (m.phase() == Match.Phase.BIDDING && play.yourTurn()) {
+		if (m.phase() == Match.Phase.BIDDING && play.yourTurn() && !introducing()) {
 			drawBids(m);
 		}
 		sparks.draw(batch, assets.glow);
 		drawButtons();
-		chrome.header(play.shot().title, backButton, w, h);
+		drawIntro();
+		chrome.header(goal, backButton, w, h);
 		batch.end();
 	}
 
@@ -198,7 +211,7 @@ public class TrickShotScreen extends BaseScreen {
 			return spot.set(20, h / 2 - SIDE_HAND_DROP);
 		}
 		if (seat == 2) {
-			return spot.set(w / 2 - handWidth(n, THEIRS) / 2, Math.min(TOP_HAND_Y, top - 136));
+			return spot.set(w / 2 - handWidth(n, THEIRS) / 2, Math.min(TOP_HAND_Y, top - 116));
 		}
 		return spot.set(w - 20 - handWidth(Math.max(1, n), THEIRS), h / 2 - SIDE_HAND_DROP);
 	}
@@ -226,7 +239,6 @@ public class TrickShotScreen extends BaseScreen {
 		} else {
 			art.flip(trump, x, y, tw, th, 1);
 		}
-		paint.textIn(paint.ui(0.85f, Palette.MUTED), "Trump", x, y - 20, tw, 16);
 	}
 
 	private void drawTrick(Match m) {
@@ -242,7 +254,7 @@ public class TrickShotScreen extends BaseScreen {
 				continue;
 			}
 			int s = seats.get(i);
-			float dx = s == 1 ? -cw * 0.95f : s == 3 ? cw * 0.95f : 0, dy = s == 0 ? -ch * 0.4f : s == 2 ? ch * 0.4f : 0;
+			float dx = s == 1 ? -cw * 1.1f : s == 3 ? cw * 1.1f : 0, dy = s == 0 ? -ch * 0.55f : s == 2 ? ch * 0.55f : 0;
 			card(cards.get(i), cx + dx - cw / 2, cy + dy - ch / 2, cw);
 		}
 	}
@@ -267,20 +279,42 @@ public class TrickShotScreen extends BaseScreen {
 			handRects.get(i).set(x, y, cw, ch);
 			card(hand.get(i), x, y, cw);
 		}
-		paint.ui(0.95f, Palette.CREAM).draw(batch, "You  " + seatLine(m, Seating.YOU), w / 2 - 2 * cw, 14 + ch + 30);
+		float right = x0 + cw + gap * Math.max(0, hand.size() - 1) + LABEL_GAP;
+		paint.ui(1.0f, Palette.CREAM).draw(batch, "You", right, 14 + ch * 0.7f);
+		paint.ui(0.9f, Palette.MUTED).draw(batch, seatLine(m, Seating.YOU), right, 14 + ch * 0.7f - 26);
 	}
 
 	private void drawBids(Match m) {
-		int n = m.handSize() + 1;
-		while (bidRects.size() < n) {
+		int n = m.handSize();
+		while (bidRects.size() <= n) {
 			bidRects.add(new Rectangle());
 		}
-		float span = n * BID_SIZE + (n - 1) * BID_GAP, x = w / 2 - span / 2, y = h / 2 - BID_SIZE / 2;
-		for (int b = 0; b < n; b++) {
-			Rectangle r = bidRects.get(b).set(x + b * (BID_SIZE + BID_GAP), y, BID_SIZE, BID_SIZE);
-			paint.frame(m.isLegalBid(b) ? assets.button : assets.buttonOff, r.x, r.y, r.width, r.height);
-			paint.numeral(b, r.x + r.width / 2, r.y + r.height / 2, BID_SIZE * 0.7f, Color.WHITE);
+		float rowW = (n + 1) * BID_BUTTON + n * BID_GAP;
+		float pw = Math.max(rowW + BID_PANEL_MARGIN, BID_PANEL_MIN_W), px = (w - pw) / 2, py = h / 2 - TRICK_DROP - BID_PANEL_H / 2;
+		paint.frame(assets.panel, px, py, pw, BID_PANEL_H);
+		float titleH = assets.makeBidText.getHeight() * BID_TITLE_SCALE;
+		art.art(assets.makeBidText, w / 2, py + BID_PANEL_H - BID_TITLE_TOP - titleH / 2, BID_TITLE_SCALE, 1f);
+		float bx = (w - rowW) / 2, by = py + BID_ROW_RISE;
+		for (int b = 0; b <= n; b++) {
+			Rectangle r = bidRects.get(b).set(bx + b * (BID_BUTTON + BID_GAP), by, BID_BUTTON, BID_BUTTON);
+			boolean ok = m.isLegalBid(b);
+			paint.frame(ok ? assets.button : assets.buttonOff, r.x, r.y, r.width, r.height);
+			paint.numeral(b, r.x + r.width / 2, r.y + r.height / 2, BID_BUTTON * BID_NUMERAL_OF_BUTTON, ok ? Color.WHITE : NUMERAL_OFF);
 		}
+	}
+
+	private void drawIntro() {
+		if (!introducing()) {
+			return;
+		}
+		float t = time - introAt;
+		float a = t < INTRO_HOLD ? INTRO_IN.progress(t) : 1 - INTRO_OUT.progress(t - INTRO_HOLD);
+		float px = (w - INTRO_W) / 2, py = h / 2 - TRICK_DROP - INTRO_H / 2;
+		paint.fade(a);
+		paint.frame(assets.panel, px, py, INTRO_W, INTRO_H);
+		paint.fade(1f);
+		paint.centred(paint.serif(1.6f, Palette.GOLD, a), play.shot().title, w / 2, py + INTRO_H - 30);
+		paint.centred(paint.serif(1.15f, Palette.CREAM, a), goal, w / 2, py + 56);
 	}
 
 	private void drawButtons() {
@@ -309,7 +343,9 @@ public class TrickShotScreen extends BaseScreen {
 
 	@Override
 	protected void tap(float x, float y) {
-		if (backButton.contains(x, y)) {
+		if (introducing()) {
+			introAt = Math.min(introAt, time - INTRO_HOLD);
+		} else if (backButton.contains(x, y)) {
 			back();
 		} else if (nextButton.contains(x, y)) {
 			if (!play.solved()) {

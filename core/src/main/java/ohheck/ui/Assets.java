@@ -170,6 +170,14 @@ public final class Assets implements Disposable {
 		backBlur.setRegion(backBlurs[cardBack.ordinal()]);
 	}
 
+	public Texture backOf(Cosmetic c) {
+		return backs[c.ordinal()];
+	}
+
+	public Texture feltOf(Cosmetic c) {
+		return tables[c.ordinal()];
+	}
+
 	public Texture emblem(Suit s) {
 		return emblems[s.ordinal()];
 	}

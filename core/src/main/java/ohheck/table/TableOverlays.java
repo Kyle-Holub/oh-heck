@@ -288,7 +288,8 @@ final class TableOverlays {
 		}
 		float bw = END_BUTTON_W, bh = END_BUTTON_H, by = py + END_BUTTONS_RISE;
 		paint.button(targets.button(OverlayTargets.Button.PLAY_AGAIN), "Play again", layout.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
-		paint.button(targets.button(OverlayTargets.Button.HIGH_SCORES), scene.inCampaign() ? "Campaign" : "High scores", layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
+		paint.button(targets.button(OverlayTargets.Button.HIGH_SCORES), scene.prizesWaiting() ? "Claim prizes" : scene.inCampaign() ? "Campaign" : "High scores",
+				layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, scene.prizesWaiting() ? paint.assets.button : paint.assets.buttonAlt);
 	}
 
 	private String winnersLine() {

@@ -45,6 +45,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final GameRecorder recorder;
 	private final BadgeKeeper badges;
 	private final Chapter chapter;
+	private boolean prizesWaiting;
 	private final boolean duel;
 	private Difficulty level;
 	private Seating players;
@@ -125,29 +126,34 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			if (!m.leaders().equals(List.of(Seating.YOU))) {
 				return;
 			}
-			if (duel) {
-				game.records().campaign().winDuel(chapter);
-			} else {
-				game.records().campaign().winTable(chapter);
-			}
-			game.records().saveCampaign();
+			win();
 		}
 	}
 
-	@Override
-	public void forceWin() {
+	private void win() {
 		if (duel) {
+			prizesWaiting = !game.records().campaign().cleared(chapter);
 			game.records().campaign().winDuel(chapter);
 		} else {
 			game.records().campaign().winTable(chapter);
 		}
 		game.records().saveCampaign();
-		game.showCampaign();
+	}
+
+	@Override
+	public void forceWin() {
+		win();
+		showHighScores();
 	}
 
 	@Override
 	public boolean inCampaign() {
 		return chapter != null;
+	}
+
+	@Override
+	public boolean prizesWaiting() {
+		return prizesWaiting;
 	}
 
 	@Override
@@ -364,7 +370,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	public void showHighScores() {
-		if (chapter != null) {
+		if (prizesWaiting) {
+			game.showChapterCleared(chapter);
+		} else if (chapter != null) {
 			game.showCampaign();
 		} else {
 			game.showHighScores(recorder.newHighScore());

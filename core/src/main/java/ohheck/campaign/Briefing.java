@@ -1,57 +1,79 @@
 package ohheck.campaign;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import ohheck.players.Player;
 import ohheck.players.Seating;
 import ohheck.rules.RuleSet;
 
-/* What a chapter, or a step of it, is about to ask of you, in words drawn from its rules and its players. */
-public record Briefing(String tag, String title, String body, String go) {
+/*
+ * What a chapter, or a step of it, is about to ask of you, as a few short pages in the tutorial's style: a picture on the
+ * felt and a one-line caption, in words drawn from its rules and its players.
+ */
+public record Briefing(String tag, Chapter chapter, String go, List<Briefing.Page> pages) {
+
+	public enum Picture {
+		CHAPTER, SCORING, STEPS, RIVALS, WIN, SHOTS, CHAMPION, SHORT_DECK, MOMENTUM
+	}
+
+	public record Page(Picture picture, String heading, String line, String figure) {
+	}
 
 	public static Briefing chapter(Chapter c) {
-		return new Briefing("brief:chapter", "Chapter " + c.number() + ": " + c.mode.label,
-				rulesLine(c.rules()) + " Win the table against " + names(c.rivals) + ", sharpen up with trick shots, then beat "
-						+ c.champion().name + " in a duel to clear the chapter.",
-				"Continue");
+		RuleSet r = c.rules();
+		List<Page> p = new ArrayList<Page>();
+		p.add(new Page(Picture.CHAPTER, "Chapter " + c.number() + ": " + c.mode.label,
+				"Hands run " + r.order.label(r.mostCards) + " cards." + (r.blindBids ? " Bids are made unseen and shown together." : ""),
+				c.mode.label));
+		p.add(new Page(Picture.SCORING, "Scoring", scoringLine(r), scoringFigure(r)));
+		p.add(new Page(Picture.STEPS, "Three steps",
+				"Win the table, sharpen up with trick shots, then beat " + c.champion().name + " in a duel.", ""));
+		return new Briefing("brief:chapter", c, "Continue", p);
 	}
 
 	public static Briefing table(Chapter c) {
-		return new Briefing("brief:table", "The table",
-				"A full game of " + c.rules().numberOfHands() + " hands against " + names(c.rivals) + ", under " + c.mode.label
-						+ " rules. Finish first, outright, to win the table and open the trick shots and the duel.",
-				"Play");
+		List<Page> p = new ArrayList<Page>();
+		p.add(new Page(Picture.RIVALS, "The table",
+				"A full game of " + c.rules().numberOfHands() + " hands against " + names(c.rivals) + ".", ""));
+		p.add(new Page(Picture.WIN, "To win", "Finish first, outright, to open the trick shots and the duel.", "1st"));
+		return new Briefing("brief:table", c, "Play", p);
 	}
 
 	public static Briefing trickShots(Chapter c, Campaign progress) {
 		int n = TrickShots.of(c).size();
-		return new Briefing("brief:shots", "Trick shots",
-				n + " hands laid face up, each with a goal: make your bid exactly, stop a rival making theirs, or find the"
-						+ " one bid you can make. The others play as a careful player would, so the same moves always meet the"
-						+ " same replies. Good practice for the duel. " + progress.madeIn(c) + " of " + n + " made so far.",
-				"Play");
+		List<Page> p = new ArrayList<Page>();
+		p.add(new Page(Picture.SHOTS, "Trick shots",
+				"Every hand face up, and a goal: make your bid, stop a rival, or find the one sure bid.",
+				progress.madeIn(c) + " of " + n + " made"));
+		p.add(new Page(Picture.CHAMPION, "Practice for the duel",
+				"The others play as a careful player would, so the same moves meet the same replies.", c.champion().name));
+		return new Briefing("brief:shots", c, "Play", p);
 	}
 
 	public static Briefing duel(Chapter c) {
 		Player champion = c.champion();
 		RuleSet r = c.duelRules();
-		return new Briefing("brief:duel", "Duel: " + champion.name,
-				"One on one against " + champion.name + ", who " + lowerFirst(champion.trait) + " A short deck, nine to ace,"
-						+ " over " + r.numberOfHands() + " hands of 1 to " + r.mostCards + " cards. Make your bid twice running and"
-						+ " your next made bid scores double. Win to clear the chapter.",
-				"Play");
+		List<Page> p = new ArrayList<Page>();
+		p.add(new Page(Picture.CHAMPION, "Duel: " + champion.name, champion.trait, champion.name));
+		p.add(new Page(Picture.SHORT_DECK, "A short deck",
+				"Nine to ace, over " + r.numberOfHands() + " hands of 1 to " + r.mostCards + " cards.", ""));
+		p.add(new Page(Picture.MOMENTUM, "Momentum", "Make your bid twice running and your next made bid scores double.", "x2"));
+		p.add(new Page(Picture.WIN, "To win", "Beat " + champion.name + " to clear the chapter and claim its prizes.", "1st"));
+		return new Briefing("brief:duel", c, "Play", p);
 	}
 
-	private static String rulesLine(RuleSet r) {
-		String scoring = r.bigBids ? "Make your bid exactly for " + r.made() + " points and a bonus that doubles with each trick bid"
-				: "Make your bid exactly for " + r.made() + " points, plus " + r.perTrickBid() + " for each trick bid";
-		return "Hands run " + r.order.label(r.mostCards) + " cards. " + scoring + "; miss, high or low, and lose "
-				+ r.perTrickOff() + " for each trick off." + (r.blindBids ? " Bids are made unseen and shown together." : "");
+	private static String scoringLine(RuleSet r) {
+		String made = r.bigBids ? "Make your bid exactly for " + r.made() + ", and a bonus that grows with the bid."
+				: "Make your bid exactly for " + r.made() + ", plus " + r.perTrickBid() + " a trick.";
+		return made + " Miss and lose " + r.perTrickOff() + " a trick off.";
+	}
+
+	private static String scoringFigure(RuleSet r) {
+		return r.bigBids ? r.made() + " + bonus" : r.made() + " + " + r.perTrickBid() + " a trick";
 	}
 
 	private static String names(Seating s) {
 		return s.at(1).name + ", " + s.at(2).name + " and " + s.at(3).name;
-	}
-
-	private static String lowerFirst(String s) {
-		return Character.toLowerCase(s.charAt(0)) + s.substring(1);
 	}
 }

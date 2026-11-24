@@ -42,6 +42,10 @@ interface TableScene {
 		return false;
 	}
 
+	default boolean prizesWaiting() {
+		return false;
+	}
+
 	boolean isDragging();
 
 	Card pressedCard();

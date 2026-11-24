@@ -2,6 +2,8 @@ package ohheck.screens;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Align;
@@ -13,6 +15,7 @@ import ohheck.campaign.Briefing;
 import ohheck.campaign.Campaign;
 import ohheck.campaign.Chapter;
 import ohheck.campaign.TrickShots;
+import ohheck.rules.Card;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
@@ -23,7 +26,7 @@ import ohheck.ui.Palette;
  * The campaign as a hand of chapter cards: open chapters face up with a pip for each step done,
  * the rest face down, the chapter in play lifted and lit. A tapped chapter lays its three steps
  * (table, trick shots, duel) on the felt like a trick. A chapter, and each step, opens with a
- * briefing of what is about to happen.
+ * briefing of what is about to happen: a few pages in the tutorial's style, a picture above and a caption below.
  */
 public class CampaignScreen extends BaseScreen {
 
@@ -32,7 +35,11 @@ public class CampaignScreen extends BaseScreen {
 	private static final float GLOW_W = 1.9f, GLOW_H = 1.6f;
 	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f);
 	private static final Tween LAYING = Tween.over(0.35f, Ease.OUT);
-	private static final float BRIEF_W = 560, BRIEF_H = 290, BRIEF_PAD = 28, BRIEF_BUTTON_W = 160;
+	private static final float CAPTION_H = 92, CAPTION_W = 860, BIG_W = 170, BIG_H = BIG_W * 98 / 73, SMALL_W = 120,
+			SMALL_H = SMALL_W * 98 / 73, BIG_ICON = 84, DECK_W = 96,
+			BUTTON_ROOM = 64;
+	private static final Card[] SHORT_DECK = { Card.parse("9H"), Card.parse("10H"), Card.parse("JH"), Card.parse("QH"),
+			Card.parse("KH"), Card.parse("AH") };
 	private static final int TABLE = 0, SHOTS = 1, DUEL = 2;
 	private static final String[] STEPS = { "Table", "Trick shots", "Duel" };
 
@@ -41,9 +48,11 @@ public class CampaignScreen extends BaseScreen {
 	private final Rectangle backButton = new Rectangle();
 	private final Rectangle[] chapterCards = new Rectangle[Chapter.values().length];
 	private final Rectangle[] stepCards = new Rectangle[STEPS.length];
-	private final Rectangle briefPanel = new Rectangle(), goButton = new Rectangle(), stayButton = new Rectangle();
+	private final Rectangle goButton = new Rectangle();
+	private final StringBuilder pageCount = new StringBuilder();
 	private Chapter chosen;
 	private float chosenFor, briefedFor;
+	private int page;
 	private Briefing briefing;
 	private Runnable afterBriefing;
 
@@ -68,6 +77,7 @@ public class CampaignScreen extends BaseScreen {
 		briefing = b;
 		afterBriefing = then;
 		briefedFor = 0;
+		page = 0;
 	}
 
 	public void briefChapter(Chapter c) {
@@ -123,13 +133,96 @@ public class CampaignScreen extends BaseScreen {
 	private void drawBriefing() {
 		float a = LAYING.progress(briefedFor);
 		paint.rect(0, 0, w, h, Palette.BACKDROP);
-		float pw = Math.min(BRIEF_W, w - 40), ph = BRIEF_H, px = (w - pw) / 2, py = (h - MenuChrome.HEADER_H - ph) / 2 - (1 - a) * 30;
-		briefPanel.set(px, py, pw, ph);
-		paint.frame(assets.panel, px, py, pw, ph);
-		paint.centred(paint.serif(1.5f, Palette.GOLD_LIGHT, a), briefing.title(), w / 2, py + ph - 22);
-		paint.ui(1.05f, Palette.CREAM, a).draw(batch, briefing.body(), px + BRIEF_PAD, py + ph - 70, pw - 2 * BRIEF_PAD, Align.left, true);
-		paint.button(goButton, briefing.go(), w / 2 + BRIEF_BUTTON_W / 2 + 8, py + 18, BRIEF_BUTTON_W, 42, assets.button);
-		paint.button(stayButton, "Back", w / 2 - BRIEF_BUTTON_W / 2 - 8, py + 18, BRIEF_BUTTON_W, 42, assets.buttonAlt);
+		paint.rect(0, 0, w, h, Palette.BACKDROP);
+		Briefing.Page p = briefing.pages().get(page);
+		float cw = Math.min(w - 60, CAPTION_W), x = (w - cw) / 2, y = 12;
+		float midY = (y + CAPTION_H + BUTTON_ROOM + h - MenuChrome.HEADER_H) / 2 - (1 - a) * 30;
+		paint.fade(a);
+		drawPicture(p, midY, a);
+		paint.frame(assets.panel, x, y, cw, CAPTION_H);
+		paint.fade(1f);
+		paint.serif(1.35f, Palette.GOLD, a).draw(batch, p.heading(), x + 22, y + CAPTION_H - 12);
+		paint.ui(1.1f, Palette.CREAM, a).draw(batch, p.line(), x + 22, y + CAPTION_H - 44, cw - 44, Align.left, true);
+		BitmapFont m = paint.ui(0.9f, Palette.MUTED, a);
+		pageCount.setLength(0);
+		pageCount.append(page + 1).append(" / ").append(briefing.pages().size());
+		paint.text(m, pageCount.toString(), x + cw - 20, y + CAPTION_H - 14, false);
+		if (page == briefing.pages().size() - 1) {
+			paint.button(goButton, briefing.go(), w / 2, y + CAPTION_H + 14, 220, 44, assets.button);
+		} else {
+			goButton.set(0, 0, 0, 0);
+			paint.text(m, "Tap to continue", x + cw - 20, y + 22, false);
+		}
+	}
+
+	private void drawPicture(Briefing.Page p, float cy, float a) {
+		Chapter c = briefing.chapter();
+		switch (p.picture()) {
+		case CHAPTER:
+			bigCard(w / 2, cy, assets.emblem(c.emblem), p.figure(), a);
+			paint.centred(paint.ui(0.9f, Palette.GOLD, a), "CHAPTER", w / 2, cy + BIG_H / 2 - 20);
+			break;
+		case SCORING:
+			paint.centred(paint.serif(3.2f, Palette.GOLD_LIGHT, a), p.figure(), w / 2, cy + 30);
+			break;
+		case STEPS:
+			for (int i = 0; i < STEPS.length; i++) {
+				smallCard(w / 2 + (i - 1) * (SMALL_W + STEP_GAP), cy, stepIcon(i), STEPS[i], a);
+			}
+			break;
+		case RIVALS:
+			for (int seat = 1; seat <= 3; seat++) {
+				smallCard(w / 2 + (seat - 2) * (SMALL_W + STEP_GAP), cy, assets.levelBadge[c.rivals.at(seat).level.ordinal()],
+						c.rivals.at(seat).name, a);
+			}
+			break;
+		case WIN:
+			bigCard(w / 2, cy, assets.badge, p.figure(), a);
+			break;
+		case SHOTS:
+			bigCard(w / 2, cy, assets.stepShots, p.figure(), a);
+			break;
+		case CHAMPION:
+			bigCard(w / 2, cy, assets.stepDuel, p.figure(), a);
+			break;
+		case SHORT_DECK:
+			float dh = DECK_W * 98 / 73, step = DECK_W * 0.7f, x0 = w / 2 - (DECK_W + step * (SHORT_DECK.length - 1)) / 2;
+			for (int i = 0; i < SHORT_DECK.length; i++) {
+				float x = x0 + i * step, y = cy - dh / 2 + (i - 2.5f) * (i - 2.5f) * -3;
+				art.shadow(x, y, DECK_W, dh, 4);
+				art.flip(SHORT_DECK[i], x, y, DECK_W, dh, 1);
+			}
+			break;
+		case MOMENTUM:
+			glow(w / 2 - BIG_W / 2, cy - BIG_H / 2, BIG_W, BIG_H);
+			paint.centred(paint.serif(5f, Palette.GOLD_LIGHT, a), p.figure(), w / 2, cy + 48);
+			break;
+		}
+	}
+
+	private Texture stepIcon(int step) {
+		return step == TABLE ? assets.stepTable : step == SHOTS ? assets.stepShots : assets.stepDuel;
+	}
+
+	private void bigCard(float cx, float cy, Texture icon, String label, float a) {
+		float x = cx - BIG_W / 2, y = cy - BIG_H / 2;
+		glow(x, y, BIG_W, BIG_H);
+		art.shadow(x, y, BIG_W, BIG_H, 8);
+		batch.setColor(1, 1, 1, a);
+		batch.draw(assets.campaignFace, x, y, BIG_W, BIG_H);
+		batch.draw(icon, cx - BIG_ICON / 2, cy - BIG_ICON / 2 + 6, BIG_ICON, BIG_ICON);
+		batch.setColor(Color.WHITE);
+		paint.textIn(paint.serif(1.3f, Palette.GOLD_LIGHT, a), label, x, y + 22, BIG_W, 28);
+	}
+
+	private void smallCard(float cx, float cy, Texture icon, String label, float a) {
+		float x = cx - SMALL_W / 2, y = cy - SMALL_H / 2;
+		art.shadow(x, y, SMALL_W, SMALL_H, 4);
+		batch.setColor(1, 1, 1, a);
+		batch.draw(assets.campaignFace, x, y, SMALL_W, SMALL_H);
+		batch.draw(icon, cx - ICON / 2, cy - ICON / 2 + 8, ICON, ICON);
+		batch.setColor(Color.WHITE);
+		paint.textIn(paint.serif(1.1f, Palette.GOLD_LIGHT, a), label, x, y + 16, SMALL_W, 24);
 	}
 
 	private Chapter current(Campaign progress) {
@@ -207,7 +300,7 @@ public class CampaignScreen extends BaseScreen {
 
 	private void drawStepFace(Campaign progress, Chapter c, int step, float x, float y, float alpha) {
 		batch.draw(assets.campaignFace, x, y, STEP_W, STEP_H);
-		batch.draw(step == TABLE ? assets.stepTable : step == SHOTS ? assets.stepShots : assets.stepDuel,
+		batch.draw(stepIcon(step),
 				x + STEP_W / 2 - ICON / 2, y + STEP_H / 2 - ICON / 2 + 4, ICON, ICON);
 		batch.setColor(Color.WHITE);
 		paint.textIn(paint.serif(1.25f, Palette.GOLD_LIGHT, alpha), STEPS[step], x, y + STEP_H - 46, STEP_W, 28);
@@ -235,10 +328,13 @@ public class CampaignScreen extends BaseScreen {
 	@Override
 	protected void tap(float x, float y) {
 		if (briefing != null) {
-			if (goButton.contains(x, y)) {
-				go();
-			} else if (stayButton.contains(x, y) || !briefPanel.contains(x, y)) {
+			if (backButton.contains(x, y)) {
 				briefing = null;
+			} else if (page < briefing.pages().size() - 1) {
+				page++;
+				briefedFor = LAYING.end() / 2;
+			} else if (goButton.contains(x, y)) {
+				go();
 			}
 			return;
 		}
