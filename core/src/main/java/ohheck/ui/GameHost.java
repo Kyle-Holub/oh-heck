@@ -3,6 +3,7 @@ package ohheck.ui;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import ohheck.campaign.Chapter;
+import ohheck.campaign.Stage;
 import ohheck.campaign.TrickShot;
 import ohheck.platform.Audio;
 import ohheck.platform.GameOptions;
@@ -54,7 +55,7 @@ public interface GameHost {
 
 	void startCampaign();
 
-	void playCampaign(Chapter chapter, boolean duel);
+	void playCampaign(Chapter chapter, Stage stage);
 
 	void playTrickShot(TrickShot shot);
 

@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import ohheck.campaign.Chapter;
+import ohheck.campaign.Stage;
 import ohheck.fx.Fireworks;
 import ohheck.fx.Sparks;
 import ohheck.platform.GameOptions;
@@ -46,7 +47,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final BadgeKeeper badges;
 	private final Chapter chapter;
 	private boolean prizesWaiting;
-	private final boolean duel;
+	private final Stage stage;
 	private Difficulty level;
 	private Seating players;
 
@@ -56,21 +57,21 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final List<Rectangle> handRects = new ArrayList<Rectangle>();
 
 	public static PlayScreen fresh(GameHost game) {
-		return new PlayScreen(game, null, null, false);
+		return new PlayScreen(game, null, null, null);
 	}
 
 	public static PlayScreen resume(GameHost game, SavedGame saved) {
-		return new PlayScreen(game, saved, null, false);
+		return new PlayScreen(game, saved, null, null);
 	}
 
-	public static PlayScreen campaign(GameHost game, Chapter chapter, boolean duel) {
-		return new PlayScreen(game, null, chapter, duel);
+	public static PlayScreen campaign(GameHost game, Chapter chapter, Stage stage) {
+		return new PlayScreen(game, null, chapter, stage);
 	}
 
-	private PlayScreen(GameHost game, SavedGame saved, Chapter chapter, boolean duel) {
+	private PlayScreen(GameHost game, SavedGame saved, Chapter chapter, Stage stage) {
 		super(game);
 		this.chapter = chapter;
-		this.duel = duel;
+		this.stage = stage;
 		this.options = game.options();
 		this.streams = TableStreams.of(options.seed);
 		this.art = new CardArt(batch, assets);
@@ -131,12 +132,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	private void win() {
-		if (duel) {
-			prizesWaiting = !game.records().campaign().cleared(chapter);
-			game.records().campaign().winDuel(chapter);
-		} else {
-			game.records().campaign().winTable(chapter);
-		}
+		prizesWaiting = stage == Stage.DUEL && !game.records().campaign().cleared(chapter);
+		game.records().campaign().win(chapter, stage);
 		game.records().saveCampaign();
 	}
 
@@ -217,10 +214,10 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	private void startGame() {
 		level = game.settings().difficulty();
-		seatPlayers(chapter == null ? Player.draw(level, streams.seating) : duel ? chapter.duelSeating() : chapter.rivals);
+		seatPlayers(chapter == null ? Player.draw(level, streams.seating) : chapter.seating(stage));
 		shower.clear();
 		end.reset();
-		RuleSet rules = chapter == null ? game.settings().rules() : duel ? chapter.duelRules() : chapter.rules();
+		RuleSet rules = chapter == null ? game.settings().rules() : chapter.rules(stage);
 		Match m = Match.random(players.players(), streams.deck, rules);
 		overlays.setMatch(m);
 		if (chapter == null) {
@@ -382,7 +379,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public void newGame() {
 		if (chapter != null) {
-			game.playCampaign(chapter, duel);
+			game.playCampaign(chapter, stage);
 		} else {
 			game.newGame();
 		}

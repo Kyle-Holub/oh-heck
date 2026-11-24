@@ -6,7 +6,7 @@ Final revision, 2026-11-23. Worked out in the [campaign outline doc](https://cla
 
 The title screen splits into **Campaign** and **Custom game**. Campaign is a guided climb through chapters, each built on one game mode; Custom game is today's game, with every rule toggle.
 
-- **Campaign:** chapters in order, each with table play, trick shots and a duel to pass.
+- **Campaign:** chapters in order, each with table play, trick shots, a final table and a duel to pass.
 - **Custom game:** pick a mode or set the rules yourself, as in Options today.
 - Both share the roster, the rules engine and the bots; Campaign adds progress, unlocks and badges.
 
@@ -14,11 +14,12 @@ A new player goes from the tutorial straight into the campaign: the tutorial's l
 
 ## 2. Campaign structure
 
-Each chapter is built on one game mode and has three steps: win at the table, sharpen up with its trick shots, then win a duel to move on.
+Each chapter is a table: a group of players, their house rules (its game mode) and a champion. It has four steps: win at the table, sharpen up with its trick shots, win a final table with the champion sitting in, then win a duel to move on.
 
 1. **Table play:** win a full four-player game under the chapter's mode (section 5).
-2. **Trick shots:** puzzles that teach the chapter's mode (section 4). Optional practice for the duel, open once the table is won.
-3. **Duel:** beat the chapter's champion one-on-one. Winning the duel opens the next chapter (section 6).
+2. **Trick shots:** puzzles that teach the chapter's mode (section 4). Optional practice, open once the table is won.
+3. **Final table:** the champion takes the top seat for a full game under the house rules plus the champion's duel twist (chapter 1: momentum). Open once the table is won; winning it opens the duel.
+4. **Duel:** beat the chapter's champion one-on-one. Winning the duel opens the next chapter (section 6).
 
 | Chapter | Mode | Table rivals | Duel champion |
 | --- | --- | --- | --- |
@@ -34,9 +35,9 @@ The rival line-ups are a first pass; the mode order runs from the most familiar 
 The campaign is shown as a hand of cards, one large card per chapter, fanned across the felt like your hand at the table.
 
 - **A chapter card** shows its number, its mode (Classic, High Stakes, Poker Face, Marathon) and its champion's name.
-- **Three pips** on each card stand for table, trick shots and duel; a pip fills in gold when that step is done.
+- **Four pips** on each card stand for table, trick shots, final table and duel; a pip fills in gold when that step is done.
 - **Locked chapters** lie face down, showing the card back. The chapter in progress is lifted out of the fan with the trump glow.
-- **Tap a chapter** and its card flips and grows; its three steps lie on the felt as three cards, like a trick, with the duel card held back until the table is won.
+- **Tap a chapter** and its card flips and grows; its four steps lie on the felt as four cards, like a trick, each held back until the step before is won.
 - Built from what the table already draws (card art, the fan, glints, the deal motion), so it looks like the game rather than a menu.
 
 ## 4. Trick shots

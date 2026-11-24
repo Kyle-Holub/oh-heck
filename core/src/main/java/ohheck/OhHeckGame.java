@@ -10,6 +10,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import ohheck.campaign.Chapter;
+import ohheck.campaign.Stage;
 import ohheck.campaign.TrickShot;
 import ohheck.platform.Audio;
 import ohheck.platform.GameOptions;
@@ -255,11 +256,11 @@ public class OhHeckGame extends Game implements GameHost {
 	}
 
 	@Override
-	public void playCampaign(Chapter chapter, boolean duel) {
+	public void playCampaign(Chapter chapter, Stage stage) {
 		if (campaignPlay != null) {
 			campaignPlay.dispose();
 		}
-		campaignPlay = PlayScreen.campaign(this, chapter, duel);
+		campaignPlay = PlayScreen.campaign(this, chapter, stage);
 		screens.replaceAll(title);
 		screens.open(campaignScreen);
 		screens.open(campaignPlay);

@@ -8,7 +8,8 @@ import ohheck.rules.Suit;
 
 /*
  * A chapter of the campaign: its game mode, the suit on its card, the three rivals at its table,
- * and the champion who must be beaten in a duel to move on. Only ready chapters can be played yet.
+ * and the champion who must be beaten in a duel to move on. At the final table the champion takes
+ * the top seat and the house rules gain the duel's twist (momentum). Only ready chapters can be played yet.
  */
 public enum Chapter {
 	ONE(GameMode.CLASSIC, Suit.SPADES, Seating.of(0, 1, 3), 2, true),
@@ -38,12 +39,17 @@ public enum Chapter {
 		return mode.rules(RuleSet.STANDARD);
 	}
 
-	public RuleSet duelRules() {
-		return RuleSet.DUEL;
+	public RuleSet rules(Stage s) {
+		return s == Stage.DUEL ? RuleSet.DUEL : s == Stage.FINAL ? rules().withMomentum(true) : rules();
 	}
 
-	public Seating duelSeating() {
-		return Seating.of(championId);
+	public Seating seating(Stage s) {
+		return s == Stage.DUEL ? Seating.of(championId)
+				: s == Stage.FINAL ? Seating.of(rivals.idAt(1), championId, rivals.idAt(3)) : rivals;
+	}
+
+	public Player leaving() {
+		return rivals.at(2);
 	}
 
 	public Player champion() {

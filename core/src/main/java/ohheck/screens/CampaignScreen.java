@@ -14,6 +14,7 @@ import ohheck.anim.Tween;
 import ohheck.campaign.Briefing;
 import ohheck.campaign.Campaign;
 import ohheck.campaign.Chapter;
+import ohheck.campaign.Stage;
 import ohheck.campaign.TrickShots;
 import ohheck.players.Player;
 import ohheck.rules.Card;
@@ -25,8 +26,8 @@ import ohheck.ui.Palette;
 
 /*
  * The campaign as a hand of chapter cards: open chapters face up with a pip for each step done,
- * the rest face down, the chapter in play lifted and lit. A tapped chapter lays its three steps
- * (table, trick shots, duel) on the felt like a trick. A chapter, and each step, opens with a
+ * the rest face down, the chapter in play lifted and lit. A tapped chapter lays its four steps
+ * (table, trick shots, final table, duel) on the felt like a trick. A chapter, and each step, opens with a
  * briefing of what is about to happen: a few pages in the tutorial's style, a picture above and a caption below.
  */
 public class CampaignScreen extends BaseScreen {
@@ -38,11 +39,12 @@ public class CampaignScreen extends BaseScreen {
 	private static final Tween LAYING = Tween.over(0.35f, Ease.OUT);
 	private static final float CAPTION_H = 92, CAPTION_W = 860, BIG_W = 170, BIG_H = BIG_W * 98 / 73, SMALL_W = 120,
 			SMALL_H = SMALL_W * 98 / 73, BIG_ICON = 84, DECK_W = 96,
-			BUTTON_ROOM = 64;
+			BUTTON_ROOM = 64, PLAYER_GAP = 24;
 	private static final Card[] SHORT_DECK = { Card.parse("9H"), Card.parse("10H"), Card.parse("JH"), Card.parse("QH"),
 			Card.parse("KH"), Card.parse("AH") };
-	private static final int TABLE = 0, SHOTS = 1, DUEL = 2;
-	private static final String[] STEPS = { "Table", "Trick shots", "Duel" };
+	private static final int SHOTS = 1, CHAMPION = 4;
+	private static final String[] STEPS = { "Table", "Trick shots", "Final table", "Duel" };
+	private static final Stage[] STAGE_AT = { Stage.TABLE, null, Stage.FINAL, Stage.DUEL };
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final CardArt art;
@@ -50,11 +52,12 @@ public class CampaignScreen extends BaseScreen {
 	private final Rectangle[] chapterCards = new Rectangle[Chapter.values().length];
 	private final Rectangle[] stepCards = new Rectangle[STEPS.length];
 	private final Rectangle goButton = new Rectangle();
-	private final Rectangle[] rivalCards = { new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle() };
+	private final Rectangle[] playerCards = { new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle() };
 	private final StringBuilder pageCount = new StringBuilder();
 	private Chapter chosen;
 	private float chosenFor, briefedFor;
 	private int page, rival;
+	private String beatLine = "";
 	private Briefing briefing;
 	private Runnable afterBriefing;
 
@@ -71,6 +74,7 @@ public class CampaignScreen extends BaseScreen {
 
 	public void openChapter(Chapter c) {
 		chosen = c;
+		beatLine = "Win the table, then beat " + c.champion().name + " at the final table and in a duel";
 		chosenFor = 0;
 		briefing = null;
 	}
@@ -88,7 +92,25 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	public void briefTable(Chapter c) {
-		brief(Briefing.table(c), () -> game.playCampaign(c, false));
+		brief(Briefing.table(c), () -> game.playCampaign(c, Stage.TABLE));
+	}
+
+	private void briefStep(Campaign progress, Chapter c, int step) {
+		Stage s = STAGE_AT[step];
+		if (s == null) {
+			brief(Briefing.trickShots(c, progress), () -> game.playTrickShot(progress.nextTrickShot(c)));
+		} else {
+			brief(s == Stage.TABLE ? Briefing.table(c) : s == Stage.FINAL ? Briefing.finalTable(c) : Briefing.duel(c),
+					() -> game.playCampaign(c, s));
+		}
+	}
+
+	private boolean stepOpen(Campaign progress, Chapter c, int step) {
+		return STAGE_AT[step] == null ? progress.shotsOpen(c) : progress.open(c, STAGE_AT[step]);
+	}
+
+	private boolean stepDone(Campaign progress, Chapter c, int step) {
+		return STAGE_AT[step] == null ? progress.allMade(c) : progress.won(c, STAGE_AT[step]);
 	}
 
 	public void go() {
@@ -144,7 +166,7 @@ public class CampaignScreen extends BaseScreen {
 		drawPicture(p, midY, a);
 		paint.frame(assets.panel, x, y, cw, CAPTION_H);
 		paint.fade(1f);
-		Player shown = rival > 0 ? briefing.chapter().rivals.at(rival) : null;
+		Player shown = rival > 0 ? player(briefing.chapter(), rival) : null;
 		paint.serif(1.35f, Palette.GOLD, a).draw(batch, shown != null ? shown.name : p.heading(), x + 22, y + CAPTION_H - 12);
 		paint.ui(1.1f, Palette.CREAM, a).draw(batch, shown != null ? shown.trait : p.line(), x + 22, y + CAPTION_H - 44, cw - 44, Align.left, true);
 		BitmapFont m = paint.ui(0.9f, Palette.MUTED, a);
@@ -181,14 +203,18 @@ public class CampaignScreen extends BaseScreen {
 			paint.centred(paint.serif(2.4f, Palette.GOLD_LIGHT, a), p.figure(), w / 2, cy + hh / 2 + 10);
 			break;
 		case RIVALS:
-			for (int seat = 1; seat <= 3; seat++) {
-				float rx = w / 2 + (seat - 2) * (SMALL_W + STEP_GAP), ry = cy + (seat == rival ? LIFT : 0);
-				rivalCards[seat].set(rx - SMALL_W / 2, ry - SMALL_H / 2, SMALL_W, SMALL_H);
-				if (seat == rival) {
+			for (int i = 1; i < playerCards.length; i++) {
+				float rx = w / 2 + (i - 2.5f) * (SMALL_W + PLAYER_GAP), ry = cy + (i == rival ? LIFT : 0);
+				playerCards[i].set(rx - SMALL_W / 2, ry - SMALL_H / 2, SMALL_W, SMALL_H);
+				if (i == rival) {
 					glow(rx - SMALL_W / 2, ry - SMALL_H / 2, SMALL_W, SMALL_H);
 				}
-				smallCard(rx, ry, assets.levelBadge[c.rivals.at(seat).level.ordinal()], c.rivals.at(seat).name, a);
+				Player pl = player(c, i);
+				smallCard(rx, ry, i == CHAMPION ? assets.stepDuel : assets.levelBadge[pl.level.ordinal()], pl.name, a);
 			}
+			break;
+		case TABLE:
+			bigCard(w / 2, cy, assets.stepTable, p.figure(), a);
 			break;
 		case WIN:
 			bigCard(w / 2, cy, assets.badge, p.figure(), a);
@@ -215,7 +241,7 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	private Texture stepIcon(int step) {
-		return step == TABLE ? assets.stepTable : step == SHOTS ? assets.stepShots : assets.stepDuel;
+		return step == SHOTS ? assets.stepShots : STAGE_AT[step] == Stage.DUEL ? assets.stepDuel : assets.stepTable;
 	}
 
 	private void bigCard(float cx, float cy, Texture icon, String label, float a) {
@@ -278,7 +304,7 @@ public class CampaignScreen extends BaseScreen {
 		paint.numeral(c.number(), cx, y + CARD_H - 56, 40, Palette.GOLD_LIGHT);
 		batch.draw(assets.emblem(c.emblem), cx - EMBLEM / 2, y + CARD_H / 2 - EMBLEM / 2 - 12, EMBLEM, EMBLEM);
 		paint.centred(paint.serif(1.3f, Palette.GOLD_LIGHT), c.mode.label, cx, y + 58);
-		pips(cx, y + 18, progress.tableWon(c), progress.allMade(c), progress.cleared(c));
+		pips(cx, y + 18, progress.won(c, Stage.TABLE), progress.allMade(c), progress.won(c, Stage.FINAL), progress.cleared(c));
 	}
 
 	private void pips(float cx, float y, boolean... done) {
@@ -291,22 +317,22 @@ public class CampaignScreen extends BaseScreen {
 	private void drawChapter(Campaign progress, Chapter c) {
 		float top = h - MenuChrome.HEADER_H;
 		paint.centred(paint.serif(1.5f, Palette.GOLD_LIGHT), c.mode.label, w / 2, top - 26);
-		paint.centred(paint.ui(1.0f, Palette.MUTED), "Win the table, sharpen up with trick shots, then beat "
-				+ c.champion().name + " in a duel", w / 2, top - 58);
+		paint.centred(paint.ui(1.0f, Palette.MUTED), beatLine, w / 2, top - 58);
 		float span = STEPS.length * STEP_W + (STEPS.length - 1) * STEP_GAP, x0 = (w - span) / 2;
 		float laid = LAYING.progress(chosenFor), y = (top - 80) / 2 - STEP_H / 2 + 20 - (1 - laid) * 40;
 		for (int i = 0; i < STEPS.length; i++) {
 			float x = x0 + i * (STEP_W + STEP_GAP);
 			stepCards[i].set(x, y, STEP_W, STEP_H);
 			art.shadow(x, y, STEP_W, STEP_H, 4);
-			boolean faceUp = i == TABLE || progress.shotsOpen(c);
+			boolean faceUp = stepOpen(progress, c, i);
 			batch.setColor(1, 1, 1, laid);
 			if (faceUp) {
 				drawStepFace(progress, c, i, x, y, laid);
 			} else {
 				batch.draw(assets.back(), x, y, STEP_W, STEP_H);
 				batch.setColor(Color.WHITE);
-				paint.textIn(paint.ui(0.9f, Palette.MUTED, laid), "Win the table first", x - 20, y - 26, STEP_W + 40, 20);
+				paint.textIn(paint.ui(0.9f, Palette.MUTED, laid), i == STEPS.length - 1 ? "Win the final table" : "Win the table first",
+						x - 20, y - 26, STEP_W + 40, 20);
 			}
 			batch.setColor(Color.WHITE);
 		}
@@ -318,7 +344,7 @@ public class CampaignScreen extends BaseScreen {
 				x + STEP_W / 2 - ICON / 2, y + STEP_H / 2 - ICON / 2 + 4, ICON, ICON);
 		batch.setColor(Color.WHITE);
 		paint.textIn(paint.serif(1.25f, Palette.GOLD_LIGHT, alpha), STEPS[step], x, y + STEP_H - 46, STEP_W, 28);
-		boolean done = step == TABLE ? progress.tableWon(c) : step == SHOTS ? progress.allMade(c) : progress.cleared(c);
+		boolean done = stepDone(progress, c, step);
 		paint.textIn(paint.ui(0.9f, done ? Palette.GOLD : Palette.CREAM, alpha), stepNote(progress, c, step), x, y + 18, STEP_W, 20);
 	}
 
@@ -326,8 +352,7 @@ public class CampaignScreen extends BaseScreen {
 		if (step == SHOTS) {
 			return progress.madeIn(c) + " of " + TrickShots.of(c).size() + " made";
 		}
-		boolean won = step == TABLE ? progress.tableWon(c) : progress.cleared(c);
-		return won ? "Won" : "Play";
+		return stepDone(progress, c, step) ? "Won" : "Play";
 	}
 
 	private void glow(float x, float y, float cw, float ch) {
@@ -340,12 +365,16 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	private int rivalAt(float x, float y) {
-		for (int seat = 1; seat <= 3; seat++) {
-			if (rivalCards[seat].contains(x, y)) {
-				return seat;
+		for (int i = 1; i < playerCards.length; i++) {
+			if (playerCards[i].contains(x, y)) {
+				return i;
 			}
 		}
 		return 0;
+	}
+
+	private static Player player(Chapter c, int i) {
+		return i == CHAMPION ? c.champion() : c.rivals.at(i);
 	}
 
 	@Override
@@ -381,12 +410,10 @@ public class CampaignScreen extends BaseScreen {
 			return;
 		}
 		Chapter c = chosen;
-		if (stepCards[TABLE].contains(x, y)) {
-			briefTable(c);
-		} else if (stepCards[SHOTS].contains(x, y) && progress.shotsOpen(c)) {
-			brief(Briefing.trickShots(c, progress), () -> game.playTrickShot(progress.nextTrickShot(c)));
-		} else if (stepCards[DUEL].contains(x, y) && progress.duelOpen(c)) {
-			brief(Briefing.duel(c), () -> game.playCampaign(c, true));
+		for (int i = 0; i < STEPS.length; i++) {
+			if (stepCards[i].contains(x, y) && stepOpen(progress, c, i)) {
+				briefStep(progress, c, i);
+			}
 		}
 	}
 

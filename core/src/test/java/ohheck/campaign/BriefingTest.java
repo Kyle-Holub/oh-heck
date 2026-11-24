@@ -21,7 +21,11 @@ public class BriefingTest {
 				&& chapter.contains("Edmund, Barnaby and Horatio"));
 		String table = text(Briefing.table(Chapter.ONE));
 		assertTrue(table, table.contains("8 hands") && table.contains("Edmund, Barnaby and Horatio"));
+		assertTrue(chapter, chapter.contains("with Nathaniel, the champion"));
 		assertTrue(text(Briefing.trickShots(Chapter.ONE, new Campaign())).contains("0 of 3 made"));
+		String finalTable = text(Briefing.finalTable(Chapter.ONE));
+		assertTrue(finalTable, finalTable.contains("Nathaniel takes Barnaby's seat") && finalTable.contains("Edmund, Nathaniel and Horatio")
+				&& finalTable.contains("momentum"));
 		String duel = text(Briefing.duel(Chapter.ONE));
 		assertTrue(duel, duel.contains("a trick for every trump") && duel.contains("5 hands"));
 	}
@@ -29,7 +33,7 @@ public class BriefingTest {
 	@Test
 	public void captionsStayShort() {
 		for (Chapter c : Chapter.values()) {
-			for (Briefing b : new Briefing[] { Briefing.chapter(c), Briefing.table(c), Briefing.trickShots(c, new Campaign()),
+			for (Briefing b : new Briefing[] { Briefing.chapter(c), Briefing.table(c), Briefing.trickShots(c, new Campaign()), Briefing.finalTable(c),
 					Briefing.duel(c) }) {
 				for (Briefing.Page p : b.pages()) {
 					assertTrue(p.line(), p.line().length() <= 110);

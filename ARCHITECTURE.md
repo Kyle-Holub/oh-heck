@@ -174,15 +174,16 @@ game's rules.
 The title's **Play** opens the Play screen: **Campaign**, **Custom game** (set up, then saved as it
 goes), High scores, and Continue when a custom game is in progress.
 The campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
-three steps in order: table play (a normal game against the chapter's rivals), trick shots
+four steps in order: table play (a normal game against the chapter's rivals), trick shots
 (`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding
-into place; its title and goal pop up on the felt and fade, and the goal stays in the header), open once the table is won as practice for the duel, and a duel against its champion
+into place; its title and goal pop up on the felt and fade, and the goal stays in the header), open once the table is won as practice, a final table (the champion sits in for a rival, under the house rules
+plus momentum), and a duel against its champion
 (`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
 bid made after two made running). Winning the duel clears the chapter and wins its card back
 and felt (`Cosmetic`, chosen in Preferences); the game-over panel's **Claim prizes** opens
 `ChapterClearedScreen`, which turns each prize over in turn (card back, felt, champion's badge)
-with fireworks and offers to put the new look on. `PlayScreen.campaign` plays the table and the
-duel; campaign games are not saved and don't touch the statistics or high scores, but every
+with fireworks, then puts the new look on. `PlayScreen.campaign` plays a `Stage` (table, final table or duel), each
+opened by winning the one before (`Campaign.open`); campaign games are not saved and don't touch the statistics or high scores, but every
 game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
 the top (`TableLayout.spot`). A chapter and each step open with a `Briefing`: a few pages in
 the tutorial's style, a picture on the felt and a one-line caption, worded from the rules and the roster; on a page showing
