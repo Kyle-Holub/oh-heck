@@ -21,6 +21,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import ohheck.OhHeckGame;
 import ohheck.campaign.Chapter;
+import ohheck.campaign.Cosmetic;
 import ohheck.campaign.TrickShots;
 import ohheck.platform.GameOptions;
 import ohheck.players.Bot;
@@ -234,7 +235,12 @@ public class ScreenshotLauncher {
 			then("chapter:1", 1.5f, s -> ((CampaignScreen) s).briefTable(Chapter.ONE));
 			then("brief:table", 1.5f, s -> game.playTrickShot(TrickShots.ALL.get(0)));
 			then("shot:lone-ace", 3.5f, s -> game.showChapterCleared(Chapter.ONE));
-			then("cleared", 1.5f, s -> game.showTutorial());
+			then("cleared", 1.5f, s -> {
+				game.settings().setCardBack(Cosmetic.CLASSIC);
+				game.settings().setFelt(Cosmetic.CLASSIC);
+				game.assets().dress(Cosmetic.CLASSIC, Cosmetic.CLASSIC);
+				game.showTutorial();
+			});
 			for (int step = 1; step < TUTORIAL_STEPS; step++) {
 				then("tutorial:" + step, 4.0f, s -> ((TutorialScreen) s).next());
 			}
