@@ -91,6 +91,8 @@ final class TableInput {
 			}
 		} else if (targets.hit(OverlayTargets.Button.MENU, x, y)) {
 			openMenu();
+		} else if (targets.hit(OverlayTargets.Button.FORCE_WIN, x, y)) {
+			actions.forceWin();
 		} else {
 			tapTable(x, y);
 		}

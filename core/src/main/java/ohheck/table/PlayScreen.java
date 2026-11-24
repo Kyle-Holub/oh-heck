@@ -135,6 +135,17 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
+	public void forceWin() {
+		if (duel) {
+			game.records().campaign().winDuel(chapter);
+		} else {
+			game.records().campaign().winTable(chapter);
+		}
+		game.records().saveCampaign();
+		game.showCampaign();
+	}
+
+	@Override
 	public boolean inCampaign() {
 		return chapter != null;
 	}

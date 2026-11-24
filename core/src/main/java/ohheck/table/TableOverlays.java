@@ -110,6 +110,14 @@ final class TableOverlays {
 		paint.frame(paint.assets.buttonAlt, menuButton.x, menuButton.y, menuButton.width, menuButton.height);
 		BitmapFont f = paint.ui(1.2f, Palette.CREAM);
 		paint.textIn(f, "Menu", menuButton.x, menuButton.y, menuButton.width, menuButton.height);
+		Rectangle win = targets.button(OverlayTargets.Button.FORCE_WIN);
+		if (scene.inCampaign()) {
+			win.set(menuButton.x - 10 - MENU_BUTTON_W, MENU_BUTTON_Y, MENU_BUTTON_W, MENU_BUTTON_H);
+			paint.frame(paint.assets.button, win.x, win.y, win.width, win.height);
+			paint.textIn(f, "Win", win.x, win.y, win.width, win.height);
+		} else {
+			win.set(0, 0, 0, 0);
+		}
 	}
 
 	void drawMenu() {
@@ -224,7 +232,8 @@ final class TableOverlays {
 		}
 		drawWinningCards(py + WON_CARDS_RISE);
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
-		Rectangle menu = targets.button(OverlayTargets.Button.MENU);
+		Rectangle win = targets.button(OverlayTargets.Button.FORCE_WIN);
+		Rectangle menu = win.width > 0 ? win : targets.button(OverlayTargets.Button.MENU);
 		paint.glyphs.setText(s, TAP_NOTE);
 		paint.text(s, TAP_NOTE, menu.x - TAP_NOTE_GAP, menu.y + (menu.height + paint.glyphs.height) / 2, false);
 	}

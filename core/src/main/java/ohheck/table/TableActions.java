@@ -22,4 +22,7 @@ interface TableActions {
 	void showOptions();
 
 	void showTitle();
+
+	default void forceWin() {
+	}
 }
