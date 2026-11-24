@@ -10,7 +10,7 @@ The title screen splits into **Campaign** and **Custom game**. Campaign is a gui
 - **Custom game:** pick a mode or set the rules yourself, as in Options today.
 - Both share the roster, the rules engine and the bots; Campaign adds progress, unlocks and badges.
 
-A new player goes from the tutorial straight into the campaign: the tutorial's last page sits them at chapter 1's table.
+A new player goes from the tutorial straight into the campaign: the tutorial's last page opens chapter 1's welcome, which explains what a chapter is (a table of players, their house rules and a champion) and lets them tap each player to read their habit.
 
 ## 2. Campaign structure
 
@@ -43,7 +43,7 @@ The campaign is shown as a hand of cards, one large card per chapter, fanned acr
 
 Trick shots are hand-built puzzles: every hand is face up, the deal is fixed, and there is a right line of play. No stars and no undo: a restart deals the shot again.
 
-- **Goals** rotate: *Make it* (make exactly your bid), *Set them* (stop a named rival making theirs), *Choose the bid* (the one bid you can guarantee).
+- **Goals** rotate: *Make it* (make exactly your bid), *Set them* (make your bid and stop a named rival making theirs), *Choose the bid* (the one bid you can guarantee).
 - **Teaching:** each chapter's puzzles use its mode, so they rehearse what the table and duel will ask (a big-bid gamble in chapter 2, reading blind bids in chapter 3).
 - **Supply:** hand-written, three per chapter, one of each goal. No generator for now.
 - Each puzzle is checked by a small solver in the tests, so every puzzle is solvable.

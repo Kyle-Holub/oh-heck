@@ -14,7 +14,7 @@ import ohheck.rules.RuleSet;
 public record Briefing(String tag, Chapter chapter, String go, List<Briefing.Page> pages) {
 
 	public enum Picture {
-		CHAPTER, SCORING, STEPS, RIVALS, WIN, SHOTS, CHAMPION, SHORT_DECK, MOMENTUM
+		CHAPTER, SCORING, HANDS, RIVALS, WIN, SHOTS, CHAMPION, SHORT_DECK, MOMENTUM
 	}
 
 	public record Page(Picture picture, String heading, String line, String figure) {
@@ -24,18 +24,24 @@ public record Briefing(String tag, Chapter chapter, String go, List<Briefing.Pag
 		RuleSet r = c.rules();
 		List<Page> p = new ArrayList<Page>();
 		p.add(new Page(Picture.CHAPTER, "Chapter " + c.number() + ": " + c.mode.label,
+				"Each chapter is a new table: its own players, their house rules, and a champion to beat.", c.mode.label));
+		p.add(new Page(Picture.RIVALS, "The players",
+				names(c.rivals) + " sit here, each with a habit. Tap a player to learn theirs.", ""));
+		p.add(new Page(Picture.HANDS, "House rules",
 				"Hands run " + r.order.label(r.mostCards) + " cards." + (r.blindBids ? " Bids are made unseen and shown together." : ""),
-				c.mode.label));
+				r.order.label(r.mostCards)));
 		p.add(new Page(Picture.SCORING, "Scoring", scoringLine(r), scoringFigure(r)));
-		p.add(new Page(Picture.STEPS, "Three steps",
-				"Win the table, sharpen up with trick shots, then beat " + c.champion().name + " in a duel.", ""));
+		p.add(new Page(Picture.CHAMPION, "The champion",
+				"Win the table and " + c.champion().name + " will duel you for the chapter. Trick shots help you prepare.",
+				c.champion().name));
 		return new Briefing("brief:chapter", c, "Continue", p);
 	}
 
 	public static Briefing table(Chapter c) {
 		List<Page> p = new ArrayList<Page>();
 		p.add(new Page(Picture.RIVALS, "The table",
-				"A full game of " + c.rules().numberOfHands() + " hands against " + names(c.rivals) + ".", ""));
+				c.rules().numberOfHands() + " hands against " + names(c.rivals) + ". Tap a player to see their habit.",
+				""));
 		p.add(new Page(Picture.WIN, "To win", "Finish first, outright, to open the trick shots and the duel.", "1st"));
 		return new Briefing("brief:table", c, "Play", p);
 	}
@@ -44,7 +50,7 @@ public record Briefing(String tag, Chapter chapter, String go, List<Briefing.Pag
 		int n = TrickShots.of(c).size();
 		List<Page> p = new ArrayList<Page>();
 		p.add(new Page(Picture.SHOTS, "Trick shots",
-				"Every hand face up, and a goal: make your bid, stop a rival, or find the one sure bid.",
+				"Every hand face up, and a goal: make your bid, set a rival too, or find the one sure bid.",
 				progress.madeIn(c) + " of " + n + " made"));
 		p.add(new Page(Picture.CHAMPION, "Practice for the duel",
 				"The others play as a careful player would, so the same moves meet the same replies.", c.champion().name));

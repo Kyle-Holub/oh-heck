@@ -185,8 +185,9 @@ with fireworks and offers to put the new look on. `PlayScreen.campaign` plays th
 duel; campaign games are not saved and don't touch the statistics or high scores, but every
 game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
 the top (`TableLayout.spot`). A chapter and each step open with a `Briefing`: a few pages in
-the tutorial's style, a picture on the felt and a one-line caption, worded from the rules and the roster. The tutorial, finished for the first time, ends at
-chapter 1's table briefing. Options, Tutorial, Start fresh forgets everything (preferences,
+the tutorial's style, a picture on the felt and a one-line caption, worded from the rules and the roster; on a page showing
+the players, tapping one shows their habit. The tutorial, finished for the first time, ends at
+chapter 1's welcome briefing. Options, Tutorial, Start fresh forgets everything (preferences,
 records, campaign) and replays the intro, as for a new player. The plan the campaign follows is `docs/CAMPAIGN.md`.
 
 ### Saving

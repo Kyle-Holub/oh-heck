@@ -15,7 +15,7 @@ import ohheck.rules.Match;
 public final class TrickShot {
 
 	public enum Goal {
-		MAKE_IT("Make your bid exactly"), SET_THEM("Stop %s making their bid"), CHOOSE_THE_BID("Choose a bid you can make");
+		MAKE_IT("Make your bid exactly"), SET_THEM("Make your bid and stop %s making theirs"), CHOOSE_THE_BID("Choose a bid you can make");
 
 		private final String text;
 
@@ -66,6 +66,6 @@ public final class TrickShot {
 	}
 
 	public boolean reached(Match m) {
-		return goal == Goal.SET_THEM ? !m.madeBid(rival) : m.madeBid(Seating.YOU);
+		return m.madeBid(Seating.YOU) && (goal != Goal.SET_THEM || !m.madeBid(rival));
 	}
 }
