@@ -17,6 +17,7 @@ import ohheck.platform.Settings;
 import ohheck.records.Records;
 import ohheck.records.SavedGame;
 import ohheck.screens.CampaignScreen;
+import ohheck.screens.ChapterClearedScreen;
 import ohheck.screens.HighScoresScreen;
 import ohheck.screens.OptionsScreen;
 import ohheck.screens.PlayMenuScreen;
@@ -55,6 +56,7 @@ public class OhHeckGame extends Game implements GameHost {
 	private PlayersScreen playersScreen;
 	private CampaignScreen campaignScreen;
 	private TrickShotScreen trickShotScreen;
+	private ChapterClearedScreen clearedScreen;
 	private final List<Screen> keptScreens = new ArrayList<Screen>();
 	private PlayScreen play, campaignPlay;
 
@@ -97,6 +99,7 @@ public class OhHeckGame extends Game implements GameHost {
 		playersScreen = kept(new PlayersScreen(this));
 		campaignScreen = kept(new CampaignScreen(this));
 		trickShotScreen = kept(new TrickShotScreen(this));
+		clearedScreen = kept(new ChapterClearedScreen(this));
 		screens.replaceAll(title);
 	}
 
@@ -267,6 +270,14 @@ public class OhHeckGame extends Game implements GameHost {
 	public void playTrickShot(TrickShot shot) {
 		trickShotScreen.open(shot);
 		screens.open(trickShotScreen);
+	}
+
+	@Override
+	public void showChapterCleared(Chapter chapter) {
+		showCampaign();
+		campaignScreen.openChapter(chapter);
+		clearedScreen.open(chapter);
+		screens.open(clearedScreen);
 	}
 
 	@Override

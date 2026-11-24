@@ -58,6 +58,8 @@ public interface GameHost {
 
 	void playTrickShot(TrickShot shot);
 
+	void showChapterCleared(Chapter chapter);
+
 	void newGame();
 
 	void continueGame();
