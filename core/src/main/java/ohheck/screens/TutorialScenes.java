@@ -1,8 +1,13 @@
 package ohheck.screens;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntPredicate;
+
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 
 import ohheck.fx.Glints;
 import ohheck.platform.Settings;
@@ -10,6 +15,7 @@ import ohheck.rules.Card;
 import ohheck.rules.Rank;
 import ohheck.rules.RuleSet;
 import ohheck.rules.Suit;
+import ohheck.table.BidPopup;
 import ohheck.table.Counters;
 import ohheck.table.PlayerPanel;
 import ohheck.ui.Numbers;
@@ -25,8 +31,11 @@ final class TutorialScenes extends TutorialStage {
 	private static final String SET_LINE = RIGHT + " bid 1 and won 2: one trick over, so " + RuleSet.STANDARD.score(1, 2);
 	private static final String[] DEAL_LINES = { "", "Hand 1: 1 card each", "Hand 2: 2 cards each", "Hand 3: 3 cards each" };
 
+	private final BidPopup bidPopup;
+
 	TutorialScenes(Painter paint, Settings settings) {
 		super(paint, settings);
+		bidPopup = new BidPopup(paint, art);
 	}
 
 	private static final Suit[] ACE_SUITS = { Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES };
@@ -187,8 +196,15 @@ final class TutorialScenes extends TutorialStage {
 		float dw = CW * DEAL_SCALE, dh = CH * DEAL_SCALE, gap = dw + 12;
 		float deckX = w - 60 - CW, deckY = cy() - CH / 2 - 20;
 		art.stack(deckX + CW / 2, deckY + CH / 2, 12, CW, CH, 0);
-		panel.draw(plain().named(RIGHT), seatX(1), seatTop(1), clock.shown());
-		seat(0, plain().dealer(true));
+		int dealer = clock.count(starts) - 1, before = Math.max(0, dealer - 1);
+		float move = dealer > 0 ? at(starts[dealer] - 0.1f, starts[dealer] + CHIP_MOVE) : 1;
+		panel.draw(plain().named(RIGHT).dealer(move >= 1 && dealer % 2 == 1), seatX(1), seatTop(1), clock.shown());
+		seat(0, plain().dealer(move >= 1 && dealer % 2 == 0));
+		if (move < 1) {
+			float chipX = MathUtils.lerp(chipX(before % 2), chipX(dealer % 2), move);
+			float chipY = MathUtils.lerp(chipY(before % 2), chipY(dealer % 2), move) + MathUtils.sin(move * MathUtils.PI) * 40;
+			batch.draw(assets.dealerIcon, chipX, chipY, CHIP, CHIP);
+		}
 		float[] rowYs = { seatTop(0) - PlayerPanel.H / 2 - dh / 2, seatTop(1) - PlayerPanel.H / 2 - dh / 2 };
 		for (int round = 0; round < 3; round++) {
 			int n = round + 1;
@@ -215,29 +231,28 @@ final class TutorialScenes extends TutorialStage {
 		paint.centred(f, "\u2026 and so on, up to " + HANDS, cx(), h - 70);
 	}
 
-	void bidPanel(float x, float y, int n, int picked, int barred, float alpha) {
-		if (alpha <= 0) {
-			return;
-		}
-		float bs = 46, gap = 8, pw = (n + 1) * (bs + gap) - gap + 36, ph = bs + 30;
-		float px = x - pw / 2;
-		batch.setColor(1, 1, 1, alpha);
-		paint.frame(assets.panel, px, y, pw, ph);
-		for (int b = 0; b <= n; b++) {
-			float bx = px + 18 + b * (bs + gap), by = y + 15;
-			paint.frame(b == barred ? assets.buttonOff : b == picked ? assets.button : assets.buttonAlt, bx, by, bs, bs);
-			paint.numeral(b, bx + bs / 2, by + bs / 2, bs * 0.62f, b == barred ? NUMERAL_OFF : Color.WHITE);
-			if (b == barred) {
-				float k = at(2.2f, 2.5f);
-				batch.setColor(Palette.RED.r, Palette.RED.g, Palette.RED.b, alpha);
-				batch.draw(assets.stroke, bx + 4, by + bs / 2 - 2, (bs - 8) / 2, 2, (bs - 8) * k, 4, 1, 1, -35, 0, 0,
-						assets.stroke.getWidth(), assets.stroke.getHeight(), false, false);
-			}
-		}
-		batch.setColor(Color.WHITE);
+	private static final float CHIP = 26, CHIP_MOVE = 0.45f;
+
+	private float chipX(int seat) {
+		paint.glyphs.setText(paint.ui(1.3f), seat == 0 ? NAMES[0] : RIGHT);
+		return seatX(seat) + 16 + paint.glyphs.width;
 	}
 
-	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
+	private float chipY(int seat) {
+		paint.glyphs.setText(paint.ui(1.3f), "You");
+		return seatTop(seat) - 9 - paint.glyphs.height / 2 - CHIP / 2;
+	}
+
+	private float popupOverHand() {
+		return handY() + CH + 12 + BidPopup.H / 2;
+	}
+
+	private static final float HOOK_RISE = 30;
+	private static final String[] FLOW = { "Deal", "Trump", "Bid", "Play", "Score" };
+	private static final float FLOW_STEP = 1.1f, FLOW_GAP = 34;
+
+	private final List<Rectangle> bidButtons = new ArrayList<Rectangle>();
+	private final IntPredicate anyBid = b -> true, notOne = b -> b != 1;
 
 	void bidding() {
 		Card[] hand = { card(Rank.ACE, Suit.SPADES), card(Rank.KING, Suit.HEARTS), card(Rank.FOUR, Suit.CLUBS) };
@@ -258,36 +273,36 @@ final class TutorialScenes extends TutorialStage {
 			}
 		}
 		BitmapFont f = paint.ui(1.05f, Palette.GOLD_LIGHT, at(1.8f, 2.2f));
-		f.draw(batch, "The Ace of spades and a King:\ntwo likely winners, so bid 2", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
-		bidPanel(cx(), handY() + CH + 12, 3, t >= 5.2f ? 2 : -1, -1, at(4.4f, 4.8f) * (1 - at(6.2f, 6.4f)));
+		f.draw(batch, "The Ace of spades and a King:\ntwo likely winners", handX(2, 3) + CW + 24, handY() + CH * 0.65f);
+		bidPopup.draw(cx(), popupOverHand(), 3, anyBid, t >= 5.2f ? 2 : -1, at(4.4f, 4.8f) * (1 - at(6.2f, 6.4f)), bidButtons);
 	}
 
 	private static final Card[] ZERO_HAND = { card(Rank.THREE, Suit.CLUBS), card(Rank.TWO, Suit.DIAMONDS) };
 	private static final Card[][] ZERO_TRICKS = {
 			{ card(Rank.KING, Suit.CLUBS), ZERO_HAND[0], card(Rank.NINE, Suit.CLUBS) },
 			{ card(Rank.ACE, Suit.DIAMONDS), ZERO_HAND[1], card(Rank.EIGHT, Suit.DIAMONDS) } };
-	private static final int[] ZERO_PLAY_ORDER = { 3, 0, 1 };
-	private static final int[] ZERO_SLOTS = { 2, 1, 0 };
-	private static final int ZERO_WINNER = 3;
-	private static final float[] ZERO_TRICK_STARTS = { 1.0f, 3.2f };
-	private static final float CARD_GAP = 0.4f, GATHER_FROM = 1.4f, GATHER_TO = 2.0f, HAND_END_AT = 5.4f;
+	private static final int[] PLAY_ORDER = { 3, 0, 1 }, SLOTS = { 2, 1, 0 };
+	private static final int WINNER = 3;
+	private static final float[] ZERO_TRICK_STARTS = { 2.4f, 4.6f };
+	private static final float CARD_GAP = 0.4f, GATHER_FROM = 1.4f, GATHER_TO = 2.0f, HAND_END_AT = 6.8f, ZERO_BID_AT = 1.3f;
+	private static final Card[] SET_HAND = { card(Rank.QUEEN, Suit.HEARTS), card(Rank.JACK, Suit.CLUBS) };
+	private static final Card[][] SET_TRICKS = {
+			{ card(Rank.KING, Suit.HEARTS), SET_HAND[0], card(Rank.FOUR, Suit.HEARTS) },
+			{ card(Rank.ACE, Suit.CLUBS), SET_HAND[1], card(Rank.FIVE, Suit.CLUBS) } };
+	private static final float[] SET_TRICK_STARTS = { 1.0f, 3.2f };
+	private static final float SET_AT = 5.4f;
 
 	void biddingZero() {
 		int taken = 0;
 		for (float start : ZERO_TRICK_STARTS) {
 			taken += t >= start + GATHER_TO ? 1 : 0;
 		}
-		seat(0, (t >= 0.4f ? bidOf(0) : waiting()).cards(2));
+		seat(0, (t >= ZERO_BID_AT ? bidOf(0) : waiting().turn(true)).cards(2));
 		seat(1, bidOf(1).cards(2));
 		seat(3, bidOf(2).won(taken).cards(2));
-		for (int k = 0; k < ZERO_HAND.length; k++) {
-			if (t < ZERO_TRICK_STARTS[k] + CARD_GAP) {
-				card(ZERO_HAND[k], handX(k, ZERO_HAND.length), handY(), 2, 1, 1);
-			}
-		}
-		for (int k = 0; k < ZERO_TRICKS.length; k++) {
-			zeroTrick(k);
-		}
+		playTricks(ZERO_HAND, ZERO_TRICKS, ZERO_TRICK_STARTS);
+		bidPopup.draw(cx(), popupOverHand(), 2, anyBid, t >= 0.9f ? 0 : -1, at(0.2f, 0.5f) * (1 - at(ZERO_BID_AT, ZERO_BID_AT + 0.3f)),
+				bidButtons);
 		float shown = at(HAND_END_AT, HAND_END_AT + 0.3f);
 		if (passed(HAND_END_AT) && settings.effects()) {
 			sparks.burst(cx(), cy(), 110);
@@ -295,33 +310,68 @@ final class TutorialScenes extends TutorialStage {
 		art.art(assets.bidTricksText, cx(), cy(), 0.8f, shown);
 	}
 
-	private void zeroTrick(int k) {
-		float start = ZERO_TRICK_STARTS[k], gone = at(start + GATHER_FROM, start + GATHER_TO), y = rowY(true);
+	void gettingSet() {
+		int taken = 0;
+		for (float start : SET_TRICK_STARTS) {
+			taken += t >= start + GATHER_TO ? 1 : 0;
+		}
+		seat(0, bidOf(1).cards(2));
+		seat(1, bidOf(0).cards(2));
+		seat(3, bidOf(2).won(taken).cards(2));
+		playTricks(SET_HAND, SET_TRICKS, SET_TRICK_STARTS);
+		art.art(assets.setText, cx(), cy(), 0.8f, at(SET_AT, SET_AT + 0.3f));
+		BitmapFont f = paint.ui(1.1f, Palette.CREAM, at(SET_AT + 0.4f, SET_AT + 0.8f));
+		paint.centred(f, "You bid 1 and won 0: set.", cx(), cy() - 52);
+	}
+
+	private void playTricks(Card[] hand, Card[][] tricks, float[] starts) {
+		for (int k = 0; k < hand.length; k++) {
+			if (t < starts[k] + CARD_GAP) {
+				card(hand[k], handX(k, hand.length), handY(), 2, 1, 1);
+			}
+		}
+		for (int k = 0; k < tricks.length; k++) {
+			playTrick(k, hand.length, tricks[k], starts[k]);
+		}
+	}
+
+	private void playTrick(int k, int handSize, Card[] trick, float start) {
+		float gone = at(start + GATHER_FROM, start + GATHER_TO), y = rowY(true);
 		if (gone >= 1) {
 			return;
 		}
-		for (int i = 0; i < ZERO_PLAY_ORDER.length; i++) {
-			int seat = ZERO_PLAY_ORDER[i];
+		for (int i = 0; i < PLAY_ORDER.length; i++) {
+			int seat = PLAY_ORDER[i];
 			float a = start + i * CARD_GAP;
-			float x0 = seat == 0 ? handX(k, ZERO_HAND.length) : fromX(seat), y0 = seat == 0 ? handY() : fromY(seat);
+			float x0 = seat == 0 ? handX(k, handSize) : fromX(seat), y0 = seat == 0 ? handY() : fromY(seat);
 			if (t >= a + CARD_GAP) {
-				float x = MathUtils.lerp(rowX(ZERO_SLOTS[i], 3), fromX(ZERO_WINNER), gone), cy = MathUtils.lerp(y, fromY(ZERO_WINNER), gone);
-				card(ZERO_TRICKS[k][i], x, cy, 2, 1, 1 - gone);
+				float x = MathUtils.lerp(rowX(SLOTS[i], 3), fromX(WINNER), gone), cy = MathUtils.lerp(y, fromY(WINNER), gone);
+				card(trick[i], x, cy, 2, 1, 1 - gone);
 			} else {
-				flying(ZERO_TRICKS[k][i], x0, y0, rowX(ZERO_SLOTS[i], 3), y, a, a + CARD_GAP, 1, 1);
+				flying(trick[i], x0, y0, rowX(SLOTS[i], 3), y, a, a + CARD_GAP, 1, 1);
 			}
 		}
 	}
+
 
 	void dealersHook() {
 		seat(1, (t >= 0.3f ? bidOf(1) : waiting()).cards(3));
 		seat(3, (t >= 0.8f ? bidOf(1) : waiting()).cards(3));
 		seat(0, waiting().turn(true).dealer(true).cards(3));
-		bidPanel(cx(), cy() - 30, 3, -1, 1, at(1.6f, 1.9f));
+		float alpha = at(1.6f, 1.9f), below = cy() + HOOK_RISE - BidPopup.H / 2;
+		bidPopup.draw(cx(), cy() + HOOK_RISE, 3, notOne, -1, alpha, bidButtons);
+		if (alpha > 0) {
+			Rectangle r = bidButtons.get(1);
+			float k = at(2.2f, 2.5f);
+			batch.setColor(Palette.RED.r, Palette.RED.g, Palette.RED.b, alpha);
+			batch.draw(assets.stroke, r.x + 4, r.y + r.height / 2 - 2, (r.width - 8) / 2, 2, (r.width - 8) * k, 4, 1, 1, -35, 0, 0,
+					assets.stroke.getWidth(), assets.stroke.getHeight(), false, false);
+			batch.setColor(Color.WHITE);
+		}
 		BitmapFont f = paint.ui(1.15f, Palette.CREAM, at(2.4f, 2.8f));
-		paint.centred(f, BIDS_LINE, cx(), cy() - 46);
+		paint.centred(f, BIDS_LINE, cx(), below - 16);
 		f.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, at(3.2f, 3.6f));
-		paint.centred(f, "The total of the bids can't be 3, so you can't bid 1.", cx(), cy() - 74);
+		paint.centred(f, "3 tricks, and 2 bid already, so you can't bid 1.", cx(), below - 44);
 	}
 
 	void counters() {
@@ -343,6 +393,25 @@ final class TutorialScenes extends TutorialStage {
 			f.draw(batch, "Bids: one card per trick, filled as the bids come in", left + 150 * scale, ty - 8);
 			f.setColor(Palette.RED.r, Palette.RED.g, Palette.RED.b, at(6.0f, 6.4f));
 			f.draw(batch, "Red: the table has bid more tricks than there are", left + 150 * scale, ty - th - 6);
+		}
+		drawFlow(handY() + 30);
+	}
+
+	private void drawFlow(float y) {
+		BitmapFont f = paint.serif(1.5f);
+		float total = 0;
+		for (String word : FLOW) {
+			paint.glyphs.setText(f, word);
+			total += paint.glyphs.width;
+		}
+		float x = cx() - (total + FLOW_GAP * (FLOW.length - 1)) / 2;
+		int lit = (int) (clock.shown() / FLOW_STEP) % FLOW.length;
+		for (int i = 0; i < FLOW.length; i++) {
+			Color c = i == lit ? Palette.GOLD_LIGHT : Palette.MUTED;
+			BitmapFont wf = paint.serif(1.5f, c);
+			paint.glyphs.setText(wf, FLOW[i]);
+			wf.draw(batch, FLOW[i], x, y);
+			x += paint.glyphs.width + FLOW_GAP;
 		}
 	}
 
