@@ -1,42 +1,50 @@
 package ohheck.campaign;
 
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import ohheck.util.Log;
 
 /*
- * How far the campaign has got: the chapters whose table and duel are won, the trick shots made and
- * the badges earned. Saved as "key=value" lines, current format only.
+ * How far the campaign has got: the stages won in each chapter, the trick shots made and the badges
+ * earned. Saved as "key=value" lines, a line of chapters per stage, current format only.
  */
 public final class Campaign {
 
-	private static final String FORMAT = "oh-heck-campaign-2";
+	private static final String FORMAT = "oh-heck-campaign-3";
 
 	private final Set<Badge> badges = EnumSet.noneOf(Badge.class);
 
-	private final Set<Chapter> tablesWon = EnumSet.noneOf(Chapter.class), duelsWon = EnumSet.noneOf(Chapter.class);
+	private final Map<Stage, Set<Chapter>> won = new EnumMap<Stage, Set<Chapter>>(Stage.class);
 	private final Set<String> shotsMade = new TreeSet<String>();
 
 	public boolean open(Chapter c) {
 		return c.ready && (c.ordinal() == 0 || cleared(Chapter.values()[c.ordinal() - 1]));
 	}
 
-	public boolean tableWon(Chapter c) {
-		return tablesWon.contains(c);
+	public Campaign() {
+		for (Stage s : Stage.values()) {
+			won.put(s, EnumSet.noneOf(Chapter.class));
+		}
+	}
+
+	public boolean won(Chapter c, Stage s) {
+		return won.get(s).contains(c);
+	}
+
+	public boolean open(Chapter c, Stage s) {
+		return open(c) && (s.ordinal() == 0 || won(c, Stage.values()[s.ordinal() - 1]));
 	}
 
 	public boolean shotsOpen(Chapter c) {
-		return open(c) && tableWon(c);
-	}
-
-	public boolean duelOpen(Chapter c) {
-		return open(c) && tableWon(c);
+		return open(c) && won(c, Stage.TABLE);
 	}
 
 	public boolean cleared(Chapter c) {
-		return duelsWon.contains(c);
+		return won(c, Stage.DUEL);
 	}
 
 	public boolean solved(String shot) {
@@ -64,13 +72,12 @@ public final class Campaign {
 		return TrickShots.of(c).get(0);
 	}
 
-	public void winTable(Chapter c) {
-		tablesWon.add(c);
-	}
-
-	public void winDuel(Chapter c) {
-		tablesWon.add(c);
-		duelsWon.add(c);
+	public void win(Chapter c, Stage s) {
+		for (Stage before : Stage.values()) {
+			if (before.ordinal() <= s.ordinal()) {
+				won.get(before).add(c);
+			}
+		}
 	}
 
 	public void solve(String shot) {
@@ -86,8 +93,12 @@ public final class Campaign {
 	}
 
 	public String encode() {
-		return FORMAT + "\ntables=" + names(tablesWon) + "\nduels=" + names(duelsWon) + "\nshots="
-				+ String.join(",", shotsMade) + "\nbadges=" + names(badges) + "\n";
+		StringBuilder sb = new StringBuilder(FORMAT).append('\n');
+		for (Stage s : Stage.values()) {
+			sb.append(s.key).append('=').append(names(won.get(s))).append('\n');
+		}
+		return sb.append("shots=").append(String.join(",", shotsMade)).append("\nbadges=").append(names(badges)).append('\n')
+				.toString();
 	}
 
 	public static Campaign decode(String saved) {
@@ -106,11 +117,10 @@ public final class Campaign {
 					continue;
 				}
 				String key = lines[i].substring(0, eq), value = lines[i].substring(eq + 1).trim();
+				Stage stage = stageKeyed(key);
 				for (String item : value.isEmpty() ? new String[0] : value.split(",")) {
-					if (key.equals("tables")) {
-						c.tablesWon.add(Chapter.valueOf(item));
-					} else if (key.equals("duels")) {
-						c.duelsWon.add(Chapter.valueOf(item));
+					if (stage != null) {
+						c.won.get(stage).add(Chapter.valueOf(item));
 					} else if (key.equals("shots")) {
 						c.shotsMade.add(item);
 					} else if (key.equals("badges")) {
@@ -123,6 +133,15 @@ public final class Campaign {
 			Log.warn("Campaign", "Unreadable campaign progress; starting afresh", e);
 			return new Campaign();
 		}
+	}
+
+	private static Stage stageKeyed(String key) {
+		for (Stage s : Stage.values()) {
+			if (s.key.equals(key)) {
+				return s;
+			}
+		}
+		return null;
 	}
 
 	private static String names(Set<? extends Enum<?>> items) {

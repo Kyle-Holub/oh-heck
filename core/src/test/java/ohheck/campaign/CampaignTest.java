@@ -17,33 +17,44 @@ import ohheck.rules.RuleSet;
 public class CampaignTest {
 
 	@Test
-	public void theFirstChapterOpensAndTheDuelWaitsForTheTable() {
+	public void eachStageWaitsForTheOneBefore() {
 		Campaign c = new Campaign();
-		assertTrue(c.open(Chapter.ONE));
-		assertFalse(c.duelOpen(Chapter.ONE));
-		c.winTable(Chapter.ONE);
-		assertTrue(c.duelOpen(Chapter.ONE));
+		assertTrue(c.open(Chapter.ONE, Stage.TABLE));
+		assertFalse(c.open(Chapter.ONE, Stage.FINAL));
+		assertFalse(c.shotsOpen(Chapter.ONE));
+		c.win(Chapter.ONE, Stage.TABLE);
+		assertTrue(c.open(Chapter.ONE, Stage.FINAL) && c.shotsOpen(Chapter.ONE));
+		assertFalse(c.open(Chapter.ONE, Stage.DUEL));
+		c.win(Chapter.ONE, Stage.FINAL);
+		assertTrue(c.open(Chapter.ONE, Stage.DUEL));
 		assertFalse(c.cleared(Chapter.ONE));
-		c.winDuel(Chapter.ONE);
+		c.win(Chapter.ONE, Stage.DUEL);
 		assertTrue(c.cleared(Chapter.ONE));
+	}
+
+	@Test
+	public void theFinalTableSeatsTheChampionUnderMomentum() {
+		assertTrue(Chapter.ONE.seating(Stage.FINAL).at(2) == Chapter.ONE.champion());
+		assertTrue(Chapter.ONE.rules(Stage.FINAL).momentum);
+		assertFalse(Chapter.ONE.rules(Stage.TABLE).momentum);
 	}
 
 	@Test
 	public void unreadyChaptersStayShut() {
 		Campaign c = new Campaign();
-		c.winDuel(Chapter.ONE);
+		c.win(Chapter.ONE, Stage.DUEL);
 		assertFalse(c.open(Chapter.TWO));
 	}
 
 	@Test
 	public void progressReadsBackWhatItWrites() {
 		Campaign c = new Campaign();
-		c.winTable(Chapter.ONE);
+		c.win(Chapter.ONE, Stage.FINAL);
 		c.solve("make-the-ace");
 		c.solve("duck-twice");
 		Campaign back = Campaign.decode(c.encode());
 		assertEquals(c.encode(), back.encode());
-		assertTrue(back.tableWon(Chapter.ONE));
+		assertTrue(back.won(Chapter.ONE, Stage.FINAL) && !back.cleared(Chapter.ONE));
 		assertTrue(back.solved("duck-twice"));
 	}
 
@@ -66,7 +77,7 @@ public class CampaignTest {
 		Campaign c = new Campaign();
 		assertFalse(Cosmetic.EMERALD.owned(c));
 		assertEquals(Cosmetic.CLASSIC, Cosmetic.CLASSIC.nextOwned(c));
-		c.winDuel(Chapter.ONE);
+		c.win(Chapter.ONE, Stage.DUEL);
 		assertTrue(Cosmetic.EMERALD.owned(c));
 		assertEquals(Cosmetic.EMERALD, Cosmetic.CLASSIC.nextOwned(c));
 	}

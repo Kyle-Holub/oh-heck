@@ -25,8 +25,8 @@ import ohheck.ui.Palette;
 
 /*
  * The fanfare for clearing a chapter: fireworks and a title, then each prize lies face down and
- * is turned over in turn, shaking, flashing and flipping to show what was won (its card back, its
- * felt, its champion's badge). A tap hurries the next prize along.
+ * is turned over in turn, shaking, flaring and flipping to show what was won (its card back, its
+ * felt, its champion's badge). Once all are shown the new look is put on. A tap hurries the next prize along.
  */
 public class ChapterClearedScreen extends BaseScreen {
 
@@ -45,10 +45,10 @@ public class ChapterClearedScreen extends BaseScreen {
 	private final Fireworks fireworks = new Fireworks();
 	private final Sparks sparks = new Sparks();
 	private final List<Prize> prizes = new ArrayList<Prize>();
-	private final Rectangle useButton = new Rectangle(), continueButton = new Rectangle();
+	private final Rectangle continueButton = new Rectangle();
 	private Chapter chapter;
 	private Cosmetic look;
-	private String title = "", beaten = "", useLabel = "";
+	private String title = "", beaten = "", lookLine = "";
 	private float time;
 	private int flipped;
 	private boolean finale;
@@ -72,7 +72,7 @@ public class ChapterClearedScreen extends BaseScreen {
 		prizes.add(new Prize("NEW BADGE", "Beat " + c.champion().name, assets.badge, false));
 		title = "Chapter " + c.number() + " cleared!";
 		beaten = "You beat " + c.champion().name + ", the " + c.mode.label + " champion";
-		useLabel = look == null ? "" : "Use " + look.label;
+		lookLine = look == null ? "" : "Your cards and table are now " + look.label + ". Change them in Options.";
 		time = 0;
 		flipped = 0;
 		finale = false;
@@ -111,6 +111,11 @@ public class ChapterClearedScreen extends BaseScreen {
 		}
 		if (revealed() && !finale) {
 			finale = true;
+			if (look != null) {
+				game.settings().setCardBack(look);
+				game.settings().setFelt(look);
+				game.assets().dress(look, look);
+			}
 			fireworks.show(w, h);
 			game.audio().play(Audio.Effect.WIN);
 		}
@@ -144,7 +149,6 @@ public class ChapterClearedScreen extends BaseScreen {
 			drawPrize(i);
 		}
 		sparks.draw(batch, assets.glow);
-		drawFlash();
 		drawButtons();
 		batch.end();
 	}
@@ -158,7 +162,7 @@ public class ChapterClearedScreen extends BaseScreen {
 		float flip = phase < FLIP ? 0 : phase == FLIP ? Ease.SMOOTH.apply(into / FLIP_LEN) : 1;
 		float pop = phase == SHAKE ? shake * POP : phase == FLASH ? POP : phase == FLIP ? POP * (1 - flip * 0.5f)
 				: phase > FLIP ? POP * 0.5f * (1 - Math.min(1, into / 0.3f)) : 0;
-		float lit = phase >= SHAKE && phase <= FLIP ? 0.4f + shake * 0.6f : phase > FLIP ? Math.max(0, 1 - into / 0.6f) : 0;
+		float lit = phase == FLASH ? 1 : phase >= SHAKE && phase <= FLIP ? 0.4f + shake * 0.6f : phase > FLIP ? Math.max(0, 1 - into / 0.6f) : 0;
 		float cw = CARD_W * (1 + pop), ch = CARD_H * (1 + pop);
 		float wobble = phase == SHAKE ? MathUtils.sin(into * 38f) * 7f * shake : 0;
 		float cy = y + CARD_H / 2;
@@ -208,35 +212,16 @@ public class ChapterClearedScreen extends BaseScreen {
 		batch.setColor(Color.WHITE);
 	}
 
-	private void drawFlash() {
-		float t = revealT();
-		if (t < 0 || revealed()) {
-			return;
-		}
-		float within = t % PRIZE.length();
-		if (PRIZE.at(within) == FLASH) {
-			paint.fade(0.3f * (1 - PRIZE.into(within) / FLASH_LEN));
-			paint.rect(0, 0, w, h, Color.WHITE);
-			paint.fade(1f);
-		}
-	}
-
 	private void drawButtons() {
 		if (!revealed()) {
-			useButton.set(0, 0, 0, 0);
 			continueButton.set(0, 0, 0, 0);
 			paint.text(paint.ui(0.9f, Palette.MUTED), "Tap to hurry", w - 16, 24, false);
 			return;
 		}
-		paint.fade(BUTTONS_IN.progress(time - doneAt()));
-		boolean offer = look != null && (game.settings().cardBack() != look || game.settings().felt() != look);
-		if (offer) {
-			paint.button(useButton, useLabel, w / 2 - BUTTON_W / 2 - 10, 18, BUTTON_W, BUTTON_H, assets.button);
-			paint.button(continueButton, "Continue", w / 2 + BUTTON_W / 2 + 10, 18, BUTTON_W, BUTTON_H, assets.buttonAlt);
-		} else {
-			useButton.set(0, 0, 0, 0);
-			paint.button(continueButton, "Continue", w / 2, 18, BUTTON_W, BUTTON_H, assets.button);
-		}
+		float a = BUTTONS_IN.progress(time - doneAt());
+		paint.centred(paint.ui(0.95f, Palette.MUTED, a), lookLine, w / 2, h - 122);
+		paint.fade(a);
+		paint.button(continueButton, "Continue", w / 2, 18, BUTTON_W, BUTTON_H, assets.button);
 		paint.fade(1f);
 	}
 
@@ -244,10 +229,6 @@ public class ChapterClearedScreen extends BaseScreen {
 	protected void tap(float x, float y) {
 		if (!revealed()) {
 			hurry();
-		} else if (useButton.contains(x, y)) {
-			game.settings().setCardBack(look);
-			game.settings().setFelt(look);
-			game.assets().dress(look, look);
 		} else if (continueButton.contains(x, y)) {
 			back();
 		}

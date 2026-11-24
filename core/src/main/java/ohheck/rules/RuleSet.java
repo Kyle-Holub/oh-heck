@@ -54,6 +54,10 @@ public final class RuleSet {
 		return new RuleSet(order, mostCards, on, blindBids, shortDeck, momentum);
 	}
 
+	public RuleSet withMomentum(boolean on) {
+		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, on);
+	}
+
 	public RuleSet withBlindBids(boolean on) {
 		return new RuleSet(order, mostCards, bigBids, on, shortDeck, momentum);
 	}
