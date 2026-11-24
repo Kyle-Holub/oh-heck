@@ -149,12 +149,13 @@ first six have no libGDX and test in plain JUnit.
 - `PlayerPanel` draws a player's placard from a `SeatState` (name, score, bid, tricks,
   turn...). `Counters` draws the hand tally (one mark per hand, in gates of five) and the
   bid tracker; both are shared with the tutorial. `BidPopup` is the "Make Your Bid" panel, drawn the
-  same at the table, in trick shots and in the tutorial.
+  same at the table, in trick shots and in the tutorial; `ScoreCard` is the end-of-hand results card,
+  shared with the tutorial's scoring page.
 
 ### Other screens (`ohheck.screens`)
 
 `TitleScreen` (with `FallingCards`, the 3D shower), `TutorialScreen` (How to play: 14
-timed scenes, a tap each and Back to the one before; each step names its scene in `TutorialScenes`, which draws with
+timed scenes, a tap each and Back to the one before, left only by reaching the end; each step names its scene in `TutorialScenes`, which draws with
 `TutorialStage`'s little table, and each scene's clock is an `ohheck.anim.Timeline`,
 tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long, each a list of
 `OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`; built twice:
