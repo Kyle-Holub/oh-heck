@@ -42,9 +42,9 @@ The campaign is shown as a hand of cards, one large card per chapter, fanned acr
 
 ## 4. Trick shots
 
-Trick shots are hand-built puzzles: every hand is face up, the deal is fixed, and there is a right line of play. No stars and no undo: a restart deals the shot again.
+Trick shots are hand-built puzzles: every hand is face up, the deal is fixed, and there is a right line of play. The players are unnamed; each shows its bid with the table's bid icons. No stars and no undo: a restart deals the shot again.
 
-- **Goals** rotate: *Make it* (make exactly your bid), *Set them* (make your bid and stop a named rival making theirs), *Choose the bid* (the one bid you can guarantee).
+- **Goals** rotate: *Make it* (make exactly your bid), *Block* (make your bid and stop the outlined player making theirs), *Choose the bid* (the one bid you can guarantee).
 - **Teaching:** each chapter's puzzles use its mode, so they rehearse what the table and duel will ask (a big-bid gamble in chapter 2, reading blind bids in chapter 3).
 - **Supply:** hand-written, three per chapter, one of each goal. No generator for now.
 - Each puzzle is checked by a small solver in the tests, so every puzzle is solvable.

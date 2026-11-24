@@ -19,12 +19,13 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Move;
+import ohheck.table.PlayerPanel;
+import ohheck.table.SeatState;
 import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
 import ohheck.ui.MenuChrome;
-import ohheck.ui.Numbers;
 import ohheck.ui.Palette;
 
 /*
@@ -38,7 +39,7 @@ public class TrickShotScreen extends BaseScreen {
 	private static final float YOURS = 1.0f, THEIRS = 0.72f, TRICK = 0.75f, PILE = 0.3f;
 	private static final float OTHER_STEP = 0.55f, TRICK_HOLD = 0.8f, GATHER = 0.35f;
 	private static final float TOP_HAND_Y = 320, SIDE_HAND_DROP = 20, TRICK_DROP = 24, LABEL_GAP = 16, LIFT = 10;
-	private static final float BUTTON_W = 120, BUTTON_H = 40;
+	private static final float BUTTON_W = 120, BUTTON_H = 40, PLACARD_H = 50, PLACARD_PAD = 9, TARGET_FADE = 0.55f;
 	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190, BID_TITLE_TOP = 12,
 			BID_TITLE_SCALE = 0.92f, BID_ROW_RISE = 20, BID_PANEL_MARGIN = 40, BID_NUMERAL_OF_BUTTON = 0.66f;
 	private static final float INTRO_HOLD = 2.2f, INTRO_W = 560, INTRO_H = 150;
@@ -47,6 +48,8 @@ public class TrickShotScreen extends BaseScreen {
 			INTRO_IN = Tween.over(0.3f, Ease.OUT), INTRO_OUT = Tween.over(0.5f, Ease.IN);
 
 	private final MenuChrome chrome = new MenuChrome(paint);
+	private final PlayerPanel panel = new PlayerPanel(paint);
+	private final SeatState placardState = new SeatState();
 	private final CardArt art;
 	private final Sparks sparks = new Sparks();
 	private final Rectangle backButton = new Rectangle(), restartButton = new Rectangle(),
@@ -68,7 +71,7 @@ public class TrickShotScreen extends BaseScreen {
 
 	public void open(TrickShot s) {
 		play = new TrickShotPlay(s);
-		goal = s.goalText(name(s.rival));
+		goal = s.goalText();
 		reset();
 	}
 
@@ -190,10 +193,6 @@ public class TrickShotScreen extends BaseScreen {
 		drawn[i] = true;
 	}
 
-	private String name(int seat) {
-		return seat == Seating.YOU ? "You" : seat < 0 ? "" : play.shot().chapter.rivals.at(seat).name;
-	}
-
 	private static float cardW(float scale) {
 		return Assets.CARD_W * scale;
 	}
@@ -223,12 +222,26 @@ public class TrickShotScreen extends BaseScreen {
 		for (int i = 0; i < hand.size(); i++) {
 			card(hand.get(i), x + i * cardW(THEIRS) * 0.62f, y, cardW(THEIRS));
 		}
-		paint.ui(1.0f, Palette.CREAM).draw(batch, name(seat), x, y + cardH(THEIRS) + LABEL_GAP);
-		paint.ui(0.9f, Palette.MUTED).draw(batch, seatLine(m, seat), x, y - 6);
+		if (seat == 2) {
+			placard(m, seat, x + handWidth(hand.size(), THEIRS) + LABEL_GAP, y + cardH(THEIRS) / 2 + PLACARD_H / 2);
+		} else {
+			placard(m, seat, x, y - 6);
+		}
 	}
 
-	private String seatLine(Match m, int seat) {
-		return m.hasBid(seat) ? "bid " + Numbers.text(m.bid(seat)) + ", won " + Numbers.text(m.tricksWon(seat)) : "";
+	private void placard(Match m, int seat, float x, float top) {
+		float iw = PlayerPanel.iconWidth(m.handSize()), ih = iw * PlayerPanel.ICON_ASPECT;
+		float pw = PLACARD_PAD * 2 + m.handSize() * (iw + PlayerPanel.ICON_GAP) - PlayerPanel.ICON_GAP, y = top - PLACARD_H;
+		if (seat == play.shot().rival) {
+			paint.fade(TARGET_FADE);
+			paint.frame(assets.panelTurn, x - 4, y - 4, pw + 8, PLACARD_H + 8);
+			paint.fade(1f);
+		}
+		paint.frame(assets.panel, x, y, pw, PLACARD_H);
+		if (m.hasBid(seat)) {
+			placardState.reset().bid(m.bid(seat)).won(m.tricksWon(seat)).cards(m.handSize());
+			panel.drawTricks(placardState, x + PLACARD_PAD, y + (PLACARD_H - ih) / 2);
+		}
 	}
 
 	private void drawTrump(Match m, float top) {
@@ -280,8 +293,7 @@ public class TrickShotScreen extends BaseScreen {
 			card(hand.get(i), x, y, cw);
 		}
 		float right = x0 + cw + gap * Math.max(0, hand.size() - 1) + LABEL_GAP;
-		paint.ui(1.0f, Palette.CREAM).draw(batch, "You", right, 14 + ch * 0.7f);
-		paint.ui(0.9f, Palette.MUTED).draw(batch, seatLine(m, Seating.YOU), right, 14 + ch * 0.7f - 26);
+		placard(m, Seating.YOU, right, 14 + ch / 2 + PLACARD_H / 2);
 	}
 
 	private void drawBids(Match m) {
