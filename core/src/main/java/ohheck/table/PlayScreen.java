@@ -429,6 +429,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			TrickView.drawTrickWon(art, assets, layout, match(), flow.stateTime());
 		}
 		cards.update(this, time);
+		if (flow.state() == TableState.PICK_DEALER && !DealerPick.landed(flow.stateTime())) {
+			return;
+		}
 		cards.draw(batch, assets, art, match(), flow.trumpFaceUp(), time, paint.fade());
 		if (flow.isDealing()) {
 			flow.deal().drawDeck(batch, assets, art, layout);

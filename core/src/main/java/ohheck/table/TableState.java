@@ -10,6 +10,40 @@ import ohheck.rules.Match;
  * over the table and what a tap does.
  */
 enum TableState {
+	PICK_DEALER {
+		@Override
+		void update(TableFlow f, float dt) {
+			if (f.stateTime() >= DealerPick.LENGTH) {
+				f.startHand();
+			}
+		}
+
+		@Override
+		boolean skip(TableFlow f) {
+			f.startHand();
+			return true;
+		}
+
+		@Override
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
+			o.drawDealerPick(s.stateTime());
+		}
+
+		@Override
+		void tap(TableInput in, float x, float y) {
+			in.skip();
+		}
+
+		@Override
+		boolean animating(TableScene s) {
+			return true;
+		}
+
+		@Override
+		String tag(TableScene s, int hand) {
+			return "picking";
+		}
+	},
 	SHUFFLE {
 		@Override
 		void update(TableFlow f, float dt) {
@@ -215,7 +249,7 @@ enum TableState {
 	}
 
 	boolean isDealing() {
-		return this == SHUFFLE || this == DEAL;
+		return this == PICK_DEALER || this == SHUFFLE || this == DEAL;
 	}
 
 

@@ -60,6 +60,7 @@ public class TableFlowTest {
 
 	private static final Map<TableState, Set<TableState>> NEXT = new EnumMap<TableState, Set<TableState>>(TableState.class);
 	static {
+		NEXT.put(TableState.PICK_DEALER, EnumSet.of(TableState.SHUFFLE));
 		NEXT.put(TableState.SHUFFLE, EnumSet.of(TableState.DEAL, TableState.TURN));
 		NEXT.put(TableState.DEAL, EnumSet.of(TableState.TURN));
 		NEXT.put(TableState.TURN, EnumSet.of(TableState.TURN, TableState.TRICK));
@@ -81,6 +82,7 @@ public class TableFlowTest {
 	private Match newGame(long seed) {
 		Match m = Match.random(4, new Random(seed));
 		flow.start(m);
+		flow.skip();
 		return m;
 	}
 
@@ -95,6 +97,15 @@ public class TableFlowTest {
 		}
 		fail("stuck in " + from);
 		return null;
+	}
+
+	@Test
+	public void aNewGameFirstPicksTheDealer() {
+		flow.start(Match.random(4, new Random(1)));
+		assertEquals(TableState.PICK_DEALER, flow.state());
+		assertEquals(0, events.deals);
+		assertEquals(TableState.SHUFFLE, waitForChange());
+		assertEquals(1, events.deals);
 	}
 
 	@Test
