@@ -63,4 +63,6 @@ public interface GameHost {
 	void continueGame();
 
 	boolean hasGameInProgress();
+
+	void startFresh();
 }

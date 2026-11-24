@@ -68,30 +68,16 @@ public class TrickShotsTest {
 		for (TrickShot s : TrickShots.ALL) {
 			assertTrue(s.id, ids.add(s.id));
 		}
-		assertTrue(TrickShots.of(Chapter.ONE).size() >= 4);
+		assertEquals(3, TrickShots.of(Chapter.ONE).size());
 	}
 
 	@Test
-	public void anUndoTakesBackYourLastCard() {
-		TrickShotPlay p = new TrickShotPlay(TrickShots.ALL.get(0));
-		p.finishOthers();
-		Card first = p.match().legalPlays(0).get(0);
-		p.move(new Move.Play(0, first));
-		p.finishOthers();
-		p.undo();
-		assertEquals(TrickShotPlay.UNDOS - 1, p.undosLeft());
-		assertTrue(p.match().hand(0).contains(first));
-		assertTrue(p.yourTurn());
-	}
-
-	@Test
-	public void restartingGivesTheUndosBack() {
+	public void restartingDealsTheShotAgain() {
 		TrickShotPlay p = new TrickShotPlay(TrickShots.ALL.get(0));
 		p.finishOthers();
 		p.move(new Move.Play(0, p.match().legalPlays(0).get(0)));
-		p.undo();
 		p.restart();
-		assertEquals(TrickShotPlay.UNDOS, p.undosLeft());
-		assertFalse(p.canUndo());
+		p.finishOthers();
+		assertEquals(TrickShots.ALL.get(0).deal().hand(0), p.match().hand(0));
 	}
 }

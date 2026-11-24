@@ -128,6 +128,11 @@ public final class Settings {
 		prefs.putString(FELT, c.name()).flush();
 	}
 
+	public void forgetEverything() {
+		prefs.clear();
+		prefs.flush();
+	}
+
 	public boolean tutorialSeen() {
 		return prefs.getBoolean(TUTORIAL_SEEN, false);
 	}
