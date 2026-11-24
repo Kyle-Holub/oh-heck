@@ -81,7 +81,8 @@ abstract class TutorialStage {
 	}
 
 	static final String LEFT = Player.byId(4).name, RIGHT = Player.byId(7).name;
-	static final String[] NAMES = { "You", LEFT, "", RIGHT };
+	static final String TOP = Player.byId(6).name;
+	static final String[] NAMES = { "You", LEFT, TOP, RIGHT };
 
 	float seatX(int seat) {
 		switch (seat) {
@@ -109,6 +110,10 @@ abstract class TutorialStage {
 	}
 
 	void seat(int s, SeatState state) {
+		scoredSeat(s, state.unscored());
+	}
+
+	void scoredSeat(int s, SeatState state) {
 		panel.draw(state.named(NAMES[s]), seatX(s), seatTop(s), clock.shown());
 	}
 

@@ -54,8 +54,10 @@ public class TutorialScreen extends BaseScreen {
 			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", scenes::biddingZero, 9.4f),
 			new Step("Getting set", "Miss your bid, high or low, and you're set. Here you bid 1, but both tricks go elsewhere.",
 					scenes::gettingSet, 7.2f),
-			new Step("The dealer's hook", "The dealer bids last and has an extra rule: they can't bid a number that makes the total bids"
-					+ " equal the total tricks. So every hand, at least one player is set.", scenes::dealersHook, 5.5f),
+			new Step("The dealer", "The first dealer is picked at random, then the deal passes clockwise each hand. The dealer bids"
+					+ " last and has an extra rule\u2026", scenes::theDealer, 8.5f),
+			new Step("The dealer's hook", "\u2026they can't bid so the bids add up to the tricks, so someone is always set. That hook"
+					+ " is how the game got its name: Oh Heck!", scenes::dealersHook, 5.5f),
 			new Step("Scoring", "Make your bid exactly: " + RuleSet.STANDARD.made() + " points, plus " + RuleSet.STANDARD.perTrickBid()
 					+ " for each trick you bid. Miss it, high or low: lose " + RuleSet.STANDARD.perTrickOff() + " for each trick off.",
 					scenes::scoring, 10f),

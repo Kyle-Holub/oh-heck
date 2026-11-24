@@ -154,7 +154,7 @@ first six have no libGDX and test in plain JUnit.
 
 ### Other screens (`ohheck.screens`)
 
-`TitleScreen` (with `FallingCards`, the 3D shower), `TutorialScreen` (How to play: 14
+`TitleScreen` (with `FallingCards`, the 3D shower), `TutorialScreen` (How to play: 15
 timed scenes, a tap each and Back to the one before, left only by reaching the end; each step names its scene in `TutorialScenes`, which draws with
 `TutorialStage`'s little table, and each scene's clock is an `ohheck.anim.Timeline`,
 tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long, each a list of

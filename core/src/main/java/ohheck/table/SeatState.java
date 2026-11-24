@@ -8,7 +8,7 @@ public final class SeatState {
 	String name = "";
 	int score, bid = NO_BID, won, handSize = 1;
 	boolean turn, dealer, doubled;
-	boolean plain;
+	boolean plain, scored = true;
 
 	public SeatState reset() {
 		name = "";
@@ -16,6 +16,7 @@ public final class SeatState {
 		bid = NO_BID;
 		handSize = 1;
 		turn = dealer = plain = doubled = false;
+		scored = true;
 		return this;
 	}
 
@@ -56,6 +57,11 @@ public final class SeatState {
 
 	public SeatState doubled(boolean d) {
 		doubled = d;
+		return this;
+	}
+
+	public SeatState unscored() {
+		scored = false;
 		return this;
 	}
 
