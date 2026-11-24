@@ -74,7 +74,7 @@ public class CampaignScreen extends BaseScreen {
 
 	public void openChapter(Chapter c) {
 		chosen = c;
-		beatLine = "Win the table, then beat " + c.champion().name + " at the final table and in a duel";
+		beatLine = c == null ? "" : "Win the table, then beat " + c.champion().name + " at the final table and in a duel";
 		chosenFor = 0;
 		briefing = null;
 	}
