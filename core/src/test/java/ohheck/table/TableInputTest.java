@@ -154,6 +154,12 @@ public class TableInputTest {
 
 	private final FakeTable t = new FakeTable();
 
+	private void skipToTurn() {
+		for (int i = 0; i < 3 && t.flow.state() != TableState.TURN; i++) {
+			t.flow.skip();
+		}
+	}
+
 	@Test
 	public void theMenuOpensAndGoesWhereItSays() {
 		t.flow.start(Match.random(4, new Random(2)));
@@ -191,7 +197,7 @@ public class TableInputTest {
 	public void aTapOnANumberBids() {
 		Match m = new Match(4, new Random(4), 3, RuleSet.STANDARD);
 		t.flow.start(m);
-		t.flow.skip();
+		skipToTurn();
 		assertEquals(TableState.TURN, t.flow.state());
 		TapAreas.sizeTo(t.targets.bids(), m.handSize() + 1);
 		for (int b = 0; b <= m.handSize(); b++) {
@@ -206,7 +212,7 @@ public class TableInputTest {
 	public void aCardDraggedOntoTheTableIsPlayed() {
 		Match m = new Match(4, new Random(5), 3, RuleSet.STANDARD);
 		t.flow.start(m);
-		t.flow.skip();
+		skipToTurn();
 		TapAreas.sizeTo(t.targets.bids(), m.handSize() + 1);
 		t.targets.bid(0).set(100, 100, 58, 58);
 		t.input.tap(105, 105);

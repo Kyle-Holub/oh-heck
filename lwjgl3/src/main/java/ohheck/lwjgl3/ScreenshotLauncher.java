@@ -41,7 +41,7 @@ import ohheck.screens.TutorialScreen;
  */
 public class ScreenshotLauncher {
 
-	private static final String[] WANTED = { "intro", "title", "play", "setup", "highscores", "statistics", "badges", "options", "players", "campaign", "brief:chapter", "chapter:1", "brief:table", "shot:lone-ace", "cleared", "tutorial:1", "tutorial:3", "tutorial:5", "tutorial:6", "tutorial:7", "tutorial:8", "tutorial:9", "tutorial:10", "tutorial:11", "tutorial:12", "tutorial:13", "tutorial:14", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "play", "setup", "highscores", "statistics", "badges", "options", "players", "campaign", "brief:chapter", "chapter:1", "brief:table", "shot:lone-ace", "cleared", "tutorial:1", "tutorial:3", "tutorial:5", "tutorial:6", "tutorial:7", "tutorial:8", "tutorial:9", "tutorial:10", "tutorial:11", "tutorial:12", "tutorial:13", "tutorial:14", "picking", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "play:8:",
 			"tossing", "gameover" };
 

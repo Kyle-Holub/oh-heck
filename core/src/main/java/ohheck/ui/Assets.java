@@ -42,7 +42,7 @@ public final class Assets implements Disposable {
 	private final TextureRegion[] digits = new TextureRegion[11];
 	public final Texture white;
 	public final Texture stroke;
-	public final BitmapFont font;
+	public final BitmapFont font, fontItalic;
 	public final BitmapFont serif;
 
 	private final TextureRegion[][] faces = new TextureRegion[4][13];
@@ -114,6 +114,7 @@ public final class Assets implements Disposable {
 		white = own(whitePixel());
 		stroke = own(strokeTexture(32, 160));
 		font = bitmapFont("ui");
+		fontItalic = bitmapFont("ui_italic");
 		serif = bitmapFont("serif");
 	}
 	private void cutDigits() {

@@ -17,6 +17,7 @@ import ohheck.rules.RuleSet;
 import ohheck.rules.Suit;
 import ohheck.table.BidPopup;
 import ohheck.table.Counters;
+import ohheck.table.DealerPick;
 import ohheck.table.PlayerPanel;
 import ohheck.table.ScoreCard;
 import ohheck.ui.Numbers;
@@ -243,8 +244,7 @@ final class TutorialScenes extends TutorialStage {
 		paint.centred(f, "\u2026 and so on, up to " + HANDS, cx(), h - 70);
 	}
 
-	private static final float[] PICKING = { 0, 0.1f, 0.2f, 0.3f, 0.42f, 0.56f, 0.72f, 0.92f, 1.16f, 1.46f };
-	private static final float FIRST_DEAL = 1.9f, NEXT_DEAL = 1.5f;
+	private static final float FIRST_DEAL = DealerPick.LANDED, NEXT_DEAL = 1.5f;
 	private static final int FIRST_DEALER = 1, SEATS = 4;
 	private static final String[] DEALS = new String[SEATS];
 	static {
@@ -256,10 +256,10 @@ final class TutorialScenes extends TutorialStage {
 
 	void theDealer() {
 		int dealt = t < FIRST_DEAL ? -1 : Math.min(SEATS - 1, (int) ((t - FIRST_DEAL) / NEXT_DEAL));
-		int picking = (FIRST_DEALER + clock.count(PICKING) - PICKING.length) % SEATS + SEATS;
+		int picking = DealerPick.litSeat(t, FIRST_DEALER, SEATS);
 		int dealer = dealt < 0 ? -1 : (FIRST_DEALER + dealt) % SEATS;
 		for (int s = 0; s < SEATS; s++) {
-			seat(s, plain().dealer(s == dealer).turn(dealt < 0 && s == picking % SEATS));
+			seat(s, plain().dealer(s == dealer).turn(dealt < 0 && s == picking));
 		}
 		if (dealt >= 0) {
 			if (passed(FIRST_DEAL + dealt * NEXT_DEAL) && settings.effects()) {

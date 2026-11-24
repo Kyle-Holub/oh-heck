@@ -110,7 +110,9 @@ first six have no libGDX and test in plain JUnit.
 ### The table (`ohheck.table`)
 
 - `TableFlow` runs the table's state machine:
-  `SHUFFLE → DEAL → TURN ⇄ TRICK → HAND_END → RESULTS → (SHUFFLE | GAME_OVER)`. Each
+  `PICK_DEALER → SHUFFLE → DEAL → TURN ⇄ TRICK → HAND_END → RESULTS → (SHUFFLE | GAME_OVER)`;
+  a new game opens on `PICK_DEALER` (`DealerPick`: a light runs round the placards and stops on the
+  dealer, the same draw the tutorial shows), a resumed one does not. Each
   `TableState` constant holds its own behaviour (`entered`, `update`, `skip`) and what the
   screen does in it (the overlay, what a tap does, whether it is still moving, the
   screenshot tag).

@@ -142,6 +142,19 @@ final class TableOverlays {
 		bidPopup.draw(layout.w / 2, layout.centreY(), match.handSize(), legalBid, -1, 1f, targets.bids());
 	}
 
+	void drawDealerPick(float t) {
+		if (dealsOf != match) {
+			dealsOf = match;
+			deals = match.dealer() == Seating.YOU ? "You deal" : scene.name(match.dealer()) + " deals";
+		}
+		boolean landed = DealerPick.landed(t);
+		paint.centred(paint.serif(1.6f, Palette.GOLD), landed ? deals : PICKING, layout.w / 2, layout.centreY() + 10);
+	}
+
+	private static final String PICKING = "Picking the dealer\u2026";
+	private String deals = "";
+	private Match dealsOf;
+
 	void drawHandEnd(float t) {
 		float a = HAND_END_IN.progress(t);
 		art.art(match.madeBid(Seating.YOU) ? paint.assets.bidTricksText : paint.assets.setText, layout.centreX(),

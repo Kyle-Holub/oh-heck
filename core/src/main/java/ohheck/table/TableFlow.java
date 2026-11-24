@@ -78,7 +78,8 @@ final class TableFlow {
 		stopThinking();
 		match = m;
 		tell(l -> l.changed(m));
-		startHand();
+		deal.start(m.handSize(), m.dealer(), m.players(), true);
+		enter(TableState.PICK_DEALER);
 	}
 
 	void resume(Match m) {
@@ -166,7 +167,7 @@ final class TableFlow {
 		return true;
 	}
 
-	private void startHand() {
+	void startHand() {
 		tell(l -> l.beforeDeal(match));
 		if (match.phase() == Match.Phase.GAME_OVER) {
 			enter(TableState.GAME_OVER);

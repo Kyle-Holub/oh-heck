@@ -40,6 +40,10 @@ public final class Painter {
 		return faded(ui(size, color), color, alpha);
 	}
 
+	public BitmapFont uiItalic(float size, Color color) {
+		return sized(assets.fontItalic, size * Assets.UI_BASE, color);
+	}
+
 	public BitmapFont serif(float size) {
 		return serif(size, Color.WHITE);
 	}

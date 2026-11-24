@@ -12,16 +12,17 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 
 FONTS = [
-    # name, ttf, pixel size
-    ("ui", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42),
-    ("serif", "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 52),
+    # name, ttf, pixel size, slant (an italic made by leaning the upright glyphs; no oblique font needed)
+    ("ui", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42, 0),
+    ("ui_italic", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42, 0.2),
+    ("serif", "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 52, 0),
 ]
 CHARS = [chr(c) for c in range(32, 127)] + ["©", "–", "—", "…", "’", "♥", "♠", "♦", "♣"]
 PAD = 3
 ATLAS_W = 1024
 
 
-def bake(name, ttf, size, out_dir):
+def bake(name, ttf, size, slant, out_dir):
     font = ImageFont.truetype(ttf, size)
     ascent, descent = font.getmetrics()
     glyphs = []
@@ -30,6 +31,8 @@ def bake(name, ttf, size, out_dir):
         # render on a roomy canvas with the baseline origin at (size, 2*size), then crop to the ink
         canvas = Image.new("L", (size * 4, size * 3), 0)
         ImageDraw.Draw(canvas).text((size, 2 * size), ch, font=font, fill=255, anchor="ls")
+        if slant:
+            canvas = canvas.transform(canvas.size, Image.AFFINE, (1, slant, -slant * 2 * size, 0, 1, 0), Image.BICUBIC)
         ink = canvas.getbbox()
         if ink is None:
             glyphs.append((ch, None, 0, 0, 0, 0, adv))
@@ -82,5 +85,5 @@ def bake(name, ttf, size, out_dir):
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/fonts"
     os.makedirs(out, exist_ok=True)
-    for n, t, s in FONTS:
-        bake(n, t, s, out)
+    for n, t, s, lean in FONTS:
+        bake(n, t, s, lean, out)
