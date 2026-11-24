@@ -15,7 +15,8 @@ public final class PlayerPanel {
 
 	public static final float W = 214, H = 80;
 
-	private static final float ICON_MAX_W = 28, ICON_GAP = 3, ICON_ROOM_H = 42, ICON_ASPECT = 18f / 14f;
+	public static final float ICON_GAP = 3, ICON_ASPECT = 18f / 14f;
+	private static final float ICON_MAX_W = 28, ICON_ROOM_H = 42;
 
 	private static int rows(int handSize) {
 		return handSize > RuleSet.USUAL_CARDS ? 2 : 1;
@@ -25,7 +26,7 @@ public final class PlayerPanel {
 		return (Math.max(1, handSize) + rows(handSize) - 1) / rows(handSize);
 	}
 
-	private static float iconWidth(int handSize) {
+	public static float iconWidth(int handSize) {
 		int rows = rows(handSize);
 		float fitsRow = (W - 20) / perRow(handSize) - ICON_GAP;
 		float fitsRows = ((ICON_ROOM_H - (rows - 1) * ICON_GAP) / rows) / ICON_ASPECT;
@@ -87,7 +88,7 @@ public final class PlayerPanel {
 		paint.batch.setColor(Color.WHITE);
 	}
 
-	private void drawTricks(SeatState seat, float x, float y) {
+	public void drawTricks(SeatState seat, float x, float y) {
 		Assets assets = paint.assets;
 		int bid = seat.bid, won = seat.won;
 		int tricks = Math.max(bid, won), first = bid == 0 && won == 0 ? 1 : 0;

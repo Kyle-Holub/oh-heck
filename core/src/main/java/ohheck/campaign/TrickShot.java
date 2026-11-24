@@ -15,7 +15,7 @@ import ohheck.rules.Match;
 public final class TrickShot {
 
 	public enum Goal {
-		MAKE_IT("Make your bid exactly"), SET_THEM("Make your bid and stop %s making theirs"), CHOOSE_THE_BID("Choose a bid you can make");
+		MAKE_IT("Make your bid exactly"), SET_THEM("Make your bid and block the player %s"), CHOOSE_THE_BID("Choose a bid you can make");
 
 		private final String text;
 
@@ -23,6 +23,8 @@ public final class TrickShot {
 			this.text = text;
 		}
 	}
+
+	private static final String[] SIDES = { "", "on the left", "across", "on the right" };
 
 	public final String id, title;
 	public final Chapter chapter;
@@ -45,8 +47,8 @@ public final class TrickShot {
 		this.hands = hands;
 	}
 
-	public String goalText(String rivalName) {
-		return String.format(goal.text, rivalName);
+	public String goalText() {
+		return String.format(goal.text, SIDES[Math.max(0, rival)]);
 	}
 
 	public Match deal() {

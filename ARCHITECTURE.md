@@ -176,7 +176,8 @@ goes), High scores, and Continue when a custom game is in progress.
 The campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
 four steps in order: table play (a normal game against the chapter's rivals), trick shots
 (`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding
-into place; its title and goal pop up on the felt and fade, and the goal stays in the header), open once the table is won as practice, a final table (the champion sits in for a rival, under the house rules
+into place; its title and goal pop up on the felt and fade, and the goal stays in the header; the players are
+unnamed, each bid shown with the table's icons on a small placard, the one to block outlined), open once the table is won as practice, a final table (the champion sits in for a rival, under the house rules
 plus momentum), and a duel against its champion
 (`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
 bid made after two made running). Winning the duel clears the chapter and wins its card back
