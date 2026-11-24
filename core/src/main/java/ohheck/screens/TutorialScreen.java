@@ -38,7 +38,7 @@ public class TutorialScreen extends BaseScreen {
 	private final TutorialScenes scenes = new TutorialScenes(paint, game.settings());
 
 	private final Step[] steps = {
-			new Step("Welcome", "Oh Heck is about calling your shots: guess how many tricks you'll win, then win exactly that many.",
+			new Step("Welcome", "Oh Heck is a card game about calling your shots: guess how many tricks you'll win, then win exactly that many.",
 					scenes::welcome, 4f, false),
 			new Step("The cards", "Cards rank from Ace, the highest, down to 2, the lowest.", scenes::ranks, 4.5f),
 			new Step("A trick", "Everyone plays one card in turn. That's a trick. The highest card wins it.", scenes::aTrick, 5.5f),
@@ -48,22 +48,24 @@ public class TutorialScreen extends BaseScreen {
 			new Step("Trump", "…you play a trump. The card turned up after the deal sets the trump suit, and any trump beats every other suit.",
 					scenes::trump, 6f),
 			new Step("The deal", "There are " + HANDS + " hands. The first deals 1 card each, the next 2, and so on up to " + HANDS
-					+ ". (You can reverse this in Options.)", scenes::theDeal, 6.5f),
+					+ ". The deal passes to the next player each hand.", scenes::theDeal, 6.5f),
 			new Step("Bidding", "Before playing, everyone bids how many tricks they'll win. Look at your cards and count your winners.",
 					scenes::bidding, 9.5f),
-			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", scenes::biddingZero, 7f),
-			new Step("The dealer's hook", "The dealer bids last and can't make the bids add up to the number of tricks, so someone always misses.",
-					scenes::dealersHook, 5.5f),
-			new Step("The counters", "Top left of the table: tally marks count the " + HANDS
-					+ " hands, and under them one card per trick shows how many the table has bid.", scenes::counters, 9f),
+			new Step("Bidding zero", "Zero is a real bid. A weak hand can score well by winning nothing at all.", scenes::biddingZero, 8.4f),
+			new Step("Getting set", "Miss your bid, high or low, and you're set. Here you bid 1, but both tricks go elsewhere.",
+					scenes::gettingSet, 7.2f),
+			new Step("The dealer's hook", "The dealer bids last and has an extra rule: they can't bid a number that makes the total bids"
+					+ " equal the total tricks. So every hand, at least one player is set.", scenes::dealersHook, 5.5f),
 			new Step("Scoring", "Make your bid exactly: " + RuleSet.STANDARD.made() + " points, plus " + RuleSet.STANDARD.perTrickBid()
 					+ " for each trick you bid. Miss it, high or low: lose " + RuleSet.STANDARD.perTrickOff() + " for each trick off.",
 					scenes::scoring, 9f),
+			new Step("A hand of Classic", "Each of the " + HANDS + " hands runs: deal, turn up trump, bid, play, score. Top left,"
+					+ " tally marks count the hands and cards count the bids.", scenes::counters, 9f),
 			new Step("Ready", "Highest total after " + HANDS + " hands wins. Good luck!", scenes::ready, 5f, false) };
 
 	private static final float HOLD = 1.6f;
 
-	private final Rectangle cornerButton = new Rectangle(), doneButton = new Rectangle();
+	private final Rectangle cornerButton = new Rectangle(), doneButton = new Rectangle(), backButton = new Rectangle();
 	private boolean firstRun;
 	private int step;
 	private final StringBuilder sb = new StringBuilder();
@@ -117,8 +119,17 @@ public class TutorialScreen extends BaseScreen {
 		}
 	}
 
+	private void previous() {
+		step--;
+		scenes.restart();
+	}
+
 	@Override
 	protected void tap(float x, float y) {
+		if (step > 0 && backButton.contains(x, y)) {
+			previous();
+			return;
+		}
 		if (cornerButton.contains(x, y)) {
 			if (firstRun) {
 				finish();
@@ -132,7 +143,9 @@ public class TutorialScreen extends BaseScreen {
 
 	@Override
 	protected void back() {
-		if (firstRun) {
+		if (step > 0) {
+			previous();
+		} else if (firstRun) {
 			finish();
 		} else {
 			game.back();
@@ -145,9 +158,13 @@ public class TutorialScreen extends BaseScreen {
 	}
 
 	private void header() {
-		BitmapFont f = paint.serif(1.3f, Palette.GOLD);
-		f.draw(batch, "How to play", 22, h - 18);
-		paint.button(cornerButton, firstRun ? "Skip tutorial" : "Back", w - 110, h - 52, 190, 40, assets.buttonAlt);
+		paint.centred(paint.serif(1.3f, Palette.GOLD), "How to play", w / 2, h - 18);
+		if (step > 0) {
+			paint.button(backButton, "Back", 80, h - 52, 130, 40, assets.buttonAlt);
+		} else {
+			backButton.set(0, 0, 0, 0);
+		}
+		paint.button(cornerButton, firstRun ? "Skip tutorial" : "Close", w - 110, h - 52, 190, 40, assets.buttonAlt);
 	}
 
 	private void caption(Step s) {

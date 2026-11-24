@@ -2,8 +2,8 @@ package ohheck.screens;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntPredicate;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -19,6 +19,7 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Move;
+import ohheck.table.BidPopup;
 import ohheck.table.PlayerPanel;
 import ohheck.table.SeatState;
 import ohheck.ui.Assets;
@@ -40,15 +41,14 @@ public class TrickShotScreen extends BaseScreen {
 	private static final float OTHER_STEP = 0.55f, TRICK_HOLD = 0.8f, GATHER = 0.35f;
 	private static final float TOP_HAND_Y = 320, SIDE_HAND_DROP = 20, TRICK_DROP = 24, LABEL_GAP = 16, LIFT = 10;
 	private static final float BUTTON_W = 120, BUTTON_H = 40, PLACARD_H = 50, PLACARD_PAD = 9, TARGET_FADE = 0.55f;
-	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190, BID_TITLE_TOP = 12,
-			BID_TITLE_SCALE = 0.92f, BID_ROW_RISE = 20, BID_PANEL_MARGIN = 40, BID_NUMERAL_OF_BUTTON = 0.66f;
 	private static final float INTRO_HOLD = 2.2f, INTRO_W = 560, INTRO_H = 150;
-	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
 	private static final Tween GLIDE = Tween.over(0.28f, Ease.OUT), BANNER_IN = Tween.over(0.4f, Ease.OUT),
 			INTRO_IN = Tween.over(0.3f, Ease.OUT), INTRO_OUT = Tween.over(0.5f, Ease.IN);
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final PlayerPanel panel = new PlayerPanel(paint);
+	private final IntPredicate legalBid = b -> this.play.match().isLegalBid(b);
+	private final BidPopup bidPopup;
 	private final SeatState placardState = new SeatState();
 	private final CardArt art;
 	private final Sparks sparks = new Sparks();
@@ -67,6 +67,7 @@ public class TrickShotScreen extends BaseScreen {
 	public TrickShotScreen(GameHost game) {
 		super(game);
 		art = new CardArt(batch, assets);
+		bidPopup = new BidPopup(paint, art);
 	}
 
 	public void open(TrickShot s) {
@@ -297,22 +298,7 @@ public class TrickShotScreen extends BaseScreen {
 	}
 
 	private void drawBids(Match m) {
-		int n = m.handSize();
-		while (bidRects.size() <= n) {
-			bidRects.add(new Rectangle());
-		}
-		float rowW = (n + 1) * BID_BUTTON + n * BID_GAP;
-		float pw = Math.max(rowW + BID_PANEL_MARGIN, BID_PANEL_MIN_W), px = (w - pw) / 2, py = h / 2 - TRICK_DROP - BID_PANEL_H / 2;
-		paint.frame(assets.panel, px, py, pw, BID_PANEL_H);
-		float titleH = assets.makeBidText.getHeight() * BID_TITLE_SCALE;
-		art.art(assets.makeBidText, w / 2, py + BID_PANEL_H - BID_TITLE_TOP - titleH / 2, BID_TITLE_SCALE, 1f);
-		float bx = (w - rowW) / 2, by = py + BID_ROW_RISE;
-		for (int b = 0; b <= n; b++) {
-			Rectangle r = bidRects.get(b).set(bx + b * (BID_BUTTON + BID_GAP), by, BID_BUTTON, BID_BUTTON);
-			boolean ok = m.isLegalBid(b);
-			paint.frame(ok ? assets.button : assets.buttonOff, r.x, r.y, r.width, r.height);
-			paint.numeral(b, r.x + r.width / 2, r.y + r.height / 2, BID_BUTTON * BID_NUMERAL_OF_BUTTON, ok ? Color.WHITE : NUMERAL_OFF);
-		}
+		bidPopup.draw(w / 2, h / 2 - TRICK_DROP, m.handSize(), legalBid, -1, 1f, bidRects);
 	}
 
 	private void drawIntro() {

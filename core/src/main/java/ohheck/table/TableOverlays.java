@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.IntPredicate;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -30,8 +31,6 @@ final class TableOverlays {
 
 	private static final float MENU_BUTTON_W = 80, MENU_BUTTON_H = 38;
 	private static final float PAUSE_BUTTON_W = 260, PAUSE_BUTTON_H = 56, PAUSE_GAP = 14;
-	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
-	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190;
 	private static final float RESULTS_W = 540, RESULTS_H = 262, RESULTS_ROW = 26;
 	private static final float GAME_OVER_W = 420, GAME_OVER_H = 306, GAME_OVER_ROW = 27;
 	private static final float END_BUTTON_W = 170, END_BUTTON_H = 42;
@@ -39,8 +38,6 @@ final class TableOverlays {
 
 	private static final float PAUSE_LIFT = 20, PAUSED_TITLE_RISE = 36;
 	private static final float MENU_BUTTON_Y = 10;
-	private static final float BID_TITLE_TOP = 12, BID_TITLE_SCALE = 0.92f, BID_ROW_RISE = 20,
-			BID_PANEL_MARGIN = 40, BID_NUMERAL_OF_BUTTON = 0.66f;
 	private static final float HAND_END_FADE = 0.3f, HAND_END_SCALE = 0.95f;
 	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
@@ -58,6 +55,8 @@ final class TableOverlays {
 	private final TableScene scene;
 	private final TableLayout layout;
 	private final CardArt art;
+	private final BidPopup bidPopup;
+	private final IntPredicate legalBid = b -> this.match.isLegalBid(b);
 	private String hint = "";
 	private float hintTime;
 
@@ -76,6 +75,7 @@ final class TableOverlays {
 		this.scene = scene;
 		this.layout = layout;
 		this.art = art;
+		this.bidPopup = new BidPopup(paint, art);
 	}
 
 	void setMatch(Match match) {
@@ -139,24 +139,7 @@ final class TableOverlays {
 	}
 
 	void drawBidPanel() {
-		int n = match.handSize();
-		float bs = BID_BUTTON, gap = BID_GAP;
-		float rowW = (n + 1) * bs + n * gap;
-		float pw = Math.max(rowW + BID_PANEL_MARGIN, BID_PANEL_MIN_W), ph = BID_PANEL_H;
-		float px = (layout.w - pw) / 2, py = layout.centreY() - ph / 2;
-		paint.frame(paint.assets.panel, px, py, pw, ph);
-
-		float titleH = paint.assets.makeBidText.getHeight() * BID_TITLE_SCALE;
-		art.art(paint.assets.makeBidText, layout.w / 2, py + ph - BID_TITLE_TOP - titleH / 2, BID_TITLE_SCALE, 1f);
-
-		targets.bidsUpTo(n);
-		float bx = (layout.w - rowW) / 2, by = py + BID_ROW_RISE;
-		for (int b = 0; b <= n; b++) {
-			Rectangle r = targets.bid(b).set(bx + b * (bs + gap), by, bs, bs);
-			boolean ok = match.isLegalBid(b);
-			paint.frame(ok ? paint.assets.button : paint.assets.buttonOff, r.x, r.y, r.width, r.height);
-			paint.numeral(b, r.x + r.width / 2, r.y + r.height / 2, bs * BID_NUMERAL_OF_BUTTON, ok ? Color.WHITE : NUMERAL_OFF);
-		}
+		bidPopup.draw(layout.w / 2, layout.centreY(), match.handSize(), legalBid, -1, 1f, targets.bids());
 	}
 
 	void drawHandEnd(float t) {

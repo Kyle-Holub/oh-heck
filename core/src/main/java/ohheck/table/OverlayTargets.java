@@ -5,8 +5,6 @@ import java.util.List;
 
 import com.badlogic.gdx.math.Rectangle;
 
-import ohheck.ui.TapAreas;
-
 /* Where the overlays' buttons were drawn, for taps to find. An undrawn button has no area. */
 final class OverlayTargets {
 
@@ -35,8 +33,8 @@ final class OverlayTargets {
 		return menuItems[item.ordinal()];
 	}
 
-	void bidsUpTo(int most) {
-		TapAreas.sizeTo(bids, most + 1);
+	List<Rectangle> bids() {
+		return bids;
 	}
 
 	Rectangle bid(int b) {

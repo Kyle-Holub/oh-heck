@@ -16,6 +16,7 @@ import ohheck.rules.Card;
 import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
 import ohheck.rules.RuleSet;
+import ohheck.ui.TapAreas;
 import ohheck.ui.Wording;
 
 public class TableInputTest {
@@ -192,7 +193,7 @@ public class TableInputTest {
 		t.flow.start(m);
 		t.flow.skip();
 		assertEquals(TableState.TURN, t.flow.state());
-		t.targets.bidsUpTo(m.handSize());
+		TapAreas.sizeTo(t.targets.bids(), m.handSize() + 1);
 		for (int b = 0; b <= m.handSize(); b++) {
 			t.targets.bid(b).set(100 + b * 70, 100, 58, 58);
 		}
@@ -206,7 +207,7 @@ public class TableInputTest {
 		Match m = new Match(4, new Random(5), 3, RuleSet.STANDARD);
 		t.flow.start(m);
 		t.flow.skip();
-		t.targets.bidsUpTo(m.handSize());
+		TapAreas.sizeTo(t.targets.bids(), m.handSize() + 1);
 		t.targets.bid(0).set(100, 100, 58, 58);
 		t.input.tap(105, 105);
 		while (!t.flow.yourTurnToPlay()) {
