@@ -103,6 +103,8 @@ public class TutorialScreen extends BaseScreen {
 	@Override
 	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
+		kickX = scenes.kick.dx(scenes.clock.shown());
+		kickY = scenes.kick.dy(scenes.clock.shown());
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 		scenes.size(w, h);

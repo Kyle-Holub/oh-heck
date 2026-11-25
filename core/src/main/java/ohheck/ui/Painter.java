@@ -1,6 +1,7 @@
 package ohheck.ui;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
@@ -97,6 +98,17 @@ public final class Painter {
 	public void rect(float x, float y, float rw, float rh, Color c) {
 		batch.setColor(c);
 		batch.draw(assets.white, x, y, rw, rh);
+		batch.setColor(Color.WHITE);
+	}
+
+	public void edgeGlow(Color c, float alpha, float w, float h) {
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(c.r, c.g, c.b, alpha);
+		batch.draw(assets.glow, -w * 0.35f, -h * 0.2f, w * 0.7f, h * 1.4f);
+		batch.draw(assets.glow, w * 0.65f, -h * 0.2f, w * 0.7f, h * 1.4f);
+		batch.draw(assets.glow, -w * 0.2f, -h * 0.4f, w * 1.4f, h * 0.8f);
+		batch.draw(assets.glow, -w * 0.2f, h * 0.6f, w * 1.4f, h * 0.8f);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		batch.setColor(Color.WHITE);
 	}
 

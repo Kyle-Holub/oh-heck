@@ -32,7 +32,7 @@ public final class Player {
 			new Player(1, "Barnaby", Difficulty.EASY, Style.BOLD,
 					"Sure every hand's a winner, and often bids a trick more than it holds."),
 			new Player(2, "Nathaniel", Difficulty.EASY, Style.TRUMP_COUNTER,
-					"Counts a trick for every trump and every ace, and bids that, come what may."),
+					"Counts a trick for every trump and every ace, and bids that."),
 			new Player(3, "Horatio", Difficulty.EASY, Style.SPENDTHRIFT,
 					"Can't wait to win: takes his tricks with his biggest cards, then runs dry."),
 			new Player(4, "Rupert", Difficulty.NORMAL, Style.STEADY,
