@@ -9,7 +9,7 @@ import com.badlogic.gdx.math.Rectangle;
 final class OverlayTargets {
 
 	enum Button {
-		MENU, PLAY_AGAIN, HIGH_SCORES, FORCE_WIN, TAKE_TUTORIAL, SKIP_TUTORIAL
+		MENU, MAIN_MENU, CONTINUE, FORCE_WIN, TAKE_TUTORIAL, SKIP_TUTORIAL
 	}
 
 	private final Rectangle[] buttons = new Rectangle[Button.values().length];
@@ -42,8 +42,8 @@ final class OverlayTargets {
 	}
 
 	void clearGameOverButtons() {
-		button(Button.PLAY_AGAIN).set(0, 0, 0, 0);
-		button(Button.HIGH_SCORES).set(0, 0, 0, 0);
+		button(Button.MAIN_MENU).set(0, 0, 0, 0);
+		button(Button.CONTINUE).set(0, 0, 0, 0);
 	}
 
 	boolean hit(Button b, float x, float y) {

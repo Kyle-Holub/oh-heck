@@ -67,9 +67,9 @@ final class TableDrawing {
 	}
 
 	private static final String[] SUIT_SIGNS = { "\u2663", "\u2660", "\u2665", "\u2666" };
-	private static final Color RED_TINT = new Color(0.95f, 0.25f, 0.2f, 1), DARK_TINT = new Color(0.4f, 0.55f, 0.95f, 1);
+	private static final Color RED_TINT = new Color(0.95f, 0.25f, 0.2f, 1);
 	static final float PUFF_LEN = 0.8f;
-	private static final float PUFF_REACH = 80, PUFF_FROM = 18, TINT = 0.13f;
+	private static final float PUFF_REACH = 80, PUFF_FROM = 18;
 	private static final int PUFFS = 8;
 
 	private static boolean red(Suit s) {
@@ -87,19 +87,6 @@ final class TableDrawing {
 			float a = k * MathUtils.PI2 / PUFFS + 0.3f, r = PUFF_FROM + PUFF_REACH * e;
 			paint.centred(f, SUIT_SIGNS[s.ordinal()], cx + MathUtils.cos(a) * r, cy + MathUtils.sin(a) * r + 10);
 		}
-	}
-
-	private void feltTint(Suit s, float lit) {
-		Color c = red(s) ? RED_TINT : DARK_TINT;
-		float a = TINT * Math.min(1, 0.4f + lit), w = layout.w, h = layout.h;
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		batch.setColor(c.r, c.g, c.b, a);
-		batch.draw(assets.glow, -w * 0.3f, -h * 0.2f, w * 0.6f, h * 1.4f);
-		batch.draw(assets.glow, w * 0.7f, -h * 0.2f, w * 0.6f, h * 1.4f);
-		batch.draw(assets.glow, -w * 0.2f, -h * 0.35f, w * 1.4f, h * 0.7f);
-		batch.draw(assets.glow, -w * 0.2f, h * 0.65f, w * 1.4f, h * 0.7f);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
 	}
 
 	void tally() {
@@ -143,9 +130,6 @@ final class TableDrawing {
 			batch.setColor(Color.WHITE);
 		}
 		Card trump = scene.match().trumpCard();
-		if (p >= 1) {
-			feltTint(trump.suit(), lit);
-		}
 		art.flip(trump, x, y, cw, ch, p);
 		if (p >= 1) {
 			suitPuff(trump.suit(), x + cw / 2, y + ch / 2, (flow.trumpTime() - TableFlow.TRUMP_FLIP_TIME) / PUFF_LEN);
@@ -177,38 +161,22 @@ final class TableDrawing {
 	}
 
 	private void momentumBar(int seat, int lit, float fill, float now) {
-		float x = layout.panelX(seat) + PlayerPanel.W + BAR_GAP, top = layout.panelTop(seat), y = top - PlayerPanel.H;
-		if (x + BAR_W > layout.w - BAR_GAP) {
-			x = layout.panelX(seat) - BAR_GAP - BAR_W;
-		}
-		boolean active = lit >= MOMENTUM_NOTCHES;
-		if (active) {
+		int spot = layout.spot(seat);
+		boolean left = spot == 2 || spot == 3;
+		float pop = 1 + BAR_POP * (1 - fill), bw = BAR_W * pop, bh = BAR_H * pop;
+		float cx = left ? layout.panelX(seat) - BAR_GAP - BAR_W / 2 : layout.panelX(seat) + PlayerPanel.W + BAR_GAP + BAR_W / 2;
+		float cy = layout.panelTop(seat) - PlayerPanel.H / 2;
+		if (lit >= MOMENTUM_NOTCHES) {
 			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 			batch.setColor(1f, 0.8f, 0.4f, 0.35f + 0.15f * MathUtils.sin(now * 4));
-			batch.draw(assets.glow, x - BAR_W * 1.5f, y - 10, BAR_W * 4, PlayerPanel.H + 20);
+			batch.draw(assets.glow, cx - BAR_W * 2, cy - BAR_H * 0.75f, BAR_W * 4, BAR_H * 1.5f);
 			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			batch.setColor(Color.WHITE);
 		}
-		paint.frame(active ? assets.panelTurn : assets.panel, x, y, BAR_W, PlayerPanel.H);
-		float step = PlayerPanel.H / (MOMENTUM_NOTCHES + 1);
-		for (int i = 0; i < MOMENTUM_NOTCHES; i++) {
-			boolean on = i < lit, fresh = i == lit - 1;
-			float a = on ? (fresh ? 0.3f + 0.7f * fill : 1) : 0.22f;
-			Color c = on ? Palette.GOLD_LIGHT : Palette.MUTED;
-			chevron(x + BAR_W / 2, y + step * (i + 1) - 3, c, a, fresh ? 1 + 0.4f * (1 - fill) : 1);
-		}
-		batch.setColor(Color.WHITE);
+		batch.draw(assets.momentum[lit], cx - bw / 2, cy - bh / 2, bw, bh);
 	}
 
-	private void chevron(float cx, float y, Color c, float alpha, float scale) {
-		float arm = CHEVRON_ARM * scale, thick = 4;
-		batch.setColor(c.r, c.g, c.b, alpha);
-		batch.draw(assets.stroke, cx - arm + 2, y, arm / 2, thick / 2, arm, thick, 1, 1, 45, 0, 0, assets.stroke.getWidth(),
-				assets.stroke.getHeight(), false, false);
-		batch.draw(assets.stroke, cx - 2, y, arm / 2, thick / 2, arm, thick, 1, 1, -45, 0, 0, assets.stroke.getWidth(),
-				assets.stroke.getHeight(), false, false);
-	}
-
-	private static final float BAR_W = 22, BAR_GAP = 5, CHEVRON_ARM = 12, NOTCH_FILL = 0.45f;
+	private static final float BAR_W = 22, BAR_H = BAR_W * 144 / 44, BAR_GAP = 5, BAR_POP = 0.25f, NOTCH_FILL = 0.45f;
 	private static final int MOMENTUM_NOTCHES = 2;
 	private final int[] shownStreak = new int[Seating.SEATS];
 	private final float[] changedAt = { -99, -99, -99, -99 };
