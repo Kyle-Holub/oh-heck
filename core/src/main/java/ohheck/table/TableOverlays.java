@@ -157,13 +157,14 @@ final class TableOverlays {
 	static final float VERSUS_FROM = CardWipe.LENGTH * 0.7f, VERSUS_LENGTH = VERSUS_FROM + 2.8f, VERSUS_SLAM = VERSUS_FROM + 0.75f;
 	private static final float VERSUS_SLIDE = 0.45f, VERSUS_TILT = 9, VERSUS_GAP = 10, VERSUS_HABIT_W = 380;
 	private static final Tween VERSUS_IN = Tween.over(VERSUS_SLIDE, Ease.OUT), VERSUS_OUT = Tween.over(0.35f, Ease.IN);
-	private static final Color YOUR_BAND = new Color(0.12f, 0.2f, 0.32f, 0.96f), THEIR_BAND = new Color(0.36f, 0.08f, 0.08f, 0.96f);
+	private static final Color YOUR_BAND = new Color(0.2f, 0.11f, 0.06f, 0.97f), THEIR_BAND = new Color(0.4f, 0.07f, 0.06f, 0.97f);
 
 	void drawVersus(float since) {
 		float t = since - VERSUS_FROM, in = VERSUS_IN.progress(t), out = VERSUS_OUT.progress(since - VERSUS_LENGTH + VERSUS_OUT.end()), w = layout.w, h = layout.h;
 		float shift = (1 - in + out) * (w + 200), mid = h / 2;
 		band(YOUR_BAND, -shift, mid - VERSUS_GAP / 2, false);
 		band(THEIR_BAND, shift, mid + VERSUS_GAP / 2, true);
+		gilding(mid, Math.min(in, 1 - out));
 		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT), scene.name(1), w * 0.62f + shift, mid + h * 0.3f, true);
 		paint.ui(1.05f, Palette.CREAM).draw(paint.batch, scene.habit(1), w * 0.62f - VERSUS_HABIT_W / 2 + shift, mid + h * 0.3f - 52,
 				VERSUS_HABIT_W, Align.center, true);
@@ -171,8 +172,38 @@ final class TableOverlays {
 		paint.text(paint.ui(1.05f, Palette.CREAM), CHALLENGER, w * 0.38f - shift, mid - h * 0.22f - 52, true);
 		if (since >= VERSUS_SLAM && out < 1) {
 			float slam = VERSUS_IN.progress(since - VERSUS_SLAM);
-			paint.text(paint.serif(5.5f - 2.5f * slam, Palette.GOLD, 1 - out), VS, w / 2, mid + 40, true);
+			float vsSize = 5.5f - 2.5f * slam;
+			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+			paint.batch.setColor(1f, 0.8f, 0.4f, 0.6f * (1 - out));
+			paint.batch.draw(paint.assets.glow, w / 2 - 130, mid - 90, 260, 180);
+			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			paint.batch.setColor(Color.WHITE);
+			paint.text(paint.serif(vsSize, VS_SHADOW, 1 - out), VS, w / 2 + 3, mid + 37, true);
+			paint.text(paint.serif(vsSize, Palette.GOLD_LIGHT, 1 - out), VS, w / 2, mid + 40, true);
 		}
+	}
+
+	private void gilding(float mid, float a) {
+		if (a <= 0) {
+			return;
+		}
+		float bw = layout.w * 2, cos = MathUtils.cosDeg(VERSUS_TILT), sin = MathUtils.sinDeg(VERSUS_TILT);
+		rule(mid, bw, GILD_W, Palette.GOLD, a);
+		rule(mid + GILD_W, bw, 2, GILD_DARK, a);
+		rule(mid - GILD_W, bw, 2, GILD_DARK, a);
+		paint.batch.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, a);
+		for (float d = -layout.w; d <= layout.w; d += GILD_STEP) {
+			float x = layout.w / 2 + d * cos, y = mid + d * sin;
+			paint.batch.draw(paint.assets.white, x - GILD_DIAMOND / 2, y - GILD_DIAMOND / 2, GILD_DIAMOND / 2, GILD_DIAMOND / 2, GILD_DIAMOND,
+					GILD_DIAMOND, 1, 1, 45 + VERSUS_TILT, 0, 0, 1, 1, false, false);
+		}
+		paint.batch.setColor(Color.WHITE);
+	}
+
+	private void rule(float y, float width, float thick, Color c, float a) {
+		paint.batch.setColor(c.r, c.g, c.b, a);
+		paint.batch.draw(paint.assets.white, layout.w / 2 - width / 2, y - thick / 2, width / 2, thick / 2, width, thick, 1, 1, VERSUS_TILT,
+				0, 0, 1, 1, false, false);
 	}
 
 	private void band(Color c, float dx, float edge, boolean above) {
@@ -184,6 +215,8 @@ final class TableOverlays {
 	}
 
 	private static final String VS = "VS", CHALLENGER = "Challenger";
+	private static final float GILD_W = 6, GILD_STEP = 110, GILD_DIAMOND = 12;
+	private static final Color VS_SHADOW = new Color(0.12f, 0.05f, 0.03f, 1), GILD_DARK = new Color(0.55f, 0.4f, 0.17f, 1);
 
 	void drawTutorialOffer() {
 		float px = (layout.w - OFFER_W) / 2, py = layout.centreY() - OFFER_H / 2, bw = END_BUTTON_W, bh = END_BUTTON_H;
@@ -211,20 +244,31 @@ final class TableOverlays {
 			float fly = Ease.IN.apply(MathUtils.clamp((t - DealerPick.LANDED) / DealerPick.FLIGHT, 0, 1));
 			float tx = layout.panelX(match.dealer()) + DEALER_CHIP_X, ty = layout.panelTop(match.dealer()) - DEALER_CHIP_Y;
 			float x = MathUtils.lerp(cx, tx, fly), y = MathUtils.lerp(cy, ty, fly), size = MathUtils.lerp(DEALER_CHIP, 26, fly);
-			float spin = DealerPick.landed(t) ? 1 : Math.abs(MathUtils.cos(t * DEALER_SPIN * (1.3f - t / DealerPick.LANDED)));
+			float p = Math.min(1, t / DealerPick.LANDED), angle = DEALER_SPINS * MathUtils.PI * (1 - (1 - p) * (1 - p));
 			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 			paint.batch.setColor(1f, 0.8f, 0.45f, 0.5f * (1 - fly));
 			paint.batch.draw(paint.assets.glow, x - size * 1.6f, y - size * 1.6f, size * 3.2f, size * 3.2f);
 			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			paint.batch.setColor(Color.WHITE);
-			paint.batch.draw(paint.assets.dealerIcon, x - size * spin / 2, y - size / 2, size * Math.max(0.04f, spin), size);
+			coin(x, y, size, angle);
 		}
 		if (DealerPick.landed(t)) {
 			paint.centred(paint.serif(1.6f, Palette.GOLD, Math.min(1, (t - DealerPick.LANDED) * 3)), deals, cx, cy - DEALER_CHIP / 2 - 18);
 		}
 	}
 
-	private static final float DEALER_CHIP = 96, DEALER_SPIN = 9, DEALER_CHIP_X = 40, DEALER_CHIP_Y = 22;
+	private static final float DEALER_CHIP = 96, DEALER_SPINS = 8, DEALER_CHIP_X = 40, DEALER_CHIP_Y = 22, COIN_THICK = 0.12f;
+	private static final int COIN_LAYERS = 12;
+
+	private void coin(float cx, float cy, float size, float angle) {
+		float face = size * Math.max(0.03f, Math.abs(MathUtils.cos(angle))), half = size * COIN_THICK / 2 * MathUtils.sin(angle);
+		for (int i = 0; i <= COIN_LAYERS; i++) {
+			float k = i / (float) COIN_LAYERS, shade = 0.42f + 0.16f * (i % 2) + 0.12f * k;
+			paint.batch.setColor(shade, shade * 0.78f, shade * 0.4f, 1);
+			paint.batch.draw(paint.assets.dealerIcon, cx - half + 2 * half * k - face / 2, cy - size / 2, face, size);
+		}
+		paint.batch.setColor(Color.WHITE);
+		paint.batch.draw(paint.assets.dealerIcon, cx + half - face / 2, cy - size / 2, face, size);
+	}
 	private String deals = "";
 	private Match dealsOf;
 
@@ -321,14 +365,14 @@ final class TableOverlays {
 	}
 
 	static final float NEW_BEST_LENGTH = 1.6f;
-	private static final float PODIUM_W = 118, PODIUM_WINNER_W = 150, PODIUM_STEP_X = 150, PODIUM_BASE = 0.14f, PODIUM_RISE = 0.45f,
+	private static final float PODIUM_W = 118, PODIUM_WINNER_W = 150, PODIUM_STEP_X = 150, PODIUM_BASE = 0.14f,
 			ROLL_FROM = 0.3f,
 			ROLL_STEP = 0.28f, ROLL_SPIN = 28, BEST_FLASH = 0.45f;
 	private static final float[] PODIUM_LIFT = { 0, 60, 30, 12, 0 };
 	private static final int[] PODIUM_SPOT = { 0, 2, 1, 3, 4 };
 	private static final String[] PLACE_CAPS = { "", "FIRST", "SECOND", "THIRD", "FOURTH" };
 	private static final String WINNER_IS = "And the winner is\u2026";
-	private static final Tween PODIUM_UP = Tween.over(PODIUM_RISE, Ease.OUT);
+	private static final Tween PODIUM_UP = Tween.over(GameEnd.RISE, Ease.OUT);
 	private final StringBuilder rolled = new StringBuilder();
 
 	void drawPodium(float t) {
@@ -348,9 +392,12 @@ final class TableOverlays {
 			float cx = layout.w / 2 - span / 2 + spot * PODIUM_STEP_X, y = base + PODIUM_LIFT[place] - (1 - k) * (layout.h * 0.8f);
 			podiumCard(s, place, cx - cw / 2, y, cw, ch, t);
 		}
-		float waiting = t - GameEnd.risesAt(2, n) - PODIUM_RISE;
+		float waiting = t - GameEnd.risesAt(2, n) - GameEnd.RISE;
 		if (waiting > 0 && t < GameEnd.risesAt(1, n)) {
 			paint.text(paint.serif(1.6f, Palette.GOLD, Math.min(1, waiting * 4)), WINNER_IS, layout.w / 2, layout.h * 0.86f, true);
+		}
+		if (scene.podiumDone()) {
+			paint.text(paint.ui(1.1f, Palette.GOLD), TAP_NOTE, layout.w / 2, layout.h * 0.07f, true);
 		}
 	}
 
@@ -420,9 +467,10 @@ final class TableOverlays {
 			y -= GAME_OVER_ROW;
 		}
 		float bw = END_BUTTON_W, bh = END_BUTTON_H, by = py + END_BUTTONS_RISE;
-		paint.button(targets.button(OverlayTargets.Button.PLAY_AGAIN), "Play again", layout.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
-		paint.button(targets.button(OverlayTargets.Button.HIGH_SCORES), scene.prizesWaiting() ? "Claim prizes" : scene.inCampaign() ? "Campaign" : "High scores",
-				layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, scene.prizesWaiting() ? paint.assets.button : paint.assets.buttonAlt);
+		paint.button(targets.button(OverlayTargets.Button.CONTINUE), "Continue", layout.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh,
+				paint.assets.button);
+		paint.button(targets.button(OverlayTargets.Button.MAIN_MENU), "Main menu", layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh,
+				paint.assets.buttonAlt);
 	}
 
 	private String winnersLine() {

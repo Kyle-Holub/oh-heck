@@ -138,7 +138,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			if (!won) {
 				shower.start(finalScoresSeed(m));
 			}
-			end.start(won, m.players(), stage != Stage.DUEL);
+			end.start(won, m.players(), stage != Stage.DUEL, !options.autoplayHuman);
 		}
 	}
 
@@ -160,7 +160,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	public void skipGameEnd() {
-		end.skip(flow.stateTime());
+		end.tap(flow.stateTime());
 		shower.clear();
 	}
 
@@ -217,6 +217,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public float sinceResults() {
 		return end.sinceResults(flow.stateTime());
+	}
+
+	@Override
+	public boolean podiumDone() {
+		return end.podiumDone(flow.stateTime());
 	}
 
 	@Override

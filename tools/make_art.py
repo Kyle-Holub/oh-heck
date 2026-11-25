@@ -689,6 +689,39 @@ def padlock(out):
     downsample(img, 108, 108).save(os.path.join(out, "padlock.png"))
 
 
+def momentum_icons(out):
+    """The momentum bar beside a placard, one image per state: empty, one notch, and lit (x2 on).
+    A dark capsule rimmed in gold holds two chevrons that light gold as bids are made running; when
+    momentum is on the capsule itself fills with gold and the chevrons shine cream."""
+    W, H = 44, 144
+    S = SS * 2
+    w, h = W * S, H * S
+    for state in range(3):
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        lit = state == 2
+        y = np.linspace(0, 1, h)[:, None]
+        if lit:
+            top, bottom = np.array(GOLD_LIGHT, float), np.array(GOLD_DARK, float)
+        else:
+            top, bottom = np.array((66, 38, 26), float), np.array((30, 16, 12), float)
+        fill = top * (1 - y) + bottom * y
+        body = Image.fromarray(np.repeat(fill[:, None, :], w, axis=1).astype(np.uint8), "RGB").convert("RGBA")
+        body.putalpha(rounded_mask(w, h, w // 2))
+        img.alpha_composite(body)
+        d.rounded_rectangle([S, S, w - 1 - S, h - 1 - S], w // 2 - S, outline=(GOLD_LIGHT if lit else GOLD) + (255,), width=3 * S)
+        d.rounded_rectangle([5 * S, 5 * S, w - 1 - 5 * S, h - 1 - 5 * S], w // 2 - 5 * S, outline=GOLD_DARK + (255,), width=S)
+        for k, cy in enumerate((0.68, 0.36)):
+            on = state > k
+            colour = (255, 244, 214) if lit else GOLD_LIGHT if on else (92, 60, 40)
+            edge = GOLD_DARK if on else (40, 22, 16)
+            cx, yy, arm, rise = w / 2, cy * h, w * 0.3, w * 0.26
+            pts = [(cx - arm, yy + rise / 2), (cx, yy - rise / 2), (cx + arm, yy + rise / 2)]
+            d.line(pts, fill=edge + (255,), width=int(9 * S), joint="curve")
+            d.line(pts, fill=colour + (255,), width=int(6 * S), joint="curve")
+        downsample(img, W, H).save(os.path.join(out, "momentum_%d.png" % state))
+
+
 def premultiplied_blur(img, radius):
     """Blurs without dark fringes at transparent edges."""
     a = np.asarray(img).astype(np.float32) / 255.0
@@ -714,6 +747,7 @@ if __name__ == "__main__":
     play_menu_icons(out)
     badge(out)
     padlock(out)
+    momentum_icons(out)
     blurred_sheet(sheet, out)
     table(out)
     icons(out)

@@ -25,6 +25,7 @@ public final class Assets implements Disposable {
 
 	public Texture table;
 	public final Texture cardSheet, cardSheetBlur, cardSlot, cardBlank, badge, padlock;
+	public final Texture[] momentum = new Texture[3];
 	public final Texture campaignFace, stepTable, stepShots, stepDuel, pipOn, pipOff;
 	public final Texture menuContinue, menuCampaign, menuCustom, menuScores;
 	private final Texture[] emblems = new Texture[Suit.values().length];
@@ -66,6 +67,9 @@ public final class Assets implements Disposable {
 		cardSheet = mipmapped("images/cards_hd.png");
 		badge = mipmapped("images/badge.png");
 		padlock = mipmapped("images/padlock.png");
+		for (int i = 0; i < momentum.length; i++) {
+			momentum[i] = mipmapped("images/momentum_" + i + ".png");
+		}
 		campaignFace = mipmapped("images/campaign_face.png");
 		stepTable = mipmapped("images/step_table.png");
 		stepShots = mipmapped("images/step_shots.png");

@@ -191,13 +191,13 @@ public class TableInputTest {
 		t.flow.start(Match.random(4, new Random(3)));
 		t.pretend = TableState.GAME_OVER;
 		t.results = true;
-		t.targets.button(OverlayTargets.Button.PLAY_AGAIN).set(200, 50, 170, 42);
-		t.targets.button(OverlayTargets.Button.HIGH_SCORES).set(400, 50, 170, 42);
+		t.targets.button(OverlayTargets.Button.CONTINUE).set(200, 50, 170, 42);
+		t.targets.button(OverlayTargets.Button.MAIN_MENU).set(400, 50, 170, 42);
 		t.input.tap(100, 300);
 		assertTrue(t.did.isEmpty());
 		t.input.tap(250, 70);
 		t.input.tap(450, 70);
-		assertEquals("[new game, high scores]", t.did.toString());
+		assertEquals("[high scores, title]", t.did.toString());
 	}
 
 	@Test

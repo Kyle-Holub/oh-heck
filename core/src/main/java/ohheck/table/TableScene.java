@@ -64,6 +64,10 @@ interface TableScene {
 		return -1;
 	}
 
+	default boolean podiumDone() {
+		return false;
+	}
+
 	default float sinceResults() {
 		return 0;
 	}
