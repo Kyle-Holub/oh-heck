@@ -24,7 +24,7 @@ public final class Assets implements Disposable {
 	public static final float UI_BASE = 16f / 42f, SERIF_BASE = 16f / 52f;
 
 	public Texture table;
-	public final Texture cardSheet, cardSheetBlur, cardSlot, cardBlank, badge;
+	public final Texture cardSheet, cardSheetBlur, cardSlot, cardBlank, badge, padlock;
 	public final Texture campaignFace, stepTable, stepShots, stepDuel, pipOn, pipOff;
 	public final Texture menuContinue, menuCampaign, menuCustom, menuScores;
 	private final Texture[] emblems = new Texture[Suit.values().length];
@@ -65,6 +65,7 @@ public final class Assets implements Disposable {
 		table = tables[0];
 		cardSheet = mipmapped("images/cards_hd.png");
 		badge = mipmapped("images/badge.png");
+		padlock = mipmapped("images/padlock.png");
 		campaignFace = mipmapped("images/campaign_face.png");
 		stepTable = mipmapped("images/step_table.png");
 		stepShots = mipmapped("images/step_shots.png");

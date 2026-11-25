@@ -229,7 +229,11 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void showCampaign() {
+		boolean fromTable = campaignPlay != null && getScreen() == campaignPlay;
 		screens.replaceAll(title);
+		if (fromTable) {
+			campaignScreen.wipeIn();
+		}
 		if (!settings.campaignIntroSeen() && !options.autoplayHuman) {
 			settings.setCampaignIntroSeen(true);
 			campaignScreen.briefChapter(Chapter.ONE);
@@ -257,7 +261,7 @@ public class OhHeckGame extends Game implements GameHost {
 	@Override
 	public void showChapterCleared(Chapter chapter) {
 		showCampaign();
-		campaignScreen.openChapter(chapter);
+		campaignScreen.reveal(chapter.next());
 		clearedScreen.open(chapter);
 		screens.open(clearedScreen);
 	}

@@ -6,7 +6,9 @@ import java.util.function.Supplier;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
@@ -16,9 +18,11 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.HandSort;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
+import ohheck.ui.Palette;
 import ohheck.ui.PostProcessor;
 import ohheck.ui.TapAreas;
 
@@ -35,6 +39,7 @@ final class TableDrawing {
 	private final TableScene scene;
 	private final PostProcessor post;
 	private final SpriteBatch batch;
+	private final Painter paint;
 	private final Assets assets;
 	private final TableLayout layout;
 	private final CardArt art;
@@ -48,6 +53,7 @@ final class TableDrawing {
 		this.sort = sort;
 		this.scene = scene;
 		this.post = post;
+		this.paint = paint;
 		this.batch = paint.batch;
 		this.assets = paint.assets;
 		this.layout = scene.layout();
@@ -58,6 +64,42 @@ final class TableDrawing {
 
 	void updateMotes(float dt, boolean trumpShowing) {
 		motes.update(dt, trumpShowing && scene.match().trumpCard() != null, layout.trumpX(), layout.trumpY(), layout.trumpW(), layout.trumpH());
+	}
+
+	private static final String[] SUIT_SIGNS = { "\u2663", "\u2660", "\u2665", "\u2666" };
+	private static final Color RED_TINT = new Color(0.95f, 0.25f, 0.2f, 1), DARK_TINT = new Color(0.4f, 0.55f, 0.95f, 1);
+	static final float PUFF_LEN = 0.8f;
+	private static final float PUFF_REACH = 80, PUFF_FROM = 18, TINT = 0.13f;
+	private static final int PUFFS = 8;
+
+	private static boolean red(Suit s) {
+		return s == Suit.HEARTS || s == Suit.DIAMONDS;
+	}
+
+	private void suitPuff(Suit s, float cx, float cy, float p) {
+		if (p < 0 || p >= 1) {
+			return;
+		}
+		float e = Ease.OUT.apply(p);
+		Color c = red(s) ? RED_TINT : Palette.CREAM;
+		BitmapFont f = paint.serif(1.2f + 0.6f * e, c, 1 - p);
+		for (int k = 0; k < PUFFS; k++) {
+			float a = k * MathUtils.PI2 / PUFFS + 0.3f, r = PUFF_FROM + PUFF_REACH * e;
+			paint.centred(f, SUIT_SIGNS[s.ordinal()], cx + MathUtils.cos(a) * r, cy + MathUtils.sin(a) * r + 10);
+		}
+	}
+
+	private void feltTint(Suit s, float lit) {
+		Color c = red(s) ? RED_TINT : DARK_TINT;
+		float a = TINT * Math.min(1, 0.4f + lit), w = layout.w, h = layout.h;
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(c.r, c.g, c.b, a);
+		batch.draw(assets.glow, -w * 0.3f, -h * 0.2f, w * 0.6f, h * 1.4f);
+		batch.draw(assets.glow, w * 0.7f, -h * 0.2f, w * 0.6f, h * 1.4f);
+		batch.draw(assets.glow, -w * 0.2f, -h * 0.35f, w * 1.4f, h * 0.7f);
+		batch.draw(assets.glow, -w * 0.2f, h * 0.65f, w * 1.4f, h * 0.7f);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		batch.setColor(Color.WHITE);
 	}
 
 	void tally() {
@@ -101,7 +143,13 @@ final class TableDrawing {
 			batch.setColor(Color.WHITE);
 		}
 		Card trump = scene.match().trumpCard();
+		if (p >= 1) {
+			feltTint(trump.suit(), lit);
+		}
 		art.flip(trump, x, y, cw, ch, p);
+		if (p >= 1) {
+			suitPuff(trump.suit(), x + cw / 2, y + ch / 2, (flow.trumpTime() - TableFlow.TRUMP_FLIP_TIME) / PUFF_LEN);
+		}
 		if (p >= 1) {
 			Glints.draw(batch, assets.glow, trump, x, y, cw, ch, cw, 0, scene.time(), lit);
 		}
@@ -110,6 +158,49 @@ final class TableDrawing {
 		}
 		motes.draw(batch, assets.glow);
 	}
+
+	void momentum() {
+		Match m = scene.match();
+		float now = scene.time();
+		for (int seat = 0; seat < m.players(); seat++) {
+			boolean on = m.onMomentum(seat);
+			if (m == momentumOf && on != onMomentum[seat]) {
+				momentumAt[seat] = now;
+			}
+			onMomentum[seat] = on;
+			float t = now - momentumAt[seat];
+			if (t < CHEVRON_LEN) {
+				chevrons(seat, t / CHEVRON_LEN, on);
+			}
+		}
+		momentumOf = m;
+	}
+
+	private void chevrons(int seat, float p, boolean rising) {
+		float cx = layout.panelX(seat) + PlayerPanel.W - 30, bottom = layout.panelTop(seat) - PlayerPanel.H;
+		Color c = rising ? Palette.GOLD_LIGHT : Palette.MUTED;
+		for (int i = 0; i < CHEVRONS; i++) {
+			float k = MathUtils.clamp(p * 1.6f - i * 0.25f, 0, 1);
+			if (k <= 0 || k >= 1) {
+				continue;
+			}
+			float travel = PlayerPanel.H + CHEVRON_RISE, y = rising ? bottom + k * travel : bottom + travel - k * travel;
+			float a = MathUtils.sin(k * MathUtils.PI);
+			batch.setColor(c.r, c.g, c.b, a);
+			float arm = CHEVRON_ARM, thick = 4, tilt = rising ? 45 : -45;
+			batch.draw(assets.stroke, cx - arm / 2, y, arm / 2, thick / 2, arm, thick, 1, 1, tilt, 0, 0, assets.stroke.getWidth(),
+					assets.stroke.getHeight(), false, false);
+			batch.draw(assets.stroke, cx + arm / 2 - 3, y, arm / 2, thick / 2, arm, thick, 1, 1, -tilt, 0, 0, assets.stroke.getWidth(),
+					assets.stroke.getHeight(), false, false);
+		}
+		batch.setColor(Color.WHITE);
+	}
+
+	private static final float CHEVRON_LEN = 1.4f, CHEVRON_RISE = 40, CHEVRON_ARM = 18;
+	private static final int CHEVRONS = 3;
+	private final boolean[] onMomentum = new boolean[Seating.SEATS];
+	private final float[] momentumAt = { -99, -99, -99, -99 };
+	private Match momentumOf;
 
 	void seat(int seat) {
 		TableFlow flow = scene.flow();

@@ -28,6 +28,10 @@ interface TableScene {
 
 	String name(int seat);
 
+	default String habit(int seat) {
+		return "";
+	}
+
 	TableLayout layout();
 
 	List<Card> handOrder();
@@ -55,4 +59,12 @@ interface TableScene {
 	float dragY();
 
 	boolean resultsShown();
+
+	default float podiumTime() {
+		return -1;
+	}
+
+	default float sinceResults() {
+		return 0;
+	}
 }

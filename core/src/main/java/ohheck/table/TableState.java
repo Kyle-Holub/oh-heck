@@ -10,6 +10,40 @@ import ohheck.rules.Match;
  * over the table and what a tap does.
  */
 enum TableState {
+	VERSUS {
+		@Override
+		void update(TableFlow f, float dt) {
+			if (f.stateTime() >= TableOverlays.VERSUS_LENGTH) {
+				f.enter(PICK_DEALER);
+			}
+		}
+
+		@Override
+		boolean skip(TableFlow f) {
+			f.enter(PICK_DEALER);
+			return true;
+		}
+
+		@Override
+		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
+			o.drawVersus(s.stateTime());
+		}
+
+		@Override
+		void tap(TableInput in, float x, float y) {
+			in.skip();
+		}
+
+		@Override
+		boolean animating(TableScene s) {
+			return true;
+		}
+
+		@Override
+		String tag(TableScene s, int hand) {
+			return "versus";
+		}
+	},
 	OFFER_TUTORIAL {
 		@Override
 		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
@@ -134,7 +168,7 @@ enum TableState {
 
 		@Override
 		boolean animating(TableScene s) {
-			return s.flow().trumpTime() < TableFlow.TRUMP_FLIP_TIME;
+			return s.flow().trumpTime() < TableFlow.TRUMP_FLIP_TIME + TableDrawing.PUFF_LEN;
 		}
 
 		@Override
@@ -210,7 +244,7 @@ enum TableState {
 	RESULTS {
 		@Override
 		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
-			o.drawHandResults();
+			o.drawHandResults(s.stateTime());
 			o.drawHandLabels(LABELS_DROP.progress(s.stateTime()), 1f);
 		}
 
@@ -221,7 +255,7 @@ enum TableState {
 
 		@Override
 		boolean animating(TableScene s) {
-			return s.stateTime() < LABEL_DROP;
+			return s.stateTime() < Math.max(LABEL_DROP, ScoreCard.LENGTH);
 		}
 
 		@Override
@@ -238,13 +272,20 @@ enum TableState {
 		@Override
 		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 			if (s.resultsShown()) {
-				o.drawGameOver(newHighScore);
+				o.drawGameOver(newHighScore, s.sinceResults());
+			} else if (s.podiumTime() >= 0) {
+				o.drawPodium(s.podiumTime());
 			}
 		}
 
 		@Override
 		void tap(TableInput in, float x, float y) {
 			in.tapGameOver(x, y);
+		}
+
+		@Override
+		boolean animating(TableScene s) {
+			return !s.resultsShown() || s.sinceResults() < TableOverlays.NEW_BEST_LENGTH;
 		}
 
 		@Override
@@ -265,7 +306,7 @@ enum TableState {
 	}
 
 	boolean isDealing() {
-		return this == OFFER_TUTORIAL || this == PICK_DEALER || this == SHUFFLE || this == DEAL;
+		return this == VERSUS || this == OFFER_TUTORIAL || this == PICK_DEALER || this == SHUFFLE || this == DEAL;
 	}
 
 

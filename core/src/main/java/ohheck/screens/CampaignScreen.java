@@ -18,9 +18,11 @@ import ohheck.campaign.Campaign;
 import ohheck.campaign.Chapter;
 import ohheck.campaign.Stage;
 import ohheck.campaign.TrickShots;
+import ohheck.fx.Sparks;
 import ohheck.players.Player;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
+import ohheck.ui.CardWipe;
 import ohheck.ui.GameHost;
 import ohheck.ui.MenuChrome;
 import ohheck.ui.Palette;
@@ -56,6 +58,11 @@ public class CampaignScreen extends BaseScreen {
 	private Chapter chosen;
 	private float chosenFor, briefedFor;
 	private int page, rival;
+	private float wipeFor = CardWipe.LENGTH, revealFor = REVEAL_LEN;
+	private Chapter revealing;
+	private final Sparks sparks = new Sparks();
+	private static final float REVEAL_WAIT = CardWipe.LENGTH + 0.3f, REVEAL_LEN = 1.6f, REVEAL_FLIP_FROM = 0.35f, REVEAL_FLIP = 0.5f,
+			REVEAL_LIFT = 46;
 	private String beatLine = "";
 	private final StringBuilder stageText = new StringBuilder();
 	private Briefing briefing;
@@ -77,6 +84,17 @@ public class CampaignScreen extends BaseScreen {
 		beatLine = c == null ? "" : "Win the table, then beat " + c.champion().name + " at the final table and in a duel";
 		chosenFor = 0;
 		briefing = null;
+	}
+
+	public void reveal(Chapter next) {
+		chosen = null;
+		briefing = null;
+		revealing = next;
+		revealFor = -REVEAL_WAIT;
+	}
+
+	public void wipeIn() {
+		wipeFor = 0;
 	}
 
 	public void brief(Briefing b, Runnable then) {
@@ -143,11 +161,20 @@ public class CampaignScreen extends BaseScreen {
 		shownFor += step * game.options().speed;
 		chosenFor += step * game.options().speed;
 		briefedFor += step * game.options().speed;
+		wipeFor += step * game.options().speed;
+		float before = revealFor;
+		revealFor += step * game.options().speed;
+		sparks.step(step * game.options().speed);
+		float half = REVEAL_FLIP_FROM + REVEAL_FLIP / 2;
+		if (revealing != null && before < half && revealFor >= half) {
+			Rectangle r = chapterCards[revealing.ordinal()];
+			sparks.burst(r.x + r.width / 2, r.y + r.height / 2, 90);
+		}
 	}
 
 	@Override
 	public boolean animating() {
-		return chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor);
+		return chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor) || wipeFor < CardWipe.LENGTH || revealing != null && revealFor < REVEAL_LEN || sparks.active();
 	}
 
 	@Override
@@ -165,6 +192,7 @@ public class CampaignScreen extends BaseScreen {
 			drawBriefing();
 		}
 		chrome.header(chosen == null ? "Campaign" : "Chapter " + chosen.number(), backButton, w, h);
+		CardWipe.draw(batch, assets.back(), w, h, wipeFor);
 		batch.end();
 	}
 
@@ -309,19 +337,29 @@ public class CampaignScreen extends BaseScreen {
 		for (int i = 0; i < all.length; i++) {
 			Chapter c = all[i];
 			float off = i - (all.length - 1) / 2f;
-			float x = x0 + i * (CARD_W + CARD_GAP), y = base - ARC * off * off + (c == lit ? LIFT : 0);
+			boolean showing = c == revealing && revealFor < REVEAL_LEN;
+			float k = showing ? MathUtils.clamp(revealFor / REVEAL_LEN, 0, 1) : 0;
+			float x = x0 + i * (CARD_W + CARD_GAP), y = base - ARC * off * off + (c == lit ? LIFT : 0) + MathUtils.sin(k * MathUtils.PI) * REVEAL_LIFT;
 			chapterCards[i].set(x, y, CARD_W, CARD_H);
-			if (c == lit) {
+			if (c == lit || showing && k > 0) {
 				glow(x, y, CARD_W, CARD_H);
 			}
 			art.shadow(x, y, CARD_W, CARD_H, c == lit ? 8 : 4);
-			if (progress.open(c)) {
+			float flip = showing ? MathUtils.clamp((revealFor - REVEAL_FLIP_FROM) / REVEAL_FLIP, 0, 1) : 1;
+			if (progress.unlocked(c) && flip >= 1) {
 				drawChapterFace(progress, c, x, y);
+			} else if (progress.unlocked(c) && flip >= 0.5f) {
+				float fw = CARD_W * Math.abs(MathUtils.cos(flip * MathUtils.PI));
+				batch.draw(assets.campaignFace, x + (CARD_W - fw) / 2, y, fw, CARD_H);
 			} else {
-				batch.draw(assets.back(), x, y, CARD_W, CARD_H);
-				paint.textIn(paint.ui(0.95f, Palette.MUTED), c.ready ? "Locked" : "Coming soon", x, y - 26, CARD_W, 20);
+				float fw = CARD_W * (showing ? Math.abs(MathUtils.cos(flip * MathUtils.PI)) : 1);
+				batch.draw(assets.back(), x + (CARD_W - fw) / 2, y, fw, CARD_H);
+			}
+			if (!c.ready || !progress.unlocked(c)) {
+				paint.textIn(paint.ui(0.95f, Palette.MUTED), progress.unlocked(c) ? "Coming soon" : "Locked", x, y - 26, CARD_W, 20);
 			}
 		}
+		sparks.draw(batch, assets.glow);
 		paint.centred(paint.ui(1.05f, Palette.MUTED), "Tap a chapter", w / 2, base - 70);
 	}
 

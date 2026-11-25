@@ -14,6 +14,7 @@ import ohheck.anim.Tween;
 import ohheck.campaign.TrickShot;
 import ohheck.campaign.TrickShotPlay;
 import ohheck.campaign.TrickShots;
+import ohheck.fx.Fireworks;
 import ohheck.fx.Sparks;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
@@ -60,6 +61,9 @@ public class TrickShotScreen extends BaseScreen {
 	private final boolean[] placed = new boolean[Card.COUNT], drawn = new boolean[Card.COUNT];
 	private final Vector2 spot = new Vector2();
 	private TrickShotPlay play;
+	private final Fireworks fireworks = new Fireworks();
+	private float finalAt = -1;
+	private static final float SLOW = 0.35f, SLOW_SPAN = 0.7f, SLOW_ZOOM = 0.07f, WOBBLE = 12, WOBBLE_LEN = 0.8f;
 	private float time, untilOther, trickDoneAt = -99, overAt = -1, lastMotion = -99, introAt = -99;
 	private String goal = "";
 	private boolean recorded;
@@ -80,6 +84,7 @@ public class TrickShotScreen extends BaseScreen {
 		untilOther = OTHER_STEP;
 		trickDoneAt = -99;
 		overAt = -1;
+		finalAt = -1;
 		recorded = false;
 		introAt = time;
 		for (int i = 0; i < Card.COUNT; i++) {
@@ -98,9 +103,16 @@ public class TrickShotScreen extends BaseScreen {
 	@Override
 	protected void update(float step) {
 		float dt = step * game.options().speed;
+		if (play.over() && finalAt < 0) {
+			finalAt = time;
+		}
+		if (slowing()) {
+			dt *= SLOW;
+		}
 		shownFor += dt;
 		time += dt;
 		sparks.step(dt);
+		fireworks.update(dt);
 		if (gathering() || introducing()) {
 			return;
 		}
@@ -116,7 +128,8 @@ public class TrickShotScreen extends BaseScreen {
 		if (play.over() && overAt < 0) {
 			overAt = time;
 			if (play.solved()) {
-				sparks.burst(w / 2, h / 2, 120);
+				sparks.burst(w / 2, h / 2, 160);
+				fireworks.show(w, h);
 			}
 		}
 		if (play.solved() && !recorded) {
@@ -124,6 +137,10 @@ public class TrickShotScreen extends BaseScreen {
 			game.records().campaign().solve(play.shot().id);
 			game.records().saveCampaign();
 		}
+	}
+
+	private boolean slowing() {
+		return finalAt >= 0 && play.solved() && time - finalAt < SLOW_SPAN;
 	}
 
 	private void noteTrickDone(int sizeBefore) {
@@ -135,12 +152,15 @@ public class TrickShotScreen extends BaseScreen {
 	@Override
 	public boolean animating() {
 		return introducing() || gathering() || play.othersToMove() || GLIDE.active(time - lastMotion) || sparks.active()
-				|| overAt >= 0 && BANNER_IN.active(time - overAt);
+				|| fireworks.active() || overAt >= 0 && time - overAt < WOBBLE_LEN;
 	}
 
 	@Override
 	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
+		float zoomIn = finalAt >= 0 && play.solved() ? MathUtils.sin(MathUtils.clamp((time - finalAt) / SLOW_SPAN, 0, 1) * MathUtils.PI) : 0;
+		kickZoom = 1 - SLOW_ZOOM * zoomIn;
+		kickY = -TRICK_DROP * zoomIn;
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
 		Match m = play.match();
@@ -161,6 +181,7 @@ public class TrickShotScreen extends BaseScreen {
 			drawBids(m);
 		}
 		sparks.draw(batch, assets.glow);
+		fireworks.draw(batch, assets.glow);
 		drawButtons();
 		drawIntro();
 		chrome.header(goal, backButton, w, h);
@@ -319,9 +340,10 @@ public class TrickShotScreen extends BaseScreen {
 		float x = w - 20 - BUTTON_W / 2, y = 14;
 		if (overAt >= 0) {
 			boolean solved = play.solved();
-			float a = BANNER_IN.progress(time - overAt);
+			float a = BANNER_IN.progress(time - overAt), k = Math.min(1, (time - overAt) / WOBBLE_LEN);
+			float wobble = solved ? 0 : MathUtils.sin((time - overAt) * 22) * WOBBLE * (1 - k);
 			paint.centred(paint.serif(1.6f + 0.4f * (1 - a), solved ? Palette.GOLD_LIGHT : Palette.RED, a),
-					solved ? "Shot made!" : "Not this time", w / 2, h / 2 - TRICK_DROP + 12);
+					solved ? "Shot made!" : "Not this time", w / 2 + wobble, h / 2 - TRICK_DROP + 12);
 			paint.button(nextButton, solved ? nextLabel() : "Try again", x, y + BUTTON_H + 10, BUTTON_W, BUTTON_H, assets.button);
 		} else {
 			nextButton.set(0, 0, 0, 0);

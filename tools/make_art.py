@@ -674,6 +674,21 @@ def badge(out):
     downsample(img, 108, 108).save(os.path.join(out, "badge.png"))
 
 
+def padlock(out):
+    """A small gold padlock, shown on a bid button the dealer may not choose when it is tapped."""
+    S = 108 * SS
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    c = S / 2
+    d.arc([c - 26 * SS, 12 * SS, c + 26 * SS, 64 * SS], 180, 360, fill=GOLD_LIGHT + (255,), width=10 * SS)
+    d.line([c - 26 * SS + 5 * SS, 38 * SS, c - 26 * SS + 5 * SS, 52 * SS], fill=GOLD_LIGHT + (255,), width=10 * SS)
+    d.line([c + 26 * SS - 5 * SS, 38 * SS, c + 26 * SS - 5 * SS, 52 * SS], fill=GOLD_LIGHT + (255,), width=10 * SS)
+    d.rounded_rectangle([c - 36 * SS, 48 * SS, c + 36 * SS, 100 * SS], 10 * SS, fill=GOLD + (255,), outline=GOLD_DARK + (255,), width=3 * SS)
+    d.ellipse([c - 7 * SS, 64 * SS, c + 7 * SS, 78 * SS], fill=GOLD_DARK + (255,))
+    d.rectangle([c - 3 * SS, 72 * SS, c + 3 * SS, 88 * SS], fill=GOLD_DARK + (255,))
+    downsample(img, 108, 108).save(os.path.join(out, "padlock.png"))
+
+
 def premultiplied_blur(img, radius):
     """Blurs without dark fringes at transparent edges."""
     a = np.asarray(img).astype(np.float32) / 255.0
@@ -698,6 +713,7 @@ if __name__ == "__main__":
     campaign_art(out)
     play_menu_icons(out)
     badge(out)
+    padlock(out)
     blurred_sheet(sheet, out)
     table(out)
     icons(out)

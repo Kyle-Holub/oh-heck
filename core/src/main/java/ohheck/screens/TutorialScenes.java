@@ -431,7 +431,7 @@ final class TutorialScenes extends TutorialStage {
 		floating(Numbers.signed(RuleSet.STANDARD.score(2, 2)), yx, yy, 2.2f, Palette.GOLD_LIGHT);
 		float hx = seatX(3) + PlayerPanel.W / 2;
 		floating(Numbers.text(RuleSet.STANDARD.score(1, 2)), hx, seatTop(3) + 10, 6.4f, Palette.RED);
-		scoreCard.draw(cx(), cy(), RESULTS_TITLE, SCORE_ROWS, at(CARD_AT, CARD_AT + 0.4f));
+		scoreCard.draw(cx(), cy(), RESULTS_TITLE, SCORE_ROWS, at(CARD_AT, CARD_AT + 0.4f), t - CARD_AT);
 	}
 
 	private static final Suit[] LINE_SUITS = { Suit.SPADES, Suit.HEARTS, Suit.CLUBS, Suit.DIAMONDS };
