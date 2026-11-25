@@ -555,15 +555,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (t >= SET_EDGES) {
 			return;
 		}
-		float a = 0.55f * (1 - t / SET_EDGES);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		batch.setColor(Palette.RED.r, Palette.RED.g, Palette.RED.b, a);
-		batch.draw(assets.glow, -w * 0.35f, -h * 0.2f, w * 0.7f, h * 1.4f);
-		batch.draw(assets.glow, w * 0.65f, -h * 0.2f, w * 0.7f, h * 1.4f);
-		batch.draw(assets.glow, -w * 0.2f, -h * 0.4f, w * 1.4f, h * 0.8f);
-		batch.draw(assets.glow, -w * 0.2f, h * 0.6f, w * 1.4f, h * 0.8f);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
+		paint.edgeGlow(Palette.RED, 0.55f * (1 - t / SET_EDGES), w, h);
 	}
 
 	private void drawSign() {

@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 
+import ohheck.anim.Kick;
 import ohheck.anim.Timeline;
 import ohheck.fx.Sparks;
 import ohheck.platform.Settings;
@@ -38,6 +39,7 @@ abstract class TutorialStage {
 	final Counters counterArt;
 	final Sparks sparks = new Sparks();
 	final Timeline clock = new Timeline();
+	final Kick kick = new Kick();
 	float t;
 	float w = BaseScreen.WORLD_W, h = BaseScreen.WORLD_H;
 	final Color tint = new Color();

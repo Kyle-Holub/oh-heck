@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.IntPredicate;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -176,6 +177,8 @@ final class TutorialScenes extends TutorialStage {
 		}
 	}
 
+	private static final float TRUMP_HIT = 2.45f, HIT_FLASH = 0.35f, SET_EDGES = 0.7f;
+
 	void trump() {
 		Card trumpCard = card(Rank.FIVE, Suit.SPADES);
 		float tx = cx() + CW * 2.2f, ty = rowY(false) + CH + 30;
@@ -192,7 +195,11 @@ final class TutorialScenes extends TutorialStage {
 		seat(0, won ? bidOf(1).won(1) : plain());
 		seat(1, plain());
 		float gone = at(3.6f, 4.2f), y = rowY(false);
-		float ax = MathUtils.lerp(rowX(0, 2), fromX(0), gone), ay = MathUtils.lerp(y, fromY(0), gone);
+		float hit = t - TRUMP_HIT, jolt = hit >= 0 && hit < HIT_FLASH ? MathUtils.sin(hit * 60) * 6 * (1 - hit / HIT_FLASH) : 0;
+		if (passed(TRUMP_HIT)) {
+			kick.shake(clock.shown(), 5);
+		}
+		float ax = MathUtils.lerp(rowX(0, 2), fromX(0), gone) + jolt, ay = MathUtils.lerp(y, fromY(0), gone);
 		float bx = MathUtils.lerp(rowX(1, 2), fromX(0), gone), by = MathUtils.lerp(y, fromY(0), gone);
 		if (t >= 1.8f) {
 			card(ace, ax, ay, 2, 1, 1 - gone);
@@ -203,6 +210,13 @@ final class TutorialScenes extends TutorialStage {
 			float lift = at(2.6f, 3.0f) * 10;
 			glow(bx, by + lift, at(2.6f, 3.0f) * (1 - gone));
 			card(two, bx, by + lift, 2 + lift, 1, 1 - gone);
+			if (hit >= 0 && hit < HIT_FLASH) {
+				batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+				batch.setColor(1f, 0.92f, 0.7f, 0.9f * (1 - hit / HIT_FLASH));
+				batch.draw(assets.glow, bx + CW / 2 - CW * 1.2f, by + lift + CH / 2 - CH, CW * 2.4f, CH * 2);
+				batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+				batch.setColor(Color.WHITE);
+			}
 			if (gone <= 0) {
 				Glints.draw(batch, assets.glow, two, bx, by + lift, CW, CH, CW, 0, clock.shown(), 1f);
 			}
@@ -347,6 +361,13 @@ final class TutorialScenes extends TutorialStage {
 		seat(1, bidOf(0).cards(2));
 		seat(3, bidOf(2).won(taken).cards(2));
 		playTricks(SET_HAND, SET_TRICKS, SET_TRICK_STARTS);
+		if (passed(SET_AT)) {
+			kick.shake(clock.shown(), 7);
+		}
+		float edges = t - SET_AT;
+		if (edges >= 0 && edges < SET_EDGES) {
+			paint.edgeGlow(Palette.RED, 0.55f * (1 - edges / SET_EDGES), w, h);
+		}
 		art.art(assets.setText, cx(), cy(), 0.8f, at(SET_AT, SET_AT + 0.3f));
 	}
 
