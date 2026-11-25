@@ -4,13 +4,17 @@ import java.util.List;
 import java.util.function.IntPredicate;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 
 import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
 import ohheck.ui.TapAreas;
 
-/* The "Make Your Bid" panel: a button per bid from zero to the hand size, the ones you may not bid greyed. */
+/*
+ * The "Make Your Bid" panel: a button per bid from zero to the hand size, the ones you may not bid greyed. A greyed
+ * button that is tapped shakes its head and shows a padlock.
+ */
 public final class BidPopup {
 
 	public static final float H = 190;
@@ -21,6 +25,22 @@ public final class BidPopup {
 	private final Painter paint;
 	private final CardArt art;
 	private final Color numeral = new Color();
+	private static final float REFUSE_LEN = 0.6f, REFUSE_SHAKE = 7, LOCK = 30;
+	private int refused = -1;
+	private float refusedFor = REFUSE_LEN;
+
+	public void refuse(int bid) {
+		refused = bid;
+		refusedFor = 0;
+	}
+
+	public void step(float dt) {
+		refusedFor += dt;
+	}
+
+	public boolean refusing() {
+		return refusedFor < REFUSE_LEN;
+	}
 
 	public BidPopup(Painter paint, CardArt art) {
 		this.paint = paint;
@@ -41,6 +61,8 @@ public final class BidPopup {
 		float bx = cx - rowW / 2, by = py + ROW_RISE;
 		for (int b = 0; b <= handSize; b++) {
 			Rectangle r = buttons.get(b).set(bx + b * (BUTTON + GAP), by, BUTTON, BUTTON);
+			float p = refusedFor / REFUSE_LEN, shake = b == refused && p < 1 ? MathUtils.sin(refusedFor * 45) * REFUSE_SHAKE * (1 - p) : 0;
+			r.x += shake;
 			boolean ok = legal.test(b);
 			if (b == picked) {
 				paint.frame(paint.assets.panelTurn, r.x - PICKED_RING, r.y - PICKED_RING, r.width + 2 * PICKED_RING,
@@ -49,6 +71,12 @@ public final class BidPopup {
 			paint.frame(ok ? paint.assets.button : paint.assets.buttonOff, r.x, r.y, r.width, r.height);
 			Color c = ok ? Color.WHITE : NUMERAL_OFF;
 			paint.numeral(b, r.x + r.width / 2, r.y + r.height / 2, BUTTON * NUMERAL_OF_BUTTON, numeral.set(c.r, c.g, c.b, c.a * alpha));
+			if (shake != 0) {
+				paint.batch.setColor(1, 1, 1, alpha * (1 - p));
+				paint.batch.draw(paint.assets.padlock, r.x + r.width - LOCK / 2 - 4, r.y + r.height - LOCK / 2 - 4, LOCK, LOCK);
+				paint.batch.setColor(Color.WHITE);
+				r.x -= shake;
+			}
 		}
 		paint.fade(1f);
 	}

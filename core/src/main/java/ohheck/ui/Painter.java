@@ -77,7 +77,7 @@ public final class Painter {
 		f.draw(batch, s, x + (bw - glyphs.width) / 2, y + (bh + glyphs.height) / 2);
 	}
 
-	public void text(BitmapFont f, String s, float x, float y, boolean centre) {
+	public void text(BitmapFont f, CharSequence s, float x, float y, boolean centre) {
 		glyphs.setText(f, s);
 		f.draw(batch, s, centre ? x - glyphs.width / 2 : x - glyphs.width, y);
 	}

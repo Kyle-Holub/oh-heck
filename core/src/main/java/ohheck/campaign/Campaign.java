@@ -22,7 +22,11 @@ public final class Campaign {
 	private final Set<String> shotsMade = new TreeSet<String>();
 
 	public boolean open(Chapter c) {
-		return c.ready && (c.ordinal() == 0 || cleared(Chapter.values()[c.ordinal() - 1]));
+		return c.ready && unlocked(c);
+	}
+
+	public boolean unlocked(Chapter c) {
+		return c.ordinal() == 0 || cleared(Chapter.values()[c.ordinal() - 1]);
 	}
 
 	public Campaign() {

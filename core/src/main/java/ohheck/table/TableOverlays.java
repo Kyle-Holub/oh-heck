@@ -7,10 +7,12 @@ import java.util.List;
 import java.util.function.IntPredicate;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Align;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
@@ -19,6 +21,7 @@ import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
+import ohheck.ui.CardWipe;
 import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
@@ -90,6 +93,7 @@ final class TableOverlays {
 
 	void update(float dt) {
 		hintTime -= dt;
+		bidPopup.step(dt);
 	}
 
 	void drawHint() {
@@ -138,9 +142,48 @@ final class TableOverlays {
 		}
 	}
 
+	void refuseBid(int b) {
+		bidPopup.refuse(b);
+	}
+
+	boolean refusing() {
+		return bidPopup.refusing();
+	}
+
 	void drawBidPanel() {
 		bidPopup.draw(layout.w / 2, layout.centreY(), match.handSize(), legalBid, -1, 1f, targets.bids());
 	}
+
+	static final float VERSUS_FROM = CardWipe.LENGTH * 0.7f, VERSUS_LENGTH = VERSUS_FROM + 2.8f, VERSUS_SLAM = VERSUS_FROM + 0.75f;
+	private static final float VERSUS_SLIDE = 0.45f, VERSUS_TILT = 9, VERSUS_GAP = 10, VERSUS_HABIT_W = 380;
+	private static final Tween VERSUS_IN = Tween.over(VERSUS_SLIDE, Ease.OUT), VERSUS_OUT = Tween.over(0.35f, Ease.IN);
+	private static final Color YOUR_BAND = new Color(0.12f, 0.2f, 0.32f, 0.96f), THEIR_BAND = new Color(0.36f, 0.08f, 0.08f, 0.96f);
+
+	void drawVersus(float since) {
+		float t = since - VERSUS_FROM, in = VERSUS_IN.progress(t), out = VERSUS_OUT.progress(since - VERSUS_LENGTH + VERSUS_OUT.end()), w = layout.w, h = layout.h;
+		float shift = (1 - in + out) * (w + 200), mid = h / 2;
+		band(YOUR_BAND, -shift, mid - VERSUS_GAP / 2, false);
+		band(THEIR_BAND, shift, mid + VERSUS_GAP / 2, true);
+		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT), scene.name(1), w * 0.62f + shift, mid + h * 0.3f, true);
+		paint.ui(1.05f, Palette.CREAM).draw(paint.batch, scene.habit(1), w * 0.62f - VERSUS_HABIT_W / 2 + shift, mid + h * 0.3f - 52,
+				VERSUS_HABIT_W, Align.center, true);
+		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT), scene.name(Seating.YOU), w * 0.38f - shift, mid - h * 0.22f, true);
+		paint.text(paint.ui(1.05f, Palette.CREAM), CHALLENGER, w * 0.38f - shift, mid - h * 0.22f - 52, true);
+		if (since >= VERSUS_SLAM && out < 1) {
+			float slam = VERSUS_IN.progress(since - VERSUS_SLAM);
+			paint.text(paint.serif(5.5f - 2.5f * slam, Palette.GOLD, 1 - out), VS, w / 2, mid + 40, true);
+		}
+	}
+
+	private void band(Color c, float dx, float edge, boolean above) {
+		float bw = layout.w * 2, bh = layout.h;
+		paint.batch.setColor(c);
+		paint.batch.draw(paint.assets.white, layout.w / 2 - bw / 2 + dx, above ? edge : edge - bh, bw / 2, above ? 0 : bh, bw, bh, 1, 1,
+				VERSUS_TILT, 0, 0, 1, 1, false, false);
+		paint.batch.setColor(Color.WHITE);
+	}
+
+	private static final String VS = "VS", CHALLENGER = "Challenger";
 
 	void drawTutorialOffer() {
 		float px = (layout.w - OFFER_W) / 2, py = layout.centreY() - OFFER_H / 2, bw = END_BUTTON_W, bh = END_BUTTON_H;
@@ -215,8 +258,8 @@ final class TableOverlays {
 		}
 	}
 
-	void drawHandResults() {
-		float py = scoreCard.draw(layout.w / 2, layout.centreY(), Wording.handResults(match.handIndex() + 1), resultRows(), 1f);
+	void drawHandResults(float t) {
+		float py = scoreCard.draw(layout.w / 2, layout.centreY(), Wording.handResults(match.handIndex() + 1), resultRows(), 1f, t);
 		drawWinningCards(py + WON_CARDS_RISE);
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
 		Rectangle win = targets.button(OverlayTargets.Button.FORCE_WIN);
@@ -263,7 +306,50 @@ final class TableOverlays {
 		return resultRows;
 	}
 
-	void drawGameOver(int newHighScore) {
+	static final float NEW_BEST_LENGTH = 1.6f;
+	private static final float PODIUM_W = 150, PODIUM_GAP = 16, PODIUM_BASE = 0.16f, PODIUM_RISE = 0.45f, ROLL_FROM = 0.3f,
+			ROLL_STEP = 0.28f, ROLL_SPIN = 28, BEST_FLASH = 0.45f;
+	private static final float[] PODIUM_H = { 0, 190, 140, 105, 75 };
+	private static final int[] PODIUM_SPOT = { 0, 2, 1, 3, 4 };
+	private static final String WINNER_IS = "And the winner is\u2026";
+	private static final Tween PODIUM_UP = Tween.over(PODIUM_RISE, Ease.OUT);
+	private final StringBuilder rolled = new StringBuilder();
+
+	void drawPodium(float t) {
+		int n = match.players();
+		float span = n * PODIUM_W + (n - 1) * PODIUM_GAP, x0 = (layout.w - span) / 2, base = layout.h * PODIUM_BASE;
+		for (int s = 0; s < n; s++) {
+			int place = match.placeOf(s);
+			float k = PODIUM_UP.progress(t - GameEnd.risesAt(place, n));
+			if (k <= 0) {
+				continue;
+			}
+			int spot = n == 2 ? place - 1 : PODIUM_SPOT[place] - 1;
+			float x = x0 + spot * (PODIUM_W + PODIUM_GAP), ph = PODIUM_H[place], y = base - ph * (1 - k);
+			paint.frame(place == 1 ? paint.assets.panelTurn : paint.assets.panel, x, y, PODIUM_W, ph);
+			paint.text(paint.serif(1.5f, place == 1 ? Palette.GOLD_LIGHT : Palette.CREAM), Wording.ordinal(place), x + PODIUM_W / 2,
+					y + ph - 14, true);
+			paint.text(paint.serif(1.35f, place == 1 ? Palette.GOLD : Palette.CREAM), scene.name(s), x + PODIUM_W / 2, y + ph + 40, true);
+			paint.text(paint.ui(1.1f, Palette.MUTED), Numbers.text(match.score(s)), x + PODIUM_W / 2, y + ph + 12, true);
+		}
+		float waiting = t - GameEnd.risesAt(2, n) - PODIUM_RISE;
+		if (waiting > 0 && t < GameEnd.risesAt(1, n)) {
+			paint.text(paint.serif(1.6f, Palette.GOLD, Math.min(1, waiting * 4)), WINNER_IS, layout.w / 2, layout.h * 0.78f, true);
+		}
+	}
+
+	private CharSequence rolling(int score, float t) {
+		String digits = Numbers.text(score);
+		rolled.setLength(0);
+		for (int i = 0; i < digits.length(); i++) {
+			char c = digits.charAt(i);
+			boolean locked = t >= ROLL_FROM + i * ROLL_STEP || c < '0' || c > '9';
+			rolled.append(locked ? c : (char) ('0' + ((int) (t * ROLL_SPIN) + i * 3) % 10));
+		}
+		return rolled;
+	}
+
+	void drawGameOver(int newHighScore, float since) {
 		float pw = GAME_OVER_W, ph = GAME_OVER_H;
 		float px = (layout.w - pw) / 2, py = layout.h / 2 - GAME_OVER_LIFT - ph / 2;
 		paint.frame(paint.assets.panel, px, py, pw, ph);
@@ -280,8 +366,20 @@ final class TableOverlays {
 			t.draw(paint.batch, Wording.ordinal(match.placeOf(s)), px + GAME_OVER_PLACE_X, y);
 			t.setColor(match.placeOf(s) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, scene.name(s), px + GAME_OVER_NAME_X, y);
-			paint.text(t, Numbers.text(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
-			if (s == Seating.YOU && newHighScore == 0) {
+			boolean best = s == Seating.YOU && newHighScore == 0;
+			float sx = px + pw - GAME_OVER_SCORE_FROM_RIGHT;
+			if (best) {
+				float locked = since - ROLL_FROM - (Numbers.text(match.score(s)).length() - 1) * ROLL_STEP;
+				if (locked >= 0 && locked < BEST_FLASH) {
+					paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+					paint.batch.setColor(1f, 0.85f, 0.45f, 0.8f * (1 - locked / BEST_FLASH));
+					paint.batch.draw(paint.assets.glow, sx - 90, y - 50, 120, 80);
+					paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+					paint.batch.setColor(Color.WHITE);
+				}
+			}
+			paint.text(t, best ? rolling(match.score(s), since) : Numbers.text(match.score(s)), sx, y, false);
+			if (best) {
 				BitmapFont n = paint.ui(0.95f, Palette.GOLD_LIGHT);
 				n.draw(paint.batch, "New best!", px + pw - NEW_BEST_FROM_RIGHT, y - 2);
 			}

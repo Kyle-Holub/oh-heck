@@ -141,6 +141,7 @@ final class TableInput {
 	private void tapBid(float x, float y) {
 		int b = targets.bidAt(x, y);
 		if (b >= 0 && !actions.bid(b)) {
+			actions.refuseBid(b);
 			actions.hint(Wording.dealerCantBid(b, scene.match().handSize()));
 		}
 	}

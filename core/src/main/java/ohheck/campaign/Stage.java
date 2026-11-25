@@ -5,11 +5,12 @@ package ohheck.campaign;
  * the duel's twist, and the duel. Each opens once the one before is won.
  */
 public enum Stage {
-	TABLE("tables"), FINAL("finals"), DUEL("duels");
+	TABLE("tables", "The table"), FINAL("finals", "The final table"), DUEL("duels", "The duel");
 
-	public final String key;
+	public final String key, title;
 
-	Stage(String key) {
+	Stage(String key, String title) {
 		this.key = key;
+		this.title = title;
 	}
 }

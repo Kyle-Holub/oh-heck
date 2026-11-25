@@ -13,6 +13,8 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Move;
+import ohheck.rules.Rank;
+import ohheck.rules.Suit;
 import ohheck.rules.TableView;
 
 /* The table's state machine and timing; asks the bots and tells its listeners what happens. */
@@ -48,6 +50,8 @@ final class TableFlow {
 	private TableState state = TableState.TURN;
 	private float stateTime;
 	private float trumpTime;
+	private float hitStopLeft;
+	static final float HIT_AT = TrickView.PLAY_FLIGHT + 0.03f, HIT_STOP = 0.18f;
 
 	private Thinker thinker = Thinker.AT_ONCE;
 	private Future<Move> thinking;
@@ -126,7 +130,11 @@ final class TableFlow {
 	}
 
 	void update(float dt) {
-		stateTime += dt;
+		if (inHitStop()) {
+			hitStopLeft -= dt;
+		} else {
+			stateTime += dt;
+		}
 		if (!isDealing()) {
 			trumpTime += dt;
 		}
@@ -250,6 +258,24 @@ final class TableFlow {
 			Card c = ((Move.Play) move).card();
 			tell(l -> l.played(match, move.seat(), c));
 		}
+		hitStopLeft = winner >= 0 && trumpBeatAnAce(match.lastTrick(), match.lastTrick().get(match.lastTrickSeats().indexOf(winner)),
+				match.trump()) ? HIT_STOP : 0;
 		enter(winner >= 0 ? TableState.TRICK : TableState.TURN);
+	}
+
+	boolean inHitStop() {
+		return state == TableState.TRICK && hitStopLeft > 0 && stateTime >= HIT_AT;
+	}
+
+	static boolean trumpBeatAnAce(List<Card> trick, Card winner, Suit trump) {
+		if (trump == null || winner.suit() != trump) {
+			return false;
+		}
+		for (Card c : trick) {
+			if (c.rank() == Rank.ACE && c.suit() != trump) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

@@ -28,4 +28,7 @@ interface TableActions {
 
 	default void answerTutorialOffer(boolean take) {
 	}
+
+	default void refuseBid(int b) {
+	}
 }

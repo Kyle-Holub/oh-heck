@@ -110,9 +110,13 @@ first six have no libGDX and test in plain JUnit.
 ### The table (`ohheck.table`)
 
 - `TableFlow` runs the table's state machine:
-  `PICK_DEALER → SHUFFLE → DEAL → TURN ⇄ TRICK → HAND_END → RESULTS → (SHUFFLE | GAME_OVER)`;
+  `[VERSUS | OFFER_TUTORIAL] → PICK_DEALER → SHUFFLE → DEAL → TURN ⇄ TRICK → HAND_END → RESULTS → (SHUFFLE | GAME_OVER)`;
   a new game opens on `PICK_DEALER` (`DealerPick`: a light runs round the placards and stops on the
-  dealer, the same draw the tutorial shows), a resumed one does not. Each
+  dealer, the same draw the tutorial shows), a resumed one does not; a duel first shows the champion's
+  VS screen, and a first table offers the tutorial. A trump that beats an ace holds the trick still for a
+  moment (`TableFlow.inHitStop`); `GameEnd` raises the podium from last place up before the scores.
+  Screen jolts (shake, zoom) are an `ohheck.anim.Kick` read into `BaseScreen`'s camera; `CardWipe` is the
+  curtain of card backs into and out of a campaign table. Each
   `TableState` constant holds its own behaviour (`entered`, `update`, `skip`) and what the
   screen does in it (the overlay, what a tap does, whether it is still moving, the
   screenshot tag).

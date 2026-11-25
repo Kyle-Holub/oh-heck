@@ -3,9 +3,16 @@ package ohheck.table;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import ohheck.anim.Ease;
+import ohheck.anim.Kick;
+import ohheck.anim.Tween;
 import ohheck.campaign.Chapter;
 import ohheck.campaign.Stage;
 import ohheck.fx.Fireworks;
@@ -18,13 +25,18 @@ import ohheck.records.SavedGame;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.RuleSet;
+import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
+import ohheck.ui.CardWipe;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 
 /* The card table screen: a custom game, saved as it goes, or a campaign chapter's table. */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
+
+	private static final float SIGN_X = 14, SIGN_TOP = 10, SIGN_H = 44, SIGN_PAD = 18, SIGN_DELAY = 0.3f, SIGN_LENGTH = 2.8f, VERSUS_SHAKE = 9, MADE_ZOOM = 0.035f, SET_SHAKE = 7, SET_EDGES = 0.7f, HIT_SHAKE = 5, HIT_FLASH = 0.35f;
+	private static final Tween SIGN_IN = Tween.over(0.35f, Ease.OUT), SIGN_OUT = Tween.over(0.35f, Ease.IN);
 
 	private final GameOptions options;
 	private final TableStreams streams;
@@ -43,6 +55,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final YourSeat you;
 
 	private float time;
+	private final Kick kick = new Kick();
+	private boolean slammed;
+	private TableState lastState;
+	private float setAt = -99, hitAt = -99;
+	private boolean hitShown;
+	private final String sign;
 	private final GameRecorder recorder;
 	private final BadgeKeeper badges;
 	private final Chapter chapter;
@@ -72,6 +90,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		super(game);
 		this.chapter = chapter;
 		this.stage = stage;
+		this.sign = chapter == null ? "Custom game \u2013 " + game.settings().mode().label
+				: "Chapter " + chapter.number() + " \u2013 " + stage.title;
 		this.options = game.options();
 		this.streams = TableStreams.of(options.seed);
 		this.art = new CardArt(batch, assets);
@@ -117,7 +137,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			if (!won) {
 				shower.start(finalScoresSeed(m));
 			}
-			end.start(won);
+			end.start(won, m.players());
 		}
 	}
 
@@ -135,6 +155,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		prizesWaiting = stage == Stage.DUEL && !game.records().campaign().cleared(chapter);
 		game.records().campaign().win(chapter, stage);
 		game.records().saveCampaign();
+	}
+
+	@Override
+	public void refuseBid(int b) {
+		overlays.refuseBid(b);
 	}
 
 	@Override
@@ -175,6 +200,16 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	public boolean isGameOver() {
 		return flow.match().phase() == Match.Phase.GAME_OVER;
+	}
+
+	@Override
+	public float podiumTime() {
+		return flow.state() == TableState.GAME_OVER ? end.podiumTime(flow.stateTime()) : -1;
+	}
+
+	@Override
+	public float sinceResults() {
+		return end.sinceResults(flow.stateTime());
 	}
 
 	@Override
@@ -235,8 +270,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 		badges.fresh();
 		flow.start(m);
+		slammed = false;
 		if (!game.settings().tutorialSeen() && !game.options().autoplayHuman) {
 			flow.enter(TableState.OFFER_TUTORIAL);
+		} else if (stage == Stage.DUEL) {
+			flow.enter(TableState.VERSUS);
 		}
 	}
 
@@ -265,6 +303,26 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 		time += dt;
 		flow.update(dt);
+		if (flow.inHitStop() && !hitShown) {
+			kick.shake(time, HIT_SHAKE);
+			hitAt = time;
+		}
+		hitShown = flow.inHitStop();
+		if (flow.state() != lastState) {
+			lastState = flow.state();
+			if (lastState == TableState.HAND_END) {
+				if (match().madeBid(Seating.YOU)) {
+					kick.zoom(time, MADE_ZOOM);
+				} else {
+					kick.shake(time, SET_SHAKE);
+					setAt = time;
+				}
+			}
+		}
+		if (flow.state() == TableState.VERSUS && !slammed && flow.stateTime() >= TableOverlays.VERSUS_SLAM) {
+			slammed = true;
+			kick.shake(time, VERSUS_SHAKE);
+		}
 		overlays.update(dt);
 		sparks.step(dt);
 		fireworks.update(dt);
@@ -285,13 +343,19 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (flow.state().animating(this)) {
 			return true;
 		}
-		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || shower.active();
+		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || shower.active() || kick.active(time) || time - setAt < SET_EDGES || overlays.refusing()
+				|| time < signFrom() + SIGN_LENGTH;
 	}
 
 	@Override
 	public void show() {
 		super.show();
 		game.audio().startMusic();
+	}
+
+	@Override
+	public String habit(int seat) {
+		return seat == Seating.YOU ? "" : players.at(seat).trait;
 	}
 
 	@Override
@@ -411,6 +475,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
+		kickX = kick.dx(time);
+		kickY = kick.dy(time);
+		kickZoom = kick.zoom(time);
 		begin();
 		layout.resize(w, h);
 		batch.draw(assets.table, 0, 0, w, h);
@@ -427,7 +494,59 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		} else {
 			overlays.drawHint();
 		}
+		drawSetEdges();
+		drawSign();
+		if (chapter != null) {
+			CardWipe.draw(batch, assets.back(), w, h, time);
+		}
 		batch.end();
+	}
+
+	private void drawHitFlash() {
+		float t = time - hitAt;
+		if (t >= HIT_FLASH || match().lastTrickWinner() < 0) {
+			return;
+		}
+		Vector2 at = layout.trickSlot(match().lastTrickWinner());
+		float gw = Assets.CARD_W * 2.4f, gh = Assets.CARD_H * 2f;
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(1f, 0.92f, 0.7f, 0.9f * (1 - t / HIT_FLASH));
+		batch.draw(assets.glow, at.x + Assets.CARD_W / 2 - gw / 2, at.y + Assets.CARD_H / 2 - gh / 2, gw, gh);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		batch.setColor(Color.WHITE);
+	}
+
+	private void drawSetEdges() {
+		float t = time - setAt;
+		if (t >= SET_EDGES) {
+			return;
+		}
+		float a = 0.55f * (1 - t / SET_EDGES);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(Palette.RED.r, Palette.RED.g, Palette.RED.b, a);
+		batch.draw(assets.glow, -w * 0.35f, -h * 0.2f, w * 0.7f, h * 1.4f);
+		batch.draw(assets.glow, w * 0.65f, -h * 0.2f, w * 0.7f, h * 1.4f);
+		batch.draw(assets.glow, -w * 0.2f, -h * 0.4f, w * 1.4f, h * 0.8f);
+		batch.draw(assets.glow, -w * 0.2f, h * 0.6f, w * 1.4f, h * 0.8f);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		batch.setColor(Color.WHITE);
+	}
+
+	private void drawSign() {
+		float t = time - signFrom();
+		if (t < 0 || t > SIGN_LENGTH) {
+			return;
+		}
+		float drop = Math.min(SIGN_IN.progress(t), 1 - SIGN_OUT.progress(t - SIGN_LENGTH + SIGN_OUT.end()));
+		BitmapFont f = paint.serif(1.3f, Palette.GOLD_LIGHT);
+		paint.glyphs.setText(f, sign);
+		float sw = paint.glyphs.width + 2 * SIGN_PAD, y = h - drop * (SIGN_H + SIGN_TOP);
+		paint.frame(assets.panelTurn, SIGN_X, y, sw, SIGN_H);
+		f.draw(batch, sign, SIGN_X + SIGN_PAD, y + SIGN_H / 2 + paint.glyphs.height / 2);
+	}
+
+	private float signFrom() {
+		return chapter == null ? SIGN_DELAY : stage == Stage.DUEL ? TableOverlays.VERSUS_LENGTH : CardWipe.LENGTH;
 	}
 
 	private void drawTable() {
@@ -437,12 +556,14 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		for (int seat = 0; seat < match().players(); seat++) {
 			drawing.seat(seat);
 		}
+		drawing.momentum();
+		drawHitFlash();
 		drawing.layoutHand();
 		if (flow.state() == TableState.TRICK) {
 			TrickView.drawTrickWon(art, assets, layout, match(), flow.stateTime());
 		}
 		cards.update(this, time);
-		if (flow.state() == TableState.OFFER_TUTORIAL
+		if (flow.state() == TableState.OFFER_TUTORIAL || flow.state() == TableState.VERSUS
 				|| flow.state() == TableState.PICK_DEALER && !DealerPick.landed(flow.stateTime())) {
 			return;
 		}
