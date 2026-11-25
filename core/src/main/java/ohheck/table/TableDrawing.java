@@ -161,45 +161,57 @@ final class TableDrawing {
 
 	void momentum() {
 		Match m = scene.match();
+		if (!m.rules().momentum) {
+			return;
+		}
 		float now = scene.time();
 		for (int seat = 0; seat < m.players(); seat++) {
-			boolean on = m.onMomentum(seat);
-			if (m == momentumOf && on != onMomentum[seat]) {
-				momentumAt[seat] = now;
+			int streak = Math.min(MOMENTUM_NOTCHES, m.streak(seat));
+			if (m == momentumOf && streak != shownStreak[seat]) {
+				changedAt[seat] = now;
 			}
-			onMomentum[seat] = on;
-			float t = now - momentumAt[seat];
-			if (t < CHEVRON_LEN) {
-				chevrons(seat, t / CHEVRON_LEN, on);
-			}
+			shownStreak[seat] = streak;
+			momentumBar(seat, streak, MathUtils.clamp((now - changedAt[seat]) / NOTCH_FILL, 0, 1), now);
 		}
 		momentumOf = m;
 	}
 
-	private void chevrons(int seat, float p, boolean rising) {
-		float cx = layout.panelX(seat) + PlayerPanel.W - 30, bottom = layout.panelTop(seat) - PlayerPanel.H;
-		Color c = rising ? Palette.GOLD_LIGHT : Palette.MUTED;
-		for (int i = 0; i < CHEVRONS; i++) {
-			float k = MathUtils.clamp(p * 1.6f - i * 0.25f, 0, 1);
-			if (k <= 0 || k >= 1) {
-				continue;
-			}
-			float travel = PlayerPanel.H + CHEVRON_RISE, y = rising ? bottom + k * travel : bottom + travel - k * travel;
-			float a = MathUtils.sin(k * MathUtils.PI);
-			batch.setColor(c.r, c.g, c.b, a);
-			float arm = CHEVRON_ARM, thick = 4, tilt = rising ? 45 : -45;
-			batch.draw(assets.stroke, cx - arm / 2, y, arm / 2, thick / 2, arm, thick, 1, 1, tilt, 0, 0, assets.stroke.getWidth(),
-					assets.stroke.getHeight(), false, false);
-			batch.draw(assets.stroke, cx + arm / 2 - 3, y, arm / 2, thick / 2, arm, thick, 1, 1, -tilt, 0, 0, assets.stroke.getWidth(),
-					assets.stroke.getHeight(), false, false);
+	private void momentumBar(int seat, int lit, float fill, float now) {
+		float x = layout.panelX(seat) + PlayerPanel.W + BAR_GAP, top = layout.panelTop(seat), y = top - PlayerPanel.H;
+		if (x + BAR_W > layout.w - BAR_GAP) {
+			x = layout.panelX(seat) - BAR_GAP - BAR_W;
+		}
+		boolean active = lit >= MOMENTUM_NOTCHES;
+		if (active) {
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+			batch.setColor(1f, 0.8f, 0.4f, 0.35f + 0.15f * MathUtils.sin(now * 4));
+			batch.draw(assets.glow, x - BAR_W * 1.5f, y - 10, BAR_W * 4, PlayerPanel.H + 20);
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		}
+		paint.frame(active ? assets.panelTurn : assets.panel, x, y, BAR_W, PlayerPanel.H);
+		float step = PlayerPanel.H / (MOMENTUM_NOTCHES + 1);
+		for (int i = 0; i < MOMENTUM_NOTCHES; i++) {
+			boolean on = i < lit, fresh = i == lit - 1;
+			float a = on ? (fresh ? 0.3f + 0.7f * fill : 1) : 0.22f;
+			Color c = on ? Palette.GOLD_LIGHT : Palette.MUTED;
+			chevron(x + BAR_W / 2, y + step * (i + 1) - 3, c, a, fresh ? 1 + 0.4f * (1 - fill) : 1);
 		}
 		batch.setColor(Color.WHITE);
 	}
 
-	private static final float CHEVRON_LEN = 1.4f, CHEVRON_RISE = 40, CHEVRON_ARM = 18;
-	private static final int CHEVRONS = 3;
-	private final boolean[] onMomentum = new boolean[Seating.SEATS];
-	private final float[] momentumAt = { -99, -99, -99, -99 };
+	private void chevron(float cx, float y, Color c, float alpha, float scale) {
+		float arm = CHEVRON_ARM * scale, thick = 4;
+		batch.setColor(c.r, c.g, c.b, alpha);
+		batch.draw(assets.stroke, cx - arm + 2, y, arm / 2, thick / 2, arm, thick, 1, 1, 45, 0, 0, assets.stroke.getWidth(),
+				assets.stroke.getHeight(), false, false);
+		batch.draw(assets.stroke, cx - 2, y, arm / 2, thick / 2, arm, thick, 1, 1, -45, 0, 0, assets.stroke.getWidth(),
+				assets.stroke.getHeight(), false, false);
+	}
+
+	private static final float BAR_W = 22, BAR_GAP = 5, CHEVRON_ARM = 12, NOTCH_FILL = 0.45f;
+	private static final int MOMENTUM_NOTCHES = 2;
+	private final int[] shownStreak = new int[Seating.SEATS];
+	private final float[] changedAt = { -99, -99, -99, -99 };
 	private Match momentumOf;
 
 	void seat(int seat) {
@@ -209,7 +221,7 @@ final class TableDrawing {
 		boolean turn = picking ? DealerPick.litSeat(flow.stateTime(), m.dealer(), m.players()) == seat
 				: flow.state() == TableState.TURN && m.currentSeat() == seat;
 		boolean dealer = m.dealer() == seat && flow.state() != TableState.OFFER_TUTORIAL
-				&& (!picking || DealerPick.landed(flow.stateTime()));
+				&& (!picking || DealerPick.settled(flow.stateTime()));
 		state.reset().named(scene.name(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(dealer)
 				.doubled(m.onMomentum(seat)).bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());

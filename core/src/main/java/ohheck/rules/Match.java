@@ -271,6 +271,10 @@ public final class Match {
 		return scores[seat];
 	}
 
+	public int streak(int seat) {
+		return streaks[seat];
+	}
+
 	public boolean onMomentum(int seat) {
 		return rules.momentum && streaks[seat] >= 2;
 	}

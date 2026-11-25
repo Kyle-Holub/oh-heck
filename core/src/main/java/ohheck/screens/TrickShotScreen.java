@@ -14,7 +14,6 @@ import ohheck.anim.Tween;
 import ohheck.campaign.TrickShot;
 import ohheck.campaign.TrickShotPlay;
 import ohheck.campaign.TrickShots;
-import ohheck.fx.Fireworks;
 import ohheck.fx.Sparks;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
@@ -61,7 +60,6 @@ public class TrickShotScreen extends BaseScreen {
 	private final boolean[] placed = new boolean[Card.COUNT], drawn = new boolean[Card.COUNT];
 	private final Vector2 spot = new Vector2();
 	private TrickShotPlay play;
-	private final Fireworks fireworks = new Fireworks();
 	private float finalAt = -1;
 	private static final float SLOW = 0.35f, SLOW_SPAN = 0.7f, SLOW_ZOOM = 0.07f, WOBBLE = 12, WOBBLE_LEN = 0.8f;
 	private float time, untilOther, trickDoneAt = -99, overAt = -1, lastMotion = -99, introAt = -99;
@@ -112,7 +110,6 @@ public class TrickShotScreen extends BaseScreen {
 		shownFor += dt;
 		time += dt;
 		sparks.step(dt);
-		fireworks.update(dt);
 		if (gathering() || introducing()) {
 			return;
 		}
@@ -129,7 +126,6 @@ public class TrickShotScreen extends BaseScreen {
 			overAt = time;
 			if (play.solved()) {
 				sparks.burst(w / 2, h / 2, 160);
-				fireworks.show(w, h);
 			}
 		}
 		if (play.solved() && !recorded) {
@@ -152,7 +148,7 @@ public class TrickShotScreen extends BaseScreen {
 	@Override
 	public boolean animating() {
 		return introducing() || gathering() || play.othersToMove() || GLIDE.active(time - lastMotion) || sparks.active()
-				|| fireworks.active() || overAt >= 0 && time - overAt < WOBBLE_LEN;
+				|| overAt >= 0 && time - overAt < WOBBLE_LEN;
 	}
 
 	@Override
@@ -181,7 +177,6 @@ public class TrickShotScreen extends BaseScreen {
 			drawBids(m);
 		}
 		sparks.draw(batch, assets.glow);
-		fireworks.draw(batch, assets.glow);
 		drawButtons();
 		drawIntro();
 		chrome.header(goal, backButton, w, h);

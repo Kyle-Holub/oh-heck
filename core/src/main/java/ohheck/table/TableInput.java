@@ -131,7 +131,9 @@ final class TableInput {
 	}
 
 	void tapGameOver(float x, float y) {
-		if (targets.hit(OverlayTargets.Button.HIGH_SCORES, x, y)) {
+		if (!scene.resultsShown()) {
+			actions.skipGameEnd();
+		} else if (targets.hit(OverlayTargets.Button.HIGH_SCORES, x, y)) {
 			actions.showHighScores();
 		} else if (targets.hit(OverlayTargets.Button.PLAY_AGAIN, x, y)) {
 			actions.newGame();
