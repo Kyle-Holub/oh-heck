@@ -9,7 +9,7 @@ import com.badlogic.gdx.math.Rectangle;
 final class OverlayTargets {
 
 	enum Button {
-		MENU, PLAY_AGAIN, HIGH_SCORES, FORCE_WIN
+		MENU, PLAY_AGAIN, HIGH_SCORES, FORCE_WIN, TAKE_TUTORIAL, SKIP_TUTORIAL
 	}
 
 	private final Rectangle[] buttons = new Rectangle[Button.values().length];

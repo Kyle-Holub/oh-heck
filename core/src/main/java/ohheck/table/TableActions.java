@@ -25,4 +25,7 @@ interface TableActions {
 
 	default void forceWin() {
 	}
+
+	default void answerTutorialOffer(boolean take) {
+	}
 }

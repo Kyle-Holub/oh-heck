@@ -1,5 +1,7 @@
 package ohheck.screens;
 
+import java.util.List;
+
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
@@ -17,7 +19,6 @@ import ohheck.campaign.Chapter;
 import ohheck.campaign.Stage;
 import ohheck.campaign.TrickShots;
 import ohheck.players.Player;
-import ohheck.rules.Card;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
@@ -38,10 +39,8 @@ public class CampaignScreen extends BaseScreen {
 	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f);
 	private static final Tween LAYING = Tween.over(0.35f, Ease.OUT);
 	private static final float CAPTION_H = 92, CAPTION_W = 860, BIG_W = 170, BIG_H = BIG_W * 98 / 73, SMALL_W = 120,
-			SMALL_H = SMALL_W * 98 / 73, BIG_ICON = 84, DECK_W = 96,
-			BUTTON_ROOM = 64, PLAYER_GAP = 24;
-	private static final Card[] SHORT_DECK = { Card.parse("9H"), Card.parse("10H"), Card.parse("JH"), Card.parse("QH"),
-			Card.parse("KH"), Card.parse("AH") };
+			SMALL_H = SMALL_W * 98 / 73, BIG_ICON = 84,
+			BUTTON_ROOM = 64, PLAYER_GAP = 24, PANEL_GAP = 34, HABIT_W = 640, HABIT_H = 62;
 	private static final int SHOTS = 1, CHAMPION = 4;
 	private static final String[] STEPS = { "Table", "Trick shots", "Final table", "Duel" };
 	private static final Stage[] STAGE_AT = { Stage.TABLE, null, Stage.FINAL, Stage.DUEL };
@@ -58,6 +57,7 @@ public class CampaignScreen extends BaseScreen {
 	private float chosenFor, briefedFor;
 	private int page, rival;
 	private String beatLine = "";
+	private final StringBuilder stageText = new StringBuilder();
 	private Briefing briefing;
 	private Runnable afterBriefing;
 
@@ -85,6 +85,19 @@ public class CampaignScreen extends BaseScreen {
 		briefedFor = 0;
 		page = 0;
 		rival = 0;
+		stageText.setLength(0);
+		for (Briefing.Page p : b.pages()) {
+			stageText.append(stageText.length() > 0 ? " " : "").append(p.line());
+		}
+	}
+
+	private void closeOrTurnBack() {
+		if (!briefing.isStage() && page > 0) {
+			page--;
+			rival = 0;
+		} else {
+			briefing = null;
+		}
 	}
 
 	public void briefChapter(Chapter c) {
@@ -159,6 +172,10 @@ public class CampaignScreen extends BaseScreen {
 		float a = LAYING.progress(briefedFor);
 		paint.rect(0, 0, w, h, Palette.BACKDROP);
 		paint.rect(0, 0, w, h, Palette.BACKDROP);
+		if (briefing.isStage()) {
+			drawStage(a);
+			return;
+		}
 		Briefing.Page p = briefing.pages().get(page);
 		float cw = Math.min(w - 60, CAPTION_W), x = (w - cw) / 2, y = 12;
 		float midY = (y + CAPTION_H + BUTTON_ROOM + h - MenuChrome.HEADER_H) / 2 - (1 - a) * 30;
@@ -166,9 +183,8 @@ public class CampaignScreen extends BaseScreen {
 		drawPicture(p, midY, a);
 		paint.frame(assets.panel, x, y, cw, CAPTION_H);
 		paint.fade(1f);
-		Player shown = rival > 0 ? player(briefing.chapter(), rival) : null;
-		paint.serif(1.35f, Palette.GOLD, a).draw(batch, shown != null ? shown.name : p.heading(), x + 22, y + CAPTION_H - 12);
-		paint.ui(1.1f, Palette.CREAM, a).draw(batch, shown != null ? shown.trait : p.line(), x + 22, y + CAPTION_H - 44, cw - 44, Align.left, true);
+		paint.serif(1.35f, Palette.GOLD, a).draw(batch, p.heading(), x + 22, y + CAPTION_H - 12);
+		paint.ui(1.1f, Palette.CREAM, a).draw(batch, p.line(), x + 22, y + CAPTION_H - 44, cw - 44, Align.left, true);
 		BitmapFont m = paint.ui(0.9f, Palette.MUTED, a);
 		pageCount.setLength(0);
 		pageCount.append(page + 1).append(" / ").append(briefing.pages().size());
@@ -181,6 +197,43 @@ public class CampaignScreen extends BaseScreen {
 		}
 	}
 
+	private void drawStage(float a) {
+		List<Briefing.Page> pages = briefing.pages();
+		float top = h - MenuChrome.HEADER_H, boxTop = 12 + CAPTION_H, rise = (1 - a) * 30;
+		paint.centred(paint.serif(1.6f, Palette.GOLD, a), pages.get(0).heading(), w / 2, top - 22 + rise);
+		float cy = (boxTop + top - 50) / 2 - rise, span = pages.size() * SMALL_W + (pages.size() - 1) * PANEL_GAP;
+		for (int i = 0; i < pages.size(); i++) {
+			panel(pages.get(i), (w - span) / 2 + i * (SMALL_W + PANEL_GAP) + SMALL_W / 2, cy, a);
+		}
+		float bw = 180, boxW = w - 60 - bw - 16;
+		paint.fade(a);
+		paint.frame(assets.panel, 30, 12, boxW, CAPTION_H);
+		paint.fade(1f);
+		paint.ui(1.1f, Palette.CREAM, a).draw(batch, stageText, 52, 12 + CAPTION_H - 18, boxW - 44, Align.left, true);
+		paint.button(goButton, briefing.go(), w - 30 - bw / 2, 12 + (CAPTION_H - 44) / 2, bw, 44, assets.button);
+	}
+
+	private void panel(Briefing.Page p, float cx, float cy, float a) {
+		Texture icon = switch (p.picture()) {
+		case TABLE -> assets.stepTable;
+		case WIN -> assets.badge;
+		case SHOTS -> assets.stepShots;
+		case CHAMPION -> assets.stepDuel;
+		default -> null;
+		};
+		if (icon != null) {
+			smallCard(cx, cy, icon, p.figure(), a);
+			return;
+		}
+		float x = cx - SMALL_W / 2, y = cy - SMALL_H / 2;
+		art.shadow(x, y, SMALL_W, SMALL_H, 4);
+		batch.setColor(1, 1, 1, a);
+		batch.draw(assets.campaignFace, x, y, SMALL_W, SMALL_H);
+		batch.setColor(Color.WHITE);
+		paint.textIn(paint.serif(2.6f, Palette.GOLD_LIGHT, a), p.figure(), x, cy - 20, SMALL_W, 40);
+		paint.textIn(paint.ui(0.85f, Palette.GOLD, a), p.heading().toUpperCase(), x, y + 14, SMALL_W, 20);
+	}
+
 	private void drawPicture(Briefing.Page p, float cy, float a) {
 		Chapter c = briefing.chapter();
 		switch (p.picture()) {
@@ -188,19 +241,8 @@ public class CampaignScreen extends BaseScreen {
 			bigCard(w / 2, cy, assets.emblem(c.emblem), p.figure(), a);
 			paint.centred(paint.ui(0.9f, Palette.GOLD, a), "CHAPTER", w / 2, cy + BIG_H / 2 - 20);
 			break;
-		case SCORING:
-			paint.centred(paint.serif(3.2f, Palette.GOLD_LIGHT, a), p.figure(), w / 2, cy + 30);
-			break;
-		case HANDS:
-			int n = c.rules().mostCards;
-			float hw = DECK_W * 0.8f, hh = hw * 98 / 73, fan = hw * 0.42f, hx = w / 2 - (hw + fan * (n - 1)) / 2;
-			for (int i = 0; i < n; i++) {
-				float off = i - (n - 1) / 2f;
-				batch.setColor(1, 1, 1, a);
-				batch.draw(assets.back(), hx + i * fan, cy - hh / 2 - 30 - off * off * 1.5f, hw / 2, hh / 2, hw, hh, 1, 1, -off * 3f);
-			}
-			batch.setColor(Color.WHITE);
-			paint.centred(paint.serif(2.4f, Palette.GOLD_LIGHT, a), p.figure(), w / 2, cy + hh / 2 + 10);
+		case HOUSE_RULES:
+			paint.serif(2.8f, Palette.GOLD_LIGHT, a).draw(batch, p.figure(), 0, cy + 60, w, Align.center, false);
 			break;
 		case RIVALS:
 			for (int i = 1; i < playerCards.length; i++) {
@@ -212,30 +254,16 @@ public class CampaignScreen extends BaseScreen {
 				Player pl = player(c, i);
 				smallCard(rx, ry, i == CHAMPION ? assets.stepDuel : assets.levelBadge[pl.level.ordinal()], pl.name, a);
 			}
-			break;
-		case TABLE:
-			bigCard(w / 2, cy, assets.stepTable, p.figure(), a);
-			break;
-		case WIN:
-			bigCard(w / 2, cy, assets.badge, p.figure(), a);
-			break;
-		case SHOTS:
-			bigCard(w / 2, cy, assets.stepShots, p.figure(), a);
+			if (rival > 0) {
+				Player shown = player(c, rival);
+				float bw = Math.min(w - 60, HABIT_W), bx = (w - bw) / 2, by = cy - SMALL_H / 2 - 12 - HABIT_H;
+				paint.frame(assets.panel, bx, by, bw, HABIT_H);
+				paint.serif(1.2f, Palette.GOLD, a).draw(batch, shown.name, bx + 18, by + HABIT_H - 10);
+				paint.ui(1.0f, Palette.CREAM, a).draw(batch, shown.trait, bx + 18, by + HABIT_H - 36, bw - 36, Align.left, true);
+			}
 			break;
 		case CHAMPION:
 			bigCard(w / 2, cy, assets.stepDuel, p.figure(), a);
-			break;
-		case SHORT_DECK:
-			float dh = DECK_W * 98 / 73, step = DECK_W * 0.7f, x0 = w / 2 - (DECK_W + step * (SHORT_DECK.length - 1)) / 2;
-			for (int i = 0; i < SHORT_DECK.length; i++) {
-				float x = x0 + i * step, y = cy - dh / 2 + (i - 2.5f) * (i - 2.5f) * -3;
-				art.shadow(x, y, DECK_W, dh, 4);
-				art.flip(SHORT_DECK[i], x, y, DECK_W, dh, 1);
-			}
-			break;
-		case MOMENTUM:
-			glow(w / 2 - BIG_W / 2, cy - BIG_H / 2, BIG_W, BIG_H);
-			paint.centred(paint.serif(5f, Palette.GOLD_LIGHT, a), p.figure(), w / 2, cy + 48);
 			break;
 		}
 	}
@@ -380,9 +408,17 @@ public class CampaignScreen extends BaseScreen {
 	@Override
 	protected void tap(float x, float y) {
 		if (briefing != null) {
+			if (briefing.isStage()) {
+				if (backButton.contains(x, y)) {
+					briefing = null;
+				} else if (goButton.contains(x, y)) {
+					go();
+				}
+				return;
+			}
 			int tapped = briefing.pages().get(page).picture() == Briefing.Picture.RIVALS ? rivalAt(x, y) : 0;
 			if (backButton.contains(x, y)) {
-				briefing = null;
+				closeOrTurnBack();
 			} else if (tapped > 0) {
 				rival = tapped == rival ? 0 : tapped;
 			} else if (page < briefing.pages().size() - 1) {
@@ -420,7 +456,7 @@ public class CampaignScreen extends BaseScreen {
 	@Override
 	protected void back() {
 		if (briefing != null) {
-			briefing = null;
+			closeOrTurnBack();
 		} else if (chosen != null) {
 			chosen = null;
 		} else {

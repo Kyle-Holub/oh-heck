@@ -141,7 +141,7 @@ public class PlayMenuScreen extends BaseScreen {
 		} else if (cards[Choice.CAMPAIGN.ordinal()].contains(x, y)) {
 			game.showCampaign();
 		} else if (cards[Choice.CUSTOM.ordinal()].contains(x, y)) {
-			game.play();
+			game.showGameSetup();
 		} else if (cards[Choice.SCORES.ordinal()].contains(x, y)) {
 			game.showHighScores(-1);
 		}

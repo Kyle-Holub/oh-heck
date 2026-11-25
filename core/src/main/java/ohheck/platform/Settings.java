@@ -16,7 +16,8 @@ import ohheck.rules.RuleSet;
 public final class Settings {
 
 	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
-			MODE = "mode", CUSTOM_RULES = "customRules", CARD_BACK = "cardBack", FELT = "felt", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen";
+			MODE = "mode", CUSTOM_RULES = "customRules", CARD_BACK = "cardBack", FELT = "felt", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen",
+			CAMPAIGN_INTRO_SEEN = "campaignIntroSeen";
 
 	private static final float STANDARD_PACE = 0.6f, FAST_PACE = 1.4f;
 
@@ -139,5 +140,13 @@ public final class Settings {
 
 	public void setTutorialSeen(boolean seen) {
 		prefs.putBoolean(TUTORIAL_SEEN, seen).flush();
+	}
+
+	public boolean campaignIntroSeen() {
+		return prefs.getBoolean(CAMPAIGN_INTRO_SEEN, false);
+	}
+
+	public void setCampaignIntroSeen(boolean seen) {
+		prefs.putBoolean(CAMPAIGN_INTRO_SEEN, seen).flush();
 	}
 }

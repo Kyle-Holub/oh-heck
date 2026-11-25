@@ -239,7 +239,7 @@ public class ScreenshotLauncher {
 				game.settings().setCardBack(Cosmetic.CLASSIC);
 				game.settings().setFelt(Cosmetic.CLASSIC);
 				game.assets().dress(Cosmetic.CLASSIC, Cosmetic.CLASSIC);
-				game.showTutorial();
+				game.showTutorial(false);
 			});
 			for (int step = 1; step < TUTORIAL_STEPS; step++) {
 				then("tutorial:" + step, 4.0f, s -> ((TutorialScreen) s).next());

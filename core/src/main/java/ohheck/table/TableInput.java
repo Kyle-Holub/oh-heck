@@ -106,6 +106,14 @@ final class TableInput {
 		actions.skip();
 	}
 
+	void tapTutorialOffer(float x, float y) {
+		if (targets.hit(OverlayTargets.Button.TAKE_TUTORIAL, x, y)) {
+			actions.answerTutorialOffer(true);
+		} else if (targets.hit(OverlayTargets.Button.SKIP_TUTORIAL, x, y)) {
+			actions.answerTutorialOffer(false);
+		}
+	}
+
 	void nextHand() {
 		actions.nextHand();
 	}

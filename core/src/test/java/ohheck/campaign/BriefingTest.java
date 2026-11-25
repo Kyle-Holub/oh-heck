@@ -17,7 +17,7 @@ public class BriefingTest {
 	@Test
 	public void briefingsNameTheRulesAndThePlayers() {
 		String chapter = text(Briefing.chapter(Chapter.ONE));
-		assertTrue(chapter, chapter.contains("1 to 8") && chapter.contains("Nathaniel")
+		assertTrue(chapter, chapter.contains("1-8 cards") && chapter.contains("Nathaniel")
 				&& chapter.contains("Edmund, Barnaby and Horatio"));
 		String table = text(Briefing.table(Chapter.ONE));
 		assertTrue(table, table.contains("8 hands") && table.contains("Edmund, Barnaby and Horatio"));
@@ -25,7 +25,7 @@ public class BriefingTest {
 		assertTrue(text(Briefing.trickShots(Chapter.ONE, new Campaign())).contains("0 of 3 made"));
 		String finalTable = text(Briefing.finalTable(Chapter.ONE));
 		assertTrue(finalTable, finalTable.contains("Nathaniel takes Barnaby's seat") && finalTable.contains("Edmund, Nathaniel and Horatio")
-				&& finalTable.contains("momentum"));
+				&& finalTable.contains("Momentum"));
 		String duel = text(Briefing.duel(Chapter.ONE));
 		assertTrue(duel, duel.contains("a trick for every trump") && duel.contains("5 hands"));
 	}

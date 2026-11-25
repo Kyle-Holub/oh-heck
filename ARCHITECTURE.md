@@ -190,10 +190,11 @@ and felt (`Cosmetic`, chosen in Preferences); the game-over panel's **Claim priz
 with fireworks, then puts the new look on. `PlayScreen.campaign` plays a `Stage` (table, final table or duel), each
 opened by winning the one before (`Campaign.open`); campaign games are not saved and don't touch the statistics or high scores, but every
 game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
-the top (`TableLayout.spot`). A chapter and each step open with a `Briefing`: a few pages in
-the tutorial's style, a picture on the felt and a one-line caption, worded from the rules and the roster; on a page showing
-the players, tapping one shows their habit. The tutorial, finished for the first time, ends at
-chapter 1's welcome briefing. Options, Tutorial, Start fresh forgets everything (preferences,
+the top (`TableLayout.spot`). A chapter opens with a `Briefing` of a few pages in the
+tutorial's style (Back turns back a page; tapping a player shows their habit in a box below); each step opens with one
+page of panels, its text in a box beneath and Play in the corner. All are worded from the rules and the roster. The
+campaign opens on chapter 1's briefing the first time. The first time you sit at any table it offers the tutorial
+(`TableState.OFFER_TUTORIAL`), which then returns you to that table. Options, Tutorial, Start fresh forgets everything (preferences,
 records, campaign) and replays the intro, as for a new player. The plan the campaign follows is `docs/CAMPAIGN.md`.
 
 ### Saving
