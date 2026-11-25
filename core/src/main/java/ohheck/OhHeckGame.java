@@ -196,19 +196,9 @@ public class OhHeckGame extends Game implements GameHost {
 	}
 
 	@Override
-	public void showTutorial() {
-		tutorial.open(false);
+	public void showTutorial(boolean firstTime) {
+		tutorial.open(firstTime);
 		screens.open(tutorial);
-	}
-
-	@Override
-	public void play() {
-		if (!settings.tutorialSeen() && !options.autoplayHuman) {
-			tutorial.open(true);
-			screens.open(tutorial);
-		} else {
-			showGameSetup();
-		}
 	}
 
 	@Override
@@ -239,19 +229,11 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void showCampaign() {
-		if (!settings.tutorialSeen() && !options.autoplayHuman) {
-			tutorial.open(true);
-			screens.open(tutorial);
-			return;
+		screens.replaceAll(title);
+		if (!settings.campaignIntroSeen() && !options.autoplayHuman) {
+			settings.setCampaignIntroSeen(true);
+			campaignScreen.briefChapter(Chapter.ONE);
 		}
-		screens.replaceAll(title);
-		screens.open(campaignScreen);
-	}
-
-	@Override
-	public void startCampaign() {
-		screens.replaceAll(title);
-		campaignScreen.briefChapter(Chapter.ONE);
 		screens.open(campaignScreen);
 	}
 

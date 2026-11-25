@@ -37,9 +37,7 @@ public interface GameHost {
 
 	void showTitle();
 
-	void showTutorial();
-
-	void play();
+	void showTutorial(boolean firstTime);
 
 	void showPlayMenu();
 
@@ -52,8 +50,6 @@ public interface GameHost {
 	void showHighScores(int newest);
 
 	void showCampaign();
-
-	void startCampaign();
 
 	void playCampaign(Chapter chapter, Stage stage);
 

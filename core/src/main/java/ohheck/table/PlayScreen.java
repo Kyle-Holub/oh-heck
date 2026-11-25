@@ -138,6 +138,16 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
+	public void answerTutorialOffer(boolean take) {
+		flow.enter(TableState.PICK_DEALER);
+		if (take) {
+			game.showTutorial(true);
+		} else {
+			game.settings().setTutorialSeen(true);
+		}
+	}
+
+	@Override
 	public void forceWin() {
 		win();
 		showHighScores();
@@ -225,6 +235,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 		badges.fresh();
 		flow.start(m);
+		if (!game.settings().tutorialSeen() && !game.options().autoplayHuman) {
+			flow.enter(TableState.OFFER_TUTORIAL);
+		}
 	}
 
 	private void resumeGame(SavedGame saved) {
@@ -429,7 +442,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			TrickView.drawTrickWon(art, assets, layout, match(), flow.stateTime());
 		}
 		cards.update(this, time);
-		if (flow.state() == TableState.PICK_DEALER && !DealerPick.landed(flow.stateTime())) {
+		if (flow.state() == TableState.OFFER_TUTORIAL
+				|| flow.state() == TableState.PICK_DEALER && !DealerPick.landed(flow.stateTime())) {
 			return;
 		}
 		cards.draw(batch, assets, art, match(), flow.trumpFaceUp(), time, paint.fade());

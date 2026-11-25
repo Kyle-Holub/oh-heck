@@ -125,10 +125,8 @@ public class TutorialScreen extends BaseScreen {
 	private void finish() {
 		if (firstRun) {
 			game.settings().setTutorialSeen(true);
-			game.startCampaign();
-		} else {
-			game.back();
 		}
+		game.back();
 	}
 
 	private void previous() {
@@ -149,10 +147,8 @@ public class TutorialScreen extends BaseScreen {
 	protected void back() {
 		if (step > 0) {
 			previous();
-		} else if (firstRun) {
-			finish();
 		} else {
-			game.back();
+			finish();
 		}
 	}
 
