@@ -114,7 +114,8 @@ first six have no libGDX and test in plain JUnit.
   a new game opens on `PICK_DEALER` (`DealerPick`: a light runs round the placards and stops on the
   dealer, the same draw the tutorial shows), a resumed one does not; a duel first shows the champion's
   VS screen, and a first table offers the tutorial. A trump that beats an ace holds the trick still for a
-  moment (`TableFlow.inHitStop`); `GameEnd` raises the podium from last place up before the scores.
+  moment (`TableFlow.inHitStop`); `GameEnd` raises the podium (player cards) from last place up before the
+  scores, except in a duel, and a tap skips it. A duel wears its chapter's look (`Cosmetic`) while it lasts.
   Screen jolts (shake, zoom) are an `ohheck.anim.Kick` read into `BaseScreen`'s camera; `CardWipe` is the
   curtain of card backs into and out of a campaign table. Each
   `TableState` constant holds its own behaviour (`entered`, `update`, `skip`) and what the

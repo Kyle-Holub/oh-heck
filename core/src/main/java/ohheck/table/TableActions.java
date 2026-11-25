@@ -31,4 +31,7 @@ interface TableActions {
 
 	default void refuseBid(int b) {
 	}
+
+	default void skipGameEnd() {
+	}
 }

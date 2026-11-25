@@ -14,6 +14,7 @@ import ohheck.anim.Ease;
 import ohheck.anim.Kick;
 import ohheck.anim.Tween;
 import ohheck.campaign.Chapter;
+import ohheck.campaign.Cosmetic;
 import ohheck.campaign.Stage;
 import ohheck.fx.Fireworks;
 import ohheck.fx.Sparks;
@@ -35,7 +36,7 @@ import ohheck.ui.Palette;
 /* The card table screen: a custom game, saved as it goes, or a campaign chapter's table. */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
-	private static final float SIGN_X = 14, SIGN_TOP = 10, SIGN_H = 44, SIGN_PAD = 18, SIGN_DELAY = 0.3f, SIGN_LENGTH = 2.8f, VERSUS_SHAKE = 9, MADE_ZOOM = 0.035f, SET_SHAKE = 7, SET_EDGES = 0.7f, HIT_SHAKE = 5, HIT_FLASH = 0.35f;
+	private static final float SIGN_BESIDE = 14, SIGN_TOP = 10, SIGN_H = 44, SIGN_PAD = 18, SIGN_DELAY = 0.3f, SIGN_LENGTH = 2.8f, VERSUS_SHAKE = 9, SET_SHAKE = 7, SET_EDGES = 0.7f, HIT_SHAKE = 5, HIT_FLASH = 0.35f;
 	private static final Tween SIGN_IN = Tween.over(0.35f, Ease.OUT), SIGN_OUT = Tween.over(0.35f, Ease.IN);
 
 	private final GameOptions options;
@@ -137,7 +138,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			if (!won) {
 				shower.start(finalScoresSeed(m));
 			}
-			end.start(won, m.players());
+			end.start(won, m.players(), stage != Stage.DUEL);
 		}
 	}
 
@@ -155,6 +156,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		prizesWaiting = stage == Stage.DUEL && !game.records().campaign().cleared(chapter);
 		game.records().campaign().win(chapter, stage);
 		game.records().saveCampaign();
+	}
+
+	@Override
+	public void skipGameEnd() {
+		end.skip(flow.stateTime());
+		shower.clear();
 	}
 
 	@Override
@@ -311,9 +318,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (flow.state() != lastState) {
 			lastState = flow.state();
 			if (lastState == TableState.HAND_END) {
-				if (match().madeBid(Seating.YOU)) {
-					kick.zoom(time, MADE_ZOOM);
-				} else {
+				if (!match().madeBid(Seating.YOU)) {
 					kick.shake(time, SET_SHAKE);
 					setAt = time;
 				}
@@ -350,7 +355,31 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public void show() {
 		super.show();
+		Cosmetic look = duelLook();
+		if (look != null) {
+			assets.dress(look, look);
+		}
 		game.audio().startMusic();
+	}
+
+	@Override
+	public void hide() {
+		super.hide();
+		if (duelLook() != null) {
+			assets.dress(game.settings().cardBack(), game.settings().felt());
+		}
+	}
+
+	private Cosmetic duelLook() {
+		if (stage != Stage.DUEL) {
+			return null;
+		}
+		for (Cosmetic c : Cosmetic.values()) {
+			if (c.wonBy == chapter) {
+				return c;
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -540,9 +569,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		float drop = Math.min(SIGN_IN.progress(t), 1 - SIGN_OUT.progress(t - SIGN_LENGTH + SIGN_OUT.end()));
 		BitmapFont f = paint.serif(1.3f, Palette.GOLD_LIGHT);
 		paint.glyphs.setText(f, sign);
-		float sw = paint.glyphs.width + 2 * SIGN_PAD, y = h - drop * (SIGN_H + SIGN_TOP);
-		paint.frame(assets.panelTurn, SIGN_X, y, sw, SIGN_H);
-		f.draw(batch, sign, SIGN_X + SIGN_PAD, y + SIGN_H / 2 + paint.glyphs.height / 2);
+		float sw = paint.glyphs.width + 2 * SIGN_PAD, y = h - drop * (SIGN_H + SIGN_TOP), x = layout.trumpX() - SIGN_BESIDE - sw;
+		paint.frame(assets.panelTurn, x, y, sw, SIGN_H);
+		f.draw(batch, sign, x + SIGN_PAD, y + SIGN_H / 2 + paint.glyphs.height / 2);
 	}
 
 	private float signFrom() {
