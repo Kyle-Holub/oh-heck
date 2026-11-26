@@ -16,7 +16,8 @@ final class TableInput {
 	private final OverlayTargets targets;
 
 	private boolean menuOpen;
-	private Card pressed;
+	private Card pressed, hovered;
+	private float downY;
 	private boolean dragging;
 	private float dragX, dragY;
 
@@ -38,6 +39,10 @@ final class TableInput {
 		return pressed;
 	}
 
+	Card hovered() {
+		return dragging ? null : hovered;
+	}
+
 	float dragX() {
 		return dragX;
 	}
@@ -48,22 +53,38 @@ final class TableInput {
 
 	void touchDown(float x, float y) {
 		clearTouch();
-		if (!scene.humanCanPlay()) {
+		int i = cardAt(x, y);
+		if (i < 0 || scene.isMenuOpen()) {
 			return;
 		}
-		int i = cardAt(x, y);
-		if (i >= 0) {
-			pressed = scene.handOrder().get(i);
+		hovered = scene.handOrder().get(i);
+		downY = y;
+		if (scene.humanCanPlay()) {
+			pressed = hovered;
 			dragX = x;
 			dragY = y;
 		}
 	}
 
 	void touchDragged(float x, float y, float moved) {
+		if (hovered == null) {
+			return;
+		}
+		if (!dragging) {
+			int i = cardAt(x, y);
+			Card under = i >= 0 ? scene.handOrder().get(i) : hovered;
+			if (under != hovered) {
+				hovered = under;
+				actions.touchedCard();
+				if (pressed != null) {
+					pressed = under;
+				}
+			}
+		}
 		if (pressed == null) {
 			return;
 		}
-		if (!dragging && moved > DRAG_START && scene.playable(pressed)) {
+		if (!dragging && y - downY > DRAG_START && scene.playable(pressed)) {
 			dragging = true;
 		}
 		dragX = x;
@@ -73,6 +94,7 @@ final class TableInput {
 	boolean touchUp(float x, float y) {
 		if (!dragging) {
 			pressed = null;
+			hovered = null;
 			return false;
 		}
 		Card c = pressed;
@@ -181,6 +203,7 @@ final class TableInput {
 		}
 		Card c = scene.handOrder().get(i);
 		if (!scene.match().legalPlays(Seating.YOU).contains(c)) {
+			actions.refuseCard(c);
 			actions.hint(Wording.mustFollow(scene.match().leadSuit()));
 			return;
 		}
@@ -201,6 +224,7 @@ final class TableInput {
 
 	void clearTouch() {
 		pressed = null;
+		hovered = null;
 		dragging = false;
 	}
 

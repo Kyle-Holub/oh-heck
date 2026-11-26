@@ -80,6 +80,18 @@ interface TableScene {
 
 	Card pressedCard();
 
+	default Card hoveredCard() {
+		return null;
+	}
+
+	default Card refusedCard() {
+		return null;
+	}
+
+	default float refusedFor() {
+		return 99;
+	}
+
 	float dragX();
 
 	float dragY();

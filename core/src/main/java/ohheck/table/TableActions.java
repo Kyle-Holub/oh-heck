@@ -34,6 +34,12 @@ interface TableActions {
 	default void refuseBid(int b) {
 	}
 
+	default void refuseCard(Card c) {
+	}
+
+	default void touchedCard() {
+	}
+
 	default void skipGameEnd() {
 	}
 

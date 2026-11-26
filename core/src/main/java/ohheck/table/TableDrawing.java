@@ -199,6 +199,7 @@ final class TableDrawing {
 		batch.draw(assets.momentum[lit], cx - bw / 2, cy - bh / 2, bw, bh);
 	}
 
+	private static final Tween TURN_PULSE = Tween.over(0.8f, Ease.LINEAR), BID_GILT = Tween.over(0.9f, Ease.OUT);
 	private static final float BAR_W = 22, BAR_H = BAR_W * 144 / 44, BAR_GAP = 5, BAR_POP = 0.25f, NOTCH_FILL = 0.45f;
 	private static final int MOMENTUM_NOTCHES = 2;
 	private final int[] shownStreak = new int[Seating.SEATS];
@@ -214,6 +215,13 @@ final class TableDrawing {
 		boolean dealer = m.dealer() == seat && (!picking || DealerPick.settled(flow.stateTime()));
 		state.reset().named(scene.placardName(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(dealer)
 				.doubled(m.onMomentum(seat)).bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
+		if (seat == Seating.YOU) {
+			boolean scored = m.phase() == Match.Phase.HAND_OVER && (flow.state() == TableState.HAND_END || flow.state() == TableState.RESULTS);
+			boolean made = scored && m.madeBid(seat);
+			float pulse = turn && flow.state() == TableState.TURN ? TURN_PULSE.progress(flow.stateTime()) : 1;
+			float gilt = made && flow.state() == TableState.HAND_END ? 1 - BID_GILT.progress(flow.stateTime()) : 0;
+			state.accents(pulse < 1 ? (float) Math.sin(Math.PI * pulse) : 0, gilt, scored && !made);
+		}
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
 	}
 

@@ -141,6 +141,15 @@ final class TableFlow {
 		return true;
 	}
 
+	boolean bidHangsOnLastTrick() {
+		boolean lastTrick = state == TableState.TURN && match.phase() == Match.Phase.PLAYING
+				&& match.hand(Seating.YOU).size() + (match.currentTrickSeats().contains(Seating.YOU) ? 1 : 0) == 1
+				|| state == TableState.TRICK && match.phase() == Match.Phase.HAND_OVER;
+		int need = match.bid(Seating.YOU) - match.tricksWon(Seating.YOU)
+				+ (state == TableState.TRICK && match.lastTrickWinner() == Seating.YOU ? 1 : 0);
+		return lastTrick && match.handSize() > 1 && (need == 0 || need == 1);
+	}
+
 	boolean yourTurnToSwap() {
 		return state == TableState.TURN && match.swapping() && match.currentSeat() == Seating.YOU && trumpFaceUp();
 	}
