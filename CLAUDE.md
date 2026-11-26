@@ -25,8 +25,8 @@ the screenshot run, CI, the arena and the art tools.
   reported through `Log` and set aside. Test that each format reads back what it writes.
 - **Player ids are permanent.** Look players up with `Player.byId`. A new player gets the
   next unused id.
-- **AI changes:** measure them in the arena (`players`, `levels`) before and after, and
-  keep each level's win rate in its band. Don't make Easy harder. Bots play every rule set:
+- **AI changes:** measure them with the `arena` skill (`players`, `levels`, `variants`, `duel`)
+  before and after, and keep each level's win rate in its band. Don't make Easy harder. Bots play every rule set:
   check a change across them with `variants` (or any experiment followed by a rules code).
 - **Game loop and motion:** screens implement `update(step)` and `draw()`, never `render`;
   timing goes in `update`, so it runs in fixed steps. Name each movement as a `Tween`
