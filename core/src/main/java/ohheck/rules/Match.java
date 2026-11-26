@@ -13,7 +13,8 @@ import java.util.Set;
  * one seat each hand; the player after the dealer leads, and the dealer bids last. Each hand is dealt
  * from a shuffled deck, or from a fixed list of deals for a scripted game such as the practice round.
  * When the winner picks trump, the hand opens with PICKING_TRUMP: whoever made the highest bid last hand
- * (ties to the first from the dealer's left) names the trump suit, which overrides the turned card.
+ * (ties to the first from the dealer's left) names the trump suit, which overrides the turned card. When hands
+ * won are counted, a tie for first after the last hand plays on in one-card sudden-death hands until it breaks.
  */
 public final class Match {
 
@@ -202,7 +203,7 @@ public final class Match {
 
 	public void nextHand() {
 		requirePhase(Phase.HAND_OVER);
-		if (handIndex + 1 >= rules.numberOfHands()) {
+		if (handIndex + 1 >= rules.numberOfHands() && !(rules.handsWon && leaders().size() > 1)) {
 			phase = Phase.GAME_OVER;
 			return;
 		}
@@ -237,6 +238,10 @@ public final class Match {
 
 	public int handSize() {
 		return rules.handSize(handIndex);
+	}
+
+	public boolean suddenDeath() {
+		return handIndex >= rules.numberOfHands();
 	}
 
 	public Card trumpCard() {
@@ -409,7 +414,7 @@ public final class Match {
 	}
 
 	void check() {
-		if (handIndex < 0 || handIndex >= rules.numberOfHands() || dealer < 0 || dealer >= players || current < 0
+		if (handIndex < 0 || handIndex >= rules.numberOfHands() && !rules.handsWon || dealer < 0 || dealer >= players || current < 0
 				|| current >= players || trick.cards.size() != trick.seats.size() || trick.size() >= players
 				|| history.size() != historySeats.size()) {
 			throw new IllegalArgumentException("Inconsistent game state");

@@ -15,7 +15,7 @@ import ohheck.rules.Suit;
 public enum Chapter {
 	ONE(GameMode.CLASSIC, Suit.SPADES, Seating.of(0, 1, 3), 2, Twist.MOMENTUM, true),
 	TWO(GameMode.HIGH_STAKES, Suit.DIAMONDS, Seating.of(4, 6, 7), 5, Twist.PICK_TRUMP, true),
-	THREE(GameMode.POKER_FACE, Suit.HEARTS, Seating.of(9, 11, 5), 10, Twist.MOMENTUM, false),
+	THREE(GameMode.POKER_FACE, Suit.HEARTS, Seating.of(9, 11, 5), 10, Twist.HANDS_WON, true),
 	FOUR(GameMode.MARATHON, Suit.CLUBS, Seating.of(9, 10, 11), 8, Twist.MOMENTUM, false);
 
 	public final GameMode mode;

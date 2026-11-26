@@ -109,7 +109,7 @@ The MVP is the Campaign / Custom game split with chapter 1 playable end to end; 
 4. **Trick shots:** the puzzle screen, 3 Classic puzzles (one of each goal), and the solver test.
 5. **Practice hand-off:** the practice round ends by opening chapter 1.
 6. **Badges and unlockables:** the first badges on Records (including the chapter 1 champion's), chapter 1's card back and felt.
-7. **Chapters 2 to 4.** Chapter 2 (High Stakes; winner picks trump; the Ruby back and felt) is playable.
+7. **Chapters 2 to 4.** Chapter 2 (High Stakes; winner picks trump; the Ruby back and felt) and chapter 3 (Poker Face; hands won, with sudden death; Midnight) are playable.
 
 ## 10. Decisions
 

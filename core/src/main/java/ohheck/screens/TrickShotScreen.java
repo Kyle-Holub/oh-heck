@@ -255,8 +255,9 @@ public class TrickShotScreen extends BaseScreen {
 			paint.fade(1f);
 		}
 		paint.frame(assets.panel, x, y, pw, PLACARD_H);
-		if (m.hasBid(seat)) {
-			placardState.reset().bid(m.bid(seat)).won(m.tricksWon(seat)).cards(m.handSize());
+		int seen = m.bidSeenBy(seat, Seating.YOU);
+		if (seen != Match.NO_BID) {
+			placardState.reset().bid(seen).won(m.tricksWon(seat)).cards(m.handSize());
 			panel.drawTricks(placardState, x + PLACARD_PAD, y + (PLACARD_H - ih) / 2);
 		}
 	}
