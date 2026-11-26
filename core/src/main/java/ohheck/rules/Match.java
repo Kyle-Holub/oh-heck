@@ -10,7 +10,8 @@ import java.util.Set;
 
 /*
  * One game from the first deal to the final scores. Seats run clockwise from 0; the deal moves
- * one seat each hand; the player after the dealer leads, and the dealer bids last.
+ * one seat each hand; the player after the dealer leads, and the dealer bids last. Each hand is dealt
+ * from a shuffled deck, or from a fixed list of deals for a scripted game such as the practice round.
  */
 public final class Match {
 
@@ -40,6 +41,7 @@ public final class Match {
 	final int[] tricks;
 	final int[] scores;
 	final int[] lastHandPoints;
+	final int[] streaks;
 
 	final Trick trick;
 	final List<Card> history = new ArrayList<Card>();
@@ -47,6 +49,7 @@ public final class Match {
 	List<Card> lastTrick = Collections.emptyList();
 	List<Integer> lastTrickSeats = Collections.emptyList();
 	int lastTrickWinner = -1;
+	private List<Deal> script;
 
 	public static Match random(int players, Random rng) {
 		return random(players, rng, RuleSet.STANDARD);
@@ -66,8 +69,39 @@ public final class Match {
 		startHand();
 	}
 
+	public static Match scripted(RuleSet rules, int firstDealer, List<Deal> deals) {
+		if (deals.size() != rules.numberOfHands()) {
+			throw new IllegalArgumentException("A deal is needed for each of the " + rules.numberOfHands() + " hands");
+		}
+		Match m = new Match(deals.get(0).hands().size(), new Random(0), rules);
+		m.script = deals;
+		m.dealer = firstDealer;
+		m.startHand();
+		return m;
+	}
+
+	public static Match dealt(RuleSet rules, int dealer, List<List<Card>> hands, Card trumpCard) {
+		Match m = new Match(hands.size(), new Random(0), rules);
+		int size = hands.get(0).size();
+		while (m.handIndex < rules.numberOfHands() - 1 && rules.handSize(m.handIndex) != size) {
+			m.handIndex++;
+		}
+		for (int s = 0; s < hands.size(); s++) {
+			m.hands.set(s, new ArrayList<Card>(hands.get(s)));
+		}
+		m.trumpCard = trumpCard;
+		m.dealer = dealer;
+		m.phase = Phase.BIDDING;
+		m.current = m.next(dealer);
+		if (m.handSize() != size) {
+			throw new IllegalArgumentException("No hand of " + size + " in " + rules.code());
+		}
+		m.check();
+		return m;
+	}
+
 	Match(int players, Random rng, RuleSet rules) {
-		if (players < 2 || players * rules.mostCards > Card.COUNT) {
+		if (players < 2 || players * rules.mostCards > rules.deckSize()) {
 			throw new IllegalArgumentException("Unsupported number of players: " + players);
 		}
 		this.players = players;
@@ -79,6 +113,7 @@ public final class Match {
 		this.tricks = new int[players];
 		this.scores = new int[players];
 		this.lastHandPoints = new int[players];
+		this.streaks = new int[players];
 		for (int i = 0; i < players; i++) {
 			hands.add(new ArrayList<Card>());
 		}
@@ -134,8 +169,10 @@ public final class Match {
 
 		if (hand.isEmpty()) {
 			for (int i = 0; i < players; i++) {
-				lastHandPoints[i] = rules.score(bids[i], tricks[i]);
+				boolean made = bids[i] == tricks[i];
+				lastHandPoints[i] = rules.score(bids[i], tricks[i]) * (made && onMomentum(i) ? 2 : 1);
 				scores[i] += lastHandPoints[i];
+				streaks[i] = made ? streaks[i] + 1 : 0;
 			}
 			phase = Phase.HAND_OVER;
 		}
@@ -245,6 +282,14 @@ public final class Match {
 
 	public int score(int seat) {
 		return scores[seat];
+	}
+
+	public int streak(int seat) {
+		return streaks[seat];
+	}
+
+	public boolean onMomentum(int seat) {
+		return rules.momentum && streaks[seat] >= 2;
 	}
 
 	public int lastHandPoints(int seat) {
@@ -366,14 +411,14 @@ public final class Match {
 	}
 
 	private void startHand() {
-		Deck deck = Deck.shuffled(rng);
+		Deck deck = script == null ? Deck.shuffled(rng, rules) : null;
 		for (int i = 0; i < players; i++) {
 			int seat = (dealer + 1 + i) % players;
-			hands.set(seat, deck.deal(handSize()));
+			hands.set(seat, deck != null ? deck.deal(handSize()) : new ArrayList<Card>(script.get(handIndex).hands().get(seat)));
 			bids[seat] = NO_BID;
 			tricks[seat] = 0;
 		}
-		trumpCard = deck.size() > 0 ? deck.deal() : null;
+		trumpCard = deck == null ? script.get(handIndex).trump() : deck.size() > 0 ? deck.deal() : null;
 		trick.clear();
 		history.clear();
 		historySeats.clear();

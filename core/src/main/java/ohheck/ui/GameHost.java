@@ -2,6 +2,9 @@ package ohheck.ui;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import ohheck.campaign.Chapter;
+import ohheck.campaign.Stage;
+import ohheck.campaign.TrickShot;
 import ohheck.platform.Audio;
 import ohheck.platform.GameOptions;
 import ohheck.platform.Settings;
@@ -34,9 +37,9 @@ public interface GameHost {
 
 	void showTitle();
 
-	void showTutorial();
+	void showPlayMenu();
 
-	void play();
+	void showGameSetup();
 
 	void showOptions();
 
@@ -44,9 +47,23 @@ public interface GameHost {
 
 	void showHighScores(int newest);
 
+	void showCampaign();
+
+	void playCampaign(Chapter chapter, Stage stage);
+
+	void playTrickShot(TrickShot shot);
+
+	void playPractice(boolean firstTime);
+
+	void finishPractice();
+
+	void showChapterCleared(Chapter chapter);
+
 	void newGame();
 
 	void continueGame();
 
 	boolean hasGameInProgress();
+
+	void startFresh();
 }

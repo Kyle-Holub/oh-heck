@@ -2,10 +2,10 @@ package ohheck.players;
 
 import java.util.Arrays;
 
-/* Who sits in each computer seat, by player id. */
+/* Who sits in each computer seat, by player id: three at a table, or one across from you in a duel. */
 public final class Seating {
 
-	public static final int YOU = 0, SEATS = 4;
+	public static final int YOU = 0, SEATS = 4, DUEL_SEATS = 2;
 	public static final int OTHERS = SEATS - 1;
 
 	private final int[] ids;
@@ -15,17 +15,21 @@ public final class Seating {
 	}
 
 	public static Seating of(int... ids) {
-		if (ids.length != OTHERS) {
-			throw new IllegalArgumentException("A table seats " + OTHERS + " computer players, not " + ids.length);
+		if (ids.length != OTHERS && ids.length != DUEL_SEATS - 1) {
+			throw new IllegalArgumentException("A table seats " + OTHERS + " computer players, a duel one, not " + ids.length);
 		}
 		return new Seating(ids.clone());
 	}
 
 	public int idAt(int seat) {
-		if (seat == YOU || seat < 0 || seat >= SEATS) {
+		if (seat == YOU || seat < 0 || seat >= players()) {
 			throw new IllegalArgumentException("No computer player in seat " + seat);
 		}
 		return ids[seat < YOU ? seat : seat - 1];
+	}
+
+	public int players() {
+		return ids.length + 1;
 	}
 
 	public Player at(int seat) {
@@ -55,12 +59,12 @@ public final class Seating {
 
 	public static Seating parse(String s) {
 		String[] f = s.split(",");
-		if (f.length != OTHERS) {
+		if (f.length != OTHERS && f.length != DUEL_SEATS - 1) {
 			return null;
 		}
 		try {
-			int[] ids = new int[OTHERS];
-			for (int i = 0; i < OTHERS; i++) {
+			int[] ids = new int[f.length];
+			for (int i = 0; i < f.length; i++) {
 				ids[i] = Integer.parseInt(f[i].trim());
 			}
 			return new Seating(ids);

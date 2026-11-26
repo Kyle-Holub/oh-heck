@@ -2,11 +2,12 @@ package ohheck.records;
 
 import java.util.Random;
 
+import ohheck.campaign.Campaign;
 import ohheck.players.Difficulty;
 import ohheck.rules.RuleSet;
 import ohheck.util.Log;
 
-/* Statistics, high scores and the saved game, written to a Store only when persisting. */
+/* Statistics, high scores, the saved game and campaign progress, written to a Store only when persisting. */
 public final class Records {
 
 	public interface Store {
@@ -25,16 +26,32 @@ public final class Records {
 		void saveGame(SavedGame game);
 
 		void clearSavedGame();
+
+		String campaign();
+
+		void setCampaign(String encoded);
 	}
 
 	private final Store store;
 	private final boolean persist;
 	private Stats stats;
+	private final Campaign campaign;
 
 	public Records(Store store, boolean persist, Stats stats) {
 		this.store = store;
 		this.persist = persist;
 		this.stats = stats != null ? stats : Stats.decode(persist ? store.stats() : "");
+		this.campaign = Campaign.decode(persist ? store.campaign() : "");
+	}
+
+	public Campaign campaign() {
+		return campaign;
+	}
+
+	public void saveCampaign() {
+		if (persist) {
+			store.setCampaign(campaign.encode());
+		}
 	}
 
 	public Stats stats() {

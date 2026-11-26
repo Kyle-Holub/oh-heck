@@ -1,10 +1,16 @@
 package ohheck.rules;
 
+import java.util.Arrays;
+
 /* A playing card; one instance per suit and rank, so == compares. */
 public final class Card {
 
 	public static final int COUNT = 52;
 	private static final int PER_SUIT = Rank.values().length;
+
+	private static final String[] RANK_CODES = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
+	private static final String SUIT_CODES = "CDHS";
+	private static final Suit[] SUITS_BY_CODE = { Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES };
 
 	private static final Card[][] ALL = new Card[Suit.values().length][PER_SUIT];
 	private static final Card[] BY_INDEX = new Card[COUNT];
@@ -33,6 +39,21 @@ public final class Card {
 
 	public static Card ofIndex(int index) {
 		return BY_INDEX[index];
+	}
+
+	public static Card parse(String code) {
+		int suit = SUIT_CODES.indexOf(code.charAt(code.length() - 1));
+		String rank = code.substring(0, code.length() - 1);
+		for (Rank r : Rank.values()) {
+			if (RANK_CODES[r.strength()].equals(rank) && suit >= 0) {
+				return Card.of(r, SUITS_BY_CODE[suit]);
+			}
+		}
+		throw new IllegalArgumentException("Not a card: " + code);
+	}
+
+	public String code() {
+		return RANK_CODES[rank.strength()] + SUIT_CODES.charAt(Arrays.asList(SUITS_BY_CODE).indexOf(suit));
 	}
 
 	public int index() {

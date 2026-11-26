@@ -18,7 +18,12 @@ public final class Deck {
 	}
 
 	public static Deck shuffled(Random rng) {
+		return shuffled(rng, RuleSet.STANDARD);
+	}
+
+	public static Deck shuffled(Random rng, RuleSet rules) {
 		Deck d = new Deck();
+		d.cards.removeIf(c -> !rules.inDeck(c));
 		Collections.shuffle(d.cards, rng);
 		return d;
 	}

@@ -16,6 +16,7 @@ import ohheck.rules.Card;
 import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
 import ohheck.rules.RuleSet;
+import ohheck.ui.TapAreas;
 import ohheck.ui.Wording;
 
 public class TableInputTest {
@@ -29,6 +30,7 @@ public class TableInputTest {
 		final List<Rectangle> handRects = new ArrayList<Rectangle>();
 		final List<String> did = new ArrayList<String>();
 		TableState pretend;
+		boolean results;
 
 		FakeTable() {
 			flow.seat(Seating.of(4, 5, 6), new Random(1));
@@ -101,7 +103,12 @@ public class TableInputTest {
 
 		@Override
 		public boolean resultsShown() {
-			return false;
+			return results;
+		}
+
+		@Override
+		public void skipGameEnd() {
+			did.add("skip end");
 		}
 
 		@Override
@@ -153,6 +160,12 @@ public class TableInputTest {
 
 	private final FakeTable t = new FakeTable();
 
+	private void skipToTurn() {
+		for (int i = 0; i < 3 && t.flow.state() != TableState.TURN; i++) {
+			t.flow.skip();
+		}
+	}
+
 	@Test
 	public void theMenuOpensAndGoesWhereItSays() {
 		t.flow.start(Match.random(4, new Random(2)));
@@ -177,22 +190,23 @@ public class TableInputTest {
 	public void atGameOverOnlyTheButtonsCount() {
 		t.flow.start(Match.random(4, new Random(3)));
 		t.pretend = TableState.GAME_OVER;
-		t.targets.button(OverlayTargets.Button.PLAY_AGAIN).set(200, 50, 170, 42);
-		t.targets.button(OverlayTargets.Button.HIGH_SCORES).set(400, 50, 170, 42);
+		t.results = true;
+		t.targets.button(OverlayTargets.Button.CONTINUE).set(200, 50, 170, 42);
+		t.targets.button(OverlayTargets.Button.MAIN_MENU).set(400, 50, 170, 42);
 		t.input.tap(100, 300);
 		assertTrue(t.did.isEmpty());
 		t.input.tap(250, 70);
 		t.input.tap(450, 70);
-		assertEquals("[new game, high scores]", t.did.toString());
+		assertEquals("[high scores, title]", t.did.toString());
 	}
 
 	@Test
 	public void aTapOnANumberBids() {
 		Match m = new Match(4, new Random(4), 3, RuleSet.STANDARD);
 		t.flow.start(m);
-		t.flow.skip();
+		skipToTurn();
 		assertEquals(TableState.TURN, t.flow.state());
-		t.targets.bidsUpTo(m.handSize());
+		TapAreas.sizeTo(t.targets.bids(), m.handSize() + 1);
 		for (int b = 0; b <= m.handSize(); b++) {
 			t.targets.bid(b).set(100 + b * 70, 100, 58, 58);
 		}
@@ -205,8 +219,8 @@ public class TableInputTest {
 	public void aCardDraggedOntoTheTableIsPlayed() {
 		Match m = new Match(4, new Random(5), 3, RuleSet.STANDARD);
 		t.flow.start(m);
-		t.flow.skip();
-		t.targets.bidsUpTo(m.handSize());
+		skipToTurn();
+		TapAreas.sizeTo(t.targets.bids(), m.handSize() + 1);
 		t.targets.bid(0).set(100, 100, 58, 58);
 		t.input.tap(105, 105);
 		while (!t.flow.yourTurnToPlay()) {
@@ -223,12 +237,21 @@ public class TableInputTest {
 	}
 
 	@Test
+	public void aTapBeforeTheScoresSkipsTheGameEnd() {
+		t.flow.start(Match.random(4, new Random(3)));
+		t.pretend = TableState.GAME_OVER;
+		t.input.tap(300, 300);
+		assertEquals("[skip end]", t.did.toString());
+	}
+
+	@Test
 	public void aButtonNotYetDrawnCantBeHit() {
 		t.flow.start(Match.random(4, new Random(2)));
 		t.input.tap(0, 0);
 		assertFalse(t.input.menuOpen());
 		t.targets.clearGameOverButtons();
 		t.pretend = TableState.GAME_OVER;
+		t.results = true;
 		t.input.tap(0, 0);
 		assertTrue(t.did.isEmpty());
 	}

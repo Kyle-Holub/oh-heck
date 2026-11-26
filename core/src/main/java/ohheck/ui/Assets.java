@@ -10,8 +10,10 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
+import ohheck.campaign.Cosmetic;
 import ohheck.players.Difficulty;
 import ohheck.rules.Card;
+import ohheck.rules.Suit;
 
 public final class Assets implements Disposable {
 
@@ -21,8 +23,14 @@ public final class Assets implements Disposable {
 
 	public static final float UI_BASE = 16f / 42f, SERIF_BASE = 16f / 52f;
 
-	public final Texture table;
-	public final Texture cardSheet, cardBack, cardSheetBlur, cardBackBlur, cardSlot;
+	public Texture table;
+	public final Texture cardSheet, cardSheetBlur, cardSlot, cardBlank, badge, padlock;
+	public final Texture[] momentum = new Texture[3];
+	public final Texture campaignFace, stepTable, stepShots, stepDuel, pipOn, pipOff;
+	public final Texture menuContinue, menuCampaign, menuCustom, menuScores;
+	private final Texture[] emblems = new Texture[Suit.values().length];
+	private final Texture[] tables = new Texture[Cosmetic.values().length], backs = new Texture[Cosmetic.values().length],
+			backBlurs = new Texture[Cosmetic.values().length];
 	public final Texture shadow;
 	public final Texture glow;
 	public final NinePatch panel, panelTurn, panelWait, button, buttonAlt, buttonOff;
@@ -35,7 +43,7 @@ public final class Assets implements Disposable {
 	private final TextureRegion[] digits = new TextureRegion[11];
 	public final Texture white;
 	public final Texture stroke;
-	public final BitmapFont font;
+	public final BitmapFont font, fontItalic;
 	public final BitmapFont serif;
 
 	private final TextureRegion[][] faces = new TextureRegion[4][13];
@@ -50,12 +58,34 @@ public final class Assets implements Disposable {
 	}
 
 	public Assets() {
-		table = linear(own(new Texture(Gdx.files.internal("images/table.jpg"))));
+		for (Cosmetic c : Cosmetic.values()) {
+			tables[c.ordinal()] = linear(own(new Texture(Gdx.files.internal("images/" + c.felt + ".jpg"))));
+			backs[c.ordinal()] = mipmapped("images/" + c.back + ".png");
+			backBlurs[c.ordinal()] = mipmapped("images/" + c.backBlur + ".png");
+		}
+		table = tables[0];
 		cardSheet = mipmapped("images/cards_hd.png");
-		cardBack = mipmapped("images/back_hd.png");
+		badge = mipmapped("images/badge.png");
+		padlock = mipmapped("images/padlock.png");
+		for (int i = 0; i < momentum.length; i++) {
+			momentum[i] = mipmapped("images/momentum_" + i + ".png");
+		}
+		campaignFace = mipmapped("images/campaign_face.png");
+		stepTable = mipmapped("images/step_table.png");
+		stepShots = mipmapped("images/step_shots.png");
+		stepDuel = mipmapped("images/step_duel.png");
+		pipOn = mipmapped("images/pip_on.png");
+		pipOff = mipmapped("images/pip_off.png");
+		menuContinue = mipmapped("images/menu_continue.png");
+		menuCampaign = mipmapped("images/menu_campaign.png");
+		menuCustom = mipmapped("images/menu_custom.png");
+		menuScores = mipmapped("images/menu_scores.png");
+		for (Suit s : Suit.values()) {
+			emblems[s.ordinal()] = mipmapped("images/emblem_" + s.name().toLowerCase() + ".png");
+		}
 		cardSlot = mipmapped("images/card_slot.png");
+		cardBlank = mipmapped("images/card_blank.png");
 		cardSheetBlur = mipmapped("images/cards_blur.png");
-		cardBackBlur = mipmapped("images/back_blur.png");
 		shadow = linear(own(new Texture(Gdx.files.internal("images/shadow.png"))));
 		glow = mipmapped("images/glow.png");
 		panel = ninePatch("panel");
@@ -84,11 +114,12 @@ public final class Assets implements Disposable {
 			levelBadge[d.ordinal()] = mipmapped("images/level_" + d.key() + ".png");
 		}
 		cutCards();
-		back = new TextureRegion(cardBack);
-		backBlur = new TextureRegion(cardBackBlur);
+		back = new TextureRegion(backs[0]);
+		backBlur = new TextureRegion(backBlurs[0]);
 		white = own(whitePixel());
 		stroke = own(strokeTexture(32, 160));
 		font = bitmapFont("ui");
+		fontItalic = bitmapFont("ui_italic");
 		serif = bitmapFont("serif");
 	}
 	private void cutDigits() {
@@ -137,6 +168,24 @@ public final class Assets implements Disposable {
 
 	public TextureRegion face(Card c) {
 		return faces[c.suit().ordinal()][c.rank().ordinal()];
+	}
+
+	public void dress(Cosmetic cardBack, Cosmetic felt) {
+		table = tables[felt.ordinal()];
+		back.setRegion(backs[cardBack.ordinal()]);
+		backBlur.setRegion(backBlurs[cardBack.ordinal()]);
+	}
+
+	public Texture backOf(Cosmetic c) {
+		return backs[c.ordinal()];
+	}
+
+	public Texture feltOf(Cosmetic c) {
+		return tables[c.ordinal()];
+	}
+
+	public Texture emblem(Suit s) {
+		return emblems[s.ordinal()];
 	}
 
 	public TextureRegion back() {

@@ -4,20 +4,26 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.IntPredicate;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Align;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
+import ohheck.campaign.PracticeCoach;
+import ohheck.campaign.PracticeRound;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
+import ohheck.ui.CardWipe;
 import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
@@ -30,24 +36,18 @@ final class TableOverlays {
 
 	private static final float MENU_BUTTON_W = 80, MENU_BUTTON_H = 38;
 	private static final float PAUSE_BUTTON_W = 260, PAUSE_BUTTON_H = 56, PAUSE_GAP = 14;
-	private static final Color NUMERAL_OFF = new Color(0.55f, 0.52f, 0.5f, 0.6f);
-	private static final float BID_BUTTON = 58, BID_GAP = 8, BID_PANEL_MIN_W = 440, BID_PANEL_H = 190;
-	private static final float RESULTS_W = 540, RESULTS_H = 262, RESULTS_ROW = 26;
 	private static final float GAME_OVER_W = 420, GAME_OVER_H = 306, GAME_OVER_ROW = 27;
 	private static final float END_BUTTON_W = 170, END_BUTTON_H = 42;
 	private static final float HINT_H = 40, HINT_PAD = 16;
 
 	private static final float PAUSE_LIFT = 20, PAUSED_TITLE_RISE = 36;
 	private static final float MENU_BUTTON_Y = 10;
-	private static final float BID_TITLE_TOP = 12, BID_TITLE_SCALE = 0.92f, BID_ROW_RISE = 20,
-			BID_PANEL_MARGIN = 40, BID_NUMERAL_OF_BUTTON = 0.66f;
 	private static final float HAND_END_FADE = 0.3f, HAND_END_SCALE = 0.95f;
 	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
-	private static final float RESULTS_TITLE_DROP = 14, RESULTS_HEAD_DROP = 52, WON_CARD_SCALE = 0.7f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12, WON_CARDS_INSET = 18,
-			TAP_NOTE_GAP = 16,
-			RESULT_NUMERAL_H = 26, RESULT_NUMERAL_X = 8, RESULT_NUMERAL_Y = 8;
+	private static final float WON_CARD_SCALE = 0.7f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12, WON_CARDS_INSET = 18,
+			TAP_NOTE_GAP = 16;
 	private static final float GAME_OVER_LIFT = 6, GAME_OVER_ART_DROP = 50, GAME_OVER_ART_SCALE = 0.66f,
 			GAME_OVER_RESULT_DROP = 94, GAME_OVER_ROWS_DROP = 130, GAME_OVER_PLACE_X = 60, GAME_OVER_NAME_X = 120,
 			GAME_OVER_SCORE_FROM_RIGHT = 140, NEW_BEST_FROM_RIGHT = 128, END_BUTTONS_RISE = 16, END_BUTTONS_GAP = 16;
@@ -58,6 +58,9 @@ final class TableOverlays {
 	private final TableScene scene;
 	private final TableLayout layout;
 	private final CardArt art;
+	private final BidPopup bidPopup;
+	private final ScoreCard scoreCard;
+	private final IntPredicate legalBid = this::bidOk;
 	private String hint = "";
 	private float hintTime;
 
@@ -76,6 +79,8 @@ final class TableOverlays {
 		this.scene = scene;
 		this.layout = layout;
 		this.art = art;
+		this.bidPopup = new BidPopup(paint, art);
+		this.scoreCard = new ScoreCard(paint);
 	}
 
 	void setMatch(Match match) {
@@ -90,6 +95,7 @@ final class TableOverlays {
 
 	void update(float dt) {
 		hintTime -= dt;
+		bidPopup.step(dt);
 	}
 
 	void drawHint() {
@@ -110,6 +116,14 @@ final class TableOverlays {
 		paint.frame(paint.assets.buttonAlt, menuButton.x, menuButton.y, menuButton.width, menuButton.height);
 		BitmapFont f = paint.ui(1.2f, Palette.CREAM);
 		paint.textIn(f, "Menu", menuButton.x, menuButton.y, menuButton.width, menuButton.height);
+		Rectangle win = targets.button(OverlayTargets.Button.FORCE_WIN);
+		if (scene.inCampaign()) {
+			win.set(menuButton.x - 10 - MENU_BUTTON_W, MENU_BUTTON_Y, MENU_BUTTON_W, MENU_BUTTON_H);
+			paint.frame(paint.assets.button, win.x, win.y, win.width, win.height);
+			paint.textIn(f, "Win", win.x, win.y, win.width, win.height);
+		} else {
+			win.set(0, 0, 0, 0);
+		}
 	}
 
 	void drawMenu() {
@@ -130,26 +144,196 @@ final class TableOverlays {
 		}
 	}
 
+	private boolean bidOk(int b) {
+		return match.isLegalBid(b) && scene.bidAllowed(b);
+	}
+
+	void refuseBid(int b) {
+		bidPopup.refuse(b);
+	}
+
+	boolean refusing() {
+		return bidPopup.refusing();
+	}
+
 	void drawBidPanel() {
-		int n = match.handSize();
-		float bs = BID_BUTTON, gap = BID_GAP;
-		float rowW = (n + 1) * bs + n * gap;
-		float pw = Math.max(rowW + BID_PANEL_MARGIN, BID_PANEL_MIN_W), ph = BID_PANEL_H;
-		float px = (layout.w - pw) / 2, py = layout.centreY() - ph / 2;
-		paint.frame(paint.assets.panel, px, py, pw, ph);
+		bidPopup.draw(layout.w / 2, layout.centreY(), match.handSize(), legalBid, -1, 1f, targets.bids());
+	}
 
-		float titleH = paint.assets.makeBidText.getHeight() * BID_TITLE_SCALE;
-		art.art(paint.assets.makeBidText, layout.w / 2, py + ph - BID_TITLE_TOP - titleH / 2, BID_TITLE_SCALE, 1f);
+	static final float VERSUS_FROM = CardWipe.LENGTH * 0.7f, VERSUS_LENGTH = VERSUS_FROM + 2.8f, VERSUS_SLAM = VERSUS_FROM + 0.75f;
+	private static final float VERSUS_SLIDE = 0.45f, VERSUS_TILT = 9, VERSUS_GAP = 10, VERSUS_HABIT_W = 380;
+	private static final Tween VERSUS_IN = Tween.over(VERSUS_SLIDE, Ease.OUT), VERSUS_OUT = Tween.over(0.35f, Ease.IN);
+	private static final Color YOUR_BAND = new Color(0.2f, 0.11f, 0.06f, 0.97f), THEIR_BAND = new Color(0.4f, 0.07f, 0.06f, 0.97f);
 
-		targets.bidsUpTo(n);
-		float bx = (layout.w - rowW) / 2, by = py + BID_ROW_RISE;
-		for (int b = 0; b <= n; b++) {
-			Rectangle r = targets.bid(b).set(bx + b * (bs + gap), by, bs, bs);
-			boolean ok = match.isLegalBid(b);
-			paint.frame(ok ? paint.assets.button : paint.assets.buttonOff, r.x, r.y, r.width, r.height);
-			paint.numeral(b, r.x + r.width / 2, r.y + r.height / 2, bs * BID_NUMERAL_OF_BUTTON, ok ? Color.WHITE : NUMERAL_OFF);
+	void drawVersus(float since) {
+		float t = since - VERSUS_FROM, in = VERSUS_IN.progress(t), out = VERSUS_OUT.progress(since - VERSUS_LENGTH + VERSUS_OUT.end()), w = layout.w, h = layout.h;
+		float shift = (1 - in + out) * (w + 200), mid = h / 2;
+		band(YOUR_BAND, -shift, mid - VERSUS_GAP / 2, false);
+		band(THEIR_BAND, shift, mid + VERSUS_GAP / 2, true);
+		gilding(mid, Math.min(in, 1 - out));
+		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT), scene.name(1), w * 0.62f + shift, mid + h * 0.3f, true);
+		paint.ui(1.05f, Palette.CREAM).draw(paint.batch, scene.habit(1), w * 0.62f - VERSUS_HABIT_W / 2 + shift, mid + h * 0.3f - 52,
+				VERSUS_HABIT_W, Align.center, true);
+		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT), scene.name(Seating.YOU), w * 0.38f - shift, mid - h * 0.22f, true);
+		paint.text(paint.ui(1.05f, Palette.CREAM), CHALLENGER, w * 0.38f - shift, mid - h * 0.22f - 52, true);
+		if (since >= VERSUS_SLAM && out < 1) {
+			float slam = VERSUS_IN.progress(since - VERSUS_SLAM);
+			float vsSize = 5.5f - 2.5f * slam;
+			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+			paint.batch.setColor(1f, 0.8f, 0.4f, 0.6f * (1 - out));
+			paint.batch.draw(paint.assets.glow, w / 2 - 130, mid - 90, 260, 180);
+			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			paint.batch.setColor(Color.WHITE);
+			paint.text(paint.serif(vsSize, VS_SHADOW, 1 - out), VS, w / 2 + 3, mid + 37, true);
+			paint.text(paint.serif(vsSize, Palette.GOLD_LIGHT, 1 - out), VS, w / 2, mid + 40, true);
 		}
 	}
+
+	private void gilding(float mid, float a) {
+		if (a <= 0) {
+			return;
+		}
+		float bw = layout.w * 2, cos = MathUtils.cosDeg(VERSUS_TILT), sin = MathUtils.sinDeg(VERSUS_TILT);
+		rule(mid, bw, GILD_W, Palette.GOLD, a);
+		rule(mid + GILD_W, bw, 2, GILD_DARK, a);
+		rule(mid - GILD_W, bw, 2, GILD_DARK, a);
+		paint.batch.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, a);
+		for (float d = -layout.w; d <= layout.w; d += GILD_STEP) {
+			float x = layout.w / 2 + d * cos, y = mid + d * sin;
+			paint.batch.draw(paint.assets.white, x - GILD_DIAMOND / 2, y - GILD_DIAMOND / 2, GILD_DIAMOND / 2, GILD_DIAMOND / 2, GILD_DIAMOND,
+					GILD_DIAMOND, 1, 1, 45 + VERSUS_TILT, 0, 0, 1, 1, false, false);
+		}
+		paint.batch.setColor(Color.WHITE);
+	}
+
+	private void rule(float y, float width, float thick, Color c, float a) {
+		paint.batch.setColor(c.r, c.g, c.b, a);
+		paint.batch.draw(paint.assets.white, layout.w / 2 - width / 2, y - thick / 2, width / 2, thick / 2, width, thick, 1, 1, VERSUS_TILT,
+				0, 0, 1, 1, false, false);
+	}
+
+	private void band(Color c, float dx, float edge, boolean above) {
+		float bw = layout.w * 2, bh = layout.h;
+		paint.batch.setColor(c);
+		paint.batch.draw(paint.assets.white, layout.w / 2 - bw / 2 + dx, above ? edge : edge - bh, bw / 2, above ? 0 : bh, bw, bh, 1, 1,
+				VERSUS_TILT, 0, 0, 1, 1, false, false);
+		paint.batch.setColor(Color.WHITE);
+	}
+
+	private static final String VS = "VS", CHALLENGER = "Challenger";
+	private static final float GILD_W = 6, GILD_STEP = 110, GILD_DIAMOND = 12;
+	private static final Color VS_SHADOW = new Color(0.12f, 0.05f, 0.03f, 1), GILD_DARK = new Color(0.55f, 0.4f, 0.17f, 1);
+
+	private static final float TIP_W = 440, TIP_PAD = 18, TIP_GAP = 18, TIP_RING = 6, TIP_LINE = 3;
+	private static final String TIP_TAP = "Tap to continue";
+	private final Rectangle anchor = new Rectangle();
+
+	void drawTip(PracticeCoach.Tip tip) {
+		boolean pointed = anchorOf(tip);
+		float hx = anchor.x - TIP_RING, hy = anchor.y - TIP_RING, hw = anchor.width + 2 * TIP_RING, hh = anchor.height + 2 * TIP_RING;
+		paint.fade(0.5f);
+		if (pointed) {
+			paint.rect(0, 0, layout.w, hy, Palette.BACKDROP);
+			paint.rect(0, hy + hh, layout.w, layout.h - hy - hh, Palette.BACKDROP);
+			paint.rect(0, hy, hx, hh, Palette.BACKDROP);
+			paint.rect(hx + hw, hy, layout.w - hx - hw, hh, Palette.BACKDROP);
+		} else {
+			paint.rect(0, 0, layout.w, layout.h, Palette.BACKDROP);
+		}
+		paint.fade(1f);
+		if (pointed) {
+			paint.rect(hx, hy, hw, TIP_LINE, Palette.GOLD);
+			paint.rect(hx, hy + hh - TIP_LINE, hw, TIP_LINE, Palette.GOLD);
+			paint.rect(hx, hy, TIP_LINE, hh, Palette.GOLD);
+			paint.rect(hx + hw - TIP_LINE, hy, TIP_LINE, hh, Palette.GOLD);
+		}
+		BitmapFont f = paint.ui(1.05f, Palette.CREAM);
+		paint.glyphs.setText(f, tip.text(), Palette.CREAM, TIP_W - 2 * TIP_PAD, Align.left, true);
+		float bh = paint.glyphs.height + 2 * TIP_PAD + 26, bw = TIP_W;
+		float cx = pointed ? anchor.x + anchor.width / 2 : layout.w / 2;
+		float by = !pointed ? layout.h / 2 - bh / 2
+				: anchor.y + anchor.height / 2 > layout.h / 2 ? anchor.y - TIP_GAP - TIP_RING - bh : anchor.y + anchor.height + TIP_GAP + TIP_RING;
+		float bx = MathUtils.clamp(cx - bw / 2, 12, layout.w - 12 - bw);
+		by = MathUtils.clamp(by, 12, layout.h - 12 - bh);
+		paint.frame(paint.assets.panelTurn, bx, by, bw, bh);
+		f.draw(paint.batch, tip.text(), bx + TIP_PAD, by + bh - TIP_PAD, bw - 2 * TIP_PAD, Align.left, true);
+		paint.text(paint.ui(0.9f, Palette.GOLD), TIP_TAP, bx + bw - TIP_PAD, by + TIP_PAD + 8, false);
+	}
+
+	private boolean anchorOf(PracticeCoach.Tip tip) {
+		switch (tip.anchor()) {
+		case DEALER:
+			anchor.set(layout.panelX(match.dealer()), layout.panelTop(match.dealer()) - PlayerPanel.H, PlayerPanel.W, PlayerPanel.H);
+			return true;
+		case TALLY:
+			anchor.set(10, layout.h - 58, 150, 50);
+			return true;
+		case TRACKER:
+			anchor.set(10, layout.h - 100, 150, 38);
+			return true;
+		case TRUMP:
+			anchor.set(layout.trumpX(), layout.trumpY(), layout.trumpW(), layout.trumpH());
+			return true;
+		case CARD:
+			int i = scene.handOrder().indexOf(tip.card());
+			if (i < 0 || i >= scene.handRects().size()) {
+				return false;
+			}
+			anchor.set(scene.handRects().get(i));
+			return true;
+		case BID:
+			Rectangle b = targets.bid(tip.number());
+			if (b == null || b.width <= 0) {
+				return false;
+			}
+			anchor.set(b);
+			return true;
+		case SCORE_ROW:
+			anchor.set(layout.w / 2 - ScoreCard.W / 2, layout.centreY() - ScoreCard.H / 2, ScoreCard.W, ScoreCard.H);
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	void drawDealerPick(float t) {
+		if (dealsOf != match) {
+			dealsOf = match;
+			String who = scene.inPractice() ? PracticeRound.position(match.dealer()) : scene.name(match.dealer());
+			deals = match.dealer() == Seating.YOU ? "You deal" : Character.toUpperCase(who.charAt(0)) + who.substring(1) + " deals";
+		}
+		float cx = layout.w / 2, cy = layout.centreY() + 20;
+		if (!DealerPick.settled(t)) {
+			float fly = Ease.IN.apply(MathUtils.clamp((t - DealerPick.LANDED) / DealerPick.FLIGHT, 0, 1));
+			float tx = layout.panelX(match.dealer()) + DEALER_CHIP_X, ty = layout.panelTop(match.dealer()) - DEALER_CHIP_Y;
+			float x = MathUtils.lerp(cx, tx, fly), y = MathUtils.lerp(cy, ty, fly), size = MathUtils.lerp(DEALER_CHIP, 26, fly);
+			float p = Math.min(1, t / DealerPick.LANDED), angle = DEALER_SPINS * MathUtils.PI * (1 - (1 - p) * (1 - p));
+			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+			paint.batch.setColor(1f, 0.8f, 0.45f, 0.5f * (1 - fly));
+			paint.batch.draw(paint.assets.glow, x - size * 1.6f, y - size * 1.6f, size * 3.2f, size * 3.2f);
+			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			coin(x, y, size, angle);
+		}
+		if (DealerPick.landed(t)) {
+			paint.centred(paint.serif(1.6f, Palette.GOLD, Math.min(1, (t - DealerPick.LANDED) * 3)), deals, cx, cy - DEALER_CHIP / 2 - 18);
+		}
+	}
+
+	private static final float DEALER_CHIP = 96, DEALER_SPINS = 8, DEALER_CHIP_X = 40, DEALER_CHIP_Y = 22, COIN_THICK = 0.12f;
+	private static final int COIN_LAYERS = 12;
+
+	private void coin(float cx, float cy, float size, float angle) {
+		float face = size * Math.max(0.03f, Math.abs(MathUtils.cos(angle))), half = size * COIN_THICK / 2 * MathUtils.sin(angle);
+		for (int i = 0; i <= COIN_LAYERS; i++) {
+			float k = i / (float) COIN_LAYERS, shade = 0.42f + 0.16f * (i % 2) + 0.12f * k;
+			paint.batch.setColor(shade, shade * 0.78f, shade * 0.4f, 1);
+			paint.batch.draw(paint.assets.dealerIcon, cx - half + 2 * half * k - face / 2, cy - size / 2, face, size);
+		}
+		paint.batch.setColor(Color.WHITE);
+		paint.batch.draw(paint.assets.dealerIcon, cx + half - face / 2, cy - size / 2, face, size);
+	}
+	private String deals = "";
+	private Match dealsOf;
 
 	void drawHandEnd(float t) {
 		float a = HAND_END_IN.progress(t);
@@ -183,7 +367,7 @@ final class TableOverlays {
 				scale = LABEL_OPPONENT;
 				paint.glyphs.setText(paint.serif(scale), s);
 				Vector2 o = layout.fanOrigin(seat);
-				x = seat == 3 ? o.x - paint.glyphs.width : o.x;
+				x = layout.spot(seat) == 3 ? o.x - paint.glyphs.width : o.x;
 				y = o.y + TableLayout.backH() / 2 + paint.glyphs.height / 2;
 			}
 			BitmapFont f = paint.serif(scale);
@@ -195,36 +379,12 @@ final class TableOverlays {
 		}
 	}
 
-	void drawHandResults() {
-		float pw = RESULTS_W, ph = RESULTS_H;
-		float px = (layout.w - pw) / 2, py = layout.centreY() - ph / 2;
-		paint.frame(paint.assets.panel, px, py, pw, ph);
-		BitmapFont f = paint.ui(1.3f, Palette.CREAM);
-		paint.text(f, Wording.handResults(match.handIndex() + 1), layout.w / 2, py + ph - RESULTS_TITLE_DROP, true);
-
-		BitmapFont t = paint.ui(1.1f);
-		float[] cols = RESULT_COLS;
-		float y = py + ph - RESULTS_HEAD_DROP;
-		t.setColor(Palette.MUTED);
-		for (int c = 0; c < cols.length; c++) {
-			t.draw(paint.batch, RESULT_HEAD[c], px + cols[c], y);
-		}
-		for (int seat : ranked()) {
-			y -= RESULTS_ROW;
-			int pts = match.lastHandPoints(seat);
-			t.setColor(Palette.MUTED);
-			t.draw(paint.batch, Wording.ordinal(match.placeOf(seat)), px + cols[0], y);
-			t.setColor(match.madeBid(seat) ? Palette.CREAM : Palette.RED);
-			t.draw(paint.batch, scene.name(seat) + (match.madeBid(seat) ? "" : "  (set)"), px + cols[1], y);
-			paint.numeral(match.bid(seat), px + cols[2] + RESULT_NUMERAL_X, y - RESULT_NUMERAL_Y, RESULT_NUMERAL_H, Color.WHITE);
-			t.draw(paint.batch, Numbers.text(match.tricksWon(seat)), px + cols[3], y);
-			t.draw(paint.batch, Numbers.signed(pts), px + cols[4], y);
-			t.setColor(match.placeOf(seat) == 1 ? Palette.GOLD : Palette.CREAM);
-			t.draw(paint.batch, Numbers.text(match.score(seat)), px + cols[5], y);
-		}
+	void drawHandResults(float t) {
+		float py = scoreCard.draw(layout.w / 2, layout.centreY(), Wording.handResults(match.handIndex() + 1), resultRows(), 1f, t);
 		drawWinningCards(py + WON_CARDS_RISE);
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
-		Rectangle menu = targets.button(OverlayTargets.Button.MENU);
+		Rectangle win = targets.button(OverlayTargets.Button.FORCE_WIN);
+		Rectangle menu = win.width > 0 ? win : targets.button(OverlayTargets.Button.MENU);
 		paint.glyphs.setText(s, TAP_NOTE);
 		paint.text(s, TAP_NOTE, menu.x - TAP_NOTE_GAP, menu.y + (menu.height + paint.glyphs.height) / 2, false);
 	}
@@ -236,7 +396,7 @@ final class TableOverlays {
 		}
 		float cw = Assets.CARD_W * WON_CARD_SCALE, ch = Assets.CARD_H * WON_CARD_SCALE;
 		int n = winningCards.size();
-		float room = RESULTS_W - 2 * WON_CARDS_INSET;
+		float room = ScoreCard.W - 2 * WON_CARDS_INSET;
 		float step = n > 1 ? Math.min(cw + WON_CARD_GAP, (room - cw) / (n - 1)) : 0;
 		float x = (layout.w - (cw + step * (n - 1))) / 2;
 		for (Card c : winningCards) {
@@ -250,10 +410,90 @@ final class TableOverlays {
 	private final List<Card> winningCards = new ArrayList<Card>();
 	private int winningCardsOf = -1;
 
-	private static final float[] RESULT_COLS = { 22, 62, 255, 315, 380, 465 };
-	private static final String[] RESULT_HEAD = { "", "Player", "Bid", "Won", "Points", "Total" };
+	private final List<ScoreCard.Row> resultRows = new ArrayList<ScoreCard.Row>();
+	private Match resultsOf;
+	private int resultsHand = -1;
 
-	void drawGameOver(int newHighScore) {
+	private List<ScoreCard.Row> resultRows() {
+		if (resultsOf != match || resultsHand != match.handIndex()) {
+			resultsOf = match;
+			resultsHand = match.handIndex();
+			resultRows.clear();
+			for (int seat : ranked()) {
+				resultRows.add(new ScoreCard.Row(match.placeOf(seat), scene.name(seat), match.madeBid(seat), match.bid(seat),
+						match.tricksWon(seat), match.lastHandPoints(seat), match.score(seat)));
+			}
+		}
+		return resultRows;
+	}
+
+	static final float NEW_BEST_LENGTH = 1.6f;
+	private static final float PODIUM_W = 118, PODIUM_WINNER_W = 150, PODIUM_STEP_X = 150, PODIUM_BASE = 0.14f,
+			ROLL_FROM = 0.3f,
+			ROLL_STEP = 0.28f, ROLL_SPIN = 28, BEST_FLASH = 0.45f;
+	private static final float[] PODIUM_LIFT = { 0, 60, 30, 12, 0 };
+	private static final int[] PODIUM_SPOT = { 0, 2, 1, 3, 4 };
+	private static final String[] PLACE_CAPS = { "", "FIRST", "SECOND", "THIRD", "FOURTH" };
+	private static final String WINNER_IS = "And the winner is\u2026";
+	private static final Tween PODIUM_UP = Tween.over(GameEnd.RISE, Ease.OUT);
+	private final StringBuilder rolled = new StringBuilder();
+
+	void drawPodium(float t) {
+		int n = match.players();
+		paint.fade(Math.min(1, t * 3));
+		paint.rect(0, 0, layout.w, layout.h, Palette.BACKDROP);
+		paint.fade(1f);
+		float span = (n - 1) * PODIUM_STEP_X, base = layout.h * PODIUM_BASE;
+		for (int s = 0; s < n; s++) {
+			int place = match.placeOf(s);
+			float k = PODIUM_UP.progress(t - GameEnd.risesAt(place, n));
+			if (k <= 0) {
+				continue;
+			}
+			int spot = PODIUM_SPOT[place] - 1;
+			float cw = place == 1 ? PODIUM_WINNER_W : PODIUM_W, ch = cw * 98 / 73;
+			float cx = layout.w / 2 - span / 2 + spot * PODIUM_STEP_X, y = base + PODIUM_LIFT[place] - (1 - k) * (layout.h * 0.8f);
+			podiumCard(s, place, cx - cw / 2, y, cw, ch, t);
+		}
+		float waiting = t - GameEnd.risesAt(2, n) - GameEnd.RISE;
+		if (waiting > 0 && t < GameEnd.risesAt(1, n)) {
+			paint.text(paint.serif(1.6f, Palette.GOLD, Math.min(1, waiting * 4)), WINNER_IS, layout.w / 2, layout.h * 0.86f, true);
+		}
+		if (scene.podiumDone()) {
+			paint.text(paint.ui(1.1f, Palette.GOLD), TAP_NOTE, layout.w / 2, layout.h * 0.07f, true);
+		}
+	}
+
+	private void podiumCard(int seat, int place, float x, float y, float cw, float ch, float t) {
+		boolean first = place == 1;
+		if (first) {
+			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+			paint.batch.setColor(1f, 0.8f, 0.4f, 0.45f + 0.15f * MathUtils.sin(t * 3));
+			paint.batch.draw(paint.assets.glow, x - cw * 0.6f, y - ch * 0.35f, cw * 2.2f, ch * 1.7f);
+			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			paint.batch.setColor(Color.WHITE);
+		}
+		art.shadow(x, y, cw, ch, first ? 10 : 5);
+		paint.batch.draw(paint.assets.campaignFace, x, y, cw, ch);
+		float cx = x + cw / 2;
+		paint.text(paint.ui(0.85f, Palette.GOLD), PLACE_CAPS[place], cx, y + ch - 16, true);
+		paint.numeral(place, cx, y + ch * 0.6f, cw * 0.36f, first ? Palette.GOLD_LIGHT : Palette.GOLD);
+		paint.text(paint.serif(first ? 1.4f : 1.2f, Palette.GOLD_LIGHT), scene.name(seat), cx, y + ch * 0.34f, true);
+		paint.text(paint.ui(1.0f, Palette.CREAM), Numbers.text(match.score(seat)), cx, y + ch * 0.2f, true);
+	}
+
+	private CharSequence rolling(int score, float t) {
+		String digits = Numbers.text(score);
+		rolled.setLength(0);
+		for (int i = 0; i < digits.length(); i++) {
+			char c = digits.charAt(i);
+			boolean locked = t >= ROLL_FROM + i * ROLL_STEP || c < '0' || c > '9';
+			rolled.append(locked ? c : (char) ('0' + ((int) (t * ROLL_SPIN) + i * 3) % 10));
+		}
+		return rolled;
+	}
+
+	void drawGameOver(int newHighScore, float since) {
 		float pw = GAME_OVER_W, ph = GAME_OVER_H;
 		float px = (layout.w - pw) / 2, py = layout.h / 2 - GAME_OVER_LIFT - ph / 2;
 		paint.frame(paint.assets.panel, px, py, pw, ph);
@@ -270,16 +510,30 @@ final class TableOverlays {
 			t.draw(paint.batch, Wording.ordinal(match.placeOf(s)), px + GAME_OVER_PLACE_X, y);
 			t.setColor(match.placeOf(s) == 1 ? Palette.GOLD : Palette.CREAM);
 			t.draw(paint.batch, scene.name(s), px + GAME_OVER_NAME_X, y);
-			paint.text(t, Numbers.text(match.score(s)), px + pw - GAME_OVER_SCORE_FROM_RIGHT, y, false);
-			if (s == Seating.YOU && newHighScore == 0) {
+			boolean best = s == Seating.YOU && newHighScore == 0;
+			float sx = px + pw - GAME_OVER_SCORE_FROM_RIGHT;
+			if (best) {
+				float locked = since - ROLL_FROM - (Numbers.text(match.score(s)).length() - 1) * ROLL_STEP;
+				if (locked >= 0 && locked < BEST_FLASH) {
+					paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+					paint.batch.setColor(1f, 0.85f, 0.45f, 0.8f * (1 - locked / BEST_FLASH));
+					paint.batch.draw(paint.assets.glow, sx - 90, y - 50, 120, 80);
+					paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+					paint.batch.setColor(Color.WHITE);
+				}
+			}
+			paint.text(t, best ? rolling(match.score(s), since) : Numbers.text(match.score(s)), sx, y, false);
+			if (best) {
 				BitmapFont n = paint.ui(0.95f, Palette.GOLD_LIGHT);
 				n.draw(paint.batch, "New best!", px + pw - NEW_BEST_FROM_RIGHT, y - 2);
 			}
 			y -= GAME_OVER_ROW;
 		}
 		float bw = END_BUTTON_W, bh = END_BUTTON_H, by = py + END_BUTTONS_RISE;
-		paint.button(targets.button(OverlayTargets.Button.PLAY_AGAIN), "Play again", layout.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.button);
-		paint.button(targets.button(OverlayTargets.Button.HIGH_SCORES), "High scores", layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh, paint.assets.buttonAlt);
+		paint.button(targets.button(OverlayTargets.Button.CONTINUE), "Continue", layout.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw, bh,
+				paint.assets.button);
+		paint.button(targets.button(OverlayTargets.Button.MAIN_MENU), "Main menu", layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by, bw, bh,
+				paint.assets.buttonAlt);
 	}
 
 	private String winnersLine() {

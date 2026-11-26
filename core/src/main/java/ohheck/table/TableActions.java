@@ -22,4 +22,16 @@ interface TableActions {
 	void showOptions();
 
 	void showTitle();
+
+	default void forceWin() {
+	}
+
+	default void refuseBid(int b) {
+	}
+
+	default void skipGameEnd() {
+	}
+
+	default void dismissTip() {
+	}
 }

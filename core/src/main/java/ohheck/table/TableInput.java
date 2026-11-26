@@ -62,7 +62,7 @@ final class TableInput {
 		if (pressed == null) {
 			return;
 		}
-		if (!dragging && moved > DRAG_START && scene.match().legalPlays(Seating.YOU).contains(pressed)) {
+		if (!dragging && moved > DRAG_START && scene.playable(pressed)) {
 			dragging = true;
 		}
 		dragX = x;
@@ -84,6 +84,13 @@ final class TableInput {
 	}
 
 	void tap(float x, float y) {
+		if (scene.finishing()) {
+			return;
+		}
+		if (scene.tip() != null) {
+			actions.dismissTip();
+			return;
+		}
 		if (menuOpen) {
 			MenuItem item = targets.menuItemAt(x, y);
 			if (item != null) {
@@ -91,6 +98,8 @@ final class TableInput {
 			}
 		} else if (targets.hit(OverlayTargets.Button.MENU, x, y)) {
 			openMenu();
+		} else if (targets.hit(OverlayTargets.Button.FORCE_WIN, x, y)) {
+			actions.forceWin();
 		} else {
 			tapTable(x, y);
 		}
@@ -121,16 +130,19 @@ final class TableInput {
 	}
 
 	void tapGameOver(float x, float y) {
-		if (targets.hit(OverlayTargets.Button.HIGH_SCORES, x, y)) {
+		if (!scene.resultsShown()) {
+			actions.skipGameEnd();
+		} else if (targets.hit(OverlayTargets.Button.CONTINUE, x, y)) {
 			actions.showHighScores();
-		} else if (targets.hit(OverlayTargets.Button.PLAY_AGAIN, x, y)) {
-			actions.newGame();
+		} else if (targets.hit(OverlayTargets.Button.MAIN_MENU, x, y)) {
+			actions.showTitle();
 		}
 	}
 
 	private void tapBid(float x, float y) {
 		int b = targets.bidAt(x, y);
 		if (b >= 0 && !actions.bid(b)) {
+			actions.refuseBid(b);
 			actions.hint(Wording.dealerCantBid(b, scene.match().handSize()));
 		}
 	}
@@ -143,6 +155,9 @@ final class TableInput {
 		Card c = scene.handOrder().get(i);
 		if (!scene.match().legalPlays(Seating.YOU).contains(c)) {
 			actions.hint(Wording.mustFollow(scene.match().leadSuit()));
+			return;
+		}
+		if (!scene.playable(c)) {
 			return;
 		}
 		actions.play(c);

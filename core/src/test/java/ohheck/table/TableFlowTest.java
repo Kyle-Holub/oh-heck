@@ -18,6 +18,7 @@ import org.junit.Test;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 
 public class TableFlowTest {
 
@@ -60,6 +61,7 @@ public class TableFlowTest {
 
 	private static final Map<TableState, Set<TableState>> NEXT = new EnumMap<TableState, Set<TableState>>(TableState.class);
 	static {
+		NEXT.put(TableState.PICK_DEALER, EnumSet.of(TableState.SHUFFLE));
 		NEXT.put(TableState.SHUFFLE, EnumSet.of(TableState.DEAL, TableState.TURN));
 		NEXT.put(TableState.DEAL, EnumSet.of(TableState.TURN));
 		NEXT.put(TableState.TURN, EnumSet.of(TableState.TURN, TableState.TRICK));
@@ -81,6 +83,7 @@ public class TableFlowTest {
 	private Match newGame(long seed) {
 		Match m = Match.random(4, new Random(seed));
 		flow.start(m);
+		flow.skip();
 		return m;
 	}
 
@@ -95,6 +98,24 @@ public class TableFlowTest {
 		}
 		fail("stuck in " + from);
 		return null;
+	}
+
+	@Test
+	public void aTrumpThatBeatsAnAceIsNoticed() {
+		Card ace = Card.parse("AH"), two = Card.parse("2S"), king = Card.parse("KH");
+		assertTrue(TableFlow.trumpBeatAnAce(List.of(ace, two, king), two, Suit.SPADES));
+		assertFalse("no trump won", TableFlow.trumpBeatAnAce(List.of(ace, two, king), ace, Suit.CLUBS));
+		assertFalse("no ace beaten", TableFlow.trumpBeatAnAce(List.of(king, two), two, Suit.SPADES));
+		assertFalse("no trumps", TableFlow.trumpBeatAnAce(List.of(ace, two), ace, null));
+	}
+
+	@Test
+	public void aNewGameFirstPicksTheDealer() {
+		flow.start(Match.random(4, new Random(1)));
+		assertEquals(TableState.PICK_DEALER, flow.state());
+		assertEquals(0, events.deals);
+		assertEquals(TableState.SHUFFLE, waitForChange());
+		assertEquals(1, events.deals);
 	}
 
 	@Test

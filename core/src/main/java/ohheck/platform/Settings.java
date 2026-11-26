@@ -5,6 +5,7 @@ import java.util.function.UnaryOperator;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
+import ohheck.campaign.Cosmetic;
 import ohheck.players.Difficulty;
 import ohheck.records.Records;
 import ohheck.rules.GameMode;
@@ -14,8 +15,10 @@ import ohheck.rules.RuleSet;
 /* The player's options, in the device's preferences. */
 public final class Settings {
 
+	private static final String VIBRATION = "vibration";
 	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
-			MODE = "mode", CUSTOM_RULES = "customRules", HAND_SORT = "handSort", TUTORIAL_SEEN = "tutorialSeen";
+			MODE = "mode", CUSTOM_RULES = "customRules", CARD_BACK = "cardBack", FELT = "felt", HAND_SORT = "handSort", KNOWS_HOW_TO_PLAY = "knowsHowToPlay",
+			CAMPAIGN_INTRO_SEEN = "campaignIntroSeen";
 
 	private static final float STANDARD_PACE = 0.6f, FAST_PACE = 1.4f;
 
@@ -32,6 +35,14 @@ public final class Settings {
 
 	public void setMusic(boolean on) {
 		prefs.putBoolean(MUSIC, on).flush();
+	}
+
+	public boolean vibration() {
+		return prefs.getBoolean(VIBRATION, true);
+	}
+
+	public void setVibration(boolean on) {
+		prefs.putBoolean(VIBRATION, on).flush();
 	}
 
 	public boolean sound() {
@@ -111,11 +122,40 @@ public final class Settings {
 		prefs.putString(HAND_SORT, sort.name()).flush();
 	}
 
-	public boolean tutorialSeen() {
-		return prefs.getBoolean(TUTORIAL_SEEN, false);
+	public Cosmetic cardBack() {
+		return Cosmetic.named(prefs.getString(CARD_BACK, Cosmetic.CLASSIC.name()));
 	}
 
-	public void setTutorialSeen(boolean seen) {
-		prefs.putBoolean(TUTORIAL_SEEN, seen).flush();
+	public void setCardBack(Cosmetic c) {
+		prefs.putString(CARD_BACK, c.name()).flush();
+	}
+
+	public Cosmetic felt() {
+		return Cosmetic.named(prefs.getString(FELT, Cosmetic.CLASSIC.name()));
+	}
+
+	public void setFelt(Cosmetic c) {
+		prefs.putString(FELT, c.name()).flush();
+	}
+
+	public void forgetEverything() {
+		prefs.clear();
+		prefs.flush();
+	}
+
+	public boolean knowsHowToPlay() {
+		return prefs.getBoolean(KNOWS_HOW_TO_PLAY, false);
+	}
+
+	public void setKnowsHowToPlay(boolean knows) {
+		prefs.putBoolean(KNOWS_HOW_TO_PLAY, knows).flush();
+	}
+
+	public boolean campaignIntroSeen() {
+		return prefs.getBoolean(CAMPAIGN_INTRO_SEEN, false);
+	}
+
+	public void setCampaignIntroSeen(boolean seen) {
+		prefs.putBoolean(CAMPAIGN_INTRO_SEEN, seen).flush();
 	}
 }

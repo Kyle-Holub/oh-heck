@@ -8,6 +8,7 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
@@ -31,6 +32,7 @@ public abstract class BaseScreen extends ScreenAdapter {
 	protected final GlyphLayout glyphs;
 	protected float w = WORLD_W, h = WORLD_H;
 	protected float shownFor;
+	protected float kickX, kickY, kickZoom = 1;
 
 	private final Vector2 tmp = new Vector2();
 	private float downX, downY, lastY;
@@ -64,6 +66,9 @@ public abstract class BaseScreen extends ScreenAdapter {
 
 	protected void touchUp(float x, float y) {
 		if (isTap(x, y)) {
+			if (paint.pressed(x, y)) {
+				game.audio().press();
+			}
 			tap(x, y);
 		}
 	}
@@ -172,7 +177,12 @@ public abstract class BaseScreen extends ScreenAdapter {
 		game.fitViewportToTarget();
 		w = viewport.getWorldWidth();
 		h = viewport.getWorldHeight();
-		batch.setProjectionMatrix(viewport.getCamera().combined);
+		OrthographicCamera camera = (OrthographicCamera) viewport.getCamera();
+		camera.position.set(w / 2 + kickX, h / 2 + kickY, 0);
+		camera.zoom = kickZoom;
+		camera.update();
+		batch.setProjectionMatrix(camera.combined);
+		paint.newFrame();
 		batch.begin();
 		batch.setColor(Color.WHITE);
 	}

@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.badlogic.gdx.math.Rectangle;
 
+import ohheck.campaign.PracticeCoach;
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 
@@ -28,6 +30,10 @@ interface TableScene {
 
 	String name(int seat);
 
+	default String habit(int seat) {
+		return "";
+	}
+
 	TableLayout layout();
 
 	List<Card> handOrder();
@@ -38,6 +44,38 @@ interface TableScene {
 
 	boolean isMenuOpen();
 
+	default boolean finishing() {
+		return false;
+	}
+
+	default boolean inPractice() {
+		return false;
+	}
+
+	default String placardName(int seat) {
+		return name(seat);
+	}
+
+	default boolean playable(Card c) {
+		return match().legalPlays(Seating.YOU).contains(c);
+	}
+
+	default boolean bidAllowed(int b) {
+		return true;
+	}
+
+	default PracticeCoach.Tip tip() {
+		return null;
+	}
+
+	default boolean inCampaign() {
+		return false;
+	}
+
+	default boolean prizesWaiting() {
+		return false;
+	}
+
 	boolean isDragging();
 
 	Card pressedCard();
@@ -47,4 +85,16 @@ interface TableScene {
 	float dragY();
 
 	boolean resultsShown();
+
+	default float podiumTime() {
+		return -1;
+	}
+
+	default boolean podiumDone() {
+		return false;
+	}
+
+	default float sinceResults() {
+		return 0;
+	}
 }

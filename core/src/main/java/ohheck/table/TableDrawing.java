@@ -6,7 +6,9 @@ import java.util.function.Supplier;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
@@ -16,9 +18,11 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.HandSort;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Painter;
+import ohheck.ui.Palette;
 import ohheck.ui.PostProcessor;
 import ohheck.ui.TapAreas;
 
@@ -35,6 +39,7 @@ final class TableDrawing {
 	private final TableScene scene;
 	private final PostProcessor post;
 	private final SpriteBatch batch;
+	private final Painter paint;
 	private final Assets assets;
 	private final TableLayout layout;
 	private final CardArt art;
@@ -48,6 +53,7 @@ final class TableDrawing {
 		this.sort = sort;
 		this.scene = scene;
 		this.post = post;
+		this.paint = paint;
 		this.batch = paint.batch;
 		this.assets = paint.assets;
 		this.layout = scene.layout();
@@ -58,6 +64,29 @@ final class TableDrawing {
 
 	void updateMotes(float dt, boolean trumpShowing) {
 		motes.update(dt, trumpShowing && scene.match().trumpCard() != null, layout.trumpX(), layout.trumpY(), layout.trumpW(), layout.trumpH());
+	}
+
+	private static final String[] SUIT_SIGNS = { "\u2663", "\u2660", "\u2665", "\u2666" };
+	private static final Color RED_TINT = new Color(0.95f, 0.25f, 0.2f, 1);
+	static final float PUFF_LEN = 0.8f;
+	private static final float PUFF_REACH = 80, PUFF_FROM = 18;
+	private static final int PUFFS = 8;
+
+	private static boolean red(Suit s) {
+		return s == Suit.HEARTS || s == Suit.DIAMONDS;
+	}
+
+	private void suitPuff(Suit s, float cx, float cy, float p) {
+		if (p < 0 || p >= 1) {
+			return;
+		}
+		float e = Ease.OUT.apply(p);
+		Color c = red(s) ? RED_TINT : Palette.CREAM;
+		BitmapFont f = paint.serif(1.2f + 0.6f * e, c, 1 - p);
+		for (int k = 0; k < PUFFS; k++) {
+			float a = k * MathUtils.PI2 / PUFFS + 0.3f, r = PUFF_FROM + PUFF_REACH * e;
+			paint.centred(f, SUIT_SIGNS[s.ordinal()], cx + MathUtils.cos(a) * r, cy + MathUtils.sin(a) * r + 10);
+		}
 	}
 
 	void tally() {
@@ -103,6 +132,9 @@ final class TableDrawing {
 		Card trump = scene.match().trumpCard();
 		art.flip(trump, x, y, cw, ch, p);
 		if (p >= 1) {
+			suitPuff(trump.suit(), x + cw / 2, y + ch / 2, (flow.trumpTime() - TableFlow.TRUMP_FLIP_TIME) / PUFF_LEN);
+		}
+		if (p >= 1) {
 			Glints.draw(batch, assets.glow, trump, x, y, cw, ch, cw, 0, scene.time(), lit);
 		}
 		if (p >= 1 && lit > 0) {
@@ -111,12 +143,54 @@ final class TableDrawing {
 		motes.draw(batch, assets.glow);
 	}
 
+	void momentum() {
+		Match m = scene.match();
+		if (!m.rules().momentum) {
+			return;
+		}
+		float now = scene.time();
+		for (int seat = 0; seat < m.players(); seat++) {
+			int streak = Math.min(MOMENTUM_NOTCHES, m.streak(seat));
+			if (m == momentumOf && streak != shownStreak[seat]) {
+				changedAt[seat] = now;
+			}
+			shownStreak[seat] = streak;
+			momentumBar(seat, streak, MathUtils.clamp((now - changedAt[seat]) / NOTCH_FILL, 0, 1), now);
+		}
+		momentumOf = m;
+	}
+
+	private void momentumBar(int seat, int lit, float fill, float now) {
+		int spot = layout.spot(seat);
+		boolean left = spot == 2 || spot == 3;
+		float pop = 1 + BAR_POP * (1 - fill), bw = BAR_W * pop, bh = BAR_H * pop;
+		float cx = left ? layout.panelX(seat) - BAR_GAP - BAR_W / 2 : layout.panelX(seat) + PlayerPanel.W + BAR_GAP + BAR_W / 2;
+		float cy = layout.panelTop(seat) - PlayerPanel.H / 2;
+		if (lit >= MOMENTUM_NOTCHES) {
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+			batch.setColor(1f, 0.8f, 0.4f, 0.35f + 0.15f * MathUtils.sin(now * 4));
+			batch.draw(assets.glow, cx - BAR_W * 2, cy - BAR_H * 0.75f, BAR_W * 4, BAR_H * 1.5f);
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			batch.setColor(Color.WHITE);
+		}
+		batch.draw(assets.momentum[lit], cx - bw / 2, cy - bh / 2, bw, bh);
+	}
+
+	private static final float BAR_W = 22, BAR_H = BAR_W * 144 / 44, BAR_GAP = 5, BAR_POP = 0.25f, NOTCH_FILL = 0.45f;
+	private static final int MOMENTUM_NOTCHES = 2;
+	private final int[] shownStreak = new int[Seating.SEATS];
+	private final float[] changedAt = { -99, -99, -99, -99 };
+	private Match momentumOf;
+
 	void seat(int seat) {
 		TableFlow flow = scene.flow();
 		Match m = scene.match();
-		boolean turn = flow.state() == TableState.TURN && m.currentSeat() == seat;
-		state.reset().named(scene.name(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(m.dealer() == seat)
-				.bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
+		boolean picking = flow.state() == TableState.PICK_DEALER;
+		boolean turn = picking ? DealerPick.litSeat(flow.stateTime(), m.dealer(), m.players()) == seat
+				: flow.state() == TableState.TURN && m.currentSeat() == seat;
+		boolean dealer = m.dealer() == seat && (!picking || DealerPick.settled(flow.stateTime()));
+		state.reset().named(scene.placardName(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(dealer)
+				.doubled(m.onMomentum(seat)).bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
 	}
 

@@ -191,12 +191,12 @@ def card_sheet(out):
     return sheet
 
 
-def card_back(out):
+def card_back(out, name="back_hd.png", colour=OXBLOOD, deep=OXBLOOD_DARK, suit="spades"):
     W, H = CARD_W * SS, CARD_H * SS
     y = np.linspace(0, 1, H)[:, None, None]
     x = np.linspace(0, 1, W)[None, :, None]
     r = np.sqrt((x - 0.5) ** 2 + (y - 0.5) ** 2)
-    base = np.array(OXBLOOD, float) * (1.15 - 0.6 * r) + np.array(OXBLOOD_DARK, float) * 0.0
+    base = np.array(colour, float) * (1.15 - 0.6 * r)
     img = Image.fromarray(np.clip(base, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
     d = ImageDraw.Draw(img)
     inset = 14 * SS
@@ -214,15 +214,20 @@ def card_back(out):
     d.rounded_rectangle([inset + 6 * SS, inset + 6 * SS, W - inset - 6 * SS, H - inset - 6 * SS], 8 * SS, outline=GOLD_DARK, width=SS)
     # medallion
     cx, cy, rad = W / 2, H / 2, 38 * SS
-    d.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=OXBLOOD_DARK, outline=GOLD, width=3 * SS)
+    d.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=deep, outline=GOLD, width=3 * SS)
     d.ellipse([cx - rad + 7 * SS, cy - rad + 7 * SS, cx + rad - 7 * SS, cy + rad - 7 * SS], outline=GOLD_DARK, width=SS)
-    suit_shape(d, "spades", cx, cy, 40 * SS, GOLD)
+    suit_shape(d, suit, cx, cy, 40 * SS, GOLD)
     d.rounded_rectangle([SS, SS, W - 1 - SS, H - 1 - SS], 15 * SS, outline=CREAM_EDGE, width=5 * SS)
     img.putalpha(rounded_mask(W, H, 16 * SS))
-    downsample(img, CARD_W, CARD_H).save(os.path.join(out, "back_hd.png"), optimize=True)
+    downsample(img, CARD_W, CARD_H).save(os.path.join(out, name), optimize=True)
 
 
 # ---------------------------------------------------------------- table and UI
+
+def card_blank(out):
+    """A card face with nothing printed on it, for the campaign's chapter and step cards."""
+    downsample(card_base(77), CARD_W, CARD_H).save(os.path.join(out, "card_blank.png"), optimize=True)
+
 
 def card_slot(out):
     """An empty card's place: a dashed outline of a card, for a hand dealt with no trump card."""
@@ -260,7 +265,7 @@ def card_slot(out):
     downsample(img, CARD_W, CARD_H).save(os.path.join(out, "card_slot.png"), optimize=True)
 
 
-def table(out):
+def table(out, name="table.jpg", dark=(20, 12, 8), lit=(92, 58, 38)):
     """Dark warm felt under a soft overhead spotlight, falling away to near-black."""
     W, H = 1280, 640
     rng = np.random.default_rng(7)
@@ -268,14 +273,14 @@ def table(out):
     x = np.linspace(-1, 1, W)[None, :]
     r = np.sqrt((x / 1.25) ** 2 + ((y + 0.05) / 0.95) ** 2)
     light = np.clip(1 - r, 0, 1) ** 1.6
-    dark = np.array([20, 12, 8], float)
-    lit = np.array([92, 58, 38], float)
+    dark = np.array(dark, float)
+    lit = np.array(lit, float)
     img = dark[None, None, :] + (lit - dark)[None, None, :] * light[..., None]
     fibre = rng.normal(0, 1, (H, W)).astype(np.float32)
     fibre = np.clip(fibre * 40 + 128, 0, 255).astype(np.uint8)
     fibre = (np.asarray(Image.fromarray(fibre, "L").filter(ImageFilter.GaussianBlur(0.8))).astype(float) - 128) / 40
     img += fibre[..., None] * 6
-    Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, "table.jpg"), quality=90, optimize=True)
+    Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, name), quality=90, optimize=True)
 
 
 def nine_patch(name, out, fill, border, width=2, radius=12, size=48, glow=None):
@@ -525,10 +530,196 @@ def blurred_sheet(sheet, out, pad=24, radius=7):
         for c in range(13):
             half.paste(bl.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch)).resize((hw, hh), Image.LANCZOS), (c * hw, r * hh))
     half.save(os.path.join(out, "cards_blur.png"), optimize=True)
-    back = Image.open(os.path.join(out, "back_hd.png"))
-    cell = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
-    cell.paste(back, (pad, pad))
-    premultiplied_blur(cell, radius).save(os.path.join(out, "back_blur.png"))
+    blurred_back(out, "back_hd.png", "back_blur.png", pad, radius)
+
+
+def blurred_back(out, src, dst, pad=24, radius=7):
+    cell = Image.new("RGBA", (CARD_W + 2 * pad, CARD_H + 2 * pad), (0, 0, 0, 0))
+    cell.paste(Image.open(os.path.join(out, src)), (pad, pad))
+    premultiplied_blur(cell, radius).save(os.path.join(out, dst))
+
+
+def chapter_cosmetics(out):
+    """Each chapter's prize: a card back and a felt. Chapter 1: emerald and club, a card-room green."""
+    card_back(out, "back_ch1.png", colour=(22, 92, 58), deep=(10, 48, 30), suit="clubs")
+    blurred_back(out, "back_ch1.png", "back_ch1_blur.png")
+    table(out, "table_ch1.jpg", dark=(6, 18, 12), lit=(30, 86, 56))
+
+
+def campaign_art(out):
+    """The campaign's cards: a dark face framed in gold for chapters and steps, a gold emblem per
+    suit (each chapter has one), an icon per step, and the diamond pips that mark steps done."""
+    W, H = CARD_W * SS, CARD_H * SS
+    y = np.linspace(0, 1, H)[:, None, None]
+    x = np.linspace(0, 1, W)[None, :, None]
+    r = np.sqrt((x - 0.5) ** 2 + (y - 0.45) ** 2)
+    face = np.array((58, 26, 20), float) * (1.2 - 0.7 * r)
+    img = Image.fromarray(np.clip(face, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+    d = ImageDraw.Draw(img)
+    inset = 10 * SS
+    d.rounded_rectangle([inset, inset, W - inset, H - inset], 10 * SS, outline=GOLD, width=3 * SS)
+    d.rounded_rectangle([inset + 7 * SS, inset + 7 * SS, W - inset - 7 * SS, H - inset - 7 * SS], 7 * SS, outline=GOLD_DARK, width=SS)
+    for cx, cy in [(inset + 7 * SS, inset + 7 * SS), (W - inset - 7 * SS, inset + 7 * SS), (inset + 7 * SS, H - inset - 7 * SS), (W - inset - 7 * SS, H - inset - 7 * SS)]:
+        suit_shape(d, "diamonds", cx, cy, 16 * SS, GOLD)
+    d.rounded_rectangle([SS, SS, W - 1 - SS, H - 1 - SS], 15 * SS, outline=GOLD_DARK, width=4 * SS)
+    img.putalpha(rounded_mask(W, H, 16 * SS))
+    downsample(img, CARD_W, CARD_H).save(os.path.join(out, "campaign_face.png"), optimize=True)
+
+    def icon(name, draw_it):
+        S = 108 * SS
+        im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        draw_it(ImageDraw.Draw(im), S)
+        downsample(im, 108, 108).save(os.path.join(out, name + ".png"))
+
+    for suit in ("spades", "diamonds", "hearts", "clubs"):
+        icon("emblem_" + suit, lambda dr, S, suit=suit: suit_shape(dr, suit, S / 2, S / 2, S * 0.86, GOLD + (255,)))
+
+    def small_card(dr, cx, cy, w, h, angle, fill):
+        pts = [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2)]
+        a = math.radians(angle)
+        rot = [(cx + px * math.cos(a) - py * math.sin(a), cy + px * math.sin(a) + py * math.cos(a)) for px, py in pts]
+        dr.polygon(rot, fill=fill, outline=GOLD_DARK + (255,), width=3 * SS)
+
+    def table_icon(dr, S):
+        for k, ang in enumerate((-22, 0, 22)):
+            small_card(dr, S / 2 + (k - 1) * S * 0.14, S * 0.56, S * 0.32, S * 0.46, ang, GOLD + (255,))
+        suit_shape(dr, "spades", S / 2, S * 0.52, S * 0.18, GOLD_DARK + (255,))
+
+    def shots_icon(dr, S):
+        c = S / 2
+        for rr, col in ((0.44, GOLD), (0.32, GOLD_DARK), (0.2, GOLD), (0.08, GOLD_DARK)):
+            dr.ellipse([c - rr * S, c - rr * S, c + rr * S, c + rr * S], fill=col + (255,))
+        dr.line([(S * 0.86, S * 0.14), (c + 2 * SS, c - 2 * SS)], fill=GOLD_LIGHT + (255,), width=5 * SS)
+        dr.polygon([(c, c), (c + 0.1 * S, c - 0.03 * S), (c + 0.03 * S, c - 0.1 * S)], fill=GOLD_LIGHT + (255,))
+
+    def duel_icon(dr, S):
+        small_card(dr, S * 0.4, S * 0.52, S * 0.36, S * 0.52, -18, GOLD + (255,))
+        small_card(dr, S * 0.6, S * 0.48, S * 0.36, S * 0.52, 18, GOLD_LIGHT + (255,))
+        suit_shape(dr, "hearts", S * 0.6, S * 0.48, S * 0.16, GOLD_DARK + (255,))
+
+    icon("step_table", table_icon)
+    icon("step_shots", shots_icon)
+    icon("step_duel", duel_icon)
+    icon("pip_on", lambda dr, S: suit_shape(dr, "diamonds", S / 2, S / 2, S * 0.9, GOLD_LIGHT + (255,)))
+
+    def pip_off(dr, S):
+        c = S / 2
+        dr.polygon([(c, c - 0.45 * S), (c + 0.32 * S, c), (c, c + 0.45 * S), (c - 0.32 * S, c)], outline=GOLD_DARK + (255,), width=8 * SS)
+
+    icon("pip_off", pip_off)
+
+
+def play_menu_icons(out):
+    """Gold icons for the Play screen's cards: continue, campaign, custom game, high scores."""
+    def icon(name, draw_it):
+        S = 108 * SS
+        im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        draw_it(ImageDraw.Draw(im), S)
+        downsample(im, 108, 108).save(os.path.join(out, name + ".png"))
+
+    gold, dark, light = GOLD + (255,), GOLD_DARK + (255,), GOLD_LIGHT + (255,)
+
+    def resume(d, S):
+        c, r = S / 2, S * 0.42
+        d.ellipse([c - r, c - r, c + r, c + r], outline=gold, width=6 * SS)
+        d.polygon([(c - r * 0.35, c - r * 0.5), (c + r * 0.55, c), (c - r * 0.35, c + r * 0.5)], fill=light)
+
+    def campaign(d, S):
+        d.line([(S * 0.3, S * 0.12), (S * 0.3, S * 0.9)], fill=dark, width=6 * SS)
+        d.polygon([(S * 0.32, S * 0.14), (S * 0.82, S * 0.28), (S * 0.32, S * 0.44)], fill=gold)
+        suit_shape(d, "spades", S * 0.46, S * 0.29, S * 0.16, dark)
+        d.ellipse([S * 0.22, S * 0.84, S * 0.38, S * 0.94], fill=gold)
+
+    def custom(d, S):
+        for k, at in enumerate((0.3, 0.6, 0.45)):
+            y = S * (0.25 + 0.25 * k)
+            d.line([(S * 0.14, y), (S * 0.86, y)], fill=dark, width=6 * SS)
+            x = S * (0.14 + 0.72 * at)
+            d.ellipse([x - S * 0.08, y - S * 0.08, x + S * 0.08, y + S * 0.08], fill=gold, outline=light, width=2 * SS)
+
+    def scores(d, S):
+        d.pieslice([S * 0.22, S * 0.02, S * 0.78, S * 0.6], 0, 180, fill=gold)
+        d.rectangle([S * 0.22, S * 0.08, S * 0.78, S * 0.31], fill=gold)
+        d.arc([S * 0.08, S * 0.12, S * 0.32, S * 0.42], 90, 270, fill=gold, width=5 * SS)
+        d.arc([S * 0.68, S * 0.12, S * 0.92, S * 0.42], 270, 90, fill=gold, width=5 * SS)
+        d.rectangle([S * 0.45, S * 0.58, S * 0.55, S * 0.76], fill=dark)
+        d.rounded_rectangle([S * 0.3, S * 0.76, S * 0.7, S * 0.9], 4 * SS, fill=gold)
+        points = []
+        for k in range(10):
+            ang = math.pi / 2 + k * math.pi / 5
+            rr = S * (0.1 if k % 2 == 0 else 0.045)
+            points.append((S / 2 + rr * math.cos(ang), S * 0.27 - rr * math.sin(ang)))
+        d.polygon(points, fill=light)
+
+    icon("menu_continue", resume)
+    icon("menu_campaign", campaign)
+    icon("menu_custom", custom)
+    icon("menu_scores", scores)
+
+
+def badge(out):
+    """A gold medal with a star, for the badges on Records; unearned ones are drawn dim."""
+    S = 108 * SS
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    c, r = S / 2, S / 2 - 4 * SS
+    d.ellipse([c - r, c - r, c + r, c + r], fill=GOLD_DARK + (255,))
+    d.ellipse([c - r + 6 * SS, c - r + 6 * SS, c + r - 6 * SS, c + r - 6 * SS], fill=GOLD + (255,), outline=GOLD_LIGHT + (255,), width=2 * SS)
+    points = []
+    for k in range(10):
+        a = math.pi / 2 + k * math.pi / 5
+        rr = (r - 18 * SS) if k % 2 == 0 else (r - 18 * SS) * 0.45
+        points.append((c + rr * math.cos(a), c - rr * math.sin(a)))
+    d.polygon(points, fill=GOLD_LIGHT + (255,), outline=GOLD_DARK + (255,))
+    downsample(img, 108, 108).save(os.path.join(out, "badge.png"))
+
+
+def padlock(out):
+    """A small gold padlock, shown on a bid button the dealer may not choose when it is tapped."""
+    S = 108 * SS
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    c = S / 2
+    d.arc([c - 26 * SS, 12 * SS, c + 26 * SS, 64 * SS], 180, 360, fill=GOLD_LIGHT + (255,), width=10 * SS)
+    d.line([c - 26 * SS + 5 * SS, 38 * SS, c - 26 * SS + 5 * SS, 52 * SS], fill=GOLD_LIGHT + (255,), width=10 * SS)
+    d.line([c + 26 * SS - 5 * SS, 38 * SS, c + 26 * SS - 5 * SS, 52 * SS], fill=GOLD_LIGHT + (255,), width=10 * SS)
+    d.rounded_rectangle([c - 36 * SS, 48 * SS, c + 36 * SS, 100 * SS], 10 * SS, fill=GOLD + (255,), outline=GOLD_DARK + (255,), width=3 * SS)
+    d.ellipse([c - 7 * SS, 64 * SS, c + 7 * SS, 78 * SS], fill=GOLD_DARK + (255,))
+    d.rectangle([c - 3 * SS, 72 * SS, c + 3 * SS, 88 * SS], fill=GOLD_DARK + (255,))
+    downsample(img, 108, 108).save(os.path.join(out, "padlock.png"))
+
+
+def momentum_icons(out):
+    """The momentum bar beside a placard, one image per state: empty, one notch, and lit (x2 on).
+    A dark capsule rimmed in gold holds two chevrons that light gold as bids are made running; when
+    momentum is on the capsule itself fills with gold and the chevrons shine cream."""
+    W, H = 44, 144
+    S = SS * 2
+    w, h = W * S, H * S
+    for state in range(3):
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        lit = state == 2
+        y = np.linspace(0, 1, h)[:, None]
+        if lit:
+            top, bottom = np.array(GOLD_LIGHT, float), np.array(GOLD_DARK, float)
+        else:
+            top, bottom = np.array((66, 38, 26), float), np.array((30, 16, 12), float)
+        fill = top * (1 - y) + bottom * y
+        body = Image.fromarray(np.repeat(fill[:, None, :], w, axis=1).astype(np.uint8), "RGB").convert("RGBA")
+        body.putalpha(rounded_mask(w, h, w // 2))
+        img.alpha_composite(body)
+        d.rounded_rectangle([S, S, w - 1 - S, h - 1 - S], w // 2 - S, outline=(GOLD_LIGHT if lit else GOLD) + (255,), width=3 * S)
+        d.rounded_rectangle([5 * S, 5 * S, w - 1 - 5 * S, h - 1 - 5 * S], w // 2 - 5 * S, outline=GOLD_DARK + (255,), width=S)
+        for k, cy in enumerate((0.68, 0.36)):
+            on = state > k
+            colour = (255, 244, 214) if lit else GOLD_LIGHT if on else (92, 60, 40)
+            edge = GOLD_DARK if on else (40, 22, 16)
+            cx, yy, arm, rise = w / 2, cy * h, w * 0.3, w * 0.26
+            pts = [(cx - arm, yy + rise / 2), (cx, yy - rise / 2), (cx + arm, yy + rise / 2)]
+            d.line(pts, fill=edge + (255,), width=int(9 * S), joint="curve")
+            d.line(pts, fill=colour + (255,), width=int(6 * S), joint="curve")
+        downsample(img, W, H).save(os.path.join(out, "momentum_%d.png" % state))
 
 
 def premultiplied_blur(img, radius):
@@ -550,6 +741,13 @@ if __name__ == "__main__":
     sheet = card_sheet(out)
     card_back(out)
     card_slot(out)
+    card_blank(out)
+    chapter_cosmetics(out)
+    campaign_art(out)
+    play_menu_icons(out)
+    badge(out)
+    padlock(out)
+    momentum_icons(out)
     blurred_sheet(sheet, out)
     table(out)
     icons(out)

@@ -13,8 +13,8 @@ Run the checks that fit what changed, and report what they printed (not just "pa
 2. **Rules, players or anything a bot reads changed: the arena.**
    `tools/dev/arena.sh` compares this tree with develop's newest commit.
    - A change that shouldn't touch the bots must print `ARENA IDENTICAL`.
-   - An AI change will differ: check each level's win rate stays in its band and that
-     Easy didn't get harder (CLAUDE.md). Quote the before/after lines.
+   - An AI change will differ: measure it with the `arena` skill (bands, every rule set,
+     the duel, regenerated bid tables) and quote the before/after lines.
 3. **Anything drawn changed: screenshots.** Commit and push the feature branch (add a
    `[shots: state,state]` line to the commit message for a quick run), wait for the Preview
    run (`gh run watch`), then `python3 tools/dev/shots.py review`.

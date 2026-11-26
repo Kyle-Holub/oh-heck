@@ -17,20 +17,21 @@ where things live, how they connect, and the tools around them.
 
 Each package uses only those above it in this list, never one below, so there are no
 cycles; `ohheck.util` and `ohheck.anim` depend on nothing, and anything may use them. The
-first five have no libGDX and test in plain JUnit.
+first six have no libGDX and test in plain JUnit.
 
 | Package | What's in it |
 |---|---|
 | `ohheck.rules` | Cards, `Match`, `Trick`, `Move`, `MatchCodec`, `RuleSet`, `HandOrder`, `GameMode`, `TableView` |
 | `ohheck.players` | The roster (`Player`), who sits where (`Seating`), levels (`Difficulty`), habits (`Style`), the bots, `BidTable`; the arena lives here too |
-| `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them |
+| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion), `Campaign` (progress, saved), `TrickShot`, `TrickShots` and `TrickShotPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won), `PracticeRound` and `PracticeCoach` (the scripted round that teaches a new player, dealt with `Match.scripted`) |
+| `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them and the campaign's progress |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
 | `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Timeline`, and `FixedSteps` (the game loop's clock) |
 | `ohheck.platform` | The device: `Settings` (preferences) and `RecordPrefs` (where the records are kept), `Audio`, `GameOptions` (how a launcher runs the game) |
 | `ohheck.ui` | What every screen shares: `BaseScreen`, `Painter`, `MenuChrome`, `Assets`, `Palette`, `CardArt`, `PostProcessor`, `Wording`, `Numbers`, `Scroller`, `TapAreas`, `SideTabs` (the tab column of Options and Records) and `GameHost` |
 | `ohheck.fx` | Effects: `Sparks`, `Fireworks`, `Motes`, `Glints`, `FallingCards` |
 | `ohheck.table` | The table screen and its parts |
-| `ohheck.screens` | Title, Options, Roster, High scores, the tutorial, and the screenshot tour |
+| `ohheck.screens` | Title, Options, Roster, High scores, the campaign and trick shot screens, and the screenshot tour |
 | `ohheck` | `OhHeckGame`: makes everything and connects it; `Screens`, the way between screens |
 
 ## The rules and the players (no libGDX)
@@ -52,7 +53,7 @@ first five have no libGDX and test in plain JUnit.
   `GameMode` names four fixed sets (Classic, High Stakes, Poker Face, Marathon) and Custom, which plays
   the rules the player chose; `GameMode.of(rules)` names any rule set. Turn order is `RuleSet.nextSeat`, and
   `Trick` decides when a trick is complete and who takes it, for `Match` and for the Hard
-  bot's imagined games alike. Code without a game in hand (the tutorial) asks `RuleSet.STANDARD`.
+  bot's imagined games alike. Code without a game in hand asks `RuleSet.STANDARD`.
   `HandSort` how your hand is laid out (trumps first, then by suit or by rank). `BidTable` has rows for every hand size: 1 to 8 learned from standard games, 9 to 13 from games counting down from 13 (whose last-dealt 13-card hand has no trump).
 - `TableView` is what a player may know at a moment (`Match.view(seat)`). Bots decide from
   it alone and can only read it. A bot that imagines games (the Hard bot) fills its own
@@ -109,7 +110,16 @@ first five have no libGDX and test in plain JUnit.
 ### The table (`ohheck.table`)
 
 - `TableFlow` runs the table's state machine:
-  `SHUFFLE → DEAL → TURN ⇄ TRICK → HAND_END → RESULTS → (SHUFFLE | GAME_OVER)`. Each
+  `[VERSUS] → PICK_DEALER → SHUFFLE → DEAL → TURN ⇄ TRICK → HAND_END → RESULTS → (SHUFFLE | GAME_OVER)`;
+  a new game opens on `PICK_DEALER` (`DealerPick`: a light runs round the placards and stops on the
+  dealer), a resumed one does not; a duel first shows the champion's
+  VS screen. A trump that beats an ace holds the trick still for a
+  moment (`TableFlow.inHitStop`); `GameEnd` raises the podium (player cards) from last place up before the
+  scores, except in a duel; a tap finishes it, and the scores then wait for a tap (Continue or Main menu). A duel wears its chapter's look (`Cosmetic`) while it lasts.
+  Screen jolts (shake, zoom) are an `ohheck.anim.Kick` read into `BaseScreen`'s camera; `CardWipe` is the
+  curtain of card backs into and out of a campaign table. `PlayScreen.practice` plays the practice round:
+  `PracticeGuide` reads the table's moment, asks the `PracticeCoach` for a tip, spotlights what it points at and
+  holds the table until it is tapped; in the scripted hands only the planned card or bid can be chosen. Each
   `TableState` constant holds its own behaviour (`entered`, `update`, `skip`) and what the
   screen does in it (the overlay, what a tap does, whether it is still moving, the
   screenshot tag).
@@ -147,27 +157,53 @@ first five have no libGDX and test in plain JUnit.
     `GameEndTest`.
 - `PlayerPanel` draws a player's placard from a `SeatState` (name, score, bid, tricks,
   turn...). `Counters` draws the hand tally (one mark per hand, in gates of five) and the
-  bid tracker; both are shared with the tutorial.
+  bid tracker. `BidPopup` is the "Make Your Bid" panel, drawn the same at the table and in trick shots;
+  `ScoreCard` is the end-of-hand results card.
 
 ### Other screens (`ohheck.screens`)
 
-`TitleScreen` (with `FallingCards`, the 3D shower), `TutorialScreen` (How to play: 13
-timed scenes, a tap each; each step names its scene in `TutorialScenes`, which draws with
-`TutorialStage`'s little table, and each scene's clock is an `ohheck.anim.Timeline`,
-tested in `TimelineTest`), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long; the Game page picks the
-game mode under the difficulty, and changing any rule there makes the game Custom; each a list of
-`OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
+`TitleScreen` (with `FallingCards`, the 3D shower; the first Play asks "New to Oh Heck?" and starts the
+practice round or the Play menu), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long, each a list of
+`OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`; built twice:
+`options` for Preferences and the practice round, and `setup`, the screen before a custom game, whose
+Table and Rules pages pick the difficulty and the game mode, where changing any rule makes the
+game Custom, and whose header deals the game), `PlayMenuScreen` (where to play, as a row of
+cards: Continue, Campaign, Custom game, High scores), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
 statistics, a switch at the top of the panel picks which, high scores have a button per game
 mode, and Reset statistics sits in the header; the panel scrolls, clipped with `BaseScreen.clipTo`).
 
 Facts the screens show come from the rules, not copied text: the Options difficulty note is
-`Wording.tableDescription` (from the matchmaking odds), the tutorial's players, points and
-hand counts come from the roster (`Player.byId`) and `RuleSet.STANDARD`, and the tally from the
+`Wording.tableDescription` (from the matchmaking odds), the practice round's points and
+hand counts come from `PracticeRound.RULES`, and the tally from the
 game's rules.
+
+### The campaign
+
+The title's **Play** opens the Play screen: **Campaign**, **Custom game** (set up, then saved as it
+goes), High scores, and Continue when a custom game is in progress.
+The campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
+four steps in order: table play (a normal game against the chapter's rivals), trick shots
+(`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding
+into place; its title and goal pop up on the felt and fade, and the goal stays in the header; the players are
+unnamed, each bid shown with the table's icons on a small placard, the one to block outlined), open once the table is won as practice, a final table (the champion sits in for a rival, under the house rules
+plus momentum), and a duel against its champion
+(`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
+bid made after two made running). Winning the duel clears the chapter and wins its card back
+and felt (`Cosmetic`, chosen in Preferences); the game-over panel's **Claim prizes** opens
+`ChapterClearedScreen`, which turns each prize over in turn (card back, felt, champion's badge)
+with fireworks, then puts the new look on. `PlayScreen.campaign` plays a `Stage` (table, final table or duel), each
+opened by winning the one before (`Campaign.open`); campaign games are not saved and don't touch the statistics or high scores, but every
+game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
+the top (`TableLayout.spot`). A chapter opens with a `Briefing` of a few pages in the
+page-by-page style (Back turns back a page; tapping a player shows their habit in a box below); each step opens with one
+page of panels, its text in a box beneath and Play in the corner. All are worded from the rules and the roster. The
+campaign opens on chapter 1's briefing the first time. A new player learns in the practice round (above); finished
+from the first Play, it turns into the Chapter 1 card and opens the campaign. Options, Start fresh forgets everything (preferences,
+records, campaign) and replays the intro, as for a new player. The plan the campaign follows is `docs/CAMPAIGN.md`.
 
 ### Saving
 
-`Settings` wraps the device's preferences: the options and the tutorial flag. Kept in the
+`Settings` wraps the device's preferences: the options and whether you know how to play. Kept in the
 same preferences by `RecordPrefs`: the saved game (`SavedGame`, one text), statistics and
 high scores (`HighScores`, stored by field name, ten kept per game mode). Statistics are
 kept per difficulty only, in measures that hold for any rules (places, bids made, points a
@@ -195,15 +231,15 @@ in your seat (`Autoplay`), at fixed time steps, and saves a picture the first ti
 wanted state appears:
 
 - `WANTED` lists state prefixes, as screens report them in `stateTag()` (for example
-  `options`, `tutorial:8`, `bid:3`, `gameover`).
+  `options`, `tip:trump`, `bid:3`, `gameover`).
 - `settleFrames` sets how many frames to wait in a state before capturing it.
 - `ScreenshotLauncher.Walk` moves the run from screen to screen as a timed script: title,
-  high scores, statistics, options, roster, each tutorial step, then the game. Each step
+  high scores, statistics, options, roster, the practice round's first tips, then the game. Each step
   waits in a state for its time, then does one thing (open a screen, scroll, next page).
 - Each captured frame is 0.1 s of game time (`fixedStep`), which the screens take as six
   steps of 1/60 s, exactly as on a device.
-- `./gradlew lwjgl3:screenshots -Pshots=options,tutorial` captures only those and stops.
-  On CI, add a line starting `[shots: options,tutorial]` to the commit message.
+- `./gradlew lwjgl3:screenshots -Pshots=options,tip` captures only those and stops.
+  On CI, add a line starting `[shots: options,tip]` to the commit message.
 
 ## CI (`.github/workflows`)
 
@@ -224,7 +260,7 @@ desktop jar into `build/dev`, and find JUnit in a Gradle install or cache):
 
 - `test.sh` compiles everything and runs the tests (`all` adds BotTest; a word runs only
   the matching test classes).
-- `arena.sh [ref] [quick]` runs the seeded arena on this tree and on `ref` (develop's newest
+- `arena.sh [ref] [quick|variants|duel]` runs the seeded arena on this tree and on `ref` (develop's newest
   by default) and diffs them: identical unless the bots changed.
 - `shots.py` fetches screenshots, compares two runs, and makes the phone view. Each shot is
   `same`, `random` (differs only where the run is random: sparkles, fireworks, the title
@@ -255,6 +291,8 @@ with `OhHeckGame.VERSION` bumped.
 |---|---|
 | `levels N` | the levels against each other |
 | `vs N` | head to head |
+| `duel N` | the levels and every roster player one-on-one under the duel's rules |
+| `learn-duel N` | regenerates `DuelBidTable.java`, the bid odds for duels, leaving `BidTable` alone |
 | `variants N` | Easy, Normal and Hard across all 24 rule sets (progression, 8 or 13 cards, big and blind bids) |
 | `learn N` | regenerates `BidTable.java` |
 | `effort N` | Hard's strength at half, normal and double thinking |
@@ -263,6 +301,10 @@ with `OhHeckGame.VERSION` bumped.
 Duplicate deals rotate seats, so luck cancels out. Run it after any AI change.
 
 ## The art
+
+`python3 tools/make_sounds.py` writes the button press chime (`assets/sfx/press.wav`); every button a
+`Painter` draws (and every bid button and open campaign card) plays it on a tap, with a light vibration
+unless Preferences turns it off.
 
 `python3 tools/build_art.py` rebuilds everything generated: the images in `assets/images`
 (`make_art.py`, with the court cards from `court_art.py`), the bitmap fonts (`make_fonts.py`)

@@ -134,7 +134,7 @@ final class CardSprites {
 			Card c = order.get(i);
 			CardSprite sp = sprite(c);
 			int idx = c.index();
-			boolean canPlay = legal.contains(c);
+			boolean canPlay = legal.contains(c) && s.playable(c);
 			if (s.isDragging() && c == s.pressedCard()) {
 				place(sp, HELD, 0);
 				sp.snap(pose.set(s.dragX() - cw / 2, s.dragY() - ch / 2, cw, ch, 0, 1, HELD_LIFT));

@@ -25,8 +25,8 @@ the screenshot run, CI, the arena and the art tools.
   reported through `Log` and set aside. Test that each format reads back what it writes.
 - **Player ids are permanent.** Look players up with `Player.byId`. A new player gets the
   next unused id.
-- **AI changes:** measure them in the arena (`players`, `levels`) before and after, and
-  keep each level's win rate in its band. Don't make Easy harder. Bots play every rule set:
+- **AI changes:** measure them with the `arena` skill (`players`, `levels`, `variants`, `duel`)
+  before and after, and keep each level's win rate in its band. Don't make Easy harder. Bots play every rule set:
   check a change across them with `variants` (or any experiment followed by a rules code).
 - **Game loop and motion:** screens implement `update(step)` and `draw()`, never `render`;
   timing goes in `update`, so it runs in fixed steps. Name each movement as a `Tween`
@@ -39,16 +39,19 @@ the screenshot run, CI, the arena and the art tools.
   (a saved format's order, a platform limit) goes in the class comment.
 - **No javadoc:** never write `/** */`, `{@link}`, `{@code}`, `@param` or HTML in comments.
   Name things so the signature says what a method takes and returns.
-- Generated files (`BidTable.java`) are exempt from the comment rules.
+- Generated files (`BidTable.java`, `DuelBidTable.java`) are exempt from the comment rules.
 - **Text and spacing:** the game font has no Unicode minus sign. Use "-".
-- **Generated files:** `BidTable.java` comes from the arena's `learn`; the images, fonts and
-  launcher icons come from `python3 tools/build_art.py` (`--check` to compare). Regenerate
+- **Generated files:** `BidTable.java` comes from the arena's `learn`, `DuelBidTable.java` from `learn-duel`; the images, fonts and
+  launcher icons come from `python3 tools/build_art.py` (`--check` to compare), the button sound
+  from `python3 tools/make_sounds.py`. Regenerate
   them; don't edit by hand.
 - **Facts shown on screen** (scores, odds, player names, hand counts) come from the rules
   and the roster, not copied text.
 - **Extending:** a new difficulty is a `Difficulty` constant, a new habit a `Style`
-  constant, a rule a field of `RuleSet` (in its code) with a toggle on the Game page, a preset a
-  `GameMode` constant, and a new reaction
+  constant, a rule a field of `RuleSet` (in its code) with a toggle on the custom game setup's Rules page, a preset a
+  `GameMode` constant, a campaign chapter a `Chapter` constant, a trick shot an entry in `TrickShots`
+  (its test checks it can be solved), a badge a `Badge` constant, a card back or felt a
+  `Cosmetic` constant, and a new reaction
   to table events a `TableFlow.Listener`, a new table state a `TableState` constant, a pause-menu choice a `MenuItem` constant, a setting an `OptionItem` on its `OptionsPage`
   (a new category is one more page), and a screenshot-run stop a
   step in `ScreenshotLauncher.Walk`. Code playing a game asks `match.rules()`.
@@ -70,7 +73,7 @@ Use the `verify` skill after every change and the `ship` skill to merge; the scr
   change them.
 - UI changes: push a feature branch, wait for its Preview, then
   `python3 tools/dev/shots.py review`. Look at every `CHANGED` shot and at `phone-view.png`.
-  For a quick run, add a commit-message line like `[shots: options,tutorial]`.
+  For a quick run, add a commit-message line like `[shots: options,tip]`.
 - A merge into `develop/` is gated by a hook (tests, plus a screenshot report with nothing
   unreviewed). Add `[shots-reviewed]` to the merge message only after looking.
 - If a change alters the scripted game, the screenshot seed may need replacing (see

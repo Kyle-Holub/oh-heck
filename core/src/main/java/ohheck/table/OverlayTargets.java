@@ -5,13 +5,11 @@ import java.util.List;
 
 import com.badlogic.gdx.math.Rectangle;
 
-import ohheck.ui.TapAreas;
-
 /* Where the overlays' buttons were drawn, for taps to find. An undrawn button has no area. */
 final class OverlayTargets {
 
 	enum Button {
-		MENU, PLAY_AGAIN, HIGH_SCORES
+		MENU, MAIN_MENU, CONTINUE, FORCE_WIN
 	}
 
 	private final Rectangle[] buttons = new Rectangle[Button.values().length];
@@ -35,8 +33,8 @@ final class OverlayTargets {
 		return menuItems[item.ordinal()];
 	}
 
-	void bidsUpTo(int most) {
-		TapAreas.sizeTo(bids, most + 1);
+	List<Rectangle> bids() {
+		return bids;
 	}
 
 	Rectangle bid(int b) {
@@ -44,8 +42,8 @@ final class OverlayTargets {
 	}
 
 	void clearGameOverButtons() {
-		button(Button.PLAY_AGAIN).set(0, 0, 0, 0);
-		button(Button.HIGH_SCORES).set(0, 0, 0, 0);
+		button(Button.MAIN_MENU).set(0, 0, 0, 0);
+		button(Button.CONTINUE).set(0, 0, 0, 0);
 	}
 
 	boolean hit(Button b, float x, float y) {

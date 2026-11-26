@@ -34,6 +34,10 @@ abstract class OptionItem {
 		return new Link(label, detail, open);
 	}
 
+	static OptionItem confirmed(String label, String detail, Runnable act) {
+		return new Confirmed(label, detail, act);
+	}
+
 	static OptionItem heading(String label) {
 		return new Heading(label);
 	}
@@ -66,6 +70,41 @@ abstract class OptionItem {
 
 	boolean dividedBelow() {
 		return true;
+	}
+
+	void shown() {
+	}
+
+	private static final class Confirmed extends OptionItem {
+		private final Runnable act;
+		private boolean armed;
+
+		Confirmed(String label, String detail, Runnable act) {
+			super(label, detail);
+			this.act = act;
+		}
+
+		@Override
+		void drawControl(Painter paint, float right, float y, float h) {
+			float px = right - PILL_W, py = y + (h - PILL_H) / 2;
+			paint.frame(armed ? paint.assets.button : paint.assets.buttonAlt, px, py, PILL_W, PILL_H);
+			paint.textIn(paint.ui(1.25f, Palette.CREAM), armed ? "Sure?" : "Reset", px, py, PILL_W, PILL_H);
+		}
+
+		@Override
+		void tap(float x, float y) {
+			if (armed) {
+				armed = false;
+				act.run();
+			} else {
+				armed = true;
+			}
+		}
+
+		@Override
+		void shown() {
+			armed = false;
+		}
 	}
 
 	private static final class Heading extends OptionItem {

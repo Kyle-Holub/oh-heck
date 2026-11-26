@@ -122,6 +122,14 @@ public class BotScenarioTest {
 	}
 
 	@Test
+	public void aSureTrumpIsNotJoinedByACheapOne() {
+		Position discard = Position.deal(3, "2S").me(1, "AS 3S 7D").bids(1, 1, 0, 1).trick(0, "9H");
+		everyoneAlways(discard, "needed one trick and held the trump ace", c -> !c.equals(card("3S")));
+		Position forced = Position.deal(2, "2S").me(1, "AS 3S").bids(0, 1, 0, 0).trick(0, "9H");
+		everyoneAlways(forced, "needed one trick, held the trump ace and had to win this one", c -> c.equals(card("AS")));
+	}
+
+	@Test
 	public void aWeakHandBidsLittle() {
 		Position p = Position.deal(5, "AS").me(0, "2C 3D 4C 2H 3H");
 		everyoneBids(p, "held five low side cards", b -> b <= 1);

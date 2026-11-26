@@ -191,7 +191,7 @@ final class HardBot implements Bot {
 		for (Suit s : Suit.values()) {
 			for (Rank r : Rank.values()) {
 				Card c = Card.of(r, s);
-				if (!v.hand().contains(c) && !v.played(c) && c != v.trumpCard()) {
+				if (v.rules().inDeck(c) && !v.hand().contains(c) && !v.played(c) && c != v.trumpCard()) {
 					unseen.add(c);
 				}
 			}
