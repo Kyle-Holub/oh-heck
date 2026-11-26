@@ -43,6 +43,7 @@ public final class PlayerPanel {
 
 	private final Painter paint;
 	private final TextureRegion line;
+	private final Color was = new Color();
 
 	public PlayerPanel(Painter paint) {
 		this.paint = paint;
@@ -151,20 +152,24 @@ public final class PlayerPanel {
 		float iw = iconWidth(seat.handSize), ih = iw * ICON_ASPECT;
 		int rows = rows(seat.handSize), perRow = perRow(seat.handSize);
 		float topRow = y + (rows - 1) * (ih + ICON_GAP);
+		float sx = seat.flip * (1 + seat.stamp), sy = 1 + seat.stamp, dx = iw * (1 - sx) / 2, dy = ih * (1 - sy) / 2, dw = iw * sx, dh = ih * sy;
 		if (first == 1) {
-			paint.batch.draw(assets.zeroIcon, x, topRow, iw, ih);
+			paint.batch.draw(assets.zeroIcon, x + dx, topRow + dy, dw, dh);
 		}
 		for (int i = 0; i < tricks; i++) {
 			int k = first + i;
 			float ix = x + (k % perRow) * (iw + ICON_GAP), iy = topRow - (k / perRow) * (ih + ICON_GAP);
+			ix += dx;
+			iy += dy;
 			if (i < Math.min(bid, won)) {
-				paint.batch.draw(assets.trickIcon, ix, iy, iw, ih);
+				paint.batch.draw(assets.trickIcon, ix, iy, dw, dh);
 			} else if (i < bid) {
-				paint.batch.setColor(BID_FADE);
-				paint.batch.draw(assets.trickIcon, ix, iy, iw, ih);
-				paint.batch.setColor(Color.WHITE);
+				was.set(paint.batch.getColor());
+				paint.batch.setColor(BID_FADE.r * was.r, BID_FADE.g * was.g, BID_FADE.b * was.b, BID_FADE.a * was.a);
+				paint.batch.draw(assets.trickIcon, ix, iy, dw, dh);
+				paint.batch.setColor(was);
 			} else {
-				paint.batch.draw(assets.overIcon, ix, iy, iw, ih);
+				paint.batch.draw(assets.overIcon, ix, iy, dw, dh);
 			}
 		}
 	}

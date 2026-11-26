@@ -173,6 +173,7 @@ final class TableInput {
 		int w = targets.widowAt(x, y);
 		if (w >= 0) {
 			targets.chooseWidow(w == targets.widowChoice() ? -1 : w);
+			actions.liftWidow();
 			return;
 		}
 		if (targets.hit(OverlayTargets.Button.KEEP_HAND, x, y)) {

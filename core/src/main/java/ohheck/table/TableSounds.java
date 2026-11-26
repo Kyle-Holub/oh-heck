@@ -1,16 +1,21 @@
 package ohheck.table;
 
+import java.util.List;
+
 import ohheck.platform.Audio;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Move;
 import ohheck.rules.Suit;
 
 /*
  * The table's sounds and buzzes. A card's sound waits for it to land (heavier for yours, deeper for a trump
  * cutting another suit's lead); the rest come as the table moves on: a knock when your turn comes, cards
  * raked to the winner, a coin for a made bid, the hearth crackling as momentum builds, and the music easing
- * down while your bid hangs on the last trick.
+ * down while your bid hangs on the last trick. Your bid and a picked trump are pressed home like wax seals,
+ * blind bids are turned over with a riffle, a rival's swap with the widow whispers, and sudden death opens
+ * on a drum.
  */
 final class TableSounds implements TableFlow.Listener {
 
@@ -33,6 +38,33 @@ final class TableSounds implements TableFlow.Listener {
 		landsAt = now + TrickView.PLAY_FLIGHT;
 		landingIsYours = seat == Seating.YOU;
 		landingCuts = c.suit() == m.trump() && lead != m.trump();
+	}
+
+	@Override
+	public void beforeDeal(Match m) {
+		if (m.suddenDeath()) {
+			audio.play(Audio.Effect.DRUM);
+			audio.buzz(Audio.Buzz.HEARTBEAT);
+		}
+	}
+
+	@Override
+	public void changed(Match m) {
+		List<Move> moves = m.moves();
+		Move last = moves.isEmpty() ? null : moves.get(moves.size() - 1);
+		if (last instanceof Move.Bid bid) {
+			if (bid.seat() == Seating.YOU) {
+				audio.play(Audio.Effect.STAMP);
+				audio.buzz(Audio.Buzz.THUD);
+			}
+			if (m.rules().blindBids && m.phase() == Match.Phase.PLAYING) {
+				audio.play(Audio.Effect.RIFFLE);
+			}
+		} else if (last instanceof Move.PickTrump) {
+			audio.play(Audio.Effect.STAMP);
+		} else if (last instanceof Move.SwapWidow swap && swap.seat() != Seating.YOU && swap.give() != null) {
+			audio.play(Audio.Effect.PAPER);
+		}
 	}
 
 	@Override

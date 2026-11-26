@@ -14,6 +14,7 @@ import ohheck.fx.Glints;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Palette;
@@ -37,7 +38,10 @@ final class CardSprites {
 	private static final float SLAP_YOURS = 0.1f, SLAP_THEIRS = 0.05f, HOVER_RISE = 16, HOVER_TILT = -4, REFUSE_SHAKE = 8,
 			STREAK_STEP = 0.025f, STREAK_GLOW = 1.4f;
 	private static final int STREAK_GHOSTS = 5;
-	private static final float RAKE_STAGGER = 0.03f;
+	private static final float RAKE_STAGGER = 0.03f, RIPPLE_STAGGER = 0.04f, RIPPLE_ARC = 14, RIPPLE_WINDOW = 0.3f;
+	private static final Tween RIPPLE = Tween.over(0.3f, Ease.OUT);
+	private Suit shownPick;
+	private float pickedAt = -99;
 
 	private final CardSprite[] sprites = new CardSprite[Card.COUNT];
 	private final int[] layer = new int[Card.COUNT], order = new int[Card.COUNT];
@@ -137,6 +141,11 @@ final class CardSprites {
 		int n = order.size();
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
 		boolean myTurn = s.humanCanPlay();
+		if (m.pickedTrump() != shownPick) {
+			shownPick = m.pickedTrump();
+			pickedAt = shownPick == null ? -99 : now;
+		}
+		boolean rippling = now - pickedAt < RIPPLE_WINDOW;
 		List<Card> legal = myTurn ? m.legalPlays(Seating.YOU) : java.util.Collections.<Card>emptyList();
 		for (int i = 0; i < n; i++) {
 			Card c = order.get(i);
@@ -168,6 +177,9 @@ final class CardSprites {
 			} else if (refusing < 1) {
 				place(sp, HAND, i);
 				sp.snap(pose);
+			} else if (rippling) {
+				place(sp, HAND, i);
+				sp.moveTo(pose, RIPPLE, RIPPLE_ARC, now, -i * RIPPLE_STAGGER);
 			} else {
 				place(sp, HAND, i);
 				sp.moveTo(pose, SETTLE, 0, now, 0);

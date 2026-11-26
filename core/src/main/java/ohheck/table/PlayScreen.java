@@ -523,6 +523,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
+	public void liftWidow() {
+		game.audio().play(Audio.Effect.PAPER);
+	}
+
+	@Override
 	public void touchedCard() {
 		game.audio().buzz(Audio.Buzz.TICK);
 	}
@@ -770,6 +775,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		drawing.tally();
 		drawing.bidTracker();
 		drawing.trump(gameOver());
+		drawing.widow();
 		for (int seat = 0; seat < match().players(); seat++) {
 			drawing.seat(seat);
 		}

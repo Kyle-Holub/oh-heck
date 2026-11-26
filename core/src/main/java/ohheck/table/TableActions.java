@@ -40,6 +40,9 @@ interface TableActions {
 	default void touchedCard() {
 	}
 
+	default void liftWidow() {
+	}
+
 	default void skipGameEnd() {
 	}
 
