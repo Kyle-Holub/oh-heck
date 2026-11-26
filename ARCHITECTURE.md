@@ -260,7 +260,7 @@ desktop jar into `build/dev`, and find JUnit in a Gradle install or cache):
 
 - `test.sh` compiles everything and runs the tests (`all` adds BotTest; a word runs only
   the matching test classes).
-- `arena.sh [ref] [quick]` runs the seeded arena on this tree and on `ref` (develop's newest
+- `arena.sh [ref] [quick|variants|duel]` runs the seeded arena on this tree and on `ref` (develop's newest
   by default) and diffs them: identical unless the bots changed.
 - `shots.py` fetches screenshots, compares two runs, and makes the phone view. Each shot is
   `same`, `random` (differs only where the run is random: sparkles, fireworks, the title
