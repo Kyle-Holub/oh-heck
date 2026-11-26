@@ -11,7 +11,7 @@ hand-lettered word images kept from the original game (HAND_MADE below); they ar
 source files, edited directly.
 
 Needs: pip install -r tools/requirements.txt (pinned, so output matches byte for byte),
-plus the system fonts make_art.py and make_fonts.py draw with:
+plus the system fonts make_art.py and make_fonts.py draw with (the game face, Almendra, is in tools/fonts):
     Debian/Ubuntu: sudo apt install fonts-dejavu-core fonts-texgyre
 """
 import filecmp
@@ -27,7 +27,7 @@ IMAGES = os.path.join(ROOT, "assets", "images")
 FONTS = os.path.join(ROOT, "assets", "fonts")
 RES = os.path.join(ROOT, "android", "res")
 
-FONT_SOURCES = {"DejaVu-LICENSE.txt"}
+FONT_SOURCES = {"DejaVu-LICENSE.txt", "Almendra-OFL.txt"}
 HAND_MADE = {"titleText.png", "bidTricks.png", "setText.png", "trickWonText.png", "makeBidText.png", "gameOver.png"}
 
 NEEDED_FONTS = [

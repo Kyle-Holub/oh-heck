@@ -4,6 +4,9 @@ Bakes TrueType fonts into large BMFont (.fnt + .png) bitmap fonts that the
 game draws mipmapped and scaled down, so text stays sharp at any size
 without needing libGDX's FreeType natives.
 
+The game's face is Almendra (SIL Open Font License, tools/fonts/OFL.txt), a calligraphic storybook serif;
+characters it lacks (the suit signs) come from DejaVu Sans.
+
 Usage: python3 tools/make_fonts.py [output dir, default assets/fonts]   (needs Pillow and the DejaVu fonts)
 """
 import os
@@ -11,26 +14,39 @@ import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+FALLBACK = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONTS = [
-    # name, ttf, pixel size, slant (an italic made by leaning the upright glyphs; no oblique font needed)
-    ("ui", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42, 0),
-    ("ui_italic", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42, 0.2),
-    ("serif", "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 52, 0),
+    # name, ttf, pixel size, slant (lean added to the upright glyphs; 0 for a true italic)
+    ("ui", os.path.join(HERE, "fonts", "Almendra-Regular.ttf"), 44, 0),
+    ("ui_italic", os.path.join(HERE, "fonts", "Almendra-Italic.ttf"), 44, 0),
+    ("serif", os.path.join(HERE, "fonts", "Almendra-Bold.ttf"), 52, 0),
 ]
 CHARS = [chr(c) for c in range(32, 127)] + ["©", "–", "—", "…", "’", "♥", "♠", "♦", "♣"]
 PAD = 3
 ATLAS_W = 1024
 
 
+def missing(font, ch):
+    """True if the font has no glyph for ch: it draws the same box as a private-use character."""
+    def ink(c):
+        m = font.getmask(c)
+        return m.size, bytes(m)
+
+    return ch != " " and ink(ch) == ink("\ue000")
+
+
 def bake(name, ttf, size, slant, out_dir):
     font = ImageFont.truetype(ttf, size)
+    fallback = ImageFont.truetype(FALLBACK, size)
     ascent, descent = font.getmetrics()
     glyphs = []
     for ch in CHARS:
-        adv = round(font.getlength(ch))
+        face = fallback if missing(font, ch) else font
+        adv = round(face.getlength(ch))
         # render on a roomy canvas with the baseline origin at (size, 2*size), then crop to the ink
         canvas = Image.new("L", (size * 4, size * 3), 0)
-        ImageDraw.Draw(canvas).text((size, 2 * size), ch, font=font, fill=255, anchor="ls")
+        ImageDraw.Draw(canvas).text((size, 2 * size), ch, font=face, fill=255, anchor="ls")
         if slant:
             canvas = canvas.transform(canvas.size, Image.AFFINE, (1, slant, -slant * 2 * size, 0, 1, 0), Image.BICUBIC)
         ink = canvas.getbbox()

@@ -86,4 +86,4 @@ GitHub runs the tests on every push. Pushes to `develop/*` also build the APK (s
 | `assets` | Images, music, sound effects, fonts and the rules text |
 | `tools/` | Scripts that draw the cards, icons and frames (`make_art.py`), the app icon (`make_icon.py`) and bake the fonts (`make_fonts.py`); `build_art.py` runs them all |
 
-All artwork, music and sound effects are by Kyle Holub. Fonts: DejaVu Sans and Serif (see `assets/fonts/DejaVu-LICENSE.txt`).
+All artwork, music and sound effects are by Kyle Holub. Fonts: Almendra by Ana Sanfelippo (SIL Open Font License, see `assets/fonts/Almendra-OFL.txt`), with the suit signs from DejaVu Sans (see `assets/fonts/DejaVu-LICENSE.txt`).
