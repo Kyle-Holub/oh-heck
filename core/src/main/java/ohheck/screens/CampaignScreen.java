@@ -19,6 +19,7 @@ import ohheck.campaign.Chapter;
 import ohheck.campaign.Stage;
 import ohheck.campaign.TrickShots;
 import ohheck.fx.Sparks;
+import ohheck.platform.Audio;
 import ohheck.players.Player;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
@@ -58,7 +59,9 @@ public class CampaignScreen extends BaseScreen {
 	private Chapter chosen;
 	private float chosenFor, briefedFor;
 	private int page, rival;
-	private float wipeFor = CardWipe.LENGTH, revealFor = REVEAL_LEN;
+	private float wipeFor = CardWipe.LENGTH, revealFor = REVEAL_LEN, fanFor;
+	private static final Tween FAN_OPEN = Tween.over(0.45f, Ease.OUT);
+	private static final float FAN_STAGGER = 0.06f, BREATH = 4, BREATH_RATE = 2.2f;
 	private Chapter revealing;
 	private final Sparks sparks = new Sparks();
 	private static final float REVEAL_WAIT = CardWipe.LENGTH + 0.3f, REVEAL_LEN = 1.6f, REVEAL_FLIP_FROM = 0.35f, REVEAL_FLIP = 0.5f,
@@ -154,6 +157,10 @@ public class CampaignScreen extends BaseScreen {
 	public void show() {
 		super.show();
 		game.audio().startMusic();
+		fanFor = 0;
+		if (chosen == null && briefing == null) {
+			game.audio().play(Audio.Effect.RIFFLE);
+		}
 	}
 
 	@Override
@@ -164,6 +171,10 @@ public class CampaignScreen extends BaseScreen {
 		wipeFor += step * game.options().speed;
 		float before = revealFor;
 		revealFor += step * game.options().speed;
+		fanFor += step * game.options().speed;
+		if (revealing != null && before < 0 && revealFor >= 0) {
+			game.audio().play(Audio.Effect.CREAK);
+		}
 		sparks.step(step * game.options().speed);
 		float half = REVEAL_FLIP_FROM + REVEAL_FLIP / 2;
 		if (revealing != null && before < half && revealFor >= half) {
@@ -174,7 +185,7 @@ public class CampaignScreen extends BaseScreen {
 
 	@Override
 	public boolean animating() {
-		return chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor) || wipeFor < CardWipe.LENGTH || revealing != null && revealFor < REVEAL_LEN || sparks.active();
+		return chosen == null && briefing == null || chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor) || wipeFor < CardWipe.LENGTH || revealing != null && revealFor < REVEAL_LEN || sparks.active();
 	}
 
 	@Override
@@ -339,10 +350,15 @@ public class CampaignScreen extends BaseScreen {
 			float off = i - (all.length - 1) / 2f;
 			boolean showing = c == revealing && revealFor < REVEAL_LEN;
 			float k = showing ? MathUtils.clamp(revealFor / REVEAL_LEN, 0, 1) : 0;
-			float x = x0 + i * (CARD_W + CARD_GAP), y = base - ARC * off * off + (c == lit ? LIFT : 0) + MathUtils.sin(k * MathUtils.PI) * REVEAL_LIFT;
+			float open = FAN_OPEN.progress(fanFor - i * FAN_STAGGER), breath = c == lit ? MathUtils.sin(shownFor * BREATH_RATE) * BREATH : 0;
+			float x = Ease.lerp((w - CARD_W) / 2, x0 + i * (CARD_W + CARD_GAP), open);
+			float y = Ease.lerp(base, base - ARC * off * off + (c == lit ? LIFT : 0), open) + MathUtils.sin(k * MathUtils.PI) * REVEAL_LIFT + breath;
 			chapterCards[i].set(x, y, CARD_W, CARD_H);
 			if (progress.open(c)) {
 				paint.pressable(chapterCards[i]);
+			}
+			if (showing && revealFor > 0) {
+				pourLight(x, y, k);
 			}
 			if (c == lit || showing && k > 0) {
 				glow(x, y, CARD_W, CARD_H);
@@ -364,6 +380,15 @@ public class CampaignScreen extends BaseScreen {
 		}
 		sparks.draw(batch, assets.glow);
 		paint.centred(paint.ui(1.05f, Palette.MUTED), "Tap a chapter", w / 2, base - 70);
+	}
+
+	private void pourLight(float x, float y, float k) {
+		float a = MathUtils.sin(k * MathUtils.PI), bw = CARD_W * (0.6f + 1.6f * k), bh = h * 1.3f;
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(Palette.SPARKLE.r, Palette.SPARKLE.g, Palette.SPARKLE.b, 0.55f * a);
+		batch.draw(assets.glow, x + CARD_W / 2 - bw / 2, y + CARD_H / 2 - bh / 2, bw, bh);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		batch.setColor(Color.WHITE);
 	}
 
 	private void drawChapterFace(Campaign progress, Chapter c, float x, float y) {

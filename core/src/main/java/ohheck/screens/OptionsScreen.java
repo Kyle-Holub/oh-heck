@@ -95,10 +95,8 @@ public class OptionsScreen extends BaseScreen {
 							s.setSound(!s.sound());
 							game.audio().play(Audio.Effect.PLAY_CARD);
 						}),
-						OptionItem.toggle("Button sounds", "A glass clink, or a tankard set down for the big buttons.", s::buttonSounds, () -> {
-							s.setButtonSounds(!s.buttonSounds());
-							game.audio().press(true);
-						}),
+						OptionItem.toggle("Button sounds", "A glass clink, or a tankard set down for the big buttons.", s::buttonSounds,
+								() -> s.setButtonSounds(!s.buttonSounds())),
 						OptionItem.heading("Display"),
 						OptionItem.look("Card back", "Won by clearing campaign chapters.", () -> s.cardBack().label, () -> {
 							s.setCardBack(s.cardBack().nextOwned(game.records().campaign()));
@@ -235,6 +233,10 @@ public class OptionsScreen extends BaseScreen {
 		}
 		for (OptionItem item : pages.get(tabs.chosen()).items) {
 			if (item.bounds.contains(x, y)) {
+				if (item.latches()) {
+					game.audio().play(Audio.Effect.LATCH);
+					game.audio().buzz(Audio.Buzz.TICK);
+				}
 				item.tap(x, y);
 				return;
 			}

@@ -56,7 +56,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final TableSounds sounds;
 	private static final float TENSION_DIM = 0.3f, TENSION_EASE = 0.4f;
 	private final Color tensionShade = new Color();
-	private float tension;
+	private float tension, bestFrom = -1;
+	private static final int BEST_SPARKS = 70;
 	private Card refused;
 	private float refusedAt = -99;
 	private final CardArt art;
@@ -360,6 +361,14 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			flow.update(dt);
 		}
 		sounds.update(flow, time);
+		if (flow.state() == TableState.GAME_OVER && recorder.newHighScore() == 0) {
+			float since = sinceResults(), locks = overlays.bestLocksAt();
+			if (since >= locks && bestFrom < locks) {
+				sparks.burst(overlays.bestSpot().x, overlays.bestSpot().y, BEST_SPARKS);
+				game.audio().play(Audio.Effect.COIN);
+			}
+			bestFrom = since;
+		}
 		tension = MathUtils.clamp(tension + (flow.bidHangsOnLastTrick() ? dt : -dt) / TENSION_EASE, 0, 1);
 		if (flow.inHitStop() && !hitShown) {
 			kick.shake(time, HIT_SHAKE);

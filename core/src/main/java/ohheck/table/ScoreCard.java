@@ -24,7 +24,8 @@ public final class ScoreCard {
 	private static final float[] COLS = { 22, 62, 255, 315, 380, 465 };
 	private static final String[] HEAD = { "", "Player", "Bid", "Won", "Points", "Total" };
 	private static final String SET = "  (set)";
-	private static final float COUNT_FROM = 0.35f, COUNT_LEN = 0.9f, SWAP_FROM = 1.35f, SWAP_LEN = 0.4f, HOP = 10;
+	static final float COUNT_FROM = 0.35f, COUNT_LEN = 0.9f;
+	private static final float SWAP_FROM = 1.35f, SWAP_LEN = 0.4f, HOP = 10;
 	public static final float LENGTH = SWAP_FROM + SWAP_LEN;
 	private final int[] before = new int[8];
 
