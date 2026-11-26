@@ -30,15 +30,13 @@ Each chapter is a table: a group of players, their house rules (its game mode) a
 
 The rival line-ups are a first pass; the mode order runs from the most familiar game to the longest.
 
-## 3. Campaign screen: the chapter hand
+## 3. Campaign screen: the hall of chapters
 
-The campaign is shown as a hand of cards, one large card per chapter, fanned across the felt like your hand at the table.
+The campaign opens on a hall of four doors: one tall arched plaque per chapter, framed in gold, standing in a row and joined by a path.
 
-- **A chapter card** shows its number, its mode (Classic, High Stakes, Poker Face, Marathon) and its champion's name.
-- **Four pips** on each card stand for table, trick shots, final table and duel; a pip fills in gold when that step is done.
-- **Locked chapters** lie face down, showing the card back. The chapter in progress is lifted out of the fan with the trump glow.
-- **Tap a chapter** and its card flips and grows; its four steps lie on the felt as four cards, like a trick, each held back until the step before is won.
-- Built from what the table already draws (card art, the fan, glints, the deal motion), so it looks like the game rather than a menu.
+- **A chapter's door** shows its Roman numeral, its suit emblem, its mode, its champion and four pips for table, trick shots, final table and duel; a pip fills in gold when that step is done.
+- **Locked chapters** are ash grey with a padlock. The chapter in progress glows. Clearing a chapter lights the path to the next door, and the next door unlocks: the padlock lifts away, light pours out from behind it and the plaque warms to wine red.
+- **Tap a chapter** and its four steps lie on the felt as four cards, like a trick, each held back until the step before is won. The hall and the chapter deliberately look different: doors for the campaign, cards for a chapter's steps.
 
 ## 4. Trick shots
 

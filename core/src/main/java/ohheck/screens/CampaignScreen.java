@@ -21,6 +21,7 @@ import ohheck.campaign.TrickShots;
 import ohheck.fx.Sparks;
 import ohheck.platform.Audio;
 import ohheck.players.Player;
+import ohheck.rules.Suit;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.CardWipe;
@@ -36,7 +37,10 @@ import ohheck.ui.Palette;
  */
 public class CampaignScreen extends BaseScreen {
 
-	private static final float CARD_W = 142, CARD_H = CARD_W * 98 / 73, CARD_GAP = 22, ARC = 6, LIFT = 26;
+	private static final float PLAQUE_W = 200, PLAQUE_H = 300, PLAQUE_GAP = 54, PLAQUE_EMBLEM = 58, PADLOCK = 46, PATH_GEM = 18,
+			RISE_STAGGER = 0.08f, LIFT = 26;
+	private static final String HALL_TITLE = "Four tables, four champions", HALL_LINE = "Win each chapter's duel to open the next door.";
+	private static final String[] ROMAN = { "I", "II", "III", "IV" };
 	private static final float STEP_W = 136, STEP_H = STEP_W * 98 / 73, STEP_GAP = 36, PIP = 16, PIP_GAP = 24, EMBLEM = 46, ICON = 64;
 	private static final float GLOW_W = 1.9f, GLOW_H = 1.6f;
 	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f);
@@ -59,13 +63,11 @@ public class CampaignScreen extends BaseScreen {
 	private Chapter chosen;
 	private float chosenFor, briefedFor;
 	private int page, rival;
-	private float wipeFor = CardWipe.LENGTH, revealFor = REVEAL_LEN, fanFor;
-	private static final Tween FAN_OPEN = Tween.over(0.45f, Ease.OUT);
-	private static final float FAN_STAGGER = 0.06f, BREATH = 4, BREATH_RATE = 2.2f;
+	private float wipeFor = CardWipe.LENGTH, revealFor = REVEAL_LEN, hallFor;
+	private static final Tween RISE_IN = Tween.over(0.45f, Ease.OUT);
 	private Chapter revealing;
 	private final Sparks sparks = new Sparks();
-	private static final float REVEAL_WAIT = CardWipe.LENGTH + 0.3f, REVEAL_LEN = 1.6f, REVEAL_FLIP_FROM = 0.35f, REVEAL_FLIP = 0.5f,
-			REVEAL_LIFT = 46;
+	private static final float REVEAL_WAIT = CardWipe.LENGTH + 0.3f, REVEAL_LEN = 1.6f, REVEAL_FLIP_FROM = 0.35f, REVEAL_FLIP = 0.5f;
 	private String beatLine = "";
 	private final StringBuilder stageText = new StringBuilder();
 	private Briefing briefing;
@@ -157,10 +159,7 @@ public class CampaignScreen extends BaseScreen {
 	public void show() {
 		super.show();
 		game.audio().startMusic();
-		fanFor = 0;
-		if (chosen == null && briefing == null) {
-			game.audio().play(Audio.Effect.RIFFLE);
-		}
+		hallFor = 0;
 	}
 
 	@Override
@@ -171,7 +170,7 @@ public class CampaignScreen extends BaseScreen {
 		wipeFor += step * game.options().speed;
 		float before = revealFor;
 		revealFor += step * game.options().speed;
-		fanFor += step * game.options().speed;
+		hallFor += step * game.options().speed;
 		if (revealing != null && before < 0 && revealFor >= 0) {
 			game.audio().play(Audio.Effect.CREAK);
 		}
@@ -343,17 +342,26 @@ public class CampaignScreen extends BaseScreen {
 
 	private void drawHand(Campaign progress) {
 		Chapter[] all = Chapter.values();
-		float span = all.length * CARD_W + (all.length - 1) * CARD_GAP, x0 = (w - span) / 2, base = h / 2 - CARD_H / 2 - 20;
+		float top = h - MenuChrome.HEADER_H, span = all.length * PLAQUE_W + (all.length - 1) * PLAQUE_GAP, x0 = (w - span) / 2;
+		float base = (top - PLAQUE_H) / 2 - 6, pathY = base + PLAQUE_H * 0.42f;
 		Chapter lit = current(progress);
+		paint.centred(paint.serif(1.5f, Palette.GOLD_LIGHT), HALL_TITLE, w / 2, top - 22);
+		paint.centred(paint.ui(0.95f, Palette.MUTED), HALL_LINE, w / 2, top - 52);
+		for (int i = 0; i + 1 < all.length; i++) {
+			float from = x0 + i * (PLAQUE_W + PLAQUE_GAP) + PLAQUE_W, mid = from + PLAQUE_GAP / 2;
+			Color line = progress.cleared(all[i]) ? Palette.GOLD : Palette.MUTED;
+			paint.rect(from, pathY - 1, PLAQUE_GAP, 2, line);
+			batch.setColor(line);
+			batch.draw(assets.emblem(Suit.DIAMONDS), mid - PATH_GEM / 2, pathY - PATH_GEM / 2, PATH_GEM, PATH_GEM);
+			batch.setColor(Color.WHITE);
+		}
 		for (int i = 0; i < all.length; i++) {
 			Chapter c = all[i];
-			float off = i - (all.length - 1) / 2f;
 			boolean showing = c == revealing && revealFor < REVEAL_LEN;
 			float k = showing ? MathUtils.clamp(revealFor / REVEAL_LEN, 0, 1) : 0;
-			float open = FAN_OPEN.progress(fanFor - i * FAN_STAGGER), breath = c == lit ? MathUtils.sin(shownFor * BREATH_RATE) * BREATH : 0;
-			float x = Ease.lerp((w - CARD_W) / 2, x0 + i * (CARD_W + CARD_GAP), open);
-			float y = Ease.lerp(base, base - ARC * off * off + (c == lit ? LIFT : 0), open) + MathUtils.sin(k * MathUtils.PI) * REVEAL_LIFT + breath;
-			chapterCards[i].set(x, y, CARD_W, CARD_H);
+			float rise = RISE_IN.progress(hallFor - i * RISE_STAGGER);
+			float x = x0 + i * (PLAQUE_W + PLAQUE_GAP), y = base;
+			chapterCards[i].set(x, y, PLAQUE_W, PLAQUE_H);
 			if (progress.open(c)) {
 				paint.pressable(chapterCards[i]);
 			}
@@ -361,44 +369,52 @@ public class CampaignScreen extends BaseScreen {
 				pourLight(x, y, k);
 			}
 			if (c == lit || showing && k > 0) {
-				glow(x, y, CARD_W, CARD_H);
+				glow(x, y, PLAQUE_W, PLAQUE_H);
 			}
-			art.shadow(x, y, CARD_W, CARD_H, c == lit ? 8 : 4);
-			float flip = showing ? MathUtils.clamp((revealFor - REVEAL_FLIP_FROM) / REVEAL_FLIP, 0, 1) : 1;
-			if (progress.unlocked(c) && flip >= 1) {
-				drawChapterFace(progress, c, x, y);
-			} else if (progress.unlocked(c) && flip >= 0.5f) {
-				float fw = CARD_W * Math.abs(MathUtils.cos(flip * MathUtils.PI));
-				batch.draw(assets.campaignFace, x + (CARD_W - fw) / 2, y, fw, CARD_H);
-			} else {
-				float fw = CARD_W * (showing ? Math.abs(MathUtils.cos(flip * MathUtils.PI)) : 1);
-				batch.draw(assets.back(), x + (CARD_W - fw) / 2, y, fw, CARD_H);
+			float opened = !progress.unlocked(c) ? 0 : showing ? MathUtils.clamp((revealFor - REVEAL_FLIP_FROM) / REVEAL_FLIP, 0, 1) : 1;
+			if (opened < 1) {
+				batch.setColor(1, 1, 1, rise);
+				batch.draw(assets.plaqueLocked, x, y, PLAQUE_W, PLAQUE_H);
 			}
-			if (!c.ready || !progress.unlocked(c)) {
-				paint.textIn(paint.ui(0.95f, Palette.MUTED), progress.unlocked(c) ? "Coming soon" : "Locked", x, y - 26, CARD_W, 20);
+			if (opened > 0) {
+				batch.setColor(1, 1, 1, rise * opened);
+				batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
 			}
+			batch.setColor(Color.WHITE);
+			plaqueFace(progress, c, x, y, opened, rise);
 		}
 		sparks.draw(batch, assets.glow);
-		paint.centred(paint.ui(1.05f, Palette.MUTED), "Tap a chapter", w / 2, base - 70);
+		paint.centred(paint.ui(1.0f, Palette.MUTED), "Tap a chapter", w / 2, base - 34);
+	}
+
+	private void plaqueFace(Campaign progress, Chapter c, float x, float y, float opened, float alpha) {
+		float cx = x + PLAQUE_W / 2, shut = 1 - opened, ey = y + PLAQUE_H * 0.44f;
+		paint.centred(paint.ui(0.8f, Palette.GOLD, alpha), "CHAPTER", cx, y + PLAQUE_H - 40);
+		paint.centred(paint.serif(2.4f, opened > 0 ? Palette.GOLD_LIGHT : Palette.MUTED, alpha), ROMAN[c.ordinal()], cx, y + PLAQUE_H - 64);
+		if (opened > 0) {
+			batch.setColor(1, 1, 1, alpha * opened);
+			batch.draw(assets.emblem(c.emblem), cx - PLAQUE_EMBLEM / 2, ey - PLAQUE_EMBLEM / 2, PLAQUE_EMBLEM, PLAQUE_EMBLEM);
+			batch.setColor(Color.WHITE);
+			paint.centred(paint.serif(1.35f, Palette.GOLD_LIGHT, alpha * opened), c.mode.label, cx, y + 86);
+			paint.centred(paint.ui(0.85f, Palette.CREAM, alpha * opened), "vs " + c.champion().name, cx, y + 60);
+			pips(cx, y + 22, progress.won(c, Stage.TABLE), progress.allMade(c), progress.won(c, Stage.FINAL), progress.cleared(c));
+		}
+		if (shut > 0) {
+			float lock = PADLOCK * (1 + opened * 0.8f);
+			batch.setColor(1, 1, 1, alpha * shut);
+			batch.draw(assets.padlock, cx - lock / 2, ey - lock / 2, lock, lock);
+			batch.setColor(Color.WHITE);
+			paint.centred(paint.ui(0.9f, Palette.MUTED, alpha * shut), "Locked", cx, y + 60);
+		}
 	}
 
 	private void pourLight(float x, float y, float k) {
-		float a = MathUtils.sin(k * MathUtils.PI), bw = CARD_W * (0.6f + 1.6f * k), bh = h * 1.3f;
+		float a = MathUtils.sin(k * MathUtils.PI), bw = PLAQUE_W * (0.6f + 1.6f * k), bh = h * 1.3f;
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		batch.setColor(Palette.SPARKLE.r, Palette.SPARKLE.g, Palette.SPARKLE.b, 0.55f * a);
-		batch.draw(assets.glow, x + CARD_W / 2 - bw / 2, y + CARD_H / 2 - bh / 2, bw, bh);
+		batch.draw(assets.glow, x + PLAQUE_W / 2 - bw / 2, y + PLAQUE_H / 2 - bh / 2, bw, bh);
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		batch.setColor(Color.WHITE);
-	}
-
-	private void drawChapterFace(Campaign progress, Chapter c, float x, float y) {
-		batch.draw(assets.campaignFace, x, y, CARD_W, CARD_H);
-		float cx = x + CARD_W / 2;
-		paint.centred(paint.ui(0.8f, Palette.GOLD), "CHAPTER", cx, y + CARD_H - 20);
-		paint.numeral(c.number(), cx, y + CARD_H - 56, 40, Palette.GOLD_LIGHT);
-		batch.draw(assets.emblem(c.emblem), cx - EMBLEM / 2, y + CARD_H / 2 - EMBLEM / 2 - 12, EMBLEM, EMBLEM);
-		paint.centred(paint.serif(1.3f, Palette.GOLD_LIGHT), c.mode.label, cx, y + 58);
-		pips(cx, y + 18, progress.won(c, Stage.TABLE), progress.allMade(c), progress.won(c, Stage.FINAL), progress.cleared(c));
 	}
 
 	private void pips(float cx, float y, boolean... done) {

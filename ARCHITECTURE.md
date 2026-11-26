@@ -181,7 +181,8 @@ game's rules.
 
 The title's **Play** opens the Play screen: **Campaign**, **Custom game** (set up, then saved as it
 goes), High scores, and Continue when a custom game is in progress.
-The campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
+The campaign (`CampaignScreen`) shows its chapters as a hall of four arched, gold-framed doors in a row,
+joined by a path (locked ones ash grey with a padlock; an unlock lifts the padlock and pours light); a chapter lays out its
 four steps in order: table play (a normal game against the chapter's rivals), trick shots
 (`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding
 into place; its title and goal pop up on the felt and fade, and the goal stays in the header; the players are
