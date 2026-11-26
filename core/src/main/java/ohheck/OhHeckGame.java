@@ -35,7 +35,7 @@ import ohheck.util.Log;
 /* The libGDX entry point for Android and desktop: owns the shared services and the screens. */
 public class OhHeckGame extends Game implements GameHost {
 
-	public static final String VERSION = "alpha-1.1.0";
+	public static final String VERSION = "alpha-1.1.1";
 
 	private final GameOptions options;
 
