@@ -524,6 +524,26 @@ final class TableOverlays {
 		paint.text(paint.ui(1.0f, Palette.CREAM), Numbers.text(match.score(seat)), cx, y + ch * 0.2f, true);
 	}
 
+	private final Vector2 bestSpot = new Vector2();
+	private static final Color EMBOSS_SHADE = new Color(0.12f, 0.07f, 0.02f, 0.9f), EMBOSS_SHINE = new Color(1f, 0.95f, 0.75f, 0.7f);
+
+	Vector2 bestSpot() {
+		return bestSpot;
+	}
+
+	float bestLocksAt() {
+		return ROLL_FROM + (Numbers.text(match.score(Seating.YOU)).length() - 1) * ROLL_STEP;
+	}
+
+	private void emboss(BitmapFont f, CharSequence digits, float x, float y) {
+		f.setColor(EMBOSS_SHADE);
+		paint.text(f, digits, x + 1, y - 2, false);
+		f.setColor(EMBOSS_SHINE);
+		paint.text(f, digits, x - 1, y + 1, false);
+		f.setColor(Palette.GOLD);
+		paint.text(f, digits, x, y, false);
+	}
+
 	private CharSequence rolling(int score, float t) {
 		String digits = Numbers.text(score);
 		rolled.setLength(0);
@@ -558,13 +578,18 @@ final class TableOverlays {
 				float locked = since - ROLL_FROM - (Numbers.text(match.score(s)).length() - 1) * ROLL_STEP;
 				if (locked >= 0 && locked < BEST_FLASH) {
 					paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-					paint.batch.setColor(1f, 0.85f, 0.45f, 0.8f * (1 - locked / BEST_FLASH));
+					paint.batch.setColor(Palette.SPARKLE.r, Palette.SPARKLE.g, Palette.SPARKLE.b, 0.8f * (1 - locked / BEST_FLASH));
 					paint.batch.draw(paint.assets.glow, sx - 90, y - 50, 120, 80);
 					paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 					paint.batch.setColor(Color.WHITE);
 				}
 			}
-			paint.text(t, best ? rolling(match.score(s), since) : Numbers.text(match.score(s)), sx, y, false);
+			if (best) {
+				bestSpot.set(sx - 30, y - 12);
+				emboss(t, rolling(match.score(s), since), sx, y);
+			} else {
+				paint.text(t, Numbers.text(match.score(s)), sx, y, false);
+			}
 			if (best) {
 				BitmapFont n = paint.ui(0.95f, Palette.GOLD_LIGHT);
 				n.draw(paint.batch, "New best!", px + pw - NEW_BEST_FROM_RIGHT, y - 2);

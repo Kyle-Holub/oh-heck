@@ -33,6 +33,7 @@ public class ChapterClearedScreen extends BaseScreen {
 	private static final float INTRO = 1.4f, CARD_W = 130, CARD_H = CARD_W * 98 / 73, CARD_GAP = 40, POP = 0.22f;
 	private static final float BUTTON_W = 190, BUTTON_H = 44;
 	private static final float SHAKE_LEN = 0.9f, FLASH_LEN = 0.15f, FLIP_LEN = 0.35f, HOLD_LEN = 0.9f, FLIP_AT = SHAKE_LEN + FLASH_LEN;
+	private static final float BADGE_TURNS = 5, GLINT_LEN = 0.5f;
 	private static final Phases PRIZE = new Phases(SHAKE_LEN, FLASH_LEN, FLIP_LEN, HOLD_LEN);
 	private static final int SHAKE = 0, FLASH = 1, FLIP = 2;
 	private static final Tween TITLE_IN = Tween.over(0.6f, Ease.OUT), BUTTONS_IN = Tween.over(0.4f, Ease.OUT);
@@ -107,7 +108,7 @@ public class ChapterClearedScreen extends BaseScreen {
 		sparks.step(dt);
 		while (flipped < prizes.size() && revealT() >= flipped * PRIZE.length() + FLIP_AT + FLIP_LEN / 2) {
 			sparks.burst(slotX(flipped), cardY() + CARD_H / 2, 90);
-			game.audio().play(Audio.Effect.PLAY_CARD);
+			game.audio().play(prizes.get(flipped).face == assets.badge ? Audio.Effect.MEDAL : Audio.Effect.PLAY_CARD);
 			flipped++;
 		}
 		if (revealed() && !finale) {
@@ -172,12 +173,16 @@ public class ChapterClearedScreen extends BaseScreen {
 			glow(cx, cy, cw, ch, lit);
 		}
 		art.shadow(cx - cw / 2, cy - ch / 2, cw, ch, 6);
-		float sx = Math.abs(MathUtils.cos(flip * MathUtils.PI));
+		boolean badge = p.face == assets.badge;
+		float turns = badge ? BADGE_TURNS : 1, sx = Math.abs(MathUtils.cos(flip * turns * MathUtils.PI));
 		float fw = cw * Math.max(0.02f, sx);
-		if (flip < 0.5f) {
+		if (flip < 0.5f / turns) {
 			batch.draw(assets.back(), cx - fw / 2 + wobble, cy - ch / 2, fw / 2, ch / 2, fw, ch, 1, 1, wobble * -0.6f);
 		} else {
 			drawFace(p, cx - fw / 2, cy - ch / 2, fw, ch);
+		}
+		if (badge && phase > FLIP && into < GLINT_LEN) {
+			glint(cx, cy, cw, ch, into / GLINT_LEN);
 		}
 		if (flip >= 1) {
 			float la = Math.min(1, into / 0.3f + (phase > FLIP ? 1 : 0));
@@ -203,6 +208,15 @@ public class ChapterClearedScreen extends BaseScreen {
 		} else {
 			batch.draw(p.face, x, y, fw, fh);
 		}
+	}
+
+	private void glint(float cx, float cy, float cw, float ch, float p) {
+		float gx = cx - cw / 2 + cw * p, gw = cw * 0.35f;
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(1f, 0.97f, 0.85f, 0.7f * MathUtils.sin(p * MathUtils.PI));
+		batch.draw(assets.glow, gx - gw / 2, cy - ch / 2, gw, ch);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		batch.setColor(Color.WHITE);
 	}
 
 	private void glow(float cx, float cy, float cw, float ch, float alpha) {

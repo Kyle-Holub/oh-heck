@@ -15,12 +15,13 @@ import ohheck.rules.Suit;
  * raked to the winner, a coin for a made bid, the hearth crackling as momentum builds, and the music easing
  * down while your bid hangs on the last trick. Your bid and a picked trump are pressed home like wax seals,
  * blind bids are turned over with a riffle, a rival's swap with the widow whispers, and sudden death opens
- * on a drum.
+ * on a drum. The score card counts up with coins ticking onto the pile, faster as it goes.
  */
 final class TableSounds implements TableFlow.Listener {
 
 	private final Audio audio;
-	private float now, landsAt = -1;
+	private static final float TICK_SLOW = 0.11f, TICK_FAST = 0.04f;
+	private float now, landsAt = -1, nextTick;
 	private boolean landingIsYours, landingCuts, wasYourTurn, wasSweeping, wasTense;
 
 	TableSounds(Audio audio) {
@@ -95,11 +96,24 @@ final class TableSounds implements TableFlow.Listener {
 			audio.play(Audio.Effect.SWEEP);
 		}
 		wasSweeping = sweeping;
+		countTicks(flow);
 		boolean tense = flow.bidHangsOnLastTrick();
 		if (tense != wasTense) {
 			audio.duck(tense);
 		}
 		wasTense = tense;
+	}
+
+	private void countTicks(TableFlow flow) {
+		if (flow.state() != TableState.RESULTS) {
+			nextTick = ScoreCard.COUNT_FROM;
+			return;
+		}
+		float t = flow.stateTime(), p = (t - ScoreCard.COUNT_FROM) / ScoreCard.COUNT_LEN;
+		if (p >= 0 && p < 1 && t >= nextTick) {
+			audio.play(Audio.Effect.TICK);
+			nextTick = t + TICK_SLOW + (TICK_FAST - TICK_SLOW) * p;
+		}
 	}
 
 	void stop() {

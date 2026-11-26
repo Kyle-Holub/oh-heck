@@ -74,6 +74,10 @@ abstract class OptionItem {
 
 	abstract void tap(float x, float y);
 
+	boolean latches() {
+		return false;
+	}
+
 	boolean grabs(float x, float y) {
 		return false;
 	}
@@ -175,6 +179,11 @@ abstract class OptionItem {
 		@Override
 		void tap(float x, float y) {
 			next.run();
+		}
+
+		@Override
+		boolean latches() {
+			return true;
 		}
 	}
 
