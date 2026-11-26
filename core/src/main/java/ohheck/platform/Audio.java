@@ -14,7 +14,8 @@ public final class Audio implements Disposable {
 		PLAY_CARD("sfx/playCard.mp3", 1f),
 		WIN("sfx/win.mp3", 0.25f),
 		LOSE("sfx/lose.mp3", 1f),
-		PRESS("sfx/press.wav", 0.6f);
+		CLINK("sfx/clink.wav", 0.6f),
+		HORN("sfx/horn.wav", 0.6f);
 
 		final String path;
 		final float volume;
@@ -54,8 +55,10 @@ public final class Audio implements Disposable {
 		}
 	}
 
-	public void press() {
-		play(Effect.PRESS);
+	public void press(boolean horn) {
+		if (settings.buttonSounds()) {
+			play(horn ? Effect.HORN : Effect.CLINK);
+		}
 		if (settings.vibration()) {
 			Gdx.input.vibrate(VIBRATE_MS);
 		}

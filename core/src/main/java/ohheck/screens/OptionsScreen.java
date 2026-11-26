@@ -95,6 +95,10 @@ public class OptionsScreen extends BaseScreen {
 							s.setSound(!s.sound());
 							game.audio().play(Audio.Effect.PLAY_CARD);
 						}),
+						OptionItem.toggle("Button sounds", "A glass clink, or a horn for the big buttons.", s::buttonSounds, () -> {
+							s.setButtonSounds(!s.buttonSounds());
+							game.audio().press(true);
+						}),
 						OptionItem.heading("Display"),
 						OptionItem.look("Card back", "Won by clearing campaign chapters.", () -> s.cardBack().label, () -> {
 							s.setCardBack(s.cardBack().nextOwned(game.records().campaign()));

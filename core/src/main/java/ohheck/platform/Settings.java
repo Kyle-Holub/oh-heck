@@ -15,7 +15,7 @@ import ohheck.rules.RuleSet;
 /* The player's options, in the device's preferences. */
 public final class Settings {
 
-	private static final String VIBRATION = "vibration";
+	private static final String VIBRATION = "vibration", BUTTON_SOUNDS = "buttonSounds";
 	private static final String MUSIC = "music", SOUND = "sound", EFFECTS = "effects", FAST_GAME = "fastGame", LEVEL = "level",
 			MODE = "mode", CUSTOM_RULES = "customRules", CARD_BACK = "cardBack", FELT = "felt", HAND_SORT = "handSort", KNOWS_HOW_TO_PLAY = "knowsHowToPlay",
 			CAMPAIGN_INTRO_SEEN = "campaignIntroSeen";
@@ -35,6 +35,14 @@ public final class Settings {
 
 	public void setMusic(boolean on) {
 		prefs.putBoolean(MUSIC, on).flush();
+	}
+
+	public boolean buttonSounds() {
+		return prefs.getBoolean(BUTTON_SOUNDS, true);
+	}
+
+	public void setButtonSounds(boolean on) {
+		prefs.putBoolean(BUTTON_SOUNDS, on).flush();
 	}
 
 	public boolean vibration() {

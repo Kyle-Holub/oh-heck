@@ -119,10 +119,11 @@ public final class Painter {
 		batch.setColor(Color.WHITE);
 	}
 
-	private final Array<Rectangle> pressable = new Array<Rectangle>(false, 32);
+	private final Array<Rectangle> pressable = new Array<Rectangle>(false, 32), heralded = new Array<Rectangle>(false, 8);
 
 	public void newFrame() {
 		pressable.clear();
+		heralded.clear();
 	}
 
 	public void pressable(Rectangle r) {
@@ -131,6 +132,16 @@ public final class Painter {
 
 	public void quiet(Rectangle r) {
 		pressable.removeValue(r, true);
+		heralded.removeValue(r, true);
+	}
+
+	public boolean heralded(float x, float y) {
+		for (int i = 0; i < heralded.size; i++) {
+			if (heralded.get(i).contains(x, y)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public boolean pressed(float x, float y) {
@@ -145,6 +156,9 @@ public final class Painter {
 	public Rectangle button(Rectangle area, String label, float cx, float y, float bw, float bh, NinePatch style) {
 		if (style != assets.buttonOff) {
 			pressable.add(area);
+		}
+		if (style == assets.button) {
+			heralded.add(area);
 		}
 		frame(style, cx - bw / 2, y, bw, bh);
 		BitmapFont f = serif(1.5f);

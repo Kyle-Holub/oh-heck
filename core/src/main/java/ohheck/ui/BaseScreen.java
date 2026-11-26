@@ -67,7 +67,7 @@ public abstract class BaseScreen extends ScreenAdapter {
 	protected void touchUp(float x, float y) {
 		if (isTap(x, y)) {
 			if (paint.pressed(x, y)) {
-				game.audio().press();
+				game.audio().press(paint.heralded(x, y));
 			}
 			tap(x, y);
 		}
