@@ -470,11 +470,10 @@ final class TableOverlays {
 	}
 
 	static final float NEW_BEST_LENGTH = 1.6f;
-	private static final float PODIUM_W = 118, PODIUM_WINNER_W = 150, PODIUM_STEP_X = 150, PODIUM_BASE = 0.14f,
+	private static final int PODIUM_PLACES = 3;
+	private static final float PODIUM_W = 150, PODIUM_STEP_X = 200, PODIUM_BASE = 0.2f,
 			ROLL_FROM = 0.3f,
 			ROLL_STEP = 0.28f, ROLL_SPIN = 28, BEST_FLASH = 0.45f;
-	private static final float[] PODIUM_LIFT = { 0, 60, 30, 12, 0 };
-	private static final int[] PODIUM_SPOT = { 0, 2, 1, 3, 4 };
 	private static final String[] PLACE_CAPS = { "", "FIRST", "SECOND", "THIRD", "FOURTH" };
 	private static final String WINNER_IS = "And the winner is\u2026";
 	private static final Tween PODIUM_UP = Tween.over(GameEnd.RISE, Ease.OUT);
@@ -485,17 +484,17 @@ final class TableOverlays {
 		paint.fade(Math.min(1, t * 3));
 		paint.rect(0, 0, layout.w, layout.h, Palette.BACKDROP);
 		paint.fade(1f);
-		float span = (n - 1) * PODIUM_STEP_X, base = layout.h * PODIUM_BASE;
-		for (int s = 0; s < n; s++) {
-			int place = match.placeOf(s);
-			float k = PODIUM_UP.progress(t - GameEnd.risesAt(place, n));
+		List<Integer> order = ranked();
+		int shown = Math.min(PODIUM_PLACES, order.size());
+		float span = (shown - 1) * PODIUM_STEP_X, base = layout.h * PODIUM_BASE, cw = PODIUM_W, ch = cw * 98 / 73;
+		for (int i = 0; i < shown; i++) {
+			float k = PODIUM_UP.progress(t - GameEnd.risesAt(i + 1, n));
 			if (k <= 0) {
 				continue;
 			}
-			int spot = PODIUM_SPOT[place] - 1;
-			float cw = place == 1 ? PODIUM_WINNER_W : PODIUM_W, ch = cw * 98 / 73;
-			float cx = layout.w / 2 - span / 2 + spot * PODIUM_STEP_X, y = base + PODIUM_LIFT[place] - (1 - k) * (layout.h * 0.8f);
-			podiumCard(s, place, cx - cw / 2, y, cw, ch, t);
+			int s = order.get(i);
+			float cx = layout.w / 2 - span / 2 + i * PODIUM_STEP_X, y = base - (1 - k) * (layout.h * 0.8f);
+			podiumCard(s, match.placeOf(s), cx - cw / 2, y, cw, ch, t);
 		}
 		float waiting = t - GameEnd.risesAt(2, n) - GameEnd.RISE;
 		if (waiting > 0 && t < GameEnd.risesAt(1, n)) {
@@ -515,12 +514,12 @@ final class TableOverlays {
 			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 			paint.batch.setColor(Color.WHITE);
 		}
-		art.shadow(x, y, cw, ch, first ? 10 : 5);
+		art.shadow(x, y, cw, ch, 6);
 		paint.batch.draw(paint.assets.campaignFace, x, y, cw, ch);
 		float cx = x + cw / 2;
 		paint.text(paint.ui(0.85f, Palette.GOLD), PLACE_CAPS[place], cx, y + ch - 16, true);
 		paint.numeral(place, cx, y + ch * 0.6f, cw * 0.36f, first ? Palette.GOLD_LIGHT : Palette.GOLD);
-		paint.text(paint.serif(first ? 1.4f : 1.2f, Palette.GOLD_LIGHT), scene.name(seat), cx, y + ch * 0.34f, true);
+		paint.text(paint.serif(1.3f, Palette.GOLD_LIGHT), scene.name(seat), cx, y + ch * 0.34f, true);
 		paint.text(paint.ui(1.0f, Palette.CREAM), Numbers.text(match.score(seat)), cx, y + ch * 0.2f, true);
 	}
 
