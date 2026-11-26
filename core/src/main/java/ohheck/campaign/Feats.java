@@ -32,7 +32,7 @@ public final class Feats {
 	public List<Badge> gameEnded(Match m) {
 		List<Badge> earned = new ArrayList<Badge>();
 		boolean won = m.leaders().size() == 1 && m.leaders().get(0) == Seating.YOU;
-		boolean clean = !missed && handsSeen == m.rules().numberOfHands();
+		boolean clean = !missed && handsSeen >= m.rules().numberOfHands();
 		if (clean) {
 			earned.add(Badge.CLEAN_SWEEP);
 		}

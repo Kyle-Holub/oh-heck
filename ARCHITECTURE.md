@@ -196,7 +196,9 @@ opened by winning the one before (`Campaign.open`); campaign games are not saved
 game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
 the top (`TableLayout.spot`). Each chapter's champion brings a `Twist` to the final table and the duel: momentum in
 chapter 1, winner picks trump in chapter 2 (`RuleSet.pickTrump`: a hand opens in `Match.Phase.PICKING_TRUMP`
-when someone made a bid last hand, and the highest made bid names the trump suit from a panel of suits). The
+when someone made a bid last hand, and the highest made bid names the trump suit from a panel of suits), hands won
+in chapter 3 (`RuleSet.handsWon`: a made bid scores one, and a tie for first after the last hand plays on in
+one-card sudden-death hands, `Match.suddenDeath`, until it breaks). The
 duel adds the house scoring and the twist to `RuleSet.DUEL`. A chapter opens with a `Briefing` of a few pages in the
 page-by-page style (Back turns back a page; tapping a player shows their habit in a box below); each step opens with one
 page of panels, its text in a box beneath and Play in the corner. All are worded from the rules and the roster. The

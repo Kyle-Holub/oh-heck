@@ -42,10 +42,10 @@ public class CampaignTest {
 	@Test
 	public void unreadyChaptersStayShut() {
 		Campaign c = new Campaign();
-		c.win(Chapter.ONE, Stage.DUEL);
-		assertTrue(c.open(Chapter.TWO));
-		c.win(Chapter.TWO, Stage.DUEL);
-		assertFalse(c.open(Chapter.THREE));
+		for (Chapter ch : Chapter.values()) {
+			assertEquals(ch.name(), ch.ready, c.open(ch));
+			c.win(ch, Stage.DUEL);
+		}
 	}
 
 	@Test

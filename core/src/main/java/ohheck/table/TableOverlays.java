@@ -158,7 +158,7 @@ final class TableOverlays {
 	}
 
 	private static final float PICK_W = 470, PICK_H = 190, PICK_BUTTON = 82, PICK_GAP = 16, PICK_EMBLEM = 0.62f;
-	static final String PICK_TITLE = "Pick trump";
+	static final String PICK_TITLE = "Pick trump", SUDDEN_DEATH = "Sudden death";
 
 	void drawPickTrump() {
 		float cx = layout.w / 2, py = layout.centreY() - PICK_H / 2;
@@ -398,7 +398,7 @@ final class TableOverlays {
 	}
 
 	void drawHandResults(float t) {
-		float py = scoreCard.draw(layout.w / 2, layout.centreY(), Wording.handResults(match.handIndex() + 1), resultRows(), 1f, t);
+		float py = scoreCard.draw(layout.w / 2, layout.centreY(), match.suddenDeath() ? SUDDEN_DEATH : Wording.handResults(match.handIndex() + 1), resultRows(), 1f, t);
 		drawWinningCards(py + WON_CARDS_RISE);
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
 		Rectangle win = targets.button(OverlayTargets.Button.FORCE_WIN);

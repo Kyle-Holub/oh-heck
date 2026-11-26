@@ -322,4 +322,33 @@ public class MatchTest {
 			}
 		}
 	}
+
+	@Test
+	public void handsWonCountMadeBidsAndATiePlaysOnInOneCardHands() {
+		RuleSet rules = RuleSet.DUEL.withHandsWon(true);
+		int suddenDeaths = 0;
+		for (long seed = 0; seed < 400; seed++) {
+			Match m = Match.random(2, new Random(seed), rules);
+			int[] made = new int[2];
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				if (m.phase() == Match.Phase.HAND_OVER) {
+					for (int s = 0; s < 2; s++) {
+						made[s] += m.madeBid(s) ? (m.lastHandPoints(s) == 2 ? 2 : 1) : 0;
+						assertEquals(m.madeBid(s) ? made[s] : made[s], m.score(s));
+					}
+					m.nextHand();
+					if (m.phase() != Match.Phase.GAME_OVER && m.suddenDeath()) {
+						suddenDeaths++;
+						assertEquals(1, m.handSize());
+						assertEquals("only a tie plays on", m.score(0), m.score(1));
+					}
+					continue;
+				}
+				m.apply(bot.chooseMove(m.view(m.currentSeat())));
+			}
+			assertEquals("a game of hands won always has one winner", 1, m.leaders().size());
+			assertEquals(m.save(), Match.load(m.save(), new Random()).save());
+		}
+		assertTrue("some games went to sudden death", suddenDeaths > 0);
+	}
 }

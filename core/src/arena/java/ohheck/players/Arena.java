@@ -114,7 +114,8 @@ public final class Arena {
 				}
 			}
 		}
-		for (RuleSet twisted : new RuleSet[] { RuleSet.STANDARD.withMomentum(true), RuleSet.STANDARD.withPickTrump(true) }) {
+		for (RuleSet twisted : new RuleSet[] { RuleSet.STANDARD.withMomentum(true), RuleSet.STANDARD.withPickTrump(true),
+				RuleSet.STANDARD.withHandsWon(true) }) {
 			variant(n, twisted);
 		}
 		rules = RuleSet.STANDARD;

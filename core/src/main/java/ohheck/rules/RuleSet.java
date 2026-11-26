@@ -9,8 +9,10 @@ import java.util.List;
  * scores (with big bids: 8, plus 4 for the first trick bid, doubling with each trick after),
  * whether bids are blind (made unseen, revealed together, with no dealer's limit), whether the
  * deck is short (nine to ace, for duels), momentum (a bid made after two made running scores
- * double), and whether the winner picks trump (whoever made the highest bid last hand chooses the trump
- * suit before bidding). Its code is written into saves and high scores, so a code never changes meaning.
+ * double), whether the winner picks trump (whoever made the highest bid last hand chooses the trump
+ * suit before bidding), hands won (a made bid scores one, and a tie for first plays on in one-card hands until
+ * it breaks), and the widow (two cards face down; whoever made the highest bid last hand may swap one of
+ * theirs for one before bidding). Its code is written into saves and high scores, so a code never changes meaning.
  */
 public final class RuleSet {
 
@@ -19,24 +21,25 @@ public final class RuleSet {
 	public static final RuleSet STANDARD = new RuleSet(HandOrder.UP, USUAL_CARDS, false, false);
 	public static final RuleSet DUEL = new RuleSet(HandOrder.UP, DUEL_HANDS, false, false, true, true);
 
-	private static final String BIG = "big", BLIND = "blind", SHORT = "short", MOMENTUM = "momentum", PICK = "pick";
+	private static final String BIG = "big", BLIND = "blind", SHORT = "short", MOMENTUM = "momentum", PICK = "pick",
+			WON = "won", WIDOW = "widow";
 	private static final Rank SHORT_DECK_LOWEST = Rank.NINE;
 	private static final int BIG_MADE = 8, BIG_FIRST_TRICK = 4;
 
 	public final HandOrder order;
 	public final int mostCards;
-	public final boolean bigBids, blindBids, shortDeck, momentum, pickTrump;
+	public final boolean bigBids, blindBids, shortDeck, momentum, pickTrump, handsWon, widow;
 
 	public RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids) {
 		this(order, mostCards, bigBids, blindBids, false, false);
 	}
 
 	public RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids, boolean shortDeck, boolean momentum) {
-		this(order, mostCards, bigBids, blindBids, shortDeck, momentum, false);
+		this(order, mostCards, bigBids, blindBids, shortDeck, momentum, false, false, false);
 	}
 
-	public RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids, boolean shortDeck, boolean momentum,
-			boolean pickTrump) {
+	private RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids, boolean shortDeck, boolean momentum,
+			boolean pickTrump, boolean handsWon, boolean widow) {
 		if (mostCards < 1 || mostCards > MOST_CARDS) {
 			throw new IllegalArgumentException("No hand of " + mostCards);
 		}
@@ -47,35 +50,46 @@ public final class RuleSet {
 		this.shortDeck = shortDeck;
 		this.momentum = momentum;
 		this.pickTrump = pickTrump;
+		this.handsWon = handsWon;
+		this.widow = widow;
 	}
 
 	public RuleSet withOrder(HandOrder o) {
-		return new RuleSet(o, mostCards, bigBids, blindBids, shortDeck, momentum, pickTrump);
+		return new RuleSet(o, mostCards, bigBids, blindBids, shortDeck, momentum, pickTrump, handsWon, widow);
 	}
 
 	public RuleSet withMostCards(int n) {
-		return new RuleSet(order, n, bigBids, blindBids, shortDeck, momentum, pickTrump);
+		return new RuleSet(order, n, bigBids, blindBids, shortDeck, momentum, pickTrump, handsWon, widow);
 	}
 
 	public RuleSet withBigBids(boolean on) {
-		return new RuleSet(order, mostCards, on, blindBids, shortDeck, momentum, pickTrump);
-	}
-
-	public RuleSet withMomentum(boolean on) {
-		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, on, pickTrump);
-	}
-
-	public RuleSet withPickTrump(boolean on) {
-		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, momentum, on);
+		return new RuleSet(order, mostCards, on, blindBids, shortDeck, momentum, pickTrump, handsWon, widow);
 	}
 
 	public RuleSet withBlindBids(boolean on) {
-		return new RuleSet(order, mostCards, bigBids, on, shortDeck, momentum, pickTrump);
+		return new RuleSet(order, mostCards, bigBids, on, shortDeck, momentum, pickTrump, handsWon, widow);
+	}
+
+	public RuleSet withMomentum(boolean on) {
+		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, on, pickTrump, handsWon, widow);
+	}
+
+	public RuleSet withPickTrump(boolean on) {
+		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, momentum, on, handsWon, widow);
+	}
+
+	public RuleSet withHandsWon(boolean on) {
+		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, momentum, pickTrump, on, widow);
+	}
+
+	public RuleSet withWidow(boolean on) {
+		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, momentum, pickTrump, handsWon, on);
 	}
 
 	public String code() {
 		return order.name() + "/" + mostCards + (bigBids ? "/" + BIG : "") + (blindBids ? "/" + BLIND : "")
-				+ (shortDeck ? "/" + SHORT : "") + (momentum ? "/" + MOMENTUM : "") + (pickTrump ? "/" + PICK : "");
+				+ (shortDeck ? "/" + SHORT : "") + (momentum ? "/" + MOMENTUM : "") + (pickTrump ? "/" + PICK : "")
+				+ (handsWon ? "/" + WON : "") + (widow ? "/" + WIDOW : "");
 	}
 
 	public static RuleSet parse(String code) {
@@ -83,7 +97,7 @@ public final class RuleSet {
 		List<String> flags = Arrays.asList(p).subList(Math.min(2, p.length), p.length);
 		RuleSet r = p.length < 2 ? null
 				: new RuleSet(HandOrder.valueOf(p[0]), Integer.parseInt(p[1]), flags.contains(BIG), flags.contains(BLIND),
-						flags.contains(SHORT), flags.contains(MOMENTUM), flags.contains(PICK));
+						flags.contains(SHORT), flags.contains(MOMENTUM), flags.contains(PICK), flags.contains(WON), flags.contains(WIDOW));
 		if (r == null || !r.code().equals(code)) {
 			throw new IllegalArgumentException("Unknown rules: " + code);
 		}
@@ -92,7 +106,8 @@ public final class RuleSet {
 
 	public String describe() {
 		return order.label(mostCards) + (bigBids ? ", big bids" : "") + (blindBids ? ", blind bids" : "")
-				+ (shortDeck ? ", short deck" : "") + (momentum ? ", momentum" : "") + (pickTrump ? ", winner picks trump" : "");
+				+ (shortDeck ? ", short deck" : "") + (momentum ? ", momentum" : "") + (pickTrump ? ", winner picks trump" : "")
+				+ (handsWon ? ", hands won" : "") + (widow ? ", the widow" : "");
 	}
 
 	public boolean inDeck(Card c) {
@@ -118,7 +133,7 @@ public final class RuleSet {
 	}
 
 	public int handSize(int handIndex) {
-		return order.handSize(handIndex, mostCards);
+		return handIndex >= numberOfHands() ? 1 : order.handSize(handIndex, mostCards);
 	}
 
 	public int nextSeat(int seat, int players) {
@@ -205,6 +220,9 @@ public final class RuleSet {
 	}
 
 	public int score(int bid, int tricksTaken) {
+		if (handsWon) {
+			return bid == tricksTaken ? 1 : 0;
+		}
 		if (bid == tricksTaken) {
 			return made() + madeBonus(bid);
 		}

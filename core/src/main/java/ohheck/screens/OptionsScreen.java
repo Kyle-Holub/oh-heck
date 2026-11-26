@@ -71,7 +71,9 @@ public class OptionsScreen extends BaseScreen {
 						OptionItem.toggle("Momentum", "Make your bid twice running and the next made bid scores double.",
 								() -> s.rules().momentum, () -> s.customize(r -> r.withMomentum(!r.momentum))),
 						OptionItem.toggle("Winner picks trump", "Whoever made the highest bid last hand names the next trump suit.",
-								() -> s.rules().pickTrump, () -> s.customize(r -> r.withPickTrump(!r.pickTrump)))));
+								() -> s.rules().pickTrump, () -> s.customize(r -> r.withPickTrump(!r.pickTrump))),
+						OptionItem.toggle("Hands won", "A made bid scores one; a tie for first plays on, one card a hand.",
+								() -> s.rules().handsWon, () -> s.customize(r -> r.withHandsWon(!r.handsWon)))));
 	}
 
 	public static OptionsScreen options(GameHost game) {

@@ -129,6 +129,8 @@ public final class Wording {
 
 	private static final String[] HAND_RESULTS = new String[64];
 
+	public static final String SUDDEN_DEATH = "Tied for first: sudden death, one card each.";
+
 	public static String pickedTrump(String who, Suit suit) {
 		return (who == null ? "You pick " : who + " picks ") + suit.name().toLowerCase(Locale.US) + " as trump.";
 	}

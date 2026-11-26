@@ -140,6 +140,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		@Override
 		public void beforeDeal(Match m) {
 			input.clearTouch();
+			if (m.suddenDeath()) {
+				hint(Wording.SUDDEN_DEATH);
+			}
 		}
 
 		@Override

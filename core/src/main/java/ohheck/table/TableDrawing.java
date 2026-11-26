@@ -91,7 +91,7 @@ final class TableDrawing {
 
 	void tally() {
 		Match m = scene.match();
-		int done = m.phase() == Match.Phase.GAME_OVER ? m.rules().numberOfHands() : m.handIndex();
+		int done = m.phase() == Match.Phase.GAME_OVER ? m.rules().numberOfHands() : Math.min(m.handIndex(), m.rules().numberOfHands());
 		counters.tally(TALLY_X, layout.h - TALLY_DROP, m.rules().numberOfHands(), done, Counters.pulse(scene.time()), 1f);
 	}
 
