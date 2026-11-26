@@ -37,8 +37,6 @@ public interface GameHost {
 
 	void showTitle();
 
-	void showTutorial(boolean firstTime);
-
 	void showPlayMenu();
 
 	void showGameSetup();
@@ -55,7 +53,9 @@ public interface GameHost {
 
 	void playTrickShot(TrickShot shot);
 
-	void playPractice();
+	void playPractice(boolean firstTime);
+
+	void finishPractice();
 
 	void showChapterCleared(Chapter chapter);
 

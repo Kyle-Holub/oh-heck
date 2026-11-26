@@ -188,8 +188,7 @@ final class TableDrawing {
 		boolean picking = flow.state() == TableState.PICK_DEALER;
 		boolean turn = picking ? DealerPick.litSeat(flow.stateTime(), m.dealer(), m.players()) == seat
 				: flow.state() == TableState.TURN && m.currentSeat() == seat;
-		boolean dealer = m.dealer() == seat && flow.state() != TableState.OFFER_TUTORIAL
-				&& (!picking || DealerPick.settled(flow.stateTime()));
+		boolean dealer = m.dealer() == seat && (!picking || DealerPick.settled(flow.stateTime()));
 		state.reset().named(scene.placardName(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(dealer)
 				.doubled(m.onMomentum(seat)).bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());

@@ -33,7 +33,7 @@ import ohheck.rules.Match;
 import ohheck.screens.CampaignScreen;
 import ohheck.screens.HighScoresScreen;
 import ohheck.screens.PlayersScreen;
-import ohheck.screens.TutorialScreen;
+import ohheck.table.PlayScreen;
 
 /*
  * Plays a seeded game with a bot in your seat at fixed time steps, saving a screenshot the
@@ -41,7 +41,7 @@ import ohheck.screens.TutorialScreen;
  */
 public class ScreenshotLauncher {
 
-	private static final String[] WANTED = { "intro", "title", "play", "setup", "highscores", "statistics", "badges", "options", "players", "campaign", "brief:chapter", "chapter:1", "brief:table", "shot:lone-ace", "cleared", "tutorial:1", "tutorial:3", "tutorial:5", "tutorial:6", "tutorial:7", "tutorial:8", "tutorial:9", "tutorial:10", "tutorial:11", "tutorial:12", "tutorial:13", "tutorial:14", "picking", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "play", "setup", "highscores", "statistics", "badges", "options", "players", "campaign", "brief:chapter", "chapter:1", "brief:table", "shot:lone-ace", "cleared", "tip:welcome", "tip:trump", "tip:bid", "picking", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "play:8:",
 			"tossing", "gameover" };
 
@@ -66,8 +66,8 @@ public class ScreenshotLauncher {
 		if (state.equals("intro")) {
 			return 10;
 		}
-		if (state.startsWith("tutorial")) {
-			return 19;
+		if (state.startsWith("tip:")) {
+			return 8;
 		}
 		if (state.equals("title")) {
 			return 10;
@@ -212,7 +212,7 @@ public class ScreenshotLauncher {
 	}
 
 	private static final class Walk {
-		private static final int TUTORIAL_STEPS = 15;
+		private static final String[] PRACTICE_TIPS = { "welcome", "dealer", "deal", "trump", "ranks" };
 
 		private final List<String> states = new ArrayList<String>();
 		private final List<Float> waits = new ArrayList<Float>();
@@ -239,12 +239,12 @@ public class ScreenshotLauncher {
 				game.settings().setCardBack(Cosmetic.CLASSIC);
 				game.settings().setFelt(Cosmetic.CLASSIC);
 				game.assets().dress(Cosmetic.CLASSIC, Cosmetic.CLASSIC);
-				game.showTutorial(false);
+				game.playPractice(false);
 			});
-			for (int step = 1; step < TUTORIAL_STEPS; step++) {
-				then("tutorial:" + step, 4.0f, s -> ((TutorialScreen) s).next());
+			for (String tip : PRACTICE_TIPS) {
+				then("tip:" + tip, 2.0f, s -> ((PlayScreen) s).dismissTip());
 			}
-			then("tutorial:" + TUTORIAL_STEPS, 4.0f, s -> game.newGame());
+			then("tip:bid", 2.0f, s -> game.newGame());
 		}
 
 		private void then(String state, float seconds, Consumer<Screen> action) {

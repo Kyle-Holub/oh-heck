@@ -84,6 +84,9 @@ final class TableInput {
 	}
 
 	void tap(float x, float y) {
+		if (scene.finishing()) {
+			return;
+		}
 		if (scene.tip() != null) {
 			actions.dismissTip();
 			return;
@@ -108,14 +111,6 @@ final class TableInput {
 
 	void skip() {
 		actions.skip();
-	}
-
-	void tapTutorialOffer(float x, float y) {
-		if (targets.hit(OverlayTargets.Button.TAKE_TUTORIAL, x, y)) {
-			actions.answerTutorialOffer(true);
-		} else if (targets.hit(OverlayTargets.Button.SKIP_TUTORIAL, x, y)) {
-			actions.answerTutorialOffer(false);
-		}
 	}
 
 	void nextHand() {
