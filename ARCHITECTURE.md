@@ -23,7 +23,7 @@ first six have no libGDX and test in plain JUnit.
 |---|---|
 | `ohheck.rules` | Cards, `Match`, `Trick`, `Move`, `MatchCodec`, `RuleSet`, `HandOrder`, `GameMode`, `TableView` |
 | `ohheck.players` | The roster (`Player`), who sits where (`Seating`), levels (`Difficulty`), habits (`Style`), the bots, `BidTable`; the arena lives here too |
-| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion), `Campaign` (progress, saved), `TrickShot`, `TrickShots` and `TrickShotPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won) |
+| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion), `Campaign` (progress, saved), `TrickShot`, `TrickShots` and `TrickShotPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won), `PracticeRound` and `PracticeCoach` (the scripted round that teaches a new player, dealt with `Match.scripted`) |
 | `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them and the campaign's progress |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
 | `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Timeline`, and `FixedSteps` (the game loop's clock) |
