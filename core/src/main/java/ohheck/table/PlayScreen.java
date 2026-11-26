@@ -21,6 +21,7 @@ import ohheck.campaign.PracticeRound;
 import ohheck.campaign.Stage;
 import ohheck.fx.Fireworks;
 import ohheck.fx.Sparks;
+import ohheck.platform.Audio;
 import ohheck.platform.GameOptions;
 import ohheck.players.Difficulty;
 import ohheck.players.Player;
@@ -52,6 +53,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final TableOverlays overlays;
 	private final OverlayTargets targets = new OverlayTargets();
 	private final TableFlow flow;
+	private final TableSounds sounds;
+	private static final float TENSION_DIM = 0.3f, TENSION_EASE = 0.4f;
+	private final Color tensionShade = new Color();
+	private float tension;
+	private Card refused;
+	private float refusedAt = -99;
 	private final CardArt art;
 	private final TableDrawing drawing;
 	private final CardSprites cards = new CardSprites();
@@ -124,8 +131,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		this.badges = new BadgeKeeper(game.records());
 		TableFlow.Listener keeper = practice ? new TableFlow.Listener() {
 		} : chapter == null ? recorder : new CampaignKeeper();
-		this.flow = practice ? new TableFlow(you, new Effects(), new TableSounds(game.audio()))
-				: new TableFlow(you, new Effects(), new TableSounds(game.audio()), keeper, badges);
+		this.sounds = new TableSounds(game.audio());
+		this.flow = practice ? new TableFlow(you, new Effects(), sounds) : new TableFlow(you, new Effects(), sounds, keeper, badges);
 		if (!you.thinkAtOnce() && options.fixedStep <= 0) {
 			flow.thinkWith(Thinker.background());
 		}
@@ -352,6 +359,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		} else if (guide == null || !guide.update(this)) {
 			flow.update(dt);
 		}
+		sounds.update(flow, time);
+		tension = MathUtils.clamp(tension + (flow.bidHangsOnLastTrick() ? dt : -dt) / TENSION_EASE, 0, 1);
 		if (flow.inHitStop() && !hitShown) {
 			kick.shake(time, HIT_SHAKE);
 			hitAt = time;
@@ -407,6 +416,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public void hide() {
 		super.hide();
+		sounds.stop();
 		if (duelLook() != null) {
 			assets.dress(game.settings().cardBack(), game.settings().felt());
 		}
@@ -502,6 +512,34 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	public boolean swapWidow(Card give, Card take) {
 		input.clearTouch();
 		return flow.swapWidow(give, take);
+	}
+
+	@Override
+	public void refuseCard(Card c) {
+		refused = c;
+		refusedAt = time;
+		game.audio().play(Audio.Effect.THUP);
+		game.audio().buzz(Audio.Buzz.DOUBLE);
+	}
+
+	@Override
+	public void touchedCard() {
+		game.audio().buzz(Audio.Buzz.TICK);
+	}
+
+	@Override
+	public Card refusedCard() {
+		return refused;
+	}
+
+	@Override
+	public float refusedFor() {
+		return time - refusedAt;
+	}
+
+	@Override
+	public Card hoveredCard() {
+		return input.hovered();
 	}
 
 	@Override
@@ -615,6 +653,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		begin();
 		layout.resize(w, h);
 		batch.draw(assets.table, 0, 0, w, h);
+		if (tension > 0) {
+			paint.rect(0, 0, w, h, tensionShade.set(0, 0, 0, TENSION_DIM * tension));
+		}
 		drawTable();
 		fireworks.draw(batch, assets.glow);
 		if (!input.menuOpen()) {

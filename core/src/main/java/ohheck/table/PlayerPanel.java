@@ -1,7 +1,9 @@
 package ohheck.table;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 
 import ohheck.rules.RuleSet;
@@ -10,7 +12,10 @@ import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
 
-/* A player's placard: name, score, dealer mark, and the bid and tricks. */
+/*
+ * A player's placard: name, score, dealer mark, and the bid and tricks. Your placard breathes once when your
+ * turn comes; when a hand is scored your bid's icons flash gold if you made it, or crack and dim if you were set.
+ */
 public final class PlayerPanel {
 
 	public static final float W = 214, H = 80;
@@ -37,9 +42,11 @@ public final class PlayerPanel {
 	private static final Color WAIT_TEXT = new Color(0.72f, 0.66f, 0.58f, 1f), WAIT_SCORE = new Color(0.62f, 0.5f, 0.3f, 1f);
 
 	private final Painter paint;
+	private final TextureRegion line;
 
 	public PlayerPanel(Painter paint) {
 		this.paint = paint;
+		this.line = new TextureRegion(paint.assets.white);
 	}
 
 	public void draw(SeatState seat, float x, float top, float time) {
@@ -47,6 +54,12 @@ public final class PlayerPanel {
 		float y = top - H;
 		if (seat.turn) {
 			paint.frame(assets.panelTurn, x - 4, y - 4, W + 8, H + 8);
+			if (seat.pulse > 0) {
+				float grow = 4 + PULSE_GROW * seat.pulse;
+				paint.fade(seat.pulse);
+				paint.frame(assets.panelTurn, x - grow, y - grow, W + 2 * grow, H + 2 * grow);
+				paint.fade(1f);
+			}
 		} else if (seat.waiting()) {
 			paint.frame(assets.panelWait, x, y, W, H);
 		} else {
@@ -55,7 +68,17 @@ public final class PlayerPanel {
 		drawNameAndScore(seat, x, top);
 		float iy = y + 6;
 		if (seat.hasBid()) {
+			if (seat.cracked) {
+				paint.batch.setColor(Palette.CARD_DIM);
+			}
 			drawTricks(seat, x + 10, iy);
+			paint.batch.setColor(Color.WHITE);
+			if (seat.gilt > 0) {
+				gild(seat, x + 10, iy);
+			}
+			if (seat.cracked) {
+				crack(seat, x + 10, iy);
+			}
 		} else if (seat.waiting()) {
 			drawHourglass(seat, x + 10, iy, time);
 		}
@@ -81,6 +104,36 @@ public final class PlayerPanel {
 			paint.glyphs.setText(f, score);
 			paint.text(paint.ui(1.0f, Palette.GOLD_LIGHT), DOUBLED, x + W - 18 - paint.glyphs.width, top - 11, false);
 		}
+	}
+
+	private static final float PULSE_GROW = 10, CRACK_W = 2.5f;
+	private static final Color CRACK = new Color(0.08f, 0.05f, 0.03f, 0.9f);
+
+	private float iconsWidth(SeatState seat) {
+		int shown = Math.max(1, Math.max(seat.bid, seat.won));
+		float iw = iconWidth(seat.handSize);
+		return Math.min(shown, perRow(seat.handSize)) * (iw + ICON_GAP) - ICON_GAP;
+	}
+
+	private void gild(SeatState seat, float x, float y) {
+		float iw = iconWidth(seat.handSize), ih = iw * ICON_ASPECT * rows(seat.handSize), w = iconsWidth(seat);
+		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		paint.batch.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, 0.9f * seat.gilt);
+		paint.batch.draw(paint.assets.glow, x - iw, y - ih / 2, w + 2 * iw, ih * 2);
+		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		paint.batch.setColor(Color.WHITE);
+	}
+
+	private void crack(SeatState seat, float x, float y) {
+		float ih = iconWidth(seat.handSize) * ICON_ASPECT, w = iconsWidth(seat);
+		float[] xs = { 0, 0.22f, 0.4f, 0.63f, 0.8f, 1 }, ys = { 0.85f, 0.45f, 0.7f, 0.25f, 0.55f, 0.1f };
+		for (int i = 0; i + 1 < xs.length; i++) {
+			float ax = x + xs[i] * w, ay = y + ys[i] * ih, bx = x + xs[i + 1] * w, by = y + ys[i + 1] * ih;
+			float len = (float) Math.hypot(bx - ax, by - ay), angle = MathUtils.atan2(by - ay, bx - ax) * MathUtils.radiansToDegrees;
+			paint.batch.setColor(CRACK);
+			paint.batch.draw(line, ax, ay - CRACK_W / 2, 0, CRACK_W / 2, len, CRACK_W, 1, 1, angle);
+		}
+		paint.batch.setColor(Color.WHITE);
 	}
 
 	private void drawHourglass(SeatState seat, float x, float y, float time) {
