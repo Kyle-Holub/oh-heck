@@ -2,9 +2,23 @@ package ohheck.ui;
 
 import com.badlogic.gdx.graphics.Color;
 
+/*
+ * The game's colours. SPARKLE is the one that changes: the dressed felt's sparkle colour, which every spark,
+ * firework, mote and flare is shaded from (sparkle: deeper as power rises above 1, paler as toWhite rises).
+ */
 public final class Palette {
 
 	private Palette() {
+	}
+
+	public static final Color SPARKLE = new Color(1f, 0.72f, 0.31f, 1f);
+
+	public static void sparkle(float power, float toWhite, float[] rgb) {
+		float r = (float) Math.pow(SPARKLE.r, power), g = (float) Math.pow(SPARKLE.g, power), b = (float) Math.pow(SPARKLE.b, power);
+		float top = Math.max(r, Math.max(g, Math.max(b, 0.001f)));
+		rgb[0] = r / top + (1 - r / top) * toWhite;
+		rgb[1] = g / top + (1 - g / top) * toWhite;
+		rgb[2] = b / top + (1 - b / top) * toWhite;
 	}
 
 	public static final Color BG = new Color(0.055f, 0.035f, 0.024f, 1f);

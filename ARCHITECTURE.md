@@ -46,8 +46,8 @@ first six have no libGDX and test in plain JUnit.
   or up and down), the biggest hand (8, or 13 for a marathon, whose 13-card hand deals the
   whole deck and so has no trump: `trump()` is null, and the table shows a dotted outline),
   whether a made bid scores big (8, plus 4 for the first trick bid, doubling with each trick after), and whether bids are blind (made unseen,
-  shown together, no dealer's limit: `Match.bidSeenBy` hides them from the other seats and from
-  their bots until bidding ends). It also says which card wins, what may be bid and played, and the score.
+  shown together: `Match.bidSeenBy` hides them from the other seats and from their bots until bidding
+  ends; the dealer's limit still holds, so `TableView` carries the dealer's barred bid). It also says which card wins, what may be bid and played, and the score.
   A `Match` holds its rules (`rules()`) and `TableView` carries them to the bots. A rule set is
   a value written as a short code (`UP/8`, `UP_AND_DOWN/13/big`) into saves and high scores.
   `GameMode` names four fixed sets (Classic, High Stakes, Poker Face, Marathon) and Custom, which plays
@@ -189,7 +189,7 @@ unnamed, each bid shown with the table's icons on a small placard, the one to bl
 plus the champion's twist), and a duel against its champion
 (`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
 bid made after two made running). Winning the duel clears the chapter and wins its card back
-and felt (`Cosmetic`, chosen in Preferences); the game-over panel's **Claim prizes** opens
+and felt (`Cosmetic`, chosen in Preferences with a preview; the felt also tints every sparkle through `Palette.SPARKLE`); the game-over panel's **Claim prizes** opens
 `ChapterClearedScreen`, which turns each prize over in turn (card back, felt, champion's badge)
 with fireworks, then puts the new look on. `PlayScreen.campaign` plays a `Stage` (table, final table or duel), each
 opened by winning the one before (`Campaign.open`); campaign games are not saved and don't touch the statistics or high scores, but every

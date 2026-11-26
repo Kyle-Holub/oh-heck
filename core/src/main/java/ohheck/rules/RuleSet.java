@@ -7,7 +7,8 @@ import java.util.List;
 /*
  * The rules a game is played by: which way the hand sizes run, the biggest hand, how a made bid
  * scores (with big bids: 8, plus 4 for the first trick bid, doubling with each trick after),
- * whether bids are blind (made unseen, revealed together, with no dealer's limit), whether the
+ * whether bids are blind (made unseen and revealed together; the dealer's limit still holds, so the dealer alone
+ * learns what the others' bids add up to), whether the
  * deck is short (nine to ace, for duels), momentum (a bid made after two made running scores
  * double), whether the winner picks trump (whoever made the highest bid last hand chooses the trump
  * suit before bidding), hands won (a made bid scores one, and a tie for first plays on in one-card hands until
@@ -197,7 +198,7 @@ public final class RuleSet {
 		if (bid < 0 || bid > handSize) {
 			return false;
 		}
-		return blindBids || !(isDealer && bid == forbiddenDealerBid(handSize, bidsSoFar));
+		return !(isDealer && bid == forbiddenDealerBid(handSize, bidsSoFar));
 	}
 
 	public int made() {

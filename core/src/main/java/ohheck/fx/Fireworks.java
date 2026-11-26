@@ -6,12 +6,13 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 
+import ohheck.ui.Palette;
+
 /* Rockets that rise and burst into sparks when you win. */
 public final class Fireworks {
 
-	private static final float[][] PALETTE = { { 0.95f, 0.16f, 0.14f }, { 1f, 0.24f, 0.2f },
-			{ 1f, 0.32f, 0.14f }, { 1f, 0.55f, 0.12f }, { 1f, 0.76f, 0.25f }, { 1f, 0.88f, 0.52f },
-			{ 1f, 0.95f, 0.82f } };
+	private static final float[] POWERS = { 5f, 4f, 3.2f, 2.2f, 1f, 1f, 1f }, TO_WHITE = { 0, 0, 0, 0, 0, 0.45f, 0.8f };
+	private final float[][] palette = new float[POWERS.length][3];
 	private static final int[] WEIGHTS = { 3, 3, 2, 2, 3, 2, 1 };
 
 	private static final int ROCKETS = 30;
@@ -27,6 +28,9 @@ public final class Fireworks {
 
 	public void show(float w, float h) {
 		clock = 0;
+		for (int k = 0; k < palette.length; k++) {
+			Palette.sparkle(POWERS[k], TO_WHITE[k], palette[k]);
+		}
 		for (int i = 0; i < ROCKETS; i++) {
 			waiting[i] = true;
 			rising[i] = false;
@@ -68,7 +72,7 @@ public final class Fireworks {
 			rx[i] += rvx[i] * dt;
 			ry[i] += rvy[i] * dt;
 			sparks.spawn(rx[i] + MathUtils.random(-1f, 1f), ry[i], MathUtils.random(-8f, 8f), MathUtils.random(-30f, -5f),
-					MathUtils.random(0.25f, 0.45f), MathUtils.random(3f, 5f), PALETTE[4], 0.2f);
+					MathUtils.random(0.25f, 0.45f), MathUtils.random(3f, 5f), palette[4], 0.2f);
 			if (rvy[i] <= 20f) {
 				rising[i] = false;
 				burst(i);
@@ -83,12 +87,12 @@ public final class Fireworks {
 		for (int k = 0; k < n; k++) {
 			float a = MathUtils.PI2 * k / n + MathUtils.random(-0.05f, 0.05f);
 			float s = speed * MathUtils.random(0.75f, 1.05f);
-			float[] c = PALETTE[k % 2 == 0 ? colour[i] : colour2[i]];
+			float[] c = palette[k % 2 == 0 ? colour[i] : colour2[i]];
 			sparks.spawn(rx[i], ry[i], MathUtils.cos(a) * s, MathUtils.sin(a) * s, MathUtils.random(1.3f, 2.2f),
 					MathUtils.random(8f, 13f), c, 1f);
 		}
 		for (int k = 0; k < 6; k++) {
-			sparks.spawn(rx[i], ry[i], MathUtils.random(-20f, 20f), MathUtils.random(-20f, 20f), 0.35f, 26f, PALETTE[6], 1f);
+			sparks.spawn(rx[i], ry[i], MathUtils.random(-20f, 20f), MathUtils.random(-20f, 20f), 0.35f, 26f, palette[6], 1f);
 		}
 	}
 

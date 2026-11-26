@@ -330,7 +330,7 @@ public final class Match {
 	}
 
 	public int forbiddenBid() {
-		if (phase != Phase.BIDDING || current != dealer || rules.blindBids) {
+		if (phase != Phase.BIDDING || current != dealer) {
 			return -1;
 		}
 		int f = rules.forbiddenDealerBid(handSize(), bidsSoFar());
@@ -432,7 +432,7 @@ public final class Match {
 	public TableView view(int seat) {
 		TableView.Builder v = new TableView.Builder(players).seat(seat)
 				.hand(handIndex, rules.numberOfHands(), handSize(), dealer, trumpCard, rules)
-				.pickedTrump(pickedTrump, pickingTrump()).widow(swapping() && seat == current ? widow : Collections.<Card>emptyList(), swapping())
+				.pickedTrump(pickedTrump, pickingTrump()).dealerForbids(seat == dealer ? rules.forbiddenDealerBid(handSize(), bidsSoFar()) : -1).widow(swapping() && seat == current ? widow : Collections.<Card>emptyList(), swapping())
 				.cards(hands.get(seat))
 				.trick(trick.cards(), trick.seats()).history(history, historySeats);
 		for (int s = 0; s < players; s++) {

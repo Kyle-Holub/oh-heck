@@ -9,8 +9,8 @@ import ohheck.rules.Suit;
 /*
  * A chapter of the campaign: its game mode, the suit on its card, the three rivals at its table,
  * the champion who must be beaten in a duel to move on, and the champion's twist. At the final table the champion
- * takes the top seat and the house rules gain the twist; the duel plays the short deck with momentum, the house
- * hand order and scoring, and the twist. Only ready chapters can be played yet.
+ * takes the top seat and the house rules gain the twist; the duel plays the short deck with the house hand order
+ * and scoring, and the twist (so only chapter 1's duel has momentum). Only ready chapters can be played yet.
  */
 public enum Chapter {
 	ONE(GameMode.CLASSIC, Suit.SPADES, Seating.of(0, 1, 3), 2, Twist.MOMENTUM, true),
@@ -45,7 +45,7 @@ public enum Chapter {
 	public RuleSet rules(Stage s) {
 		if (s == Stage.DUEL) {
 			RuleSet house = rules();
-			return twist.apply(RuleSet.DUEL.withOrder(house.order).withBigBids(house.bigBids).withBlindBids(house.blindBids));
+			return twist.apply(RuleSet.DUEL.withMomentum(false).withOrder(house.order).withBigBids(house.bigBids).withBlindBids(house.blindBids));
 		}
 		return s == Stage.FINAL ? twist.apply(rules()) : rules();
 	}

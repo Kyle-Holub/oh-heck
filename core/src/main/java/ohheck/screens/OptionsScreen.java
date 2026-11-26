@@ -66,7 +66,7 @@ public class OptionsScreen extends BaseScreen {
 								() -> s.customize(r -> r.withMostCards(r.mostCards == RuleSet.MOST_CARDS ? RuleSet.USUAL_CARDS : RuleSet.MOST_CARDS))),
 						OptionItem.toggle("Big bids", "Bigger bids are worth more.",
 								() -> s.rules().bigBids, () -> s.customize(r -> r.withBigBids(!r.bigBids))),
-						OptionItem.toggle("Blind bids", "Bids are made unseen and shown together; the dealer may bid anything.",
+						OptionItem.toggle("Blind bids", "Bids are made unseen and shown together; the dealer still can't make them add up.",
 								() -> s.rules().blindBids, () -> s.customize(r -> r.withBlindBids(!r.blindBids))),
 						OptionItem.toggle("Momentum", "Make your bid twice running and the next made bid scores double.",
 								() -> s.rules().momentum, () -> s.customize(r -> r.withMomentum(!r.momentum))),
@@ -96,14 +96,14 @@ public class OptionsScreen extends BaseScreen {
 							game.audio().play(Audio.Effect.PLAY_CARD);
 						}),
 						OptionItem.heading("Display"),
-						OptionItem.choice("Card back", "Won by clearing campaign chapters.", () -> s.cardBack().label, () -> {
+						OptionItem.look("Card back", "Won by clearing campaign chapters.", () -> s.cardBack().label, () -> {
 							s.setCardBack(s.cardBack().nextOwned(game.records().campaign()));
 							game.assets().dress(s.cardBack(), s.felt());
-						}),
-						OptionItem.choice("Table felt", "Won by clearing campaign chapters.", () -> s.felt().label, () -> {
+						}, () -> game.assets().backOf(s.cardBack()), 38, 54),
+						OptionItem.look("Table felt", "Won by clearing campaign chapters.", () -> s.felt().label, () -> {
 							s.setFelt(s.felt().nextOwned(game.records().campaign()));
 							game.assets().dress(s.cardBack(), s.felt());
-						}),
+						}, () -> game.assets().feltOf(s.felt()), 84, 42),
 						OptionItem.choice("Hand sort", "Trumps on the left, then by suit or by rank.",
 								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next())),
 						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
