@@ -89,10 +89,37 @@ final class TableDrawing {
 		}
 	}
 
+	private static final Tween PICK_DROP = Tween.over(0.35f, Ease.IN), WIDOW_SLIDE = Tween.over(0.35f, Ease.OUT).after(TableFlow.TRUMP_FLIP_TIME),
+			BID_STAMP = Tween.over(0.22f, Ease.OUT), BID_FLIP = Tween.over(0.25f, Ease.OUT);
+	private static final float PICK_SWELL = 1.4f, PICK_RISE = -90, ALARM_FLICKER = 9, STAMP_SIZE = 0.8f, REVEAL_STAGGER = 0.09f,
+			WIDOW_SCALE = 0.6f, WIDOW_GAP = 8;
+	private final int[] shownBid = { Match.NO_BID, Match.NO_BID, Match.NO_BID, Match.NO_BID };
+	private final float[] bidAt = { -99, -99, -99, -99 };
+	private final boolean[] revealed = new boolean[Seating.SEATS];
+
+	void widow() {
+		Match m = scene.match();
+		TableFlow flow = scene.flow();
+		if (m.widow().isEmpty() || flow.isDealing() || m.phase() == Match.Phase.HAND_OVER) {
+			return;
+		}
+		float slide = WIDOW_SLIDE.progress(flow.trumpTime());
+		float cw = layout.trumpW() * WIDOW_SCALE, ch = layout.trumpH() * WIDOW_SCALE, y = layout.trumpY() - ch - WIDOW_GAP;
+		for (int k = 0; k < 2; k++) {
+			float restX = layout.trumpX() + layout.trumpW() - (k + 1) * cw - k * WIDOW_GAP;
+			float x = Ease.lerp(layout.trumpX() + layout.trumpW() / 2 - cw / 2, restX, slide);
+			art.shadow(x, y, cw, ch, 3);
+			batch.setColor(1, 1, 1, slide);
+			batch.draw(assets.back(), x, y, cw, ch);
+		}
+		batch.setColor(Color.WHITE);
+	}
+
 	void tally() {
 		Match m = scene.match();
 		int done = m.phase() == Match.Phase.GAME_OVER ? m.rules().numberOfHands() : Math.min(m.handIndex(), m.rules().numberOfHands());
-		counters.tally(TALLY_X, layout.h - TALLY_DROP, m.rules().numberOfHands(), done, Counters.pulse(scene.time()), 1f);
+		float alarm = m.suddenDeath() ? 0.5f + 0.5f * MathUtils.sin(scene.time() * ALARM_FLICKER) : 0;
+		counters.tally(TALLY_X, layout.h - TALLY_DROP, m.rules().numberOfHands(), done, Counters.pulse(scene.time()), 1f, alarm);
 	}
 
 	void bidTracker() {
@@ -158,12 +185,12 @@ final class TableDrawing {
 		if (s == null) {
 			return;
 		}
-		float since = scene.time() - pickedAt, in = MathUtils.clamp(since / NOTCH_FILL, 0, 1);
-		float e = cw * PICKED_EMBLEM * (1 + BAR_POP * (1 - in));
-		batch.setColor(1, 1, 1, in);
-		batch.draw(assets.emblem(s), x + (cw - e) / 2, y + (ch - e) / 2, e, e);
+		float since = scene.time() - pickedAt, drop = PICK_DROP.progress(since);
+		float e = cw * PICKED_EMBLEM * (1 + PICK_SWELL * (1 - drop)), rise = PICK_RISE * (1 - drop);
+		batch.setColor(1, 1, 1, Math.min(1, drop * 3));
+		batch.draw(assets.emblem(s), x + (cw - e) / 2, y + (ch - e) / 2 - rise, e, e);
 		batch.setColor(Color.WHITE);
-		suitPuff(s, x + cw / 2, y + ch / 2, since / PUFF_LEN);
+		suitPuff(s, x + cw / 2, y + ch / 2, (since - PICK_DROP.end()) / PUFF_LEN);
 	}
 
 	void momentum() {
@@ -215,6 +242,7 @@ final class TableDrawing {
 		boolean dealer = m.dealer() == seat && (!picking || DealerPick.settled(flow.stateTime()));
 		state.reset().named(scene.placardName(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(dealer)
 				.doubled(m.onMomentum(seat)).bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
+		appear(seat, m);
 		if (seat == Seating.YOU) {
 			boolean scored = m.phase() == Match.Phase.HAND_OVER && (flow.state() == TableState.HAND_END || flow.state() == TableState.RESULTS);
 			boolean made = scored && m.madeBid(seat);
@@ -223,6 +251,22 @@ final class TableDrawing {
 			state.accents(pulse < 1 ? (float) Math.sin(Math.PI * pulse) : 0, gilt, scored && !made);
 		}
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
+	}
+
+	private void appear(int seat, Match m) {
+		int bid = m.bidSeenBy(seat, Seating.YOU);
+		float now = scene.time();
+		if (bid != shownBid[seat]) {
+			boolean reveal = shownBid[seat] == Match.NO_BID && bid != Match.NO_BID && m.rules().blindBids && seat != Seating.YOU;
+			int order = ((seat - m.dealer() - 1) % m.players() + m.players()) % m.players();
+			bidAt[seat] = bid == Match.NO_BID ? -99 : now + (reveal ? order * REVEAL_STAGGER : 0);
+			revealed[seat] = reveal;
+			shownBid[seat] = bid;
+		}
+		float since = now - bidAt[seat];
+		float stamp = revealed[seat] ? 0 : STAMP_SIZE * (1 - BID_STAMP.progress(since));
+		float flip = revealed[seat] ? BID_FLIP.progress(since) : 1;
+		state.appear(stamp, flip);
 	}
 
 	static int scoreShown(TableFlow flow, Match m, int seat) {

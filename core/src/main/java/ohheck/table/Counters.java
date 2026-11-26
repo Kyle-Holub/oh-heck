@@ -19,13 +19,15 @@ public final class Counters {
 
 	private final Painter paint;
 	private final TextureRegion stroke;
+	private final Color ink = new Color();
 
 	public Counters(Painter paint) {
 		this.paint = paint;
 		this.stroke = new TextureRegion(paint.assets.stroke);
 	}
 
-	public void tally(float left, float top, int marks, int done, float pulse, float scale) {
+	public void tally(float left, float top, int marks, int done, float pulse, float scale, float alarm) {
+		Color ink = this.ink.set(Palette.GOLD).lerp(Palette.RED, alarm);
 		float th = TALLY_H * scale, tw = TALLY_W * scale, step = TALLY_STEP * scale;
 		for (int i = 0; i < marks; i++) {
 			int gate = i / 5, k = i % 5;
@@ -43,7 +45,7 @@ public final class Counters {
 				mark(cx, cy, tw + 6 * scale, len + 6 * scale, rot, Palette.GOLD_LIGHT, 0.18f + 0.22f * pulse);
 				mark(cx, cy, tw, len, rot, Palette.GOLD_LIGHT, 1f);
 			} else if (i < done) {
-				mark(cx, cy, tw, len, rot, Palette.GOLD, 1f);
+				mark(cx, cy, tw, len, rot, ink, 1f);
 			} else {
 				mark(cx, cy, tw, len, rot, Palette.MUTED, 0.28f);
 			}

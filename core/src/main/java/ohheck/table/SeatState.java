@@ -9,7 +9,7 @@ public final class SeatState {
 	int score, bid = NO_BID, won, handSize = 1;
 	boolean turn, dealer, doubled;
 	boolean plain, scored = true, cracked;
-	float pulse, gilt;
+	float pulse, gilt, stamp, flip = 1;
 
 	public SeatState reset() {
 		name = "";
@@ -17,7 +17,8 @@ public final class SeatState {
 		bid = NO_BID;
 		handSize = 1;
 		turn = dealer = plain = doubled = cracked = false;
-		pulse = gilt = 0;
+		pulse = gilt = stamp = 0;
+		flip = 1;
 		scored = true;
 		return this;
 	}
@@ -66,6 +67,12 @@ public final class SeatState {
 		this.pulse = pulse;
 		this.gilt = gilt;
 		this.cracked = cracked;
+		return this;
+	}
+
+	public SeatState appear(float stamp, float flip) {
+		this.stamp = stamp;
+		this.flip = flip;
 		return this;
 	}
 
