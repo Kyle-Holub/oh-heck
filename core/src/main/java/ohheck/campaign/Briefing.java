@@ -80,9 +80,8 @@ public record Briefing(String tag, Chapter chapter, String go, List<Briefing.Pag
 		RuleSet r = c.rules(Stage.DUEL);
 		List<Page> p = new ArrayList<Page>();
 		p.add(new Page(Picture.CHAMPION, "Duel: " + champion.name, champion.trait, champion.name));
-		boolean withMomentum = c.twist != Twist.MOMENTUM;
 		p.add(new Page(Picture.SHORT_DECK, "A short deck", "Nine to ace, " + r.numberOfHands() + " hands of 1 to " + r.mostCards
-				+ " cards" + (withMomentum ? ", momentum" : "") + (r.bigBids ? ", big bids" : "") + (r.blindBids ? ", blind bids" : "")
+				+ " cards" + (r.bigBids ? ", big bids" : "") + (r.blindBids ? ", blind bids" : "")
 				+ ".", "9-A"));
 		p.add(new Page(Picture.TWIST, c.twist.label, capital(c.twist.line), c.twist.figure));
 		p.add(new Page(Picture.WIN, "To win", "Win to clear the chapter.", "1st"));

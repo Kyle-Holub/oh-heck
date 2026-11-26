@@ -167,6 +167,7 @@ public final class Assets implements Disposable {
 
 	public void dress(Cosmetic cardBack, Cosmetic felt) {
 		table = feltOf(felt);
+		Color.rgb888ToColor(Palette.SPARKLE, felt.sparkle);
 		back.setRegion(backOf(cardBack));
 		backBlur.setRegion(blurredBackOf(cardBack));
 	}

@@ -112,9 +112,11 @@ final class TableDrawing {
 			return;
 		}
 		float x = layout.trumpX(), y = layout.trumpY(), cw = layout.trumpW(), ch = layout.trumpH();
-		if (scene.match().trumpCard() == null) {
+		Match m = scene.match();
+		if (m.trumpCard() == null || m.pickingTrump() || m.pickedTrump() != null) {
 			if (!flow.isDealing()) {
 				batch.draw(assets.cardSlot, x, y, cw, ch);
+				pickedTrump(x, y, cw, ch);
 			}
 			return;
 		}
@@ -137,14 +139,13 @@ final class TableDrawing {
 		if (p >= 1) {
 			Glints.draw(batch, assets.glow, trump, x, y, cw, ch, cw, 0, scene.time(), lit);
 		}
-		pickedTrump(x, y, cw, ch);
 		if (p >= 1 && lit > 0) {
 			post.light((x + cw / 2) / layout.w, (y + ch / 2) / layout.h, 0.3f, lit);
 		}
 		motes.draw(batch, assets.glow);
 	}
 
-	private static final float PICKED_VEIL = 0.78f, PICKED_EMBLEM = 0.72f;
+	private static final float PICKED_EMBLEM = 0.72f;
 	private Suit shownPick;
 	private float pickedAt;
 
@@ -158,8 +159,6 @@ final class TableDrawing {
 			return;
 		}
 		float since = scene.time() - pickedAt, in = MathUtils.clamp(since / NOTCH_FILL, 0, 1);
-		batch.setColor(0, 0, 0, PICKED_VEIL * in);
-		batch.draw(assets.white, x, y, cw, ch);
 		float e = cw * PICKED_EMBLEM * (1 + BAR_POP * (1 - in));
 		batch.setColor(1, 1, 1, in);
 		batch.draw(assets.emblem(s), x + (cw - e) / 2, y + (ch - e) / 2, e, e);

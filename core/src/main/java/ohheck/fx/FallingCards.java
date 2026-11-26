@@ -19,6 +19,7 @@ import ohheck.rules.Card;
 import ohheck.rules.Rank;
 import ohheck.rules.Suit;
 import ohheck.ui.Assets;
+import ohheck.ui.Palette;
 
 /* Playing cards tumbling down the screen in 3D, projected through a pinhole camera each frame. */
 public final class FallingCards {
@@ -40,6 +41,7 @@ public final class FallingCards {
 
 	private final Assets assets;
 	private final Random rng;
+	private final float[] rgb = new float[3];
 	private final List<Flake> flakes = new ArrayList<Flake>();
 	private float time, spawnDebt;
 	private final boolean fromEmpty;
@@ -300,8 +302,8 @@ public final class FallingCards {
 			float size = sSize[i] * scale * (1f + d * 5f);
 			float twinkle = 0.55f + 0.45f * MathUtils.sin(time * sRate[i] * 2f + sPhase[i]);
 			float a = Math.min(1f, twinkle * MathUtils.lerp(1.2f, 0.3f, d) * MathUtils.clamp(scale * 1.6f, 0.35f, 1f));
-			float g = MathUtils.lerp(0.62f, 0.86f, sHue[i]);
-			batch.setColor(1f, g, MathUtils.lerp(0.25f, 0.55f, sHue[i]), a);
+			Palette.sparkle(MathUtils.lerp(1.5f, 0.6f, sHue[i]), 0, rgb);
+			batch.setColor(rgb[0], rgb[1], rgb[2], a);
 			batch.draw(assets.glow, cx + sx[i] * scale - size / 2, cy + sy[i] * scale - size / 2, size, size);
 		}
 		batch.setColor(Color.WHITE);

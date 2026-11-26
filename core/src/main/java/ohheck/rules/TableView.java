@@ -15,6 +15,7 @@ public final class TableView {
 	private Card trumpCard;
 	private Suit pickedTrump;
 	private boolean pickingTrump, swapping;
+	private int dealerForbids = -1;
 	private final List<Card> widow = new ArrayList<Card>();
 	private final List<Card> hand = new ArrayList<Card>();
 	private final int[] bids;
@@ -79,6 +80,9 @@ public final class TableView {
 	}
 
 	public boolean isLegalBid(int bid) {
+		if (rules.blindBids) {
+			return bid >= 0 && bid <= handSize && bid != dealerForbids;
+		}
 		return rules.isLegalBid(bid, handSize, bidsSoFar(), seat == dealer);
 	}
 
@@ -199,6 +203,11 @@ public final class TableView {
 		public Builder pickedTrump(Suit suit, boolean picking) {
 			v.pickedTrump = suit;
 			v.pickingTrump = picking;
+			return this;
+		}
+
+		public Builder dealerForbids(int bid) {
+			v.dealerForbids = bid;
 			return this;
 		}
 

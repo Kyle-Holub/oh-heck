@@ -129,6 +129,10 @@ public final class Painter {
 		pressable.add(r);
 	}
 
+	public void quiet(Rectangle r) {
+		pressable.removeValue(r, true);
+	}
+
 	public boolean pressed(float x, float y) {
 		for (int i = 0; i < pressable.size; i++) {
 			if (pressable.get(i).contains(x, y)) {

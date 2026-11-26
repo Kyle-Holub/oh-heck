@@ -191,7 +191,7 @@ def card_sheet(out):
     return sheet
 
 
-def card_back(out, name="back_hd.png", colour=OXBLOOD, deep=OXBLOOD_DARK, suit="spades"):
+def card_back(out, name="back_hd.png", colour=OXBLOOD, deep=OXBLOOD_DARK, suit="spades", gilt=False):
     W, H = CARD_W * SS, CARD_H * SS
     y = np.linspace(0, 1, H)[:, None, None]
     x = np.linspace(0, 1, W)[None, :, None]
@@ -217,9 +217,38 @@ def card_back(out, name="back_hd.png", colour=OXBLOOD, deep=OXBLOOD_DARK, suit="
     d.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=deep, outline=GOLD, width=3 * SS)
     d.ellipse([cx - rad + 7 * SS, cy - rad + 7 * SS, cx + rad - 7 * SS, cy + rad - 7 * SS], outline=GOLD_DARK, width=SS)
     suit_shape(d, suit, cx, cy, 40 * SS, GOLD)
+    if gilt:
+        gild(img, d, W, H, inset, cx, cy, rad, suit)
     d.rounded_rectangle([SS, SS, W - 1 - SS, H - 1 - SS], 15 * SS, outline=CREAM_EDGE, width=5 * SS)
     img.putalpha(rounded_mask(W, H, 16 * SS))
     downsample(img, CARD_W, CARD_H).save(os.path.join(out, name), optimize=True)
+
+
+def gild(img, d, W, H, inset, cx, cy, rad, suit):
+    """Gold leaf for the Gilded back: a burnished band inside the border, rays from the medallion,
+    a ring of pips and a gold suit in each corner."""
+    band = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    bd = ImageDraw.Draw(band)
+    for k, a in ((0, 255), (5, 200), (10, 140)):
+        bd.rounded_rectangle([inset - (9 - k) * SS, inset - (9 - k) * SS, W - inset + (9 - k) * SS, H - inset + (9 - k) * SS],
+                             12 * SS, outline=GOLD_LIGHT + (a,), width=2 * SS)
+    img.alpha_composite(band)
+    rays = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    rd = ImageDraw.Draw(rays)
+    for k in range(24):
+        a = math.radians(k * 15)
+        r0, r1 = rad + 6 * SS, rad + (34 if k % 2 == 0 else 20) * SS
+        rd.line([(cx + r0 * math.cos(a), cy + r0 * math.sin(a)), (cx + r1 * math.cos(a), cy + r1 * math.sin(a))],
+                fill=GOLD_LIGHT + (230,), width=2 * SS)
+    img.alpha_composite(rays)
+    for k in range(12):
+        a = math.radians(k * 30 + 15)
+        px, py = cx + (rad - 4 * SS) * math.cos(a), cy + (rad - 4 * SS) * math.sin(a)
+        d.ellipse([px - 2.5 * SS, py - 2.5 * SS, px + 2.5 * SS, py + 2.5 * SS], fill=GOLD_LIGHT)
+    for qx, qy in ((inset + 20 * SS, inset + 20 * SS), (W - inset - 20 * SS, inset + 20 * SS),
+                   (inset + 20 * SS, H - inset - 20 * SS), (W - inset - 20 * SS, H - inset - 20 * SS)):
+        d.ellipse([qx - 13 * SS, qy - 13 * SS, qx + 13 * SS, qy + 13 * SS], fill=GOLD_DARK, outline=GOLD_LIGHT, width=2 * SS)
+        suit_shape(d, suit, qx, qy, 14 * SS, GOLD_LIGHT)
 
 
 # ---------------------------------------------------------------- table and UI
@@ -265,7 +294,7 @@ def card_slot(out):
     downsample(img, CARD_W, CARD_H).save(os.path.join(out, "card_slot.png"), optimize=True)
 
 
-def table(out, name="table.jpg", dark=(20, 12, 8), lit=(92, 58, 38)):
+def table(out, name="table.jpg", dark=(20, 12, 8), lit=(92, 58, 38), gilt=False):
     """Dark warm felt under a soft overhead spotlight, falling away to near-black."""
     W, H = 1280, 640
     rng = np.random.default_rng(7)
@@ -280,6 +309,14 @@ def table(out, name="table.jpg", dark=(20, 12, 8), lit=(92, 58, 38)):
     fibre = np.clip(fibre * 40 + 128, 0, 255).astype(np.uint8)
     fibre = (np.asarray(Image.fromarray(fibre, "L").filter(ImageFilter.GaussianBlur(0.8))).astype(float) - 128) / 40
     img += fibre[..., None] * 6
+    if gilt:
+        flecks = np.clip(rng.normal(0, 1, (H, W)) - 2.6, 0, None) * light
+        flecks = np.asarray(Image.fromarray(np.clip(flecks * 255, 0, 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(0.6))) / 255.0
+        img += flecks[..., None] * np.array((255, 205, 110), float) * 1.4
+        px, py = (x + 1) / 2 * W, (y + 1) / 2 * H
+        edge = np.minimum(np.minimum(px, W - 1 - px), np.minimum(py, H - 1 - py))
+        rule = np.exp(-((edge - 26) / 2.2) ** 2) + 0.6 * np.exp(-((edge - 36) / 1.2) ** 2)
+        img = img * (1 - np.clip(rule, 0, 1)[..., None]) + np.clip(rule, 0, 1)[..., None] * np.array((200, 160, 80), float)
     Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, name), quality=90, optimize=True)
 
 
@@ -541,19 +578,20 @@ def blurred_back(out, src, dst, pad=24, radius=7):
 
 def chapter_cosmetics(out):
     """Each chapter's prize: a card back and a felt. Chapter 1: emerald and club, a card-room green;
-    2: ruby and diamond, a high-stakes red; 3: midnight and heart, a late-night navy; 4: amber and spade, an old gold."""
+    2: amethyst and diamond, a deep purple; 3: midnight and heart, a late-night navy; 4: gilded and spade, gold leaf
+    on old gold."""
     card_back(out, "back_ch1.png", colour=(22, 92, 58), deep=(10, 48, 30), suit="clubs")
     blurred_back(out, "back_ch1.png", "back_ch1_blur.png")
     table(out, "table_ch1.jpg", dark=(6, 18, 12), lit=(30, 86, 56))
-    card_back(out, "back_ch2.png", colour=(128, 22, 34), deep=(62, 8, 16), suit="diamonds")
+    card_back(out, "back_ch2.png", colour=(98, 40, 150), deep=(44, 14, 74), suit="diamonds")
     blurred_back(out, "back_ch2.png", "back_ch2_blur.png")
-    table(out, "table_ch2.jpg", dark=(22, 6, 8), lit=(98, 30, 36))
+    table(out, "table_ch2.jpg", dark=(14, 6, 22), lit=(72, 34, 108))
     card_back(out, "back_ch3.png", colour=(24, 38, 92), deep=(10, 16, 46), suit="hearts")
     blurred_back(out, "back_ch3.png", "back_ch3_blur.png")
     table(out, "table_ch3.jpg", dark=(6, 9, 22), lit=(30, 44, 92))
-    card_back(out, "back_ch4.png", colour=(128, 88, 26), deep=(64, 40, 10), suit="spades")
+    card_back(out, "back_ch4.png", colour=(150, 108, 34), deep=(70, 44, 10), suit="spades", gilt=True)
     blurred_back(out, "back_ch4.png", "back_ch4_blur.png")
-    table(out, "table_ch4.jpg", dark=(20, 14, 6), lit=(96, 70, 30))
+    table(out, "table_ch4.jpg", dark=(20, 14, 6), lit=(96, 70, 30), gilt=True)
 
 
 def campaign_art(out):

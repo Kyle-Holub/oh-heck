@@ -63,7 +63,7 @@ A duel is you against the chapter's champion, one-on-one; winning it is the only
 
 - **Short deck:** 9 through Ace (24 cards), hands of 1 to 6 cards, so most of the deck is in play and counting matters.
 - **Hidden hands:** the champion's cards are never shown; nothing in a duel reveals an opponent's hand.
-- **Momentum:** make your bid twice running and the next hand scores x2.
+- **Momentum:** make your bid twice running and the next hand scores x2 (chapter 1's twist; the other duels play their own twist instead).
 - **Champion quirks:** the champion's style shows plainly, but only ever as a choice between sensible moves (Phillip takes the higher of two sound bids; Mortimer empties his shortest suit first when it costs nothing). A quirk never overrides common sense: no zero bid on the trump ace, no thrown hand.
 - **Length:** best of five short hands, about 2 to 3 minutes.
 - **Within the chapter's mode:** a High Stakes duel scores big bids, a Poker Face duel bids blind.
@@ -109,7 +109,7 @@ The MVP is the Campaign / Custom game split with chapter 1 playable end to end; 
 4. **Trick shots:** the puzzle screen, 3 Classic puzzles (one of each goal), and the solver test.
 5. **Practice hand-off:** the practice round ends by opening chapter 1.
 6. **Badges and unlockables:** the first badges on Records (including the chapter 1 champion's), chapter 1's card back and felt.
-7. **Chapters 2 to 4.** Chapter 2 (High Stakes; winner picks trump; the Ruby back and felt) chapter 3 (Poker Face; hands won, with sudden death; Midnight) and chapter 4 (Marathon; the widow, with up-and-down duel hands; Amber) are playable.
+7. **Chapters 2 to 4.** Chapter 2 (High Stakes; winner picks trump; the Amethyst back and felt), chapter 3 (Poker Face; hands won, with sudden death; Midnight) and chapter 4 (Marathon; the widow, with up-and-down duel hands; Gilded) are playable.
 
 ## 10. Decisions
 
