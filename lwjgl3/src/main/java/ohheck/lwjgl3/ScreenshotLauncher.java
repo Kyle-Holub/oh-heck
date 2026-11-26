@@ -242,9 +242,9 @@ public class ScreenshotLauncher {
 				game.playPractice(false);
 			});
 			for (String tip : PRACTICE_TIPS) {
-				then("tip:" + tip, 1.0f, s -> ((PlayScreen) s).dismissTip());
+				then("tip:" + tip, 2.0f, s -> ((PlayScreen) s).dismissTip());
 			}
-			then("tip:bid", 1.0f, s -> game.newGame());
+			then("tip:bid", 2.0f, s -> game.newGame());
 		}
 
 		private void then(String state, float seconds, Consumer<Screen> action) {
