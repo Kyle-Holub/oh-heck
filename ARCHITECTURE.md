@@ -302,6 +302,10 @@ Duplicate deals rotate seats, so luck cancels out. Run it after any AI change.
 
 ## The art
 
+`python3 tools/make_sounds.py` writes the button press chime (`assets/sfx/press.wav`); every button a
+`Painter` draws (and every bid button and open campaign card) plays it on a tap, with a light vibration
+unless Preferences turns it off.
+
 `python3 tools/build_art.py` rebuilds everything generated: the images in `assets/images`
 (`make_art.py`, with the court cards from `court_art.py`), the bitmap fonts (`make_fonts.py`)
 and the launcher icons (`make_icon.py`). `--check` builds into a temp folder and lists

@@ -66,6 +66,9 @@ public abstract class BaseScreen extends ScreenAdapter {
 
 	protected void touchUp(float x, float y) {
 		if (isTap(x, y)) {
+			if (paint.pressed(x, y)) {
+				game.audio().press();
+			}
 			tap(x, y);
 		}
 	}
@@ -179,6 +182,7 @@ public abstract class BaseScreen extends ScreenAdapter {
 		camera.zoom = kickZoom;
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
+		paint.newFrame();
 		batch.begin();
 		batch.setColor(Color.WHITE);
 	}

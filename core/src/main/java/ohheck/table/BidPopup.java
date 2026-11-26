@@ -69,6 +69,9 @@ public final class BidPopup {
 						r.height + 2 * PICKED_RING);
 			}
 			paint.frame(ok ? paint.assets.button : paint.assets.buttonOff, r.x, r.y, r.width, r.height);
+			if (ok) {
+				paint.pressable(r);
+			}
 			Color c = ok ? Color.WHITE : NUMERAL_OFF;
 			paint.numeral(b, r.x + r.width / 2, r.y + r.height / 2, BUTTON * NUMERAL_OF_BUTTON, numeral.set(c.r, c.g, c.b, c.a * alpha));
 			if (shake != 0) {

@@ -13,7 +13,8 @@ public final class Audio implements Disposable {
 		SHUFFLE("sfx/shuffle.mp3", 1f),
 		PLAY_CARD("sfx/playCard.mp3", 1f),
 		WIN("sfx/win.mp3", 0.25f),
-		LOSE("sfx/lose.mp3", 1f);
+		LOSE("sfx/lose.mp3", 1f),
+		PRESS("sfx/press.wav", 0.6f);
 
 		final String path;
 		final float volume;
@@ -52,6 +53,15 @@ public final class Audio implements Disposable {
 			s.play(e.volume);
 		}
 	}
+
+	public void press() {
+		play(Effect.PRESS);
+		if (settings.vibration()) {
+			Gdx.input.vibrate(VIBRATE_MS);
+		}
+	}
+
+	private static final int VIBRATE_MS = 15;
 
 	public void startMusic() {
 		if (music == null) {
