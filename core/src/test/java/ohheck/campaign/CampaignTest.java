@@ -43,7 +43,9 @@ public class CampaignTest {
 	public void unreadyChaptersStayShut() {
 		Campaign c = new Campaign();
 		c.win(Chapter.ONE, Stage.DUEL);
-		assertFalse(c.open(Chapter.TWO));
+		assertTrue(c.open(Chapter.TWO));
+		c.win(Chapter.TWO, Stage.DUEL);
+		assertFalse(c.open(Chapter.THREE));
 	}
 
 	@Test

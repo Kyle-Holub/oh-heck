@@ -129,6 +129,10 @@ public final class Wording {
 
 	private static final String[] HAND_RESULTS = new String[64];
 
+	public static String pickedTrump(String who, Suit suit) {
+		return (who == null ? "You pick " : who + " picks ") + suit.name().toLowerCase(Locale.US) + " as trump.";
+	}
+
 	static String singular(Suit suit) {
 		String n = suit.name().toLowerCase(Locale.US);
 		return n.substring(0, n.length() - 1);

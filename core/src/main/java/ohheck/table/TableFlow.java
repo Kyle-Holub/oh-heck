@@ -129,6 +129,18 @@ final class TableFlow {
 		return state == TableState.TURN && match.phase() == Match.Phase.BIDDING && match.currentSeat() == Seating.YOU;
 	}
 
+	boolean yourTurnToPick() {
+		return state == TableState.TURN && match.pickingTrump() && match.currentSeat() == Seating.YOU && trumpFaceUp();
+	}
+
+	boolean pickTrump(Suit s) {
+		if (!yourTurnToPick()) {
+			return false;
+		}
+		make(new Move.PickTrump(Seating.YOU, s));
+		return true;
+	}
+
 	boolean yourTurnToPlay() {
 		return state == TableState.TURN && match.phase() == Match.Phase.PLAYING && match.currentSeat() == Seating.YOU;
 	}

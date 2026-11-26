@@ -12,10 +12,13 @@ import java.util.Set;
  * One game from the first deal to the final scores. Seats run clockwise from 0; the deal moves
  * one seat each hand; the player after the dealer leads, and the dealer bids last. Each hand is dealt
  * from a shuffled deck, or from a fixed list of deals for a scripted game such as the practice round.
+ * When the winner picks trump, the hand opens with PICKING_TRUMP: whoever made the highest bid last hand
+ * (ties to the first from the dealer's left) names the trump suit, which overrides the turned card.
  */
 public final class Match {
 
 	public enum Phase {
+		PICKING_TRUMP,
 		BIDDING,
 		PLAYING,
 		HAND_OVER,
@@ -35,6 +38,7 @@ public final class Match {
 	int dealer;
 	int current;
 	Card trumpCard;
+	Suit pickedTrump;
 
 	final List<List<Card>> hands = new ArrayList<List<Card>>();
 	final int[] bids;
@@ -135,6 +139,23 @@ public final class Match {
 		}
 	}
 
+	public void pickTrump(int seat, Suit suit) {
+		requirePhase(Phase.PICKING_TRUMP);
+		requireTurn(seat);
+		moves.add(new Move.PickTrump(seat, suit));
+		pickedTrump = suit;
+		phase = Phase.BIDDING;
+		current = next(dealer);
+	}
+
+	public boolean pickingTrump() {
+		return phase == Phase.PICKING_TRUMP;
+	}
+
+	public Suit pickedTrump() {
+		return pickedTrump;
+	}
+
 	public int apply(Move move) {
 		return move.applyTo(this);
 	}
@@ -223,7 +244,7 @@ public final class Match {
 	}
 
 	public Suit trump() {
-		return trumpCard == null ? null : trumpCard.suit();
+		return pickedTrump != null ? pickedTrump : trumpCard == null ? null : trumpCard.suit();
 	}
 
 	public List<Card> hand(int seat) {
@@ -370,7 +391,8 @@ public final class Match {
 
 	public TableView view(int seat) {
 		TableView.Builder v = new TableView.Builder(players).seat(seat)
-				.hand(handIndex, rules.numberOfHands(), handSize(), dealer, trumpCard, rules).cards(hands.get(seat))
+				.hand(handIndex, rules.numberOfHands(), handSize(), dealer, trumpCard, rules)
+				.pickedTrump(pickedTrump, pickingTrump()).cards(hands.get(seat))
 				.trick(trick.cards(), trick.seats()).history(history, historySeats);
 		for (int s = 0; s < players; s++) {
 			v.seatState(s, bidSeenBy(s, seat), tricks[s], scores[s], hands.get(s).size());
@@ -410,7 +432,22 @@ public final class Match {
 		}
 	}
 
+	private int trumpPicker() {
+		if (!rules.pickTrump || handIndex == 0) {
+			return -1;
+		}
+		int picker = -1;
+		for (int i = 0; i < players; i++) {
+			int seat = (dealer + 1 + i) % players;
+			if (bids[seat] != NO_BID && bids[seat] == tricks[seat] && (picker < 0 || bids[seat] > bids[picker])) {
+				picker = seat;
+			}
+		}
+		return picker;
+	}
+
 	private void startHand() {
+		int picker = trumpPicker();
 		Deck deck = script == null ? Deck.shuffled(rng, rules) : null;
 		for (int i = 0; i < players; i++) {
 			int seat = (dealer + 1 + i) % players;
@@ -419,11 +456,12 @@ public final class Match {
 			tricks[seat] = 0;
 		}
 		trumpCard = deck == null ? script.get(handIndex).trump() : deck.size() > 0 ? deck.deal() : null;
+		pickedTrump = null;
 		trick.clear();
 		history.clear();
 		historySeats.clear();
-		phase = Phase.BIDDING;
-		current = next(dealer);
+		phase = picker >= 0 ? Phase.PICKING_TRUMP : Phase.BIDDING;
+		current = picker >= 0 ? picker : next(dealer);
 	}
 
 	private int next(int seat) {

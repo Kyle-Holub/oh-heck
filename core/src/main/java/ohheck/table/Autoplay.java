@@ -34,14 +34,10 @@ final class Autoplay implements YourSeat {
 
 	@Override
 	public void beforeDeal(Match m) {
-		while (m.phase() == Match.Phase.BIDDING && options.skipHands.contains(m.handIndex() + 1)) {
-			while (m.phase() == Match.Phase.BIDDING || m.phase() == Match.Phase.PLAYING) {
-				int s = m.currentSeat();
-				if (m.phase() == Match.Phase.BIDDING) {
-					m.placeBid(s, bot.chooseBid(m.view(s)));
-				} else {
-					m.playCard(s, bot.choosePlay(m.view(s)));
-				}
+		while (m.phase() != Match.Phase.HAND_OVER && m.phase() != Match.Phase.GAME_OVER
+				&& options.skipHands.contains(m.handIndex() + 1)) {
+			while (m.phase() != Match.Phase.HAND_OVER) {
+				m.apply(bot.chooseMove(m.view(m.currentSeat())));
 			}
 			m.nextHand();
 		}
@@ -60,7 +56,7 @@ final class Autoplay implements YourSeat {
 	@Override
 	public void update(float dt) {
 		TableFlow flow = screen.flow();
-		if (flow.yourTurnToBid() || flow.yourTurnToPlay()) {
+		if (flow.yourTurnToBid() || flow.yourTurnToPlay() || flow.yourTurnToPick()) {
 			yourTurn(dt);
 		} else if (flow.state() == TableState.RESULTS) {
 			onResults(flow.stateTime());
@@ -89,7 +85,9 @@ final class Autoplay implements YourSeat {
 			return;
 		}
 		timer = 0;
-		if (m.phase() == Match.Phase.BIDDING) {
+		if (m.pickingTrump()) {
+			tapCentre(targets.suit(bot.chooseTrump(m.view(Seating.YOU))));
+		} else if (m.phase() == Match.Phase.BIDDING) {
 			int b = bot.chooseBid(m.view(Seating.YOU));
 			tapCentre(targets.bid(b));
 		} else {

@@ -23,7 +23,7 @@ first six have no libGDX and test in plain JUnit.
 |---|---|
 | `ohheck.rules` | Cards, `Match`, `Trick`, `Move`, `MatchCodec`, `RuleSet`, `HandOrder`, `GameMode`, `TableView` |
 | `ohheck.players` | The roster (`Player`), who sits where (`Seating`), levels (`Difficulty`), habits (`Style`), the bots, `BidTable`; the arena lives here too |
-| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion), `Campaign` (progress, saved), `TrickShot`, `TrickShots` and `TrickShotPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won), `PracticeRound` and `PracticeCoach` (the scripted round that teaches a new player, dealt with `Match.scripted`) |
+| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion, `Twist`), `Campaign` (progress, saved), `TrickShot`, `TrickShots` and `TrickShotPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won), `PracticeRound` and `PracticeCoach` (the scripted round that teaches a new player, dealt with `Match.scripted`) |
 | `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them and the campaign's progress |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
 | `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Timeline`, and `FixedSteps` (the game loop's clock) |
@@ -37,7 +37,7 @@ first six have no libGDX and test in plain JUnit.
 ## The rules and the players (no libGDX)
 
 - `Match` is a whole game: hands, bids, tricks, scores, whose turn. Moves are made with
-  `placeBid` and `playCard`, or as `Move`s (`Move.Bid`, `Move.Play`) through `apply`;
+  `placeBid`, `pickTrump` and `playCard`, or as `Move`s (`Move.Bid`, `Move.PickTrump`, `Move.Play`) through `apply`;
   anything illegal throws. `moves()` lists every move made (`ReplayTest` plays them back onto a
   fresh match). Bots answer with a `Move` (`Bot.chooseMove`). A bid not yet made is
   `Match.NO_BID` (`hasBid(seat)`), never null. `save()` / `load()` go through
@@ -186,7 +186,7 @@ four steps in order: table play (a normal game against the chapter's rivals), tr
 (`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding
 into place; its title and goal pop up on the felt and fade, and the goal stays in the header; the players are
 unnamed, each bid shown with the table's icons on a small placard, the one to block outlined), open once the table is won as practice, a final table (the champion sits in for a rival, under the house rules
-plus momentum), and a duel against its champion
+plus the champion's twist), and a duel against its champion
 (`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
 bid made after two made running). Winning the duel clears the chapter and wins its card back
 and felt (`Cosmetic`, chosen in Preferences); the game-over panel's **Claim prizes** opens
@@ -194,7 +194,10 @@ and felt (`Cosmetic`, chosen in Preferences); the game-over panel's **Claim priz
 with fireworks, then puts the new look on. `PlayScreen.campaign` plays a `Stage` (table, final table or duel), each
 opened by winning the one before (`Campaign.open`); campaign games are not saved and don't touch the statistics or high scores, but every
 game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
-the top (`TableLayout.spot`). A chapter opens with a `Briefing` of a few pages in the
+the top (`TableLayout.spot`). Each chapter's champion brings a `Twist` to the final table and the duel: momentum in
+chapter 1, winner picks trump in chapter 2 (`RuleSet.pickTrump`: a hand opens in `Match.Phase.PICKING_TRUMP`
+when someone made a bid last hand, and the highest made bid names the trump suit from a panel of suits). The
+duel adds the house scoring and the twist to `RuleSet.DUEL`. A chapter opens with a `Briefing` of a few pages in the
 page-by-page style (Back turns back a page; tapping a player shows their habit in a box below); each step opens with one
 page of panels, its text in a box beneath and Play in the corner. All are worded from the rules and the roster. The
 campaign opens on chapter 1's briefing the first time. A new player learns in the practice round (above); finished

@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.badlogic.gdx.math.Rectangle;
 
+import ohheck.rules.Suit;
+
 /* Where the overlays' buttons were drawn, for taps to find. An undrawn button has no area. */
 final class OverlayTargets {
 
@@ -15,6 +17,7 @@ final class OverlayTargets {
 	private final Rectangle[] buttons = new Rectangle[Button.values().length];
 	private final Rectangle[] menuItems = new Rectangle[MenuItem.ALL.length];
 	private final List<Rectangle> bids = new ArrayList<Rectangle>();
+	private final Rectangle[] suits = new Rectangle[Suit.values().length];
 
 	OverlayTargets() {
 		for (int i = 0; i < buttons.length; i++) {
@@ -22,6 +25,9 @@ final class OverlayTargets {
 		}
 		for (int i = 0; i < menuItems.length; i++) {
 			menuItems[i] = new Rectangle();
+		}
+		for (int i = 0; i < suits.length; i++) {
+			suits[i] = new Rectangle();
 		}
 	}
 
@@ -39,6 +45,19 @@ final class OverlayTargets {
 
 	Rectangle bid(int b) {
 		return b >= 0 && b < bids.size() ? bids.get(b) : null;
+	}
+
+	Rectangle suit(Suit s) {
+		return suits[s.ordinal()];
+	}
+
+	Suit suitAt(float x, float y) {
+		for (Suit s : Suit.values()) {
+			if (hits(suit(s), x, y)) {
+				return s;
+			}
+		}
+		return null;
 	}
 
 	void clearGameOverButtons() {

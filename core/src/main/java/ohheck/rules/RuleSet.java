@@ -8,8 +8,9 @@ import java.util.List;
  * The rules a game is played by: which way the hand sizes run, the biggest hand, how a made bid
  * scores (with big bids: 8, plus 4 for the first trick bid, doubling with each trick after),
  * whether bids are blind (made unseen, revealed together, with no dealer's limit), whether the
- * deck is short (nine to ace, for duels), and momentum (a bid made after two made running scores
- * double). Its code is written into saves and high scores, so a code never changes meaning.
+ * deck is short (nine to ace, for duels), momentum (a bid made after two made running scores
+ * double), and whether the winner picks trump (whoever made the highest bid last hand chooses the trump
+ * suit before bidding). Its code is written into saves and high scores, so a code never changes meaning.
  */
 public final class RuleSet {
 
@@ -18,19 +19,24 @@ public final class RuleSet {
 	public static final RuleSet STANDARD = new RuleSet(HandOrder.UP, USUAL_CARDS, false, false);
 	public static final RuleSet DUEL = new RuleSet(HandOrder.UP, DUEL_HANDS, false, false, true, true);
 
-	private static final String BIG = "big", BLIND = "blind", SHORT = "short", MOMENTUM = "momentum";
+	private static final String BIG = "big", BLIND = "blind", SHORT = "short", MOMENTUM = "momentum", PICK = "pick";
 	private static final Rank SHORT_DECK_LOWEST = Rank.NINE;
 	private static final int BIG_MADE = 8, BIG_FIRST_TRICK = 4;
 
 	public final HandOrder order;
 	public final int mostCards;
-	public final boolean bigBids, blindBids, shortDeck, momentum;
+	public final boolean bigBids, blindBids, shortDeck, momentum, pickTrump;
 
 	public RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids) {
 		this(order, mostCards, bigBids, blindBids, false, false);
 	}
 
 	public RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids, boolean shortDeck, boolean momentum) {
+		this(order, mostCards, bigBids, blindBids, shortDeck, momentum, false);
+	}
+
+	public RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids, boolean shortDeck, boolean momentum,
+			boolean pickTrump) {
 		if (mostCards < 1 || mostCards > MOST_CARDS) {
 			throw new IllegalArgumentException("No hand of " + mostCards);
 		}
@@ -40,31 +46,36 @@ public final class RuleSet {
 		this.blindBids = blindBids;
 		this.shortDeck = shortDeck;
 		this.momentum = momentum;
+		this.pickTrump = pickTrump;
 	}
 
 	public RuleSet withOrder(HandOrder o) {
-		return new RuleSet(o, mostCards, bigBids, blindBids, shortDeck, momentum);
+		return new RuleSet(o, mostCards, bigBids, blindBids, shortDeck, momentum, pickTrump);
 	}
 
 	public RuleSet withMostCards(int n) {
-		return new RuleSet(order, n, bigBids, blindBids, shortDeck, momentum);
+		return new RuleSet(order, n, bigBids, blindBids, shortDeck, momentum, pickTrump);
 	}
 
 	public RuleSet withBigBids(boolean on) {
-		return new RuleSet(order, mostCards, on, blindBids, shortDeck, momentum);
+		return new RuleSet(order, mostCards, on, blindBids, shortDeck, momentum, pickTrump);
 	}
 
 	public RuleSet withMomentum(boolean on) {
-		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, on);
+		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, on, pickTrump);
+	}
+
+	public RuleSet withPickTrump(boolean on) {
+		return new RuleSet(order, mostCards, bigBids, blindBids, shortDeck, momentum, on);
 	}
 
 	public RuleSet withBlindBids(boolean on) {
-		return new RuleSet(order, mostCards, bigBids, on, shortDeck, momentum);
+		return new RuleSet(order, mostCards, bigBids, on, shortDeck, momentum, pickTrump);
 	}
 
 	public String code() {
 		return order.name() + "/" + mostCards + (bigBids ? "/" + BIG : "") + (blindBids ? "/" + BLIND : "")
-				+ (shortDeck ? "/" + SHORT : "") + (momentum ? "/" + MOMENTUM : "");
+				+ (shortDeck ? "/" + SHORT : "") + (momentum ? "/" + MOMENTUM : "") + (pickTrump ? "/" + PICK : "");
 	}
 
 	public static RuleSet parse(String code) {
@@ -72,7 +83,7 @@ public final class RuleSet {
 		List<String> flags = Arrays.asList(p).subList(Math.min(2, p.length), p.length);
 		RuleSet r = p.length < 2 ? null
 				: new RuleSet(HandOrder.valueOf(p[0]), Integer.parseInt(p[1]), flags.contains(BIG), flags.contains(BLIND),
-						flags.contains(SHORT), flags.contains(MOMENTUM));
+						flags.contains(SHORT), flags.contains(MOMENTUM), flags.contains(PICK));
 		if (r == null || !r.code().equals(code)) {
 			throw new IllegalArgumentException("Unknown rules: " + code);
 		}
@@ -81,7 +92,7 @@ public final class RuleSet {
 
 	public String describe() {
 		return order.label(mostCards) + (bigBids ? ", big bids" : "") + (blindBids ? ", blind bids" : "")
-				+ (shortDeck ? ", short deck" : "") + (momentum ? ", momentum" : "");
+				+ (shortDeck ? ", short deck" : "") + (momentum ? ", momentum" : "") + (pickTrump ? ", winner picks trump" : "");
 	}
 
 	public boolean inDeck(Card c) {

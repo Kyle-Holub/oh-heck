@@ -28,8 +28,12 @@ Run the full checks and read the `<` (develop) and `>` (this tree) lines of each
 | Run | Command | What to read |
 |---|---|---|
 | Roster and levels | `tools/dev/arena.sh` | each player's `wins` vs 3 Normal, and the `Easy`, `Normal`, `Hard (all four)` summaries |
-| Every rule set | `tools/dev/arena.sh develop/alpha-X.Y.Z variants` | each level under all 24 rule sets (`== UP/8`, `== UP_AND_DOWN/13/big/blind` ...) |
+| Every rule set | `tools/dev/arena.sh develop/alpha-X.Y.Z variants` | each level under all 24 rule sets (`== UP/8`, `== UP_AND_DOWN/13/big/blind` ...) plus each champion twist (`== UP/8/momentum`, `== UP/8/pick` ...) |
 | Duels | `tools/dev/arena.sh develop/alpha-X.Y.Z duel` | the levels and the roster one-on-one under the duel's rules (only if duels or anything they use changed) |
+
+A chapter's own duel adds its house scoring and twist to the duel rules: pass its code after the count, e.g.
+`java -cp "$DEV/arena-new:$CP" ohheck.players.Arena duel 200 UP/5/big/short/momentum/pick` (after `source tools/dev/env.sh`
+and `compile_tree "$ROOT" "$DEV/arena-new"`).
 
 Win-rate bands, as wins against three plain Normal players (`players`). These are today's
 numbers with some room; tighten them if a level should feel different:

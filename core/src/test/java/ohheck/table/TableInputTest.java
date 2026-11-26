@@ -15,6 +15,7 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 import ohheck.rules.RuleSet;
 import ohheck.ui.TapAreas;
 import ohheck.ui.Wording;
@@ -120,6 +121,12 @@ public class TableInputTest {
 		public void play(Card c) {
 			did.add("play " + c);
 			flow.play(c);
+		}
+
+		@Override
+		public boolean pickTrump(Suit suit) {
+			did.add("pick " + suit);
+			return flow.pickTrump(suit);
 		}
 
 		@Override
