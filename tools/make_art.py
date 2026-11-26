@@ -313,10 +313,6 @@ def table(out, name="table.jpg", dark=(20, 12, 8), lit=(92, 58, 38), gilt=False)
         flecks = np.clip(rng.normal(0, 1, (H, W)) - 2.6, 0, None) * light
         flecks = np.asarray(Image.fromarray(np.clip(flecks * 255, 0, 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(0.6))) / 255.0
         img += flecks[..., None] * np.array((255, 205, 110), float) * 1.4
-        px, py = (x + 1) / 2 * W, (y + 1) / 2 * H
-        edge = np.minimum(np.minimum(px, W - 1 - px), np.minimum(py, H - 1 - py))
-        rule = np.exp(-((edge - 26) / 2.2) ** 2) + 0.6 * np.exp(-((edge - 36) / 1.2) ** 2)
-        img = img * (1 - np.clip(rule, 0, 1)[..., None]) + np.clip(rule, 0, 1)[..., None] * np.array((200, 160, 80), float)
     Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, name), quality=90, optimize=True)
 
 
