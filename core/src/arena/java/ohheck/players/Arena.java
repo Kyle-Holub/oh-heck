@@ -75,7 +75,7 @@ public final class Arena {
 			}
 			int s = m.currentSeat();
 			TableView v = m.view(s);
-			if (m.pickingTrump()) {
+			if (m.pickingTrump() || m.swapping()) {
 				m.apply(bots[s].chooseMove(v));
 			} else if (m.phase() == Match.Phase.BIDDING) {
 				if (s == seat) {
@@ -115,7 +115,7 @@ public final class Arena {
 			}
 		}
 		for (RuleSet twisted : new RuleSet[] { RuleSet.STANDARD.withMomentum(true), RuleSet.STANDARD.withPickTrump(true),
-				RuleSet.STANDARD.withHandsWon(true) }) {
+				RuleSet.STANDARD.withHandsWon(true), RuleSet.STANDARD.withWidow(true) }) {
 			variant(n, twisted);
 		}
 		rules = RuleSet.STANDARD;
@@ -162,7 +162,7 @@ public final class Arena {
 					continue;
 				}
 				int s = m.currentSeat();
-				if (m.pickingTrump()) {
+				if (m.pickingTrump() || m.swapping()) {
 					m.apply(bot.chooseMove(m.view(s)));
 				} else if (m.phase() == Match.Phase.BIDDING) {
 					if (dealtAs.isEmpty()) {

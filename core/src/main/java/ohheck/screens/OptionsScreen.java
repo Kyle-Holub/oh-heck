@@ -73,7 +73,9 @@ public class OptionsScreen extends BaseScreen {
 						OptionItem.toggle("Winner picks trump", "Whoever made the highest bid last hand names the next trump suit.",
 								() -> s.rules().pickTrump, () -> s.customize(r -> r.withPickTrump(!r.pickTrump))),
 						OptionItem.toggle("Hands won", "A made bid scores one; a tie for first plays on, one card a hand.",
-								() -> s.rules().handsWon, () -> s.customize(r -> r.withHandsWon(!r.handsWon)))));
+								() -> s.rules().handsWon, () -> s.customize(r -> r.withHandsWon(!r.handsWon))),
+						OptionItem.toggle("The widow", "The highest bid made last hand may swap a card for one of two set aside.",
+								() -> s.rules().widow, () -> s.customize(r -> r.withWidow(!r.widow)))));
 	}
 
 	public static OptionsScreen options(GameHost game) {

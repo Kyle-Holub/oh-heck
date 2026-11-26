@@ -13,7 +13,7 @@ final class MatchCodec {
 	private MatchCodec() {
 	}
 
-	private static final String FORMAT = "oh-heck-match-5", NO_TRUMP = "-";
+	private static final String FORMAT = "oh-heck-match-6", NO_TRUMP = "-";
 
 	static String encode(Match m) {
 		StringBuilder sb = new StringBuilder(FORMAT).append('\n');
@@ -25,6 +25,7 @@ final class MatchCodec {
 		line(sb, "current", String.valueOf(m.current));
 		line(sb, "trump", m.trumpCard == null ? NO_TRUMP : m.trumpCard.code());
 		line(sb, "picked", m.pickedTrump == null ? NO_TRUMP : m.pickedTrump.name());
+		line(sb, "widow", cards(m.widow));
 		for (int s = 0; s < m.players; s++) {
 			line(sb, "hand" + s, cards(m.hands.get(s)));
 		}
@@ -86,6 +87,7 @@ final class MatchCodec {
 		m.trumpCard = trump.equals(NO_TRUMP) ? null : Card.parse(trump);
 		String picked = req(v, "picked");
 		m.pickedTrump = picked.equals(NO_TRUMP) ? null : Suit.valueOf(picked);
+		m.widow.addAll(parseCards(req(v, "widow")));
 	}
 
 	private static void readSeats(Match m, Map<String, String> v) {

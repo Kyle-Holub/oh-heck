@@ -144,6 +144,8 @@ enum TableState {
 				o.drawBidPanel();
 			} else if (s.flow().yourTurnToPick()) {
 				o.drawPickTrump();
+			} else if (s.flow().yourTurnToSwap()) {
+				o.drawWidow();
 			}
 		}
 
@@ -163,6 +165,9 @@ enum TableState {
 			boolean yours = m.currentSeat() == Seating.YOU;
 			if (m.pickingTrump()) {
 				return (yours ? "pick:" : "picking-trump:") + hand;
+			}
+			if (m.swapping()) {
+				return (yours ? "widow:" : "swapping:") + hand;
 			}
 			if (m.phase() == Match.Phase.BIDDING) {
 				return (yours ? "bid:" : "bidding:") + hand;

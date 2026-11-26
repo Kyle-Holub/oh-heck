@@ -14,7 +14,8 @@ public final class TableView {
 	private RuleSet rules = RuleSet.STANDARD;
 	private Card trumpCard;
 	private Suit pickedTrump;
-	private boolean pickingTrump;
+	private boolean pickingTrump, swapping;
+	private final List<Card> widow = new ArrayList<Card>();
 	private final List<Card> hand = new ArrayList<Card>();
 	private final int[] bids;
 	private final int[] tricksWon, scores;
@@ -54,7 +55,7 @@ public final class TableView {
 	}
 
 	public boolean bidding() {
-		return !pickingTrump && !hasBid(seat);
+		return !pickingTrump && !swapping && !hasBid(seat);
 	}
 
 	public boolean pickingTrump() {
@@ -63,6 +64,14 @@ public final class TableView {
 
 	public Suit pickedTrump() {
 		return pickedTrump;
+	}
+
+	public boolean swapping() {
+		return swapping;
+	}
+
+	public List<Card> widow() {
+		return Collections.unmodifiableList(widow);
 	}
 
 	public boolean hasBid(int seat) {
@@ -190,6 +199,13 @@ public final class TableView {
 		public Builder pickedTrump(Suit suit, boolean picking) {
 			v.pickedTrump = suit;
 			v.pickingTrump = picking;
+			return this;
+		}
+
+		public Builder widow(List<Card> cards, boolean swapping) {
+			v.widow.clear();
+			v.widow.addAll(cards);
+			v.swapping = swapping;
 			return this;
 		}
 

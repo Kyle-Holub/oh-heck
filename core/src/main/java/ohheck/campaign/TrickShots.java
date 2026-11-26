@@ -31,7 +31,13 @@ public final class TrickShots {
 			new TrickShot("spoil-right", "Spoil the right", Chapter.THREE, Goal.SET_THEM, 3, "QD", 2, new int[] { 1, 1, 1, 1 },
 					"6S 8C 3D JD", "5S JS KH 4H", "7S 4S AD 5D", "6H AH 2D 9H"),
 			new TrickShot("two-in-the-dark", "Two in the dark", Chapter.THREE, Goal.CHOOSE_THE_BID, -1, "4D", 0, new int[] { 0, 1, 0, 0 },
-					"10D QD 7S", "3C AH KS", "8S 8H 5S", "8C 7C 7H")));
+					"10D QD 7S", "3C AH KS", "8S 8H 5S", "8C 7C 7H"),
+			new TrickShot("spare-trump", "A trump to spare", Chapter.FOUR, Goal.MAKE_IT, -1, "8D", 3, new int[] { 2, 1, 0, 0 },
+					"QD 6H 7D KD", "8C KH JS JC", "QH JH 9D 2H", "6C 8S 5D 7S"),
+			new TrickShot("long-way-round", "The long way round", Chapter.FOUR, Goal.SET_THEM, 3, "AC", 3, new int[] { 1, 0, 0, 1 },
+					"AH 2D 4D 10C", "4C JH 8C 6H", "8S 9D 3S 7S", "QC JS 7H KS"),
+			new TrickShot("low-trumps", "Low trumps", Chapter.FOUR, Goal.CHOOSE_THE_BID, -1, "2S", 1, new int[] { 0, 0, 1, 1 },
+					"9C 4D 5S 6S", "9D 3H 8C 7S", "4H 5C 8S QC", "10C 6D 10D 2H")));
 
 	public static List<TrickShot> of(Chapter c) {
 		List<TrickShot> mine = new ArrayList<TrickShot>();

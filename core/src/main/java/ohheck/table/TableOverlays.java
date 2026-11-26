@@ -174,6 +174,30 @@ final class TableOverlays {
 		}
 	}
 
+	private static final float WIDOW_W = 470, WIDOW_H = 236, WIDOW_CARD = 0.62f, WIDOW_GAP = 24, WIDOW_RAISE = 12;
+	static final String WIDOW_TITLE = "The widow", WIDOW_HELP = "Tap one, then a card of yours to swap", KEEP = "Keep my hand";
+
+	void drawWidow() {
+		float cx = layout.w / 2, py = layout.centreY() - WIDOW_H / 2 + 10;
+		paint.frame(paint.assets.panel, cx - WIDOW_W / 2, py, WIDOW_W, WIDOW_H);
+		paint.text(paint.serif(1.3f, Palette.GOLD_LIGHT), WIDOW_TITLE, cx, py + WIDOW_H - 30, true);
+		float cw = TableLayout.handCardW() * WIDOW_CARD, ch = TableLayout.handCardH() * WIDOW_CARD, top = py + WIDOW_H - 60;
+		for (int i = 0; i < 2; i++) {
+			Card c = match.widow().get(i);
+			boolean chosen = targets.widowChoice() == i;
+			float x = cx + (i == 0 ? -WIDOW_GAP / 2 - cw : WIDOW_GAP / 2), y = top - ch + (chosen ? WIDOW_RAISE : 0);
+			Rectangle r = targets.widowCard(i).set(x, y, cw, ch);
+			if (chosen) {
+				paint.frame(paint.assets.panelTurn, r.x - 5, r.y - 5, r.width + 10, r.height + 10);
+			}
+			art.shadow(x, y, cw, ch, 3);
+			art.flip(c, x, y, cw, ch, 1);
+			paint.pressable(r);
+		}
+		paint.text(paint.ui(0.85f, Palette.CREAM), WIDOW_HELP, cx, top - ch - 14, true);
+		paint.button(targets.button(OverlayTargets.Button.KEEP_HAND), KEEP, cx, py + 14, 200, 40, paint.assets.buttonAlt);
+	}
+
 	void drawBidPanel() {
 		bidPopup.draw(layout.w / 2, layout.centreY(), match.handSize(), legalBid, -1, 1f, targets.bids());
 	}
