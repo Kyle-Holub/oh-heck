@@ -1,6 +1,6 @@
 package ohheck.rules;
 
-/* A bid or a card played, as a value. */
+/* A bid, a trump suit picked or a card played, as a value. */
 public interface Move {
 
 	int seat();
@@ -17,6 +17,19 @@ public interface Move {
 		@Override
 		public String toString() {
 			return "seat " + seat + " bids " + tricks;
+		}
+	}
+
+	record PickTrump(int seat, Suit suit) implements Move {
+		@Override
+		public int applyTo(Match m) {
+			m.pickTrump(seat, suit);
+			return -1;
+		}
+
+		@Override
+		public String toString() {
+			return "seat " + seat + " picks " + suit;
 		}
 	}
 

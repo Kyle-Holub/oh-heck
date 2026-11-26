@@ -28,6 +28,7 @@ import ohheck.players.Seating;
 import ohheck.records.SavedGame;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 import ohheck.rules.Move;
 import ohheck.rules.RuleSet;
 import ohheck.ui.Assets;
@@ -36,6 +37,7 @@ import ohheck.ui.CardArt;
 import ohheck.ui.CardWipe;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
+import ohheck.ui.Wording;
 
 /* The card table screen: a custom game, saved as it goes, or a campaign chapter's table. */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
@@ -143,6 +145,10 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		@Override
 		public void changed(Match m) {
 			PlayScreen.this.save();
+			List<Move> moves = m.moves();
+			if (!moves.isEmpty() && moves.get(moves.size() - 1) instanceof Move.PickTrump pick) {
+				hint(Wording.pickedTrump(pick.seat() == Seating.YOU ? null : name(pick.seat()), pick.suit()));
+			}
 		}
 
 		@Override
@@ -484,6 +490,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			return true;
 		}
 		return flow.bid(b);
+	}
+
+	@Override
+	public boolean pickTrump(Suit s) {
+		return flow.pickTrump(s);
 	}
 
 	@Override

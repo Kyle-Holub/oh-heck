@@ -51,7 +51,8 @@ final class EasyBot implements Bot {
 		int completed = (v.history().size() - inTrick) / players;
 		int from = Math.max(0, completed - TRICKS_REMEMBERED) * players;
 		TableView.Builder b = new TableView.Builder(players).seat(v.seat())
-				.hand(v.handIndex(), v.numberOfHands(), v.handSize(), v.dealer(), v.trumpCard(), v.rules()).cards(v.hand())
+				.hand(v.handIndex(), v.numberOfHands(), v.handSize(), v.dealer(), v.trumpCard(), v.rules())
+				.pickedTrump(v.pickedTrump(), false).cards(v.hand())
 				.trick(v.trick(), v.trickSeats())
 				.history(v.history().subList(from, v.history().size()), v.historySeats().subList(from, v.history().size()));
 		for (int s = 0; s < players; s++) {

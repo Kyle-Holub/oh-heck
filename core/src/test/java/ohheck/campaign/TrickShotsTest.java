@@ -63,12 +63,16 @@ public class TrickShotsTest {
 	}
 
 	@Test
-	public void trickShotsHaveUniqueIdsAndChapterOneHasSome() {
+	public void trickShotsHaveUniqueIdsAndEachReadyChapterHasThree() {
 		Set<String> ids = new HashSet<String>();
 		for (TrickShot s : TrickShots.ALL) {
 			assertTrue(s.id, ids.add(s.id));
 		}
-		assertEquals(3, TrickShots.of(Chapter.ONE).size());
+		for (Chapter c : Chapter.values()) {
+			if (c.ready) {
+				assertEquals(c.name(), 3, TrickShots.of(c).size());
+			}
+		}
 	}
 
 	@Test

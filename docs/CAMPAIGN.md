@@ -74,7 +74,7 @@ A duel is you against the chapter's champion, one-on-one; winning it is the only
 | Variation | How it plays | Why it's fun |
 | --- | --- | --- |
 | Standard | points, with momentum | the baseline |
-| Winner picks trump | whoever made their bid last hand chooses the trump suit once the next hand is dealt | a made bid earns a real choice, not just points |
+| Winner picks trump | whoever made the highest bid last hand (and made it) chooses the trump suit once the next hand is dealt | a made bid earns a real choice, not just points |
 | Hands won | the duel counts made bids, not points; a tie goes to sudden death, one hand of a single card | every hand is a must-make; ties are tense |
 | The widow | two cards lie face down to the side; whoever made their bid last hand may swap one card from their hand for one of them before bidding | a made bid buys a chance to mend a bad hand |
 
@@ -109,7 +109,7 @@ The MVP is the Campaign / Custom game split with chapter 1 playable end to end; 
 4. **Trick shots:** the puzzle screen, 3 Classic puzzles (one of each goal), and the solver test.
 5. **Practice hand-off:** the practice round ends by opening chapter 1.
 6. **Badges and unlockables:** the first badges on Records (including the chapter 1 champion's), chapter 1's card back and felt.
-7. **Chapters 2 to 4.**
+7. **Chapters 2 to 4.** Chapter 2 (High Stakes; winner picks trump; the Ruby back and felt) is playable.
 
 ## 10. Decisions
 

@@ -3,6 +3,7 @@ package ohheck.table;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 import ohheck.ui.Wording;
 
 /* Turns touches at the table into actions. */
@@ -122,7 +123,12 @@ final class TableInput {
 		if (m.currentSeat() != Seating.YOU) {
 			return;
 		}
-		if (m.phase() == Match.Phase.BIDDING) {
+		if (m.pickingTrump()) {
+			Suit s = targets.suitAt(x, y);
+			if (s != null) {
+				actions.pickTrump(s);
+			}
+		} else if (m.phase() == Match.Phase.BIDDING) {
 			tapBid(x, y);
 		} else {
 			tapCard(x, y);

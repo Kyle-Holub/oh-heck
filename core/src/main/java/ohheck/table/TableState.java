@@ -142,6 +142,8 @@ enum TableState {
 		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 			if (s.flow().yourTurnToBid()) {
 				o.drawBidPanel();
+			} else if (s.flow().yourTurnToPick()) {
+				o.drawPickTrump();
 			}
 		}
 
@@ -159,6 +161,9 @@ enum TableState {
 		String tag(TableScene s, int hand) {
 			Match m = s.match();
 			boolean yours = m.currentSeat() == Seating.YOU;
+			if (m.pickingTrump()) {
+				return (yours ? "pick:" : "picking-trump:") + hand;
+			}
 			if (m.phase() == Match.Phase.BIDDING) {
 				return (yours ? "bid:" : "bidding:") + hand;
 			}

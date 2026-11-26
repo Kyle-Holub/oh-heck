@@ -285,4 +285,41 @@ public class MatchTest {
 		assertEquals(1, m.view(0).bid(1));
 		assertEquals(1, m.bidsSeenBy(0));
 	}
+
+	@Test
+	public void theHighestMadeBidPicksTheNextTrump() {
+		RuleSet rules = RuleSet.STANDARD.withPickTrump(true);
+		for (long seed = 0; seed < 300; seed++) {
+			Match m = Match.random(4, new Random(seed), rules);
+			assertEquals("nobody picks on the first hand", Match.Phase.BIDDING, m.phase());
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				if (m.phase() == Match.Phase.HAND_OVER) {
+					int best = -1;
+					int[] made = new int[4];
+					for (int s = 0; s < 4; s++) {
+						made[s] = m.madeBid(s) ? m.bid(s) : -1;
+						best = Math.max(best, made[s]);
+					}
+					m.nextHand();
+					if (m.phase() == Match.Phase.GAME_OVER) {
+						break;
+					}
+					assertEquals(best >= 0, m.pickingTrump());
+					if (m.pickingTrump()) {
+						int picker = m.currentSeat();
+						assertEquals(best, made[picker]);
+						assertFalse(m.view(picker).bidding());
+						Suit other = m.trumpCard() == null || m.trumpCard().suit() != Suit.HEARTS ? Suit.HEARTS : Suit.CLUBS;
+						m.pickTrump(picker, other);
+						assertEquals(other, m.trump());
+						assertEquals(other, m.view(0).trump());
+						assertEquals(Match.Phase.BIDDING, m.phase());
+						assertEquals((m.dealer() + 1) % 4, m.currentSeat());
+					}
+					continue;
+				}
+				m.apply(bot.chooseMove(m.view(m.currentSeat())));
+			}
+		}
+	}
 }

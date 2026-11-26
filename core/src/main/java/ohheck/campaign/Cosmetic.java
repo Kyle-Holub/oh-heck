@@ -3,7 +3,10 @@ package ohheck.campaign;
 /* A look for the cards and the table: the classic one, and one won by clearing each chapter. */
 public enum Cosmetic {
 	CLASSIC("Classic", null, "back_hd", "back_blur", "table"),
-	EMERALD("Emerald", Chapter.ONE, "back_ch1", "back_ch1_blur", "table_ch1");
+	EMERALD("Emerald", Chapter.ONE, "back_ch1", "back_ch1_blur", "table_ch1"),
+	RUBY("Ruby", Chapter.TWO, "back_ch2", "back_ch2_blur", "table_ch2"),
+	MIDNIGHT("Midnight", Chapter.THREE, "back_ch3", "back_ch3_blur", "table_ch3"),
+	AMBER("Amber", Chapter.FOUR, "back_ch4", "back_ch4_blur", "table_ch4");
 
 	public final String label;
 	public final Chapter wonBy;

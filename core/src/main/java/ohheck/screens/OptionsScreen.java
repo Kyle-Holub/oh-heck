@@ -67,7 +67,11 @@ public class OptionsScreen extends BaseScreen {
 						OptionItem.toggle("Big bids", "Bigger bids are worth more.",
 								() -> s.rules().bigBids, () -> s.customize(r -> r.withBigBids(!r.bigBids))),
 						OptionItem.toggle("Blind bids", "Bids are made unseen and shown together; the dealer may bid anything.",
-								() -> s.rules().blindBids, () -> s.customize(r -> r.withBlindBids(!r.blindBids)))));
+								() -> s.rules().blindBids, () -> s.customize(r -> r.withBlindBids(!r.blindBids))),
+						OptionItem.toggle("Momentum", "Make your bid twice running and the next made bid scores double.",
+								() -> s.rules().momentum, () -> s.customize(r -> r.withMomentum(!r.momentum))),
+						OptionItem.toggle("Winner picks trump", "Whoever made the highest bid last hand names the next trump suit.",
+								() -> s.rules().pickTrump, () -> s.customize(r -> r.withPickTrump(!r.pickTrump)))));
 	}
 
 	public static OptionsScreen options(GameHost game) {

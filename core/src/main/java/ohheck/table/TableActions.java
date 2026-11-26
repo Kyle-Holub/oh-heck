@@ -1,6 +1,7 @@
 package ohheck.table;
 
 import ohheck.rules.Card;
+import ohheck.rules.Suit;
 
 /* What taps at the table can do. */
 interface TableActions {
@@ -8,6 +9,8 @@ interface TableActions {
 	boolean bid(int b);
 
 	void play(Card c);
+
+	boolean pickTrump(Suit s);
 
 	boolean skip();
 

@@ -21,6 +21,7 @@ import ohheck.campaign.PracticeRound;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.CardWipe;
@@ -154,6 +155,23 @@ final class TableOverlays {
 
 	boolean refusing() {
 		return bidPopup.refusing();
+	}
+
+	private static final float PICK_W = 470, PICK_H = 190, PICK_BUTTON = 82, PICK_GAP = 16, PICK_EMBLEM = 0.62f;
+	static final String PICK_TITLE = "Pick trump";
+
+	void drawPickTrump() {
+		float cx = layout.w / 2, py = layout.centreY() - PICK_H / 2;
+		paint.frame(paint.assets.panel, cx - PICK_W / 2, py, PICK_W, PICK_H);
+		paint.text(paint.serif(1.3f, Palette.GOLD_LIGHT), PICK_TITLE, cx, py + PICK_H - 34, true);
+		float rowW = 4 * PICK_BUTTON + 3 * PICK_GAP, bx = cx - rowW / 2, by = py + 22;
+		for (Suit s : Suit.values()) {
+			Rectangle r = targets.suit(s).set(bx + s.ordinal() * (PICK_BUTTON + PICK_GAP), by, PICK_BUTTON, PICK_BUTTON);
+			paint.frame(paint.assets.button, r.x, r.y, r.width, r.height);
+			paint.pressable(r);
+			float e = PICK_BUTTON * PICK_EMBLEM;
+			paint.batch.draw(paint.assets.emblem(s), r.x + (r.width - e) / 2, r.y + (r.height - e) / 2, e, e);
+		}
 	}
 
 	void drawBidPanel() {

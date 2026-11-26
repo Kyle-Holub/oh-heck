@@ -244,7 +244,8 @@ final class HardBot implements Bot {
 
 	private static TableView bidTimeView(TableView v, List<Card>[] deal, int s) {
 		TableView.Builder t = new TableView.Builder(v.players()).seat(s)
-				.hand(v.handIndex(), v.numberOfHands(), v.handSize(), v.dealer(), v.trumpCard(), v.rules()).cards(deal[s]);
+				.hand(v.handIndex(), v.numberOfHands(), v.handSize(), v.dealer(), v.trumpCard(), v.rules())
+				.pickedTrump(v.pickedTrump(), false).cards(deal[s]);
 		for (int i = 0; i < v.history().size(); i++) {
 			if (v.historySeats().get(i) == s) {
 				t.addCard(v.history().get(i));
@@ -295,6 +296,7 @@ final class HardBot implements Bot {
 	private static final class Sim {
 		private final int players, dealer, handSize, numberOfHands, handIndex;
 		private final Card trumpCard;
+		private final Suit pickedTrump;
 		private final List<Card>[] hands;
 		private final int[] bids, tricks, scores;
 		private final Trick trick;
@@ -312,6 +314,7 @@ final class HardBot implements Bot {
 			numberOfHands = v.numberOfHands();
 			handIndex = v.handIndex();
 			trumpCard = v.trumpCard();
+			pickedTrump = v.pickedTrump();
 			hands = copy(deal);
 			bids = new int[players];
 			tricks = new int[players];
@@ -365,7 +368,7 @@ final class HardBot implements Bot {
 			}
 			hands[seat].remove(c);
 			played[c.index()] = true;
-			int winner = trick.add(seat, c, trumpCard == null ? null : trumpCard.suit());
+			int winner = trick.add(seat, c, pickedTrump != null ? pickedTrump : trumpCard == null ? null : trumpCard.suit());
 			if (winner < 0) {
 				current = rules.nextSeat(seat, players);
 				return;
@@ -405,7 +408,7 @@ final class HardBot implements Bot {
 
 		private TableView viewFor(int seat) {
 			TableView.Builder v = view;
-			v.seat(seat).hand(handIndex, numberOfHands, handSize, dealer, trumpCard, rules).cards(hands[seat]);
+			v.seat(seat).hand(handIndex, numberOfHands, handSize, dealer, trumpCard, rules).pickedTrump(pickedTrump, false).cards(hands[seat]);
 			for (int s = 0; s < players; s++) {
 				v.seatState(s, bids[s], tricks[s], scores[s], hands[s].size()).voids(s, voids[s]);
 			}

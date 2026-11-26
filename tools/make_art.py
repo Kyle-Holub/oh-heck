@@ -540,10 +540,20 @@ def blurred_back(out, src, dst, pad=24, radius=7):
 
 
 def chapter_cosmetics(out):
-    """Each chapter's prize: a card back and a felt. Chapter 1: emerald and club, a card-room green."""
+    """Each chapter's prize: a card back and a felt. Chapter 1: emerald and club, a card-room green;
+    2: ruby and diamond, a high-stakes red; 3: midnight and heart, a late-night navy; 4: amber and spade, an old gold."""
     card_back(out, "back_ch1.png", colour=(22, 92, 58), deep=(10, 48, 30), suit="clubs")
     blurred_back(out, "back_ch1.png", "back_ch1_blur.png")
     table(out, "table_ch1.jpg", dark=(6, 18, 12), lit=(30, 86, 56))
+    card_back(out, "back_ch2.png", colour=(128, 22, 34), deep=(62, 8, 16), suit="diamonds")
+    blurred_back(out, "back_ch2.png", "back_ch2_blur.png")
+    table(out, "table_ch2.jpg", dark=(22, 6, 8), lit=(98, 30, 36))
+    card_back(out, "back_ch3.png", colour=(24, 38, 92), deep=(10, 16, 46), suit="hearts")
+    blurred_back(out, "back_ch3.png", "back_ch3_blur.png")
+    table(out, "table_ch3.jpg", dark=(6, 9, 22), lit=(30, 44, 92))
+    card_back(out, "back_ch4.png", colour=(128, 88, 26), deep=(64, 40, 10), suit="spades")
+    blurred_back(out, "back_ch4.png", "back_ch4_blur.png")
+    table(out, "table_ch4.jpg", dark=(20, 14, 6), lit=(96, 70, 30))
 
 
 def campaign_art(out):

@@ -24,10 +24,14 @@ public class BriefingTest {
 		assertTrue(chapter, chapter.contains("with Nathaniel, the champion"));
 		assertTrue(text(Briefing.trickShots(Chapter.ONE, new Campaign())).contains("0 of 3 made"));
 		String finalTable = text(Briefing.finalTable(Chapter.ONE));
-		assertTrue(finalTable, finalTable.contains("Nathaniel takes Barnaby's seat") && finalTable.contains("Edmund, Nathaniel and Horatio")
+		assertTrue(finalTable, finalTable.contains("Nathaniel takes Barnaby's seat") && finalTable.contains("with Edmund and Horatio")
 				&& finalTable.contains("Momentum"));
+		String secondFinal = text(Briefing.finalTable(Chapter.TWO));
+		assertTrue(secondFinal, secondFinal.contains("Winner picks trump") && secondFinal.contains("Phillip's rule"));
 		String duel = text(Briefing.duel(Chapter.ONE));
 		assertTrue(duel, duel.contains("a trick for every trump") && duel.contains("5 hands"));
+		String secondDuel = text(Briefing.duel(Chapter.TWO));
+		assertTrue(secondDuel, secondDuel.contains("big bids") && secondDuel.contains("momentum") && secondDuel.contains("next trump suit"));
 	}
 
 	@Test
