@@ -12,6 +12,8 @@ interface TableActions {
 
 	boolean pickTrump(Suit s);
 
+	boolean swapWidow(Card give, Card take);
+
 	boolean skip();
 
 	boolean nextHand();

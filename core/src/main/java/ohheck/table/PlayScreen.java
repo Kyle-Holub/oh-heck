@@ -149,8 +149,11 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		public void changed(Match m) {
 			PlayScreen.this.save();
 			List<Move> moves = m.moves();
-			if (!moves.isEmpty() && moves.get(moves.size() - 1) instanceof Move.PickTrump pick) {
+			Move last = moves.isEmpty() ? null : moves.get(moves.size() - 1);
+			if (last instanceof Move.PickTrump pick) {
 				hint(Wording.pickedTrump(pick.seat() == Seating.YOU ? null : name(pick.seat()), pick.suit()));
+			} else if (last instanceof Move.SwapWidow swap && swap.seat() != Seating.YOU) {
+				hint(Wording.widowSwap(name(swap.seat()), swap.give() != null));
 			}
 		}
 
@@ -493,6 +496,12 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			return true;
 		}
 		return flow.bid(b);
+	}
+
+	@Override
+	public boolean swapWidow(Card give, Card take) {
+		input.clearTouch();
+		return flow.swapWidow(give, take);
 	}
 
 	@Override

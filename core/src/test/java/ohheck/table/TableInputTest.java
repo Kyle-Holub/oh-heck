@@ -124,6 +124,12 @@ public class TableInputTest {
 		}
 
 		@Override
+		public boolean swapWidow(Card give, Card take) {
+			did.add("swap " + give);
+			return flow.swapWidow(give, take);
+		}
+
+		@Override
 		public boolean pickTrump(Suit suit) {
 			did.add("pick " + suit);
 			return flow.pickTrump(suit);

@@ -28,11 +28,34 @@ public interface Bot {
 		if (v.pickingTrump()) {
 			return new Move.PickTrump(v.seat(), chooseTrump(v));
 		}
+		if (v.swapping()) {
+			return chooseSwap(v);
+		}
 		return v.bidding() ? new Move.Bid(v.seat(), chooseBid(v)) : new Move.Play(v.seat(), choosePlay(v));
 	}
 
 	static Bot of(Difficulty d, Random rng) {
 		return d.bot(rng);
+	}
+
+	default Move.SwapWidow chooseSwap(TableView v) {
+		Card take = null, give = null;
+		for (Card c : v.widow()) {
+			if (take == null || worth(c, v.trump()) > worth(take, v.trump())) {
+				take = c;
+			}
+		}
+		for (Card c : v.hand()) {
+			if (give == null || worth(c, v.trump()) < worth(give, v.trump())) {
+				give = c;
+			}
+		}
+		boolean better = take != null && give != null && worth(take, v.trump()) > worth(give, v.trump());
+		return better ? new Move.SwapWidow(v.seat(), give, take) : new Move.SwapWidow(v.seat(), null, null);
+	}
+
+	static int worth(Card c, Suit trump) {
+		return c.rank().strength() + (c.suit() == trump ? Rank.ACE.strength() + 1 : 0);
 	}
 
 	static Suit strongestSuit(List<Card> hand) {

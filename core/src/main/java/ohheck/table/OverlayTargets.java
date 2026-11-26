@@ -11,13 +11,15 @@ import ohheck.rules.Suit;
 final class OverlayTargets {
 
 	enum Button {
-		MENU, MAIN_MENU, CONTINUE, FORCE_WIN
+		MENU, MAIN_MENU, CONTINUE, FORCE_WIN, KEEP_HAND
 	}
 
 	private final Rectangle[] buttons = new Rectangle[Button.values().length];
 	private final Rectangle[] menuItems = new Rectangle[MenuItem.ALL.length];
 	private final List<Rectangle> bids = new ArrayList<Rectangle>();
 	private final Rectangle[] suits = new Rectangle[Suit.values().length];
+	private final Rectangle[] widow = { new Rectangle(), new Rectangle() };
+	private int widowChoice = -1;
 
 	OverlayTargets() {
 		for (int i = 0; i < buttons.length; i++) {
@@ -58,6 +60,27 @@ final class OverlayTargets {
 			}
 		}
 		return null;
+	}
+
+	Rectangle widowCard(int i) {
+		return widow[i];
+	}
+
+	int widowAt(float x, float y) {
+		for (int i = 0; i < widow.length; i++) {
+			if (hits(widow[i], x, y)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	int widowChoice() {
+		return widowChoice;
+	}
+
+	void chooseWidow(int i) {
+		widowChoice = i;
 	}
 
 	void clearGameOverButtons() {

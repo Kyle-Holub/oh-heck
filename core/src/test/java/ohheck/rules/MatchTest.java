@@ -351,4 +351,32 @@ public class MatchTest {
 		}
 		assertTrue("some games went to sudden death", suddenDeaths > 0);
 	}
+
+	@Test
+	public void theHighestMadeBidMaySwapWithTheWidow() {
+		RuleSet rules = RuleSet.DUEL.withOrder(HandOrder.UP_AND_DOWN).withWidow(true);
+		int swaps = 0;
+		for (long seed = 0; seed < 300; seed++) {
+			Match m = Match.random(2, new Random(seed), rules);
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				if (m.phase() == Match.Phase.HAND_OVER) {
+					m.nextHand();
+					if (m.swapping()) {
+						int seat = m.currentSeat();
+						assertEquals(2, m.widow().size());
+						assertEquals(m.widow(), m.view(seat).widow());
+						assertTrue("the other seat can't see the widow", m.view(1 - seat).widow().isEmpty());
+						Card give = m.hand(seat).get(0), take = m.widow().get(1);
+						m.swapWidow(seat, give, take);
+						assertTrue(m.hand(seat).contains(take) && m.widow().contains(give));
+						assertEquals(Match.Phase.BIDDING, m.phase());
+						swaps++;
+					}
+					continue;
+				}
+				m.apply(bot.chooseMove(m.view(m.currentSeat())));
+			}
+		}
+		assertTrue(swaps > 100);
+	}
 }

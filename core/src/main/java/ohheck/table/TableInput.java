@@ -123,7 +123,9 @@ final class TableInput {
 		if (m.currentSeat() != Seating.YOU) {
 			return;
 		}
-		if (m.pickingTrump()) {
+		if (m.swapping()) {
+			tapWidow(x, y);
+		} else if (m.pickingTrump()) {
 			Suit s = targets.suitAt(x, y);
 			if (s != null) {
 				actions.pickTrump(s);
@@ -142,6 +144,25 @@ final class TableInput {
 			actions.showHighScores();
 		} else if (targets.hit(OverlayTargets.Button.MAIN_MENU, x, y)) {
 			actions.showTitle();
+		}
+	}
+
+	private void tapWidow(float x, float y) {
+		int w = targets.widowAt(x, y);
+		if (w >= 0) {
+			targets.chooseWidow(w == targets.widowChoice() ? -1 : w);
+			return;
+		}
+		if (targets.hit(OverlayTargets.Button.KEEP_HAND, x, y)) {
+			targets.chooseWidow(-1);
+			actions.swapWidow(null, null);
+			return;
+		}
+		int i = cardAt(x, y);
+		if (i >= 0 && targets.widowChoice() >= 0) {
+			Card take = scene.match().widow().get(targets.widowChoice());
+			targets.chooseWidow(-1);
+			actions.swapWidow(scene.handOrder().get(i), take);
 		}
 	}
 

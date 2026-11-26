@@ -19,7 +19,7 @@ public class SaveTest {
 	@Test
 	public void roundTripsAtEveryStep() {
 		for (long seed = 0; seed < 400; seed++) {
-			Match m = Match.random(4, new Random(seed), seed % 2 == 0 ? RuleSet.STANDARD : RuleSet.STANDARD.withPickTrump(true));
+			Match m = Match.random(4, new Random(seed), seed % 3 == 0 ? RuleSet.STANDARD : seed % 3 == 1 ? RuleSet.STANDARD.withPickTrump(true) : RuleSet.STANDARD.withWidow(true));
 			while (m.phase() != Match.Phase.GAME_OVER) {
 				String saved = m.save();
 				Match r = Match.load(saved, new Random(99));
@@ -65,7 +65,7 @@ public class SaveTest {
 	@Test
 	public void rejectsDamagedSaves() {
 		String good = Match.random(4, new Random(2)).save();
-		String[] bad = { "", "hello", good.replace("oh-heck-match-5", "something-else"),
+		String[] bad = { "", "hello", good.replace("oh-heck-match-6", "something-else"),
 				good.substring(0, good.length() / 2), good.replaceFirst("hand=0", "hand=12"),
 				good.replaceFirst("players=4", "players=x") };
 		for (String b : bad) {

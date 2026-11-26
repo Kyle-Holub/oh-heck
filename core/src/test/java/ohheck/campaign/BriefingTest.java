@@ -34,6 +34,8 @@ public class BriefingTest {
 		assertTrue(secondDuel, secondDuel.contains("big bids") && secondDuel.contains("momentum") && secondDuel.contains("next trump suit"));
 		String thirdDuel = text(Briefing.duel(Chapter.THREE));
 		assertTrue(thirdDuel, thirdDuel.contains("blind bids") && thirdDuel.contains("Hands won") && thirdDuel.contains("one card a hand"));
+		String fourthDuel = text(Briefing.duel(Chapter.FOUR));
+		assertTrue(fourthDuel, fourthDuel.contains("9 hands") && fourthDuel.contains("The widow"));
 	}
 
 	@Test

@@ -141,6 +141,18 @@ final class TableFlow {
 		return true;
 	}
 
+	boolean yourTurnToSwap() {
+		return state == TableState.TURN && match.swapping() && match.currentSeat() == Seating.YOU && trumpFaceUp();
+	}
+
+	boolean swapWidow(Card give, Card take) {
+		if (!yourTurnToSwap()) {
+			return false;
+		}
+		make(new Move.SwapWidow(Seating.YOU, give, take));
+		return true;
+	}
+
 	boolean yourTurnToPlay() {
 		return state == TableState.TURN && match.phase() == Match.Phase.PLAYING && match.currentSeat() == Seating.YOU;
 	}
