@@ -309,9 +309,11 @@ Duplicate deals rotate seats, so luck cancels out. Run it after any AI change.
 
 ## The art
 
-`python3 tools/make_sounds.py` writes the button press chime (`assets/sfx/press.wav`); every button a
-`Painter` draws (and every bid button and open campaign card) plays it on a tap, with a light vibration
-unless Preferences turns it off.
+`python3 tools/make_sounds.py` writes the tavern button sounds: a glass clink (`assets/sfx/clink.wav`)
+and a short horn call (`assets/sfx/horn.wav`). Every button a `Painter` draws (and every bid button and
+open campaign card) clinks on a tap; the main buttons (drawn in the red `button` style: Play, Continue,
+Teach me...) sound the horn instead (`Painter.heralded`). Preferences turns the sounds off (Button
+sounds) and, separately, the light vibration.
 
 `python3 tools/build_art.py` rebuilds everything generated: the images in `assets/images`
 (`make_art.py`, with the court cards from `court_art.py`), the bitmap fonts (`make_fonts.py`)
