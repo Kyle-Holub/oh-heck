@@ -58,12 +58,7 @@ public final class Assets implements Disposable {
 	}
 
 	public Assets() {
-		for (Cosmetic c : Cosmetic.values()) {
-			tables[c.ordinal()] = linear(own(new Texture(Gdx.files.internal("images/" + c.felt + ".jpg"))));
-			backs[c.ordinal()] = mipmapped("images/" + c.back + ".png");
-			backBlurs[c.ordinal()] = mipmapped("images/" + c.backBlur + ".png");
-		}
-		table = tables[0];
+		table = feltOf(Cosmetic.CLASSIC);
 		cardSheet = mipmapped("images/cards_hd.png");
 		badge = mipmapped("images/badge.png");
 		padlock = mipmapped("images/padlock.png");
@@ -114,8 +109,8 @@ public final class Assets implements Disposable {
 			levelBadge[d.ordinal()] = mipmapped("images/level_" + d.key() + ".png");
 		}
 		cutCards();
-		back = new TextureRegion(backs[0]);
-		backBlur = new TextureRegion(backBlurs[0]);
+		back = new TextureRegion(backOf(Cosmetic.CLASSIC));
+		backBlur = new TextureRegion(blurredBackOf(Cosmetic.CLASSIC));
 		white = own(whitePixel());
 		stroke = own(strokeTexture(32, 160));
 		font = bitmapFont("ui");
@@ -171,16 +166,29 @@ public final class Assets implements Disposable {
 	}
 
 	public void dress(Cosmetic cardBack, Cosmetic felt) {
-		table = tables[felt.ordinal()];
-		back.setRegion(backs[cardBack.ordinal()]);
-		backBlur.setRegion(backBlurs[cardBack.ordinal()]);
+		table = feltOf(felt);
+		back.setRegion(backOf(cardBack));
+		backBlur.setRegion(blurredBackOf(cardBack));
 	}
 
 	public Texture backOf(Cosmetic c) {
+		if (backs[c.ordinal()] == null) {
+			backs[c.ordinal()] = mipmapped("images/" + c.back + ".png");
+		}
 		return backs[c.ordinal()];
 	}
 
+	private Texture blurredBackOf(Cosmetic c) {
+		if (backBlurs[c.ordinal()] == null) {
+			backBlurs[c.ordinal()] = mipmapped("images/" + c.backBlur + ".png");
+		}
+		return backBlurs[c.ordinal()];
+	}
+
 	public Texture feltOf(Cosmetic c) {
+		if (tables[c.ordinal()] == null) {
+			tables[c.ordinal()] = linear(own(new Texture(Gdx.files.internal("images/" + c.felt + ".jpg"))));
+		}
 		return tables[c.ordinal()];
 	}
 
