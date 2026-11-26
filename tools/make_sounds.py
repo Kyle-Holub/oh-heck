@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Makes the game's generated sound effects as 16-bit mono WAV files: the button presses, which sound
-like a tavern. Most buttons clink like two glasses touching; the buttons that go somewhere (Play,
-Continue, Teach me) give a short, soft two-note horn call.
+like a tavern, quietly. Most buttons clink like two glasses touching; the buttons that go somewhere
+(Play, Continue, Teach me) sound like a tankard set down on a wooden table.
 
 Usage: python3 tools/make_sounds.py [output dir, default assets/sfx]   (needs numpy)
 """
@@ -34,25 +34,19 @@ def clink():
     first, second = glass(0, 0.5, 1.0, rng), glass(0.05, 0.45, 0.35, rng)
     n = max(len(first), len(second))
     mix = np.pad(first, (0, n - len(first))) + np.pad(second, (0, n - len(second)))
-    return mix / np.abs(mix).max() * 0.32
+    return mix / np.abs(mix).max() * 0.16
 
 
-def horn_note(freq, length):
-    """A brass note: harmonics falling off gently, a breathy start that brightens, a little vibrato."""
-    t = np.arange(int(RATE * length)) / RATE
-    vibrato = 1 + 0.004 * np.sin(2 * np.pi * 5.2 * t) * np.minimum(1, t / 0.08)
-    phase = 2 * np.pi * freq * np.cumsum(vibrato) / RATE
-    bright = np.minimum(1, t / 0.05)
-    out = np.zeros_like(t)
-    for n in range(1, 9):
-        out += np.sin(n * phase) / n ** (1.6 - 0.7 * bright)
-    envelope = np.minimum(1, t / 0.025) * np.minimum(1, (length - t) / 0.06)
-    return out * envelope
-
-
-def horn():
-    call = np.concatenate([horn_note(392.0, 0.11), np.zeros(int(RATE * 0.015)), horn_note(523.25, 0.24)])
-    return call / np.abs(call).max() * 0.15
+def tankard():
+    """A pewter tankard set down on a wooden table: a short, warm knock of wood with a faint metal ring."""
+    rng = np.random.default_rng(5)
+    t = np.arange(int(RATE * 0.35)) / RATE
+    wood = (np.sin(2 * np.pi * 150 * t) + 0.6 * np.sin(2 * np.pi * 310 * t) + 0.3 * np.sin(2 * np.pi * 520 * t)) * np.exp(-t / 0.035)
+    thud = rng.normal(0, 1, len(t))
+    thud = np.convolve(thud, np.ones(12) / 12, mode="same") * np.exp(-t / 0.012) * 1.2
+    ring = (np.sin(2 * np.pi * 1180 * t) + 0.5 * np.sin(2 * np.pi * 2730 * t)) * np.exp(-t / 0.09) * 0.18
+    sound = (wood + thud + ring) * np.minimum(1, t / 0.001)
+    return sound / np.abs(sound).max() * 0.2
 
 
 def write(path, samples):
@@ -67,6 +61,6 @@ def write(path, samples):
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/sfx"
     os.makedirs(out, exist_ok=True)
-    for name, samples in (("clink.wav", clink()), ("horn.wav", horn())):
+    for name, samples in (("clink.wav", clink()), ("tankard.wav", tankard())):
         write(os.path.join(out, name), samples)
         print("wrote", os.path.join(out, name))

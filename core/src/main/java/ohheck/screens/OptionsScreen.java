@@ -95,7 +95,7 @@ public class OptionsScreen extends BaseScreen {
 							s.setSound(!s.sound());
 							game.audio().play(Audio.Effect.PLAY_CARD);
 						}),
-						OptionItem.toggle("Button sounds", "A glass clink, or a horn for the big buttons.", s::buttonSounds, () -> {
+						OptionItem.toggle("Button sounds", "A glass clink, or a tankard set down for the big buttons.", s::buttonSounds, () -> {
 							s.setButtonSounds(!s.buttonSounds());
 							game.audio().press(true);
 						}),
