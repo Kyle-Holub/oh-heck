@@ -372,7 +372,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	public boolean animating() {
-		if (input.menuOpen()) {
+		if (input.menuOpen() || tip() != null) {
 			return false;
 		}
 		if (flow.state().animating(this)) {
@@ -733,7 +733,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public String stateTag() {
 		PracticeCoach.Tip t = tip();
-		return t != null ? "tip:" + t.id() : TableState.describe(this);
+		return t != null ? "tip:" + t.id() : guide != null ? "practice:" + TableState.describe(this) : TableState.describe(this);
 	}
 
 	private boolean gameOver() {
