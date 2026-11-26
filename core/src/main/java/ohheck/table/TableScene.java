@@ -44,6 +44,10 @@ interface TableScene {
 
 	boolean isMenuOpen();
 
+	default boolean finishing() {
+		return false;
+	}
+
 	default boolean inPractice() {
 		return false;
 	}

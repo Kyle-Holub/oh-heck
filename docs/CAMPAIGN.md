@@ -10,7 +10,7 @@ The title screen splits into **Campaign** and **Custom game**. Campaign is a gui
 - **Custom game:** pick a mode or set the rules yourself, as in Options today.
 - Both share the roster, the rules engine and the bots; Campaign adds progress, unlocks and badges.
 
-A new player's first visit to the campaign opens chapter 1's welcome, which explains what a chapter is (a table of players, their house rules and a champion) and lets them tap each player to read their habit. The first time they sit at a table, they're asked whether they'd like the tutorial first.
+A new player's first Play asks "New to Oh Heck?": Teach me plays a four-hand practice round that teaches the rules as they come up, then turns into the Chapter 1 card and opens chapter 1's welcome, which explains what a chapter is (a table of players, their house rules and a champion) and lets them tap each player to read their habit. I know how to play goes straight to the Play menu.
 
 ## 2. Campaign structure
 
@@ -107,7 +107,7 @@ The MVP is the Campaign / Custom game split with chapter 1 playable end to end; 
 2. **Duel:** a two-player short-deck rule set with momentum, champion quirks and the four duel variations; bots learn two-player bidding and pass the arena.
 3. **Campaign chapter 1:** the chapter hand screen, table play with fixed rivals, the duel gate, saved progress.
 4. **Trick shots:** the puzzle screen, 3 Classic puzzles (one of each goal), and the solver test.
-5. **Tutorial hand-off:** the first table offers the tutorial, which returns you to that table.
+5. **Practice hand-off:** the practice round ends by opening chapter 1.
 6. **Badges and unlockables:** the first badges on Records (including the chapter 1 champion's), chapter 1's card back and felt.
 7. **Chapters 2 to 4.**
 
@@ -123,7 +123,7 @@ Settled for the MVP.
 - Momentum scores only your own streak; breaking the champion's streak earns nothing.
 - Champion quirks choose between sensible moves and never override common sense.
 - Each champion beaten in a campaign duel earns a badge.
-- The first table offers the tutorial; the campaign opens on its welcome.
+- New players learn in a practice round that leads into chapter 1; the old tutorial pages are gone.
 - Nothing ever shows an opponent's cards. Ruled out: dialogue, dailies, hints, a map, a drafted deal, an open final hand, wagers that can be farmed, called cards, quirks that escalate, per-chapter house rules, a second sitting, badges on the placard, per-champion card backs, a campaign record page, a declared blind zero, moonshots, bowers, court powers, a trump auction, marriage bonuses, press on, the cloud, the bomb, the excuse, a champion's card, side prizes, a joker call.
 
 ## 11. Later

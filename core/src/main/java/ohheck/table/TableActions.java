@@ -26,9 +26,6 @@ interface TableActions {
 	default void forceWin() {
 	}
 
-	default void answerTutorialOffer(boolean take) {
-	}
-
 	default void refuseBid(int b) {
 	}
 

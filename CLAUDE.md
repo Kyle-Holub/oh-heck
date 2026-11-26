@@ -72,7 +72,7 @@ Use the `verify` skill after every change and the `ship` skill to merge; the scr
   change them.
 - UI changes: push a feature branch, wait for its Preview, then
   `python3 tools/dev/shots.py review`. Look at every `CHANGED` shot and at `phone-view.png`.
-  For a quick run, add a commit-message line like `[shots: options,tutorial]`.
+  For a quick run, add a commit-message line like `[shots: options,tip]`.
 - A merge into `develop/` is gated by a hook (tests, plus a screenshot report with nothing
   unreviewed). Add `[shots-reviewed]` to the merge message only after looking.
 - If a change alters the scripted game, the screenshot seed may need replacing (see

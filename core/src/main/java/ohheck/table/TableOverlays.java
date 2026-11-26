@@ -296,22 +296,6 @@ final class TableOverlays {
 		}
 	}
 
-	void drawTutorialOffer() {
-		float px = (layout.w - OFFER_W) / 2, py = layout.centreY() - OFFER_H / 2, bw = END_BUTTON_W, bh = END_BUTTON_H;
-		paint.frame(paint.assets.panel, px, py, OFFER_W, OFFER_H);
-		paint.text(paint.serif(1.6f, Palette.GOLD), OFFER_TITLE, layout.w / 2, py + OFFER_H - 22, true);
-		paint.text(paint.ui(1.1f, Palette.CREAM), OFFER_LINE, layout.w / 2, py + OFFER_H - 76, true);
-		float by = py + END_BUTTONS_RISE;
-		paint.button(targets.button(OverlayTargets.Button.TAKE_TUTORIAL), "Tutorial", layout.w / 2 - bw / 2 - END_BUTTONS_GAP / 2, by, bw,
-				bh, paint.assets.button);
-		paint.button(targets.button(OverlayTargets.Button.SKIP_TUTORIAL), "Just play", layout.w / 2 + bw / 2 + END_BUTTONS_GAP / 2, by,
-				bw, bh, paint.assets.buttonAlt);
-	}
-
-	private static final float OFFER_W = 520, OFFER_H = 170;
-	private static final String OFFER_TITLE = "First time at the table?",
-			OFFER_LINE = "Would you like a quick tutorial on how to play Oh Heck?";
-
 	void drawDealerPick(float t) {
 		if (dealsOf != match) {
 			dealsOf = match;

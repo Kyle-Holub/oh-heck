@@ -25,7 +25,6 @@ import ohheck.screens.PlayMenuScreen;
 import ohheck.screens.PlayersScreen;
 import ohheck.screens.TitleScreen;
 import ohheck.screens.TrickShotScreen;
-import ohheck.screens.TutorialScreen;
 import ohheck.table.PlayScreen;
 import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
@@ -50,7 +49,6 @@ public class OhHeckGame extends Game implements GameHost {
 
 	private final Screens screens = new Screens(this);
 	private TitleScreen title;
-	private TutorialScreen tutorial;
 	private OptionsScreen optionsScreen, setupScreen;
 	private PlayMenuScreen playMenu;
 	private HighScoresScreen highScoresScreen;
@@ -93,7 +91,6 @@ public class OhHeckGame extends Game implements GameHost {
 		assets.dress(settings.cardBack(), settings.felt());
 		post = new PostProcessor();
 		title = kept(new TitleScreen(this));
-		tutorial = kept(new TutorialScreen(this));
 		optionsScreen = kept(OptionsScreen.options(this));
 		setupScreen = kept(OptionsScreen.setup(this));
 		playMenu = kept(new PlayMenuScreen(this));
@@ -196,11 +193,6 @@ public class OhHeckGame extends Game implements GameHost {
 		screens.replaceAll(title);
 	}
 
-	@Override
-	public void showTutorial(boolean firstTime) {
-		tutorial.open(firstTime);
-		screens.open(tutorial);
-	}
 
 	@Override
 	public void showPlayMenu() {
@@ -230,7 +222,7 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void showCampaign() {
-		boolean fromTable = campaignPlay != null && getScreen() == campaignPlay;
+		boolean fromTable = getScreen() instanceof PlayScreen;
 		screens.replaceAll(title);
 		if (fromTable) {
 			campaignScreen.wipeIn();
@@ -254,12 +246,18 @@ public class OhHeckGame extends Game implements GameHost {
 	}
 
 	@Override
-	public void playPractice() {
+	public void playPractice(boolean firstTime) {
 		if (practicePlay != null) {
 			practicePlay.dispose();
 		}
-		practicePlay = PlayScreen.practice(this);
+		practicePlay = PlayScreen.practice(this, firstTime);
 		screens.open(practicePlay);
+	}
+
+	@Override
+	public void finishPractice() {
+		settings.setKnowsHowToPlay(true);
+		showCampaign();
 	}
 
 	@Override

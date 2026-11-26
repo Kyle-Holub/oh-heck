@@ -44,22 +44,6 @@ enum TableState {
 			return "versus";
 		}
 	},
-	OFFER_TUTORIAL {
-		@Override
-		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
-			o.drawTutorialOffer();
-		}
-
-		@Override
-		void tap(TableInput in, float x, float y) {
-			in.tapTutorialOffer(x, y);
-		}
-
-		@Override
-		String tag(TableScene s, int hand) {
-			return "offer";
-		}
-	},
 	PICK_DEALER {
 		@Override
 		void update(TableFlow f, float dt) {
@@ -306,7 +290,7 @@ enum TableState {
 	}
 
 	boolean isDealing() {
-		return this == VERSUS || this == OFFER_TUTORIAL || this == PICK_DEALER || this == SHUFFLE || this == DEAL;
+		return this == VERSUS || this == PICK_DEALER || this == SHUFFLE || this == DEAL;
 	}
 
 
