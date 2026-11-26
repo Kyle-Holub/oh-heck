@@ -10,7 +10,8 @@ import java.util.Set;
 
 /*
  * One game from the first deal to the final scores. Seats run clockwise from 0; the deal moves
- * one seat each hand; the player after the dealer leads, and the dealer bids last.
+ * one seat each hand; the player after the dealer leads, and the dealer bids last. Each hand is dealt
+ * from a shuffled deck, or from a fixed list of deals for a scripted game such as the practice round.
  */
 public final class Match {
 
@@ -48,6 +49,7 @@ public final class Match {
 	List<Card> lastTrick = Collections.emptyList();
 	List<Integer> lastTrickSeats = Collections.emptyList();
 	int lastTrickWinner = -1;
+	private List<Deal> script;
 
 	public static Match random(int players, Random rng) {
 		return random(players, rng, RuleSet.STANDARD);
@@ -65,6 +67,17 @@ public final class Match {
 		this(players, rng, rules);
 		this.dealer = firstDealer;
 		startHand();
+	}
+
+	public static Match scripted(RuleSet rules, int firstDealer, List<Deal> deals) {
+		if (deals.size() != rules.numberOfHands()) {
+			throw new IllegalArgumentException("A deal is needed for each of the " + rules.numberOfHands() + " hands");
+		}
+		Match m = new Match(deals.get(0).hands().size(), new Random(0), rules);
+		m.script = deals;
+		m.dealer = firstDealer;
+		m.startHand();
+		return m;
 	}
 
 	public static Match dealt(RuleSet rules, int dealer, List<List<Card>> hands, Card trumpCard) {
@@ -398,14 +411,14 @@ public final class Match {
 	}
 
 	private void startHand() {
-		Deck deck = Deck.shuffled(rng, rules);
+		Deck deck = script == null ? Deck.shuffled(rng, rules) : null;
 		for (int i = 0; i < players; i++) {
 			int seat = (dealer + 1 + i) % players;
-			hands.set(seat, deck.deal(handSize()));
+			hands.set(seat, deck != null ? deck.deal(handSize()) : new ArrayList<Card>(script.get(handIndex).hands().get(seat)));
 			bids[seat] = NO_BID;
 			tricks[seat] = 0;
 		}
-		trumpCard = deck.size() > 0 ? deck.deal() : null;
+		trumpCard = deck == null ? script.get(handIndex).trump() : deck.size() > 0 ? deck.deal() : null;
 		trick.clear();
 		history.clear();
 		historySeats.clear();
