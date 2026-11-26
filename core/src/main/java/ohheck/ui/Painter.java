@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.utils.Array;
 
 /* Fonts, text, frames and buttons. The two fonts are shared, so each call to ui() or serif() sets their size and colour afresh. */
 public final class Painter {
@@ -118,7 +119,29 @@ public final class Painter {
 		batch.setColor(Color.WHITE);
 	}
 
+	private final Array<Rectangle> pressable = new Array<Rectangle>(false, 32);
+
+	public void newFrame() {
+		pressable.clear();
+	}
+
+	public void pressable(Rectangle r) {
+		pressable.add(r);
+	}
+
+	public boolean pressed(float x, float y) {
+		for (int i = 0; i < pressable.size; i++) {
+			if (pressable.get(i).contains(x, y)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public Rectangle button(Rectangle area, String label, float cx, float y, float bw, float bh, NinePatch style) {
+		if (style != assets.buttonOff) {
+			pressable.add(area);
+		}
 		frame(style, cx - bw / 2, y, bw, bh);
 		BitmapFont f = serif(1.5f);
 		Color c = style == assets.buttonOff ? Palette.MUTED : Palette.CREAM;

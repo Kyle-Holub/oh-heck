@@ -341,6 +341,9 @@ public class CampaignScreen extends BaseScreen {
 			float k = showing ? MathUtils.clamp(revealFor / REVEAL_LEN, 0, 1) : 0;
 			float x = x0 + i * (CARD_W + CARD_GAP), y = base - ARC * off * off + (c == lit ? LIFT : 0) + MathUtils.sin(k * MathUtils.PI) * REVEAL_LIFT;
 			chapterCards[i].set(x, y, CARD_W, CARD_H);
+			if (progress.open(c)) {
+				paint.pressable(chapterCards[i]);
+			}
 			if (c == lit || showing && k > 0) {
 				glow(x, y, CARD_W, CARD_H);
 			}
@@ -389,6 +392,9 @@ public class CampaignScreen extends BaseScreen {
 		for (int i = 0; i < STEPS.length; i++) {
 			float x = x0 + i * (STEP_W + STEP_GAP);
 			stepCards[i].set(x, y, STEP_W, STEP_H);
+			if (stepOpen(progress, c, i)) {
+				paint.pressable(stepCards[i]);
+			}
 			art.shadow(x, y, STEP_W, STEP_H, 4);
 			boolean faceUp = stepOpen(progress, c, i);
 			batch.setColor(1, 1, 1, laid);

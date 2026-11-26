@@ -42,7 +42,8 @@ the screenshot run, CI, the arena and the art tools.
 - Generated files (`BidTable.java`, `DuelBidTable.java`) are exempt from the comment rules.
 - **Text and spacing:** the game font has no Unicode minus sign. Use "-".
 - **Generated files:** `BidTable.java` comes from the arena's `learn`, `DuelBidTable.java` from `learn-duel`; the images, fonts and
-  launcher icons come from `python3 tools/build_art.py` (`--check` to compare). Regenerate
+  launcher icons come from `python3 tools/build_art.py` (`--check` to compare), the button sound
+  from `python3 tools/make_sounds.py`. Regenerate
   them; don't edit by hand.
 - **Facts shown on screen** (scores, odds, player names, hand counts) come from the rules
   and the roster, not copied text.
