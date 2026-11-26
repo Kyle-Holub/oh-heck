@@ -590,6 +590,35 @@ def chapter_cosmetics(out):
     table(out, "table_ch4.jpg", dark=(20, 14, 6), lit=(96, 70, 30), gilt=True)
 
 
+def chapter_plaques(out):
+    """The campaign hall's chapters: a tall arched plaque framed in gold, like a doorway, in a lit
+    (wine) and a locked (ash) version."""
+    W, H = 200 * SS, 300 * SS
+    for name, top, bottom, edge, inner in (("plaque.png", (92, 30, 26), (40, 12, 12), GOLD, GOLD_DARK),
+                                          ("plaque_locked.png", (46, 40, 36), (20, 17, 15), GOLD_DARK, (70, 58, 40))):
+        y = np.linspace(0, 1, H)[:, None, None]
+        x = np.linspace(0, 1, W)[None, :, None]
+        glow = np.clip(1 - np.sqrt((x - 0.5) ** 2 * 3 + (y - 0.35) ** 2), 0, 1)
+        fill = np.array(bottom, float) + (np.array(top, float) - np.array(bottom, float)) * glow
+        body = Image.fromarray(np.clip(fill, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+        mask = Image.new("L", (W, H), 0)
+        md = ImageDraw.Draw(mask)
+        r = W / 2
+        md.ellipse([0, 0, W - 1, 2 * r], fill=255)
+        md.rectangle([0, r, W - 1, H - 1], fill=255)
+        body.putalpha(mask)
+        d = ImageDraw.Draw(body)
+        for inset, colour, width in ((3 * SS, edge, 4 * SS), (12 * SS, inner, 2 * SS), (17 * SS, edge, 1 * SS)):
+            rr = r - inset
+            d.arc([inset, inset, W - 1 - inset, inset + 2 * rr], 180, 360, fill=colour, width=width)
+            d.line([(inset + width / 2 - SS, r), (inset + width / 2 - SS, H - 1 - inset)], fill=colour, width=width)
+            d.line([(W - 1 - inset - width / 2 + SS, r), (W - 1 - inset - width / 2 + SS, H - 1 - inset)], fill=colour, width=width)
+            d.line([(inset, H - 1 - inset - width / 2 + SS), (W - 1 - inset, H - 1 - inset - width / 2 + SS)], fill=colour, width=width)
+        for cx, cy, size in ((W / 2, 12 * SS, 14 * SS), (14 * SS, H - 14 * SS, 10 * SS), (W - 14 * SS, H - 14 * SS, 10 * SS)):
+            suit_shape(d, "diamonds", cx, cy, size, edge)
+        downsample(body, 200, 300).save(os.path.join(out, name), optimize=True)
+
+
 def campaign_art(out):
     """The campaign's cards: a dark face framed in gold for chapters and steps, a gold emblem per
     suit (each chapter has one), an icon per step, and the diamond pips that mark steps done."""
@@ -788,6 +817,7 @@ if __name__ == "__main__":
     card_blank(out)
     chapter_cosmetics(out)
     campaign_art(out)
+    chapter_plaques(out)
     play_menu_icons(out)
     badge(out)
     padlock(out)

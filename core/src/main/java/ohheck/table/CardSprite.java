@@ -82,10 +82,6 @@ final class CardSprite {
 		return now;
 	}
 
-	float landedFor(float t) {
-		return placed && arc > 0 ? t - start - motion.end() : -1;
-	}
-
 	boolean moving(float t) {
 		return placed && !motion.done(t - start);
 	}

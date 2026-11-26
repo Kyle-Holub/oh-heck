@@ -21,8 +21,7 @@ import ohheck.ui.Palette;
 
 /*
  * Every card on the table: sets each sprite's target from the game each frame, then draws them
- * back to front. A played card squashes as it lands (yours hardest), a trump cutting another suit's lead
- * trails gold, the card under your finger rises and tilts, and a card you may not play shakes its head.
+ * back to front. A trump cutting another suit's lead trails gold, the card under your finger rises and tilts, and a card you may not play shakes its head.
  */
 final class CardSprites {
 
@@ -34,8 +33,8 @@ final class CardSprites {
 	private static final float DEAL_LIFT = 30, TRICK_LIFT = 5, COLLECT_LIFT = 23, HAND_LIFT = 5, HELD_LIFT = 0;
 
 	private static final int FAN = 0, HAND = 1, TRICK = 2, DEALING = 3, HELD = 4;
-	private static final Tween SLAP = Tween.over(0.16f, Ease.LINEAR), REFUSED = Tween.over(0.4f, Ease.LINEAR);
-	private static final float SLAP_YOURS = 0.1f, SLAP_THEIRS = 0.05f, HOVER_RISE = 16, HOVER_TILT = -4, REFUSE_SHAKE = 8,
+	private static final Tween REFUSED = Tween.over(0.4f, Ease.LINEAR);
+	private static final float HOVER_RISE = 16, HOVER_TILT = -4, REFUSE_SHAKE = 8,
 			STREAK_STEP = 0.025f, STREAK_GLOW = 1.4f;
 	private static final int STREAK_GHOSTS = 5;
 	private static final float RAKE_STAGGER = 0.03f, RIPPLE_STAGGER = 0.04f, RIPPLE_ARC = 14, RIPPLE_WINDOW = 0.3f;
@@ -47,7 +46,6 @@ final class CardSprites {
 	private final int[] layer = new int[Card.COUNT], order = new int[Card.COUNT];
 	private final float[] glintW = new float[Card.COUNT];
 	private final boolean[] seen = new boolean[Card.COUNT], dim = new boolean[Card.COUNT], cuts = new boolean[Card.COUNT];
-	private final float[] slap = new float[Card.COUNT];
 	private final CardSprite[] drawOrder = new CardSprite[Card.COUNT];
 	private final CardSprite.Pose pose = new CardSprite.Pose(), dealer = new CardSprite.Pose();
 	private int framed = -1;
@@ -196,7 +194,6 @@ final class CardSprites {
 			CardSprite sp = sprite(c);
 			Vector2 slot = layout.trickSlot(seat);
 			place(sp, TRICK, i);
-			slap[c.index()] = seat == Seating.YOU ? SLAP_YOURS : SLAP_THEIRS;
 			cuts[c.index()] = i > 0 && c.suit() == m.trump() && cards.get(0).suit() != m.trump();
 			sp.moveTo(pose.set(slot.x, slot.y, Assets.CARD_W, Assets.CARD_H, TrickView.tilt(c, seat, m.handIndex()), 1,
 					TRICK_LIFT), PLAYED, PLAY_ARC, now, 0);
@@ -268,17 +265,6 @@ final class CardSprites {
 				streak(batch, assets, sp, now);
 			}
 			CardSprite.Pose p = sp.pose(now);
-			if (layer[i] == TRICK) {
-				float landed = sp.landedFor(now);
-				if (landed >= 0 && landed < SLAP.end()) {
-					float bump = (float) Math.sin(Math.PI * SLAP.progress(landed)) * slap[i];
-					float sw = p.w * (1 + bump), sh = p.h * (1 - bump);
-					p.x -= (sw - p.w) / 2;
-					p.y -= (sh - p.h) / 2;
-					p.w = sw;
-					p.h = sh;
-				}
-			}
 			if (p.lift > 0.5f && layer[i] != FAN) {
 				art.shadow(p.x, p.y, p.w, p.h, p.lift);
 			}
