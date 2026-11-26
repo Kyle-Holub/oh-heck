@@ -310,9 +310,9 @@ Duplicate deals rotate seats, so luck cancels out. Run it after any AI change.
 ## The art
 
 `python3 tools/make_sounds.py` writes the tavern button sounds: a glass clink (`assets/sfx/clink.wav`)
-and a short horn call (`assets/sfx/horn.wav`). Every button a `Painter` draws (and every bid button and
+and a tankard set down on wood (`assets/sfx/tankard.wav`), both quiet. Every button a `Painter` draws (and every bid button and
 open campaign card) clinks on a tap; the main buttons (drawn in the red `button` style: Play, Continue,
-Teach me...) sound the horn instead (`Painter.heralded`). Preferences turns the sounds off (Button
+Teach me...) sound the tankard instead (`Painter.heralded`). Preferences turns the sounds off (Button
 sounds) and, separately, the light vibration.
 
 `python3 tools/build_art.py` rebuilds everything generated: the images in `assets/images`
