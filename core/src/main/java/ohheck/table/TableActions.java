@@ -34,4 +34,7 @@ interface TableActions {
 
 	default void skipGameEnd() {
 	}
+
+	default void dismissTip() {
+	}
 }

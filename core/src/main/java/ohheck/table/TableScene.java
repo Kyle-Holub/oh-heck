@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.badlogic.gdx.math.Rectangle;
 
+import ohheck.campaign.PracticeCoach;
+import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 
@@ -41,6 +43,26 @@ interface TableScene {
 	boolean humanCanPlay();
 
 	boolean isMenuOpen();
+
+	default boolean inPractice() {
+		return false;
+	}
+
+	default String placardName(int seat) {
+		return name(seat);
+	}
+
+	default boolean playable(Card c) {
+		return match().legalPlays(Seating.YOU).contains(c);
+	}
+
+	default boolean bidAllowed(int b) {
+		return true;
+	}
+
+	default PracticeCoach.Tip tip() {
+		return null;
+	}
 
 	default boolean inCampaign() {
 		return false;
