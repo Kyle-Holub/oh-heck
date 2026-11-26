@@ -16,6 +16,8 @@ import com.badlogic.gdx.utils.Align;
 
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
+import ohheck.campaign.PracticeCoach;
+import ohheck.campaign.PracticeRound;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
@@ -58,7 +60,7 @@ final class TableOverlays {
 	private final CardArt art;
 	private final BidPopup bidPopup;
 	private final ScoreCard scoreCard;
-	private final IntPredicate legalBid = b -> this.match.isLegalBid(b);
+	private final IntPredicate legalBid = this::bidOk;
 	private String hint = "";
 	private float hintTime;
 
@@ -142,6 +144,10 @@ final class TableOverlays {
 		}
 	}
 
+	private boolean bidOk(int b) {
+		return match.isLegalBid(b) && scene.bidAllowed(b);
+	}
+
 	void refuseBid(int b) {
 		bidPopup.refuse(b);
 	}
@@ -218,6 +224,78 @@ final class TableOverlays {
 	private static final float GILD_W = 6, GILD_STEP = 110, GILD_DIAMOND = 12;
 	private static final Color VS_SHADOW = new Color(0.12f, 0.05f, 0.03f, 1), GILD_DARK = new Color(0.55f, 0.4f, 0.17f, 1);
 
+	private static final float TIP_W = 440, TIP_PAD = 18, TIP_GAP = 18, TIP_RING = 6, TIP_LINE = 3;
+	private static final String TIP_TAP = "Tap to continue";
+	private final Rectangle anchor = new Rectangle();
+
+	void drawTip(PracticeCoach.Tip tip) {
+		boolean pointed = anchorOf(tip);
+		float hx = anchor.x - TIP_RING, hy = anchor.y - TIP_RING, hw = anchor.width + 2 * TIP_RING, hh = anchor.height + 2 * TIP_RING;
+		paint.fade(0.5f);
+		if (pointed) {
+			paint.rect(0, 0, layout.w, hy, Palette.BACKDROP);
+			paint.rect(0, hy + hh, layout.w, layout.h - hy - hh, Palette.BACKDROP);
+			paint.rect(0, hy, hx, hh, Palette.BACKDROP);
+			paint.rect(hx + hw, hy, layout.w - hx - hw, hh, Palette.BACKDROP);
+		} else {
+			paint.rect(0, 0, layout.w, layout.h, Palette.BACKDROP);
+		}
+		paint.fade(1f);
+		if (pointed) {
+			paint.rect(hx, hy, hw, TIP_LINE, Palette.GOLD);
+			paint.rect(hx, hy + hh - TIP_LINE, hw, TIP_LINE, Palette.GOLD);
+			paint.rect(hx, hy, TIP_LINE, hh, Palette.GOLD);
+			paint.rect(hx + hw - TIP_LINE, hy, TIP_LINE, hh, Palette.GOLD);
+		}
+		BitmapFont f = paint.ui(1.05f, Palette.CREAM);
+		paint.glyphs.setText(f, tip.text(), Palette.CREAM, TIP_W - 2 * TIP_PAD, Align.left, true);
+		float bh = paint.glyphs.height + 2 * TIP_PAD + 26, bw = TIP_W;
+		float cx = pointed ? anchor.x + anchor.width / 2 : layout.w / 2;
+		float by = !pointed ? layout.h / 2 - bh / 2
+				: anchor.y + anchor.height / 2 > layout.h / 2 ? anchor.y - TIP_GAP - TIP_RING - bh : anchor.y + anchor.height + TIP_GAP + TIP_RING;
+		float bx = MathUtils.clamp(cx - bw / 2, 12, layout.w - 12 - bw);
+		by = MathUtils.clamp(by, 12, layout.h - 12 - bh);
+		paint.frame(paint.assets.panelTurn, bx, by, bw, bh);
+		f.draw(paint.batch, tip.text(), bx + TIP_PAD, by + bh - TIP_PAD, bw - 2 * TIP_PAD, Align.left, true);
+		paint.text(paint.ui(0.9f, Palette.GOLD), TIP_TAP, bx + bw - TIP_PAD, by + TIP_PAD + 8, false);
+	}
+
+	private boolean anchorOf(PracticeCoach.Tip tip) {
+		switch (tip.anchor()) {
+		case DEALER:
+			anchor.set(layout.panelX(match.dealer()), layout.panelTop(match.dealer()) - PlayerPanel.H, PlayerPanel.W, PlayerPanel.H);
+			return true;
+		case TALLY:
+			anchor.set(10, layout.h - 58, 150, 50);
+			return true;
+		case TRACKER:
+			anchor.set(10, layout.h - 100, 150, 38);
+			return true;
+		case TRUMP:
+			anchor.set(layout.trumpX(), layout.trumpY(), layout.trumpW(), layout.trumpH());
+			return true;
+		case CARD:
+			int i = scene.handOrder().indexOf(tip.card());
+			if (i < 0 || i >= scene.handRects().size()) {
+				return false;
+			}
+			anchor.set(scene.handRects().get(i));
+			return true;
+		case BID:
+			Rectangle b = targets.bid(tip.number());
+			if (b == null || b.width <= 0) {
+				return false;
+			}
+			anchor.set(b);
+			return true;
+		case SCORE_ROW:
+			anchor.set(layout.w / 2 - ScoreCard.W / 2, layout.centreY() - ScoreCard.H / 2, ScoreCard.W, ScoreCard.H);
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	void drawTutorialOffer() {
 		float px = (layout.w - OFFER_W) / 2, py = layout.centreY() - OFFER_H / 2, bw = END_BUTTON_W, bh = END_BUTTON_H;
 		paint.frame(paint.assets.panel, px, py, OFFER_W, OFFER_H);
@@ -237,7 +315,8 @@ final class TableOverlays {
 	void drawDealerPick(float t) {
 		if (dealsOf != match) {
 			dealsOf = match;
-			deals = match.dealer() == Seating.YOU ? "You deal" : scene.name(match.dealer()) + " deals";
+			String who = scene.inPractice() ? PracticeRound.position(match.dealer()) : scene.name(match.dealer());
+			deals = match.dealer() == Seating.YOU ? "You deal" : Character.toUpperCase(who.charAt(0)) + who.substring(1) + " deals";
 		}
 		float cx = layout.w / 2, cy = layout.centreY() + 20;
 		if (!DealerPick.settled(t)) {

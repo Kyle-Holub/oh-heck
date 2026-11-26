@@ -58,6 +58,7 @@ public class OhHeckGame extends Game implements GameHost {
 	private CampaignScreen campaignScreen;
 	private TrickShotScreen trickShotScreen;
 	private ChapterClearedScreen clearedScreen;
+	private PlayScreen practicePlay;
 	private final List<Screen> keptScreens = new ArrayList<Screen>();
 	private PlayScreen play, campaignPlay;
 
@@ -250,6 +251,15 @@ public class OhHeckGame extends Game implements GameHost {
 		screens.replaceAll(title);
 		screens.open(campaignScreen);
 		screens.open(campaignPlay);
+	}
+
+	@Override
+	public void playPractice() {
+		if (practicePlay != null) {
+			practicePlay.dispose();
+		}
+		practicePlay = PlayScreen.practice(this);
+		screens.open(practicePlay);
 	}
 
 	@Override

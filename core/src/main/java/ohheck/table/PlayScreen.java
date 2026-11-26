@@ -15,6 +15,8 @@ import ohheck.anim.Kick;
 import ohheck.anim.Tween;
 import ohheck.campaign.Chapter;
 import ohheck.campaign.Cosmetic;
+import ohheck.campaign.PracticeCoach;
+import ohheck.campaign.PracticeRound;
 import ohheck.campaign.Stage;
 import ohheck.fx.Fireworks;
 import ohheck.fx.Sparks;
@@ -25,6 +27,7 @@ import ohheck.players.Seating;
 import ohheck.records.SavedGame;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Move;
 import ohheck.rules.RuleSet;
 import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
@@ -57,6 +60,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	private float time;
 	private final Kick kick = new Kick();
+	private final PracticeGuide guide;
+	private static final String PRACTICE_SIGN = "Practice round";
+	private static final String[] PRACTICE_NAMES = { "You", "Left", "Across", "Right" };
 	private boolean slammed;
 	private TableState lastState;
 	private float setAt = -99, hitAt = -99;
@@ -76,23 +82,28 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final List<Rectangle> handRects = new ArrayList<Rectangle>();
 
 	public static PlayScreen fresh(GameHost game) {
-		return new PlayScreen(game, null, null, null);
+		return new PlayScreen(game, null, null, null, false);
 	}
 
 	public static PlayScreen resume(GameHost game, SavedGame saved) {
-		return new PlayScreen(game, saved, null, null);
+		return new PlayScreen(game, saved, null, null, false);
 	}
 
 	public static PlayScreen campaign(GameHost game, Chapter chapter, Stage stage) {
-		return new PlayScreen(game, null, chapter, stage);
+		return new PlayScreen(game, null, chapter, stage, false);
 	}
 
-	private PlayScreen(GameHost game, SavedGame saved, Chapter chapter, Stage stage) {
+	public static PlayScreen practice(GameHost game) {
+		return new PlayScreen(game, null, null, null, true);
+	}
+
+	private PlayScreen(GameHost game, SavedGame saved, Chapter chapter, Stage stage, boolean practice) {
 		super(game);
 		this.chapter = chapter;
 		this.stage = stage;
-		this.sign = chapter == null ? "Custom game \u2013 " + game.settings().mode().label
-				: "Chapter " + chapter.number() + " \u2013 " + stage.title;
+		this.guide = practice ? new PracticeGuide() : null;
+		this.sign = practice ? PRACTICE_SIGN
+				: chapter == null ? "Custom game \u2013 " + game.settings().mode().label : "Chapter " + chapter.number() + " \u2013 " + stage.title;
 		this.options = game.options();
 		this.streams = TableStreams.of(options.seed);
 		this.art = new CardArt(batch, assets);
@@ -101,8 +112,10 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		this.drawing = new TableDrawing(this, paint, art, game.post(), game.settings()::handSort);
 		this.recorder = new GameRecorder(game.records());
 		this.badges = new BadgeKeeper(game.records());
-		TableFlow.Listener keeper = chapter == null ? recorder : new CampaignKeeper();
-		this.flow = new TableFlow(you, new Effects(), new TableSounds(game.audio()), keeper, badges);
+		TableFlow.Listener keeper = practice ? new TableFlow.Listener() {
+		} : chapter == null ? recorder : new CampaignKeeper();
+		this.flow = practice ? new TableFlow(you, new Effects(), new TableSounds(game.audio()))
+				: new TableFlow(you, new Effects(), new TableSounds(game.audio()), keeper, badges);
 		if (!you.thinkAtOnce() && options.fixedStep <= 0) {
 			flow.thinkWith(Thinker.background());
 		}
@@ -138,7 +151,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			if (!won) {
 				shower.start(finalScoresSeed(m));
 			}
-			end.start(won, m.players(), stage != Stage.DUEL, !options.autoplayHuman);
+			end.start(won, m.players(), stage != Stage.DUEL && guide == null, !options.autoplayHuman);
 		}
 	}
 
@@ -271,18 +284,23 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	private void startGame() {
 		level = game.settings().difficulty();
-		seatPlayers(chapter == null ? Player.draw(level, streams.seating) : chapter.seating(stage));
+		seatPlayers(guide != null ? PracticeRound.RIVALS : chapter == null ? Player.draw(level, streams.seating) : chapter.seating(stage));
 		shower.clear();
 		end.reset();
 		RuleSet rules = chapter == null ? game.settings().rules() : chapter.rules(stage);
-		Match m = Match.random(players.players(), streams.deck, rules);
+		Match m = guide != null ? PracticeRound.match() : Match.random(players.players(), streams.deck, rules);
 		overlays.setMatch(m);
-		if (chapter == null) {
+		if (guide != null) {
+			flow.useBots(PracticeRound.bots());
+		} else if (chapter == null) {
 			recorder.table(level, players, true);
 		}
 		badges.fresh();
 		flow.start(m);
 		slammed = false;
+		if (guide != null) {
+			return;
+		}
 		if (!game.settings().tutorialSeen() && !game.options().autoplayHuman) {
 			flow.enter(TableState.OFFER_TUTORIAL);
 		} else if (stage == Stage.DUEL) {
@@ -314,7 +332,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			return;
 		}
 		time += dt;
-		flow.update(dt);
+		if (guide == null || !guide.update(this)) {
+			flow.update(dt);
+		}
 		if (flow.inHitStop() && !hitShown) {
 			kick.shake(time, HIT_SHAKE);
 			hitAt = time;
@@ -394,6 +414,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	public String name(int seat) {
+		if (guide != null) {
+			return PRACTICE_NAMES[seat];
+		}
 		return seat == Seating.YOU ? "You" : players.at(seat).name;
 	}
 
@@ -404,7 +427,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	private void save() {
-		if (chapter != null) {
+		if (chapter != null || guide != null) {
 			return;
 		}
 		if (isGameOver()) {
@@ -452,12 +475,50 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	public boolean bid(int b) {
+		if (guide != null && (!flow.trumpFaceUp() || guide.update(this) || !guide.allows(match(), new Move.Bid(Seating.YOU, b)))) {
+			return true;
+		}
 		return flow.bid(b);
+	}
+
+	@Override
+	public boolean inPractice() {
+		return guide != null;
+	}
+
+	@Override
+	public String placardName(int seat) {
+		return guide != null && seat != Seating.YOU ? "" : name(seat);
+	}
+
+	@Override
+	public boolean playable(Card c) {
+		return match().legalPlays(Seating.YOU).contains(c) && (guide == null || guide.allows(match(), new Move.Play(Seating.YOU, c)));
+	}
+
+	@Override
+	public boolean bidAllowed(int b) {
+		return guide == null || guide.allows(match(), new Move.Bid(Seating.YOU, b));
+	}
+
+	@Override
+	public PracticeCoach.Tip tip() {
+		return guide == null ? null : guide.tip();
+	}
+
+	@Override
+	public void dismissTip() {
+		if (guide != null) {
+			guide.dismiss();
+		}
 	}
 
 	@Override
 	public void play(Card c) {
 		input.clearTouch();
+		if (guide != null && (guide.update(this) || !playable(c))) {
+			return;
+		}
 		flow.play(c);
 	}
 
@@ -478,7 +539,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	public void showHighScores() {
-		if (prizesWaiting) {
+		if (guide != null) {
+			game.back();
+		} else if (prizesWaiting) {
 			game.showChapterCleared(chapter);
 		} else if (chapter != null) {
 			game.showCampaign();
@@ -520,6 +583,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (!input.menuOpen()) {
 			overlays.drawMenuButton();
 			drawOverlay();
+			if (guide != null && guide.tip() != null) {
+				overlays.drawTip(guide.tip());
+			}
 		}
 		shower.draw(batch, assets, art, layout.w, layout.h);
 		sparks.draw(batch, assets.glow);

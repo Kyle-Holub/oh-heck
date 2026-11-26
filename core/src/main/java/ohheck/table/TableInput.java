@@ -62,7 +62,7 @@ final class TableInput {
 		if (pressed == null) {
 			return;
 		}
-		if (!dragging && moved > DRAG_START && scene.match().legalPlays(Seating.YOU).contains(pressed)) {
+		if (!dragging && moved > DRAG_START && scene.playable(pressed)) {
 			dragging = true;
 		}
 		dragX = x;
@@ -84,6 +84,10 @@ final class TableInput {
 	}
 
 	void tap(float x, float y) {
+		if (scene.tip() != null) {
+			actions.dismissTip();
+			return;
+		}
 		if (menuOpen) {
 			MenuItem item = targets.menuItemAt(x, y);
 			if (item != null) {
@@ -156,6 +160,9 @@ final class TableInput {
 		Card c = scene.handOrder().get(i);
 		if (!scene.match().legalPlays(Seating.YOU).contains(c)) {
 			actions.hint(Wording.mustFollow(scene.match().leadSuit()));
+			return;
+		}
+		if (!scene.playable(c)) {
 			return;
 		}
 		actions.play(c);

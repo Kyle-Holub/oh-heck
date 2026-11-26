@@ -103,7 +103,7 @@ public class OptionsScreen extends BaseScreen {
 						OptionItem.toggle("Visual effects", "Glow, vignette and film grain.", s::effects,
 								() -> s.setEffects(!s.effects()))),
 				new OptionsPage("Tutorial",
-						OptionItem.link("How to play", "The rules, a step at a time.", () -> game.showTutorial(false)),
+						OptionItem.link("Practice round", "Learn the game by playing a short guided round.", game::playPractice),
 						OptionItem.link("Roster", "The players you can meet at the table.", game::showPlayers),
 						OptionItem.confirmed("Start fresh", "Forget everything, as a new player: tutorial, campaign, scores, settings.",
 								game::startFresh)));

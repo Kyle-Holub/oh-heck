@@ -70,6 +70,10 @@ final class TableFlow {
 		}
 	}
 
+	void useBots(Bot[] chosen) {
+		System.arraycopy(chosen, 0, bots, 0, bots.length);
+	}
+
 	void seat(Seating players, Random rng) {
 		for (int s = 0; s < players.players(); s++) {
 			if (s != Seating.YOU) {

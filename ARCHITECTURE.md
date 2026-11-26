@@ -117,7 +117,9 @@ first six have no libGDX and test in plain JUnit.
   moment (`TableFlow.inHitStop`); `GameEnd` raises the podium (player cards) from last place up before the
   scores, except in a duel; a tap finishes it, and the scores then wait for a tap (Continue or Main menu). A duel wears its chapter's look (`Cosmetic`) while it lasts.
   Screen jolts (shake, zoom) are an `ohheck.anim.Kick` read into `BaseScreen`'s camera; `CardWipe` is the
-  curtain of card backs into and out of a campaign table. Each
+  curtain of card backs into and out of a campaign table. `PlayScreen.practice` plays the practice round:
+  `PracticeGuide` reads the table's moment, asks the `PracticeCoach` for a tip, spotlights what it points at and
+  holds the table until it is tapped; in the scripted hands only the planned card or bid can be chosen. Each
   `TableState` constant holds its own behaviour (`entered`, `update`, `skip`) and what the
   screen does in it (the overlay, what a tap does, whether it is still moving, the
   screenshot tag).
