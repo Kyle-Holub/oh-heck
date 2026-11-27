@@ -19,7 +19,6 @@ FALLBACK = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONTS = [
     # name, ttf, pixel size, slant (lean added to the upright glyphs; 0 for a true italic)
     ("ui", os.path.join(HERE, "fonts", "Almendra-Regular.ttf"), 44, 0),
-    ("ui_italic", os.path.join(HERE, "fonts", "Almendra-Italic.ttf"), 44, 0),
     ("serif", os.path.join(HERE, "fonts", "Almendra-Bold.ttf"), 52, 0),
 ]
 CHARS = [chr(c) for c in range(32, 127)] + ["©", "–", "—", "…", "’", "♥", "♠", "♦", "♣"]

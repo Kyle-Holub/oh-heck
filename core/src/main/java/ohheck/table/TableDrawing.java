@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
@@ -34,7 +33,6 @@ final class TableDrawing {
 	private static final Tween TRUMP_TURNING = Tween.over(TableFlow.TRUMP_FLIP_TIME, Ease.LINEAR),
 			TRUMP_LIGHTING = Tween.over(TRUMP_GLOW_IN, Ease.LINEAR).after(TableFlow.TRUMP_FLIP_TIME);
 	private static final float TALLY_X = 22, TALLY_DROP = 12;
-	private static final float HAND_LIFT = 5;
 
 	private final TableScene scene;
 	private final PostProcessor post;
@@ -151,12 +149,8 @@ final class TableDrawing {
 		float p = flow.isDealing() ? 0 : TRUMP_TURNING.progress(flow.trumpTime());
 		float lit = TRUMP_LIGHTING.progress(flow.trumpTime());
 		if (p >= 1 && lit > 0) {
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 			float gw = cw * TRUMP_GLOW_W, gh = ch * TRUMP_GLOW_H;
-			batch.setColor(TRUMP_GLOW.r, TRUMP_GLOW.g, TRUMP_GLOW.b, TRUMP_GLOW.a * lit);
-			batch.draw(assets.glow, x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh);
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			batch.setColor(Color.WHITE);
+			paint.glow(x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh, TRUMP_GLOW, TRUMP_GLOW.a * lit);
 		}
 		Card trump = scene.match().trumpCard();
 		art.flip(trump, x, y, cw, ch, p);
@@ -217,11 +211,7 @@ final class TableDrawing {
 		float cx = left ? layout.panelX(seat) - BAR_GAP - BAR_W / 2 : layout.panelX(seat) + PlayerPanel.W + BAR_GAP + BAR_W / 2;
 		float cy = layout.panelTop(seat) - PlayerPanel.H / 2;
 		if (lit >= MOMENTUM_NOTCHES) {
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			batch.setColor(1f, 0.8f, 0.4f, 0.35f + 0.15f * MathUtils.sin(now * 4));
-			batch.draw(assets.glow, cx - BAR_W * 2, cy - BAR_H * 0.75f, BAR_W * 4, BAR_H * 1.5f);
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			batch.setColor(Color.WHITE);
+			paint.glow(cx - BAR_W * 2, cy - BAR_H * 0.75f, BAR_W * 4, BAR_H * 1.5f, Palette.EMBER, 0.35f + 0.15f * MathUtils.sin(now * 4));
 		}
 		batch.draw(assets.momentum[lit], cx - bw / 2, cy - bh / 2, bw, bh);
 	}

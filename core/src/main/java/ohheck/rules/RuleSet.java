@@ -20,7 +20,7 @@ public final class RuleSet {
 	public static final int MOST_CARDS = 13, USUAL_CARDS = 8;
 	public static final int DUEL_HANDS = 5;
 	public static final RuleSet STANDARD = new RuleSet(HandOrder.UP, USUAL_CARDS, false, false);
-	public static final RuleSet DUEL = new RuleSet(HandOrder.UP, DUEL_HANDS, false, false, true, true);
+	public static final RuleSet DUEL = new RuleSet(HandOrder.UP, DUEL_HANDS, false, false).withShortDeck(true).withMomentum(true);
 
 	private static final String BIG = "big", BLIND = "blind", SHORT = "short", MOMENTUM = "momentum", PICK = "pick",
 			WON = "won", WIDOW = "widow";
@@ -32,11 +32,7 @@ public final class RuleSet {
 	public final boolean bigBids, blindBids, shortDeck, momentum, pickTrump, handsWon, widow;
 
 	public RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids) {
-		this(order, mostCards, bigBids, blindBids, false, false);
-	}
-
-	public RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids, boolean shortDeck, boolean momentum) {
-		this(order, mostCards, bigBids, blindBids, shortDeck, momentum, false, false, false);
+		this(order, mostCards, bigBids, blindBids, false, false, false, false, false);
 	}
 
 	private RuleSet(HandOrder order, int mostCards, boolean bigBids, boolean blindBids, boolean shortDeck, boolean momentum,
@@ -69,6 +65,10 @@ public final class RuleSet {
 
 	public RuleSet withBlindBids(boolean on) {
 		return new RuleSet(order, mostCards, bigBids, on, shortDeck, momentum, pickTrump, handsWon, widow);
+	}
+
+	public RuleSet withShortDeck(boolean on) {
+		return new RuleSet(order, mostCards, bigBids, blindBids, on, momentum, pickTrump, handsWon, widow);
 	}
 
 	public RuleSet withMomentum(boolean on) {

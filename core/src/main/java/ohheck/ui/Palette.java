@@ -11,6 +11,8 @@ public final class Palette {
 	private Palette() {
 	}
 
+	public static final Color EMBER = new Color(1f, 0.8f, 0.4f, 1f), LAMP = new Color(1f, 0.92f, 0.7f, 1f);
+
 	public static final Color SPARKLE = new Color(1f, 0.72f, 0.31f, 1f);
 
 	public static void sparkle(float power, float toWhite, float[] rgb) {

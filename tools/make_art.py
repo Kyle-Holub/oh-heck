@@ -253,11 +253,6 @@ def gild(img, d, W, H, inset, cx, cy, rad, suit):
 
 # ---------------------------------------------------------------- table and UI
 
-def card_blank(out):
-    """A card face with nothing printed on it, for the campaign's chapter and step cards."""
-    downsample(card_base(77), CARD_W, CARD_H).save(os.path.join(out, "card_blank.png"), optimize=True)
-
-
 def card_slot(out):
     """An empty card's place: a dashed outline of a card, for a hand dealt with no trump card."""
     W, H, r, line = CARD_W * SS, CARD_H * SS, 16 * SS, 5 * SS
@@ -814,7 +809,6 @@ if __name__ == "__main__":
     sheet = card_sheet(out)
     card_back(out)
     card_slot(out)
-    card_blank(out)
     chapter_cosmetics(out)
     campaign_art(out)
     chapter_plaques(out)

@@ -75,7 +75,7 @@ public final class Arena {
 			}
 			int s = m.currentSeat();
 			TableView v = m.view(s);
-			if (m.pickingTrump() || m.swapping()) {
+			if (m.beforeBidding()) {
 				m.apply(bots[s].chooseMove(v));
 			} else if (m.phase() == Match.Phase.BIDDING) {
 				if (s == seat) {
@@ -162,7 +162,7 @@ public final class Arena {
 					continue;
 				}
 				int s = m.currentSeat();
-				if (m.pickingTrump() || m.swapping()) {
+				if (m.beforeBidding()) {
 					m.apply(bot.chooseMove(m.view(s)));
 				} else if (m.phase() == Match.Phase.BIDDING) {
 					if (dealtAs.isEmpty()) {
