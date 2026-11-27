@@ -53,9 +53,11 @@ android {
       if (System.getenv('OHHECK_KEYSTORE')) {
         signingConfig signingConfigs.published
       }
-      // strip unused library code (most of the app's size otherwise); names kept for readable crash logs
-      minifyEnabled true
-      shrinkResources true
+      // strip unused library code (most of the app's size otherwise); names kept for readable crash logs.
+      // Dev builds pass -Pshrink=false: R8 is half their build time, and size matters only for releases.
+      def shrink = project.findProperty('shrink') != 'false'
+      minifyEnabled shrink
+      shrinkResources shrink
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
     }
   }

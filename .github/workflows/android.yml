@@ -1,12 +1,13 @@
 name: Android dev build
 
-# On every push to a develop branch: build the APK and desktop jar and publish
-# them straight away as a "dev-NNNN" pre-release (Obtainium picks it up), then
-# play a scripted game and attach its screenshots to the same release.
+# On every push to a develop or release branch: build the APK and publish it straight
+# away as a "dev-NNNN" pre-release (Obtainium picks it up). Side by side, a second job
+# builds the desktop jar, plays a scripted game and attaches both to the same release.
+# Develop builds skip R8 shrinking (half the APK build time); release builds shrink.
 
 on:
   push:
-    branches: ['develop/**']
+    branches: ['develop/**', 'release/**']
   workflow_dispatch:
 
 permissions:
@@ -19,8 +20,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.publish.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,20 +43,19 @@ jobs:
         run: printf 'dev-%04d' ${{ github.run_number }} > assets/build.txt
 
       # (the rules tests run in tests.yml on every push, so they aren't repeated here)
-      # (the desktop jar is built by the screenshots job, so the APK publishes sooner)
       - name: Build APK
         env:
           OHHECK_KEYSTORE_PASSWORD: ${{ secrets.OHHECK_KEYSTORE_PASSWORD }}
-        run: ./gradlew android:assembleRelease -PversionCode=${{ github.run_number }} --stacktrace
+        run: |
+          ./gradlew android:assembleRelease -PversionCode=${{ github.run_number }} \
+            -Pshrink=${{ startsWith(github.ref, 'refs/heads/release/') }} --stacktrace
 
       - name: Publish dev build
-        id: publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           # zero-padded so alphabetical order is build order (Obtainium and GitHub sort by name)
           TAG="dev-$(printf '%04d' ${{ github.run_number }})"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           APK="oh-heck-${TAG}.apk"
           cp android/build/outputs/apk/release/android-release.apk "$APK"
           gh release create "$TAG" "$APK" \
@@ -72,7 +70,6 @@ jobs:
             | sort -r | tail -n +4 | while read -r old; do gh release delete "$old" --yes --cleanup-tag; done
 
   screenshots:
-    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -81,10 +78,9 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           display: 'true'
-          write-cache: 'true'
 
       - name: Label the build
-        run: echo "${{ needs.build.outputs.tag }}" > assets/build.txt
+        run: printf 'dev-%04d' ${{ github.run_number }} > assets/build.txt
 
       - name: Build the desktop jar and play a scripted game
         env:
@@ -97,4 +93,7 @@ jobs:
       - name: Attach the desktop jar and screenshots to the dev build
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ needs.build.outputs.tag }}" build/dist/oh-heck-desktop.jar build/screenshots/*.png
+        run: |
+          TAG=$(cat assets/build.txt)
+          for i in $(seq 60); do gh release view "$TAG" > /dev/null 2>&1 && break; sleep 5; done
+          gh release upload "$TAG" build/dist/oh-heck-desktop.jar build/screenshots/*.png
