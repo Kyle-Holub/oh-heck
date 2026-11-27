@@ -240,11 +240,12 @@ enum TableState {
 		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 			o.drawHandResults(s.stateTime());
 			o.drawHandLabels(LABELS_DROP.progress(s.stateTime()), 1f);
+			o.drawTrickReview();
 		}
 
 		@Override
 		void tap(TableInput in, float x, float y) {
-			in.nextHand();
+			in.tapResults(x, y);
 		}
 
 		@Override
@@ -254,7 +255,8 @@ enum TableState {
 
 		@Override
 		String tag(TableScene s, int hand) {
-			return "handover:" + hand;
+			int review = s.reviewing();
+			return review == OverlayTargets.REVIEW_CLOSED ? "handover:" + hand : "tricks:" + hand + (review >= 0 ? ":" + (review + 1) : "");
 		}
 	},
 	GAME_OVER {

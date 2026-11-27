@@ -389,6 +389,14 @@ public final class Match {
 		}
 	}
 
+	public List<Card> playedThisHand() {
+		return Collections.unmodifiableList(history);
+	}
+
+	public List<Integer> playedThisHandSeats() {
+		return Collections.unmodifiableList(historySeats);
+	}
+
 	public List<Card> lastTrick() {
 		return lastTrick;
 	}

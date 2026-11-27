@@ -108,7 +108,7 @@ final class Autoplay implements YourSeat {
 	}
 
 	private void onResults(float shownFor) {
-		if (shownFor >= RESULTS_WAIT) {
+		if (shownFor >= RESULTS_WAIT && screen.reviewing() == OverlayTargets.REVIEW_CLOSED) {
 			input.tap(screen.layout().w / 2, screen.layout().h / 2);
 		}
 	}

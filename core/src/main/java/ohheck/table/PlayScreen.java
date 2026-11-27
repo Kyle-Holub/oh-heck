@@ -545,6 +545,15 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
+	public int reviewing() {
+		return targets.review();
+	}
+
+	public void reviewTricks(int which) {
+		targets.review(which);
+	}
+
+	@Override
 	public Card hoveredCard() {
 		return input.hovered();
 	}

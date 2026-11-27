@@ -271,7 +271,9 @@ final class TableDrawing {
 		List<Card> order = scene.handOrder();
 		order.clear();
 		order.addAll(m.hand(Seating.YOU));
-		Collections.sort(order, sort.get().order(m.trump()));
+		if (flow.trumpFaceUp()) {
+			Collections.sort(order, sort.get().order(m.trump()));
+		}
 		int n = order.size();
 		TapAreas.sizeTo(scene.handRects(), n);
 		if (n == 0) {

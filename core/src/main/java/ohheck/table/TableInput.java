@@ -137,7 +137,25 @@ final class TableInput {
 	}
 
 	void nextHand() {
+		targets.review(OverlayTargets.REVIEW_CLOSED);
 		actions.nextHand();
+	}
+
+	void tapResults(float x, float y) {
+		int open = targets.review();
+		if (open == OverlayTargets.REVIEW_CLOSED) {
+			if (targets.hit(OverlayTargets.Button.TRICKS, x, y)) {
+				targets.review(OverlayTargets.REVIEW_ALL);
+			} else {
+				nextHand();
+			}
+		} else if (targets.hit(OverlayTargets.Button.REVIEW_CLOSE, x, y)) {
+			targets.review(OverlayTargets.REVIEW_CLOSED);
+		} else if (open >= 0 && targets.hit(OverlayTargets.Button.REVIEW_BACK, x, y)) {
+			targets.review(OverlayTargets.REVIEW_ALL);
+		} else if (open == OverlayTargets.REVIEW_ALL && targets.trickAt(x, y) >= 0) {
+			targets.review(targets.trickAt(x, y));
+		}
 	}
 
 	void tapTurn(float x, float y) {
@@ -230,7 +248,11 @@ final class TableInput {
 	}
 
 	void back() {
-		if (menuOpen) {
+		if (targets.review() >= 0) {
+			targets.review(OverlayTargets.REVIEW_ALL);
+		} else if (targets.review() == OverlayTargets.REVIEW_ALL) {
+			targets.review(OverlayTargets.REVIEW_CLOSED);
+		} else if (menuOpen) {
 			menuOpen = false;
 		} else {
 			openMenu();
