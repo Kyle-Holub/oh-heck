@@ -76,6 +76,9 @@ public class ScreenshotLauncher {
 		if (state.equals("zooming")) {
 			return 3;
 		}
+		if (state.equals("play")) {
+			return 4;
+		}
 		if (state.equals("tossing")) {
 			return 8;
 		}
