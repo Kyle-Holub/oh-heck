@@ -264,7 +264,7 @@ screenshot run).
 |---|---|---|
 | `tests.yml` | every push | rules and table tests, and the desktop build |
 | `preview.yml` | `feature/**`, `refactor/**` | the screenshot run, compared with the newest dev build's, put on a private draft release `preview-N` (newest three kept) with `compare.txt`, before/after pictures of changed shots and `phone-view.png` |
-| `android.yml` | `develop/**` | signed APK published as pre-release `dev-NNNN` (Obtainium picks these up; newest three per branch kept), then the desktop jar and screenshots attached |
+| `android.yml` | `develop/**`, `release/**` | signed APK published as pre-release `dev-NNNN` (Obtainium picks these up; newest three per branch kept); side by side, the desktop jar and screenshots are made and attached. Develop builds skip R8 shrinking (`-Pshrink=false`) to publish in about a minute; release builds shrink |
 | `arena.yml` | by hand only | arena experiments, deliberately kept off the build |
 
 ## Developer tools (`tools/dev`, `.claude`)
@@ -286,7 +286,7 @@ desktop jar into `build/dev`, and find JUnit in a Gradle install or cache):
   `develop/` or `main` is blocked unless the branch passes its tests and its preview's
   `compare.txt` shows nothing `CHANGED`, or the merge message says `[shots-reviewed]`.
 
-`.claude/skills` holds two skills: `verify` (which checks fit a change) and `ship` (branch
+`.claude/skills` holds three skills: `arena` (measuring a bot change), `verify` (which checks fit a change) and `ship` (branch
 to published dev build).
 
 ## Branches and releases
