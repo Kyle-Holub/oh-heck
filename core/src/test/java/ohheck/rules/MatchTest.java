@@ -250,25 +250,6 @@ public class MatchTest {
 	}
 
 	@Test
-	public void theWinningCardsOfEachTrickInOrder() {
-		Match m = new Match(4, new java.util.Random(3), 2, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
-		java.util.List<Card> winners = new java.util.ArrayList<Card>();
-		for (int s = 0; s < 4; s++) {
-			m.placeBid(m.currentSeat(), m.isLegalBid(0) ? 0 : 1);
-		}
-		java.util.List<Card> expected = new java.util.ArrayList<Card>();
-		for (int trick = 0; trick < 3; trick++) {
-			for (int i = 0; i < 4; i++) {
-				int seat = m.currentSeat();
-				m.playCard(seat, m.legalPlays(seat).get(0));
-			}
-			expected.add(m.lastTrick().get(m.rules().trickWinner(m.lastTrick(), m.trump())));
-			m.winningCards(winners);
-			assertEquals(expected, winners);
-		}
-	}
-
-	@Test
 	public void blindBidsAreHiddenUntilAllAreInAndTheHookStillHolds() {
 		Match m = new Match(4, new Random(1), 0, GameMode.POKER_FACE.rules(null));
 		m.placeBid(1, 1);

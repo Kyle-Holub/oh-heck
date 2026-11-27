@@ -14,7 +14,7 @@ import ohheck.ui.Palette;
 import ohheck.ui.TapAreas;
 
 /*
- * The hand's tricks, opened from the score card: each trick's winning card in order, up to seven a row so a
+ * The hand's tricks, opened from the score card's Tricks button: each trick's winning card in order, up to seven a row so a
  * thirteen-card hand fits in two, with who won it; tap one and the whole trick lays out, every card under the
  * name of who played it, the lead marked and the winner lit.
  */
