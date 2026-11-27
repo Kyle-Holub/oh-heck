@@ -1,7 +1,7 @@
 package ohheck.players;
 
 import java.util.Random;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 /*
  * A level of play: a player's skill, and as the Options setting, who sits at your table (each
@@ -9,15 +9,15 @@ import java.util.function.Function;
  */
 public enum Difficulty {
 	EASY("Easy", EasyBot::new, table(meets(1, 0, 0), meets(1, 0, 0), meets(0.6, 0.4, 0)), leans(0.6, 0.8)),
-	NORMAL("Normal", rng -> new NormalBot(), table(meets(0, 1, 0), meets(0, 1, 0), meets(0.2, 0.6, 0.2)), leans(0.2, 0.6)),
-	HARD("Hard", HardBot::new, table(meets(0, 0, 1), meets(0, 0, 1), meets(0, 0, 1)), leans(0.12, 0.4));
+	NORMAL("Normal", (rng, poised) -> new NormalBot(), table(meets(0, 1, 0), meets(0, 1, 0), meets(0.2, 0.6, 0.2)), leans(0.2, 0.6)),
+	HARD("Hard", (rng, poised) -> new HardBot(rng), table(meets(0, 0, 1), meets(0, 0, 1), meets(0, 0, 1)), leans(0.12, 0.4));
 
 	public final String label;
-	private final Function<Random, Bot> bot;
+	private final BiFunction<Random, Boolean, Bot> bot;
 	private final double[][] seats;
 	final double bidLean, playLean;
 
-	Difficulty(String label, Function<Random, Bot> bot, double[][] seats, double[] leans) {
+	Difficulty(String label, BiFunction<Random, Boolean, Bot> bot, double[][] seats, double[] leans) {
 		this.label = label;
 		this.bot = bot;
 		this.seats = seats;
@@ -38,7 +38,11 @@ public enum Difficulty {
 	}
 
 	public Bot bot(Random rng) {
-		return bot.apply(rng);
+		return bot(rng, false);
+	}
+
+	Bot bot(Random rng, boolean poised) {
+		return bot.apply(rng, poised);
 	}
 
 	public int tableSeats() {

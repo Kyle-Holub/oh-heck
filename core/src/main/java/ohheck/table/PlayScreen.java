@@ -453,7 +453,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private void seatPlayers(Seating ids) {
 		players = ids;
 		layout.seat(ids.players());
-		flow.seat(ids, streams.bots);
+		flow.seat(ids, chapter != null && stage != Stage.TABLE ? chapter.championId : -1, streams.bots);
 	}
 
 	private void save() {

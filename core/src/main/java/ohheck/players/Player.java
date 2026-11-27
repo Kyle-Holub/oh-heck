@@ -70,7 +70,11 @@ public final class Player {
 	}
 
 	public Bot bot(Random rng) {
-		return style.bot(level, rng);
+		return style.bot(level, rng, false);
+	}
+
+	public Bot championBot(Random rng) {
+		return style.bot(level, rng, true);
 	}
 
 	private static Difficulty pick(Difficulty setting, int seat, double r) {

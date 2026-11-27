@@ -74,10 +74,11 @@ final class TableFlow {
 		System.arraycopy(chosen, 0, bots, 0, bots.length);
 	}
 
-	void seat(Seating players, Random rng) {
+	void seat(Seating players, int championId, Random rng) {
 		for (int s = 0; s < players.players(); s++) {
 			if (s != Seating.YOU) {
-				bots[s] = players.at(s).bot(new Random(rng.nextLong()));
+				Random seed = new Random(rng.nextLong());
+				bots[s] = players.idAt(s) == championId ? players.at(s).championBot(seed) : players.at(s).bot(seed);
 			}
 		}
 	}

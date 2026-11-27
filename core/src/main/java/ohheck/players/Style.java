@@ -16,15 +16,15 @@ import ohheck.rules.TableView;
 public enum Style {
 	STEADY("By the book") {
 		@Override
-		Bot bot(Difficulty level, Random rng) {
-			return level.bot(rng);
+		Bot bot(Difficulty level, Random rng, boolean poised) {
+			return level.bot(rng, poised);
 		}
 	},
 	THINKER("Thinker") {
 		static final double EFFORT = 3;
 
 		@Override
-		Bot bot(Difficulty level, Random rng) {
+		Bot bot(Difficulty level, Random rng, boolean poised) {
 			return new HardBot(rng, HardBot.SPOIL, EFFORT, true);
 		}
 	},
@@ -53,7 +53,7 @@ public enum Style {
 		static final double SPOIL = 0.8;
 
 		@Override
-		Bot bot(Difficulty level, Random rng) {
+		Bot bot(Difficulty level, Random rng, boolean poised) {
 			return new HardBot(rng, SPOIL);
 		}
 	},
@@ -140,8 +140,8 @@ public enum Style {
 		this.label = label;
 	}
 
-	Bot bot(Difficulty level, Random rng) {
-		return new StyledBot(level.bot(rng), this, level, rng);
+	Bot bot(Difficulty level, Random rng, boolean poised) {
+		return new StyledBot(level.bot(rng, poised), this, level, rng);
 	}
 
 	int bid(int bid, TableView v, StyledBot player) {

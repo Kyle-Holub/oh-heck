@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
@@ -15,6 +16,7 @@ import org.junit.Test;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Rank;
+import ohheck.rules.RuleSet;
 import ohheck.rules.TableView;
 import ohheck.rules.TestCards;
 
@@ -160,6 +162,24 @@ public class BotScenarioTest {
 		double plain = rate(Difficulty.EASY::bot, 200, b -> b.chooseBid(v) >= 3);
 		assertTrue("Nathaniel bid his three trumps " + counter + " of the time, plain Easy " + plain,
 				counter > 0.3 && counter > plain + 0.2);
+	}
+
+	@Test
+	public void anEasySlipNeverClaimsTricksTheCardsCantTake() {
+		Match m = Match.dealt(RuleSet.STANDARD, 1, Arrays.asList(TestCards.cards("KD 2H"), TestCards.cards("9S 4D"),
+				TestCards.cards("QC 7H"), TestCards.cards("AS 5C")), card("8C"));
+		m.placeBid(2, 0);
+		m.placeBid(3, 0);
+		TableView v = m.view(0);
+		assertEquals("Nathaniel bid 2 on a king and a two with no trumps", 0.0, rate(player(2), 2000, b -> b.chooseBid(v) == 2), 0);
+		assertEquals("a plain Easy player bid 2 on it", 0.0, rate(Difficulty.EASY::bot, 2000, b -> b.chooseBid(v) == 2), 0);
+	}
+
+	@Test
+	public void aChampionNeverMisjudgesABid() {
+		TableView v = Position.deal(5, "9S").me(0, "AH KD 7C 4D 2H").view();
+		int steady = new NormalBot().chooseBid(v);
+		assertEquals("the poised Easy bid away from Normal's", 1.0, rate(rng -> Difficulty.EASY.bot(rng, true), 400, b -> b.chooseBid(v) == steady), 0);
 	}
 
 	@Test

@@ -37,7 +37,7 @@ public class TableInputTest {
 		boolean results;
 
 		FakeTable() {
-			flow.seat(Seating.of(4, 5, 6), new Random(1));
+			flow.seat(Seating.of(4, 5, 6), -1, new Random(1));
 		}
 
 		@Override
@@ -363,7 +363,7 @@ public class TableInputTest {
 			Match m = reached(RuleSet.STANDARD, x -> x.phase() == Match.Phase.PLAYING && x.handSize() > 1 && x.currentSeat() == Seating.YOU
 					&& x.hand(Seating.YOU).size() == 1 && x.handIndex() == 1 + (int) (s % 6));
 			TableFlow flow = new TableFlow();
-			flow.seat(Seating.of(4, 5, 6), new Random(1));
+			flow.seat(Seating.of(4, 5, 6), -1, new Random(1));
 			flow.resume(m);
 			int need = m.bid(Seating.YOU) - m.tricksWon(Seating.YOU);
 			boolean decides = need == 0 || need == 1;
