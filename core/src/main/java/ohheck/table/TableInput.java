@@ -66,7 +66,7 @@ final class TableInput {
 		}
 	}
 
-	void touchDragged(float x, float y, float moved) {
+	void touchDragged(float x, float y) {
 		if (hovered == null) {
 			return;
 		}

@@ -26,7 +26,7 @@ first six have no libGDX and test in plain JUnit.
 | `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion, `Twist`), `Campaign` (progress, saved), `TrickShot`, `TrickShots` and `TrickShotPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won), `PracticeRound` and `PracticeCoach` (the scripted round that teaches a new player, dealt with `Match.scripted`) |
 | `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them and the campaign's progress |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
-| `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Timeline`, and `FixedSteps` (the game loop's clock) |
+| `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Kick` (camera shake and zoom) and `FixedSteps` (the game loop's clock) |
 | `ohheck.platform` | The device: `Settings` (preferences) and `RecordPrefs` (where the records are kept), `Audio`, `GameOptions` (how a launcher runs the game) |
 | `ohheck.ui` | What every screen shares: `BaseScreen`, `Painter`, `MenuChrome`, `Assets`, `Palette`, `CardArt`, `PostProcessor`, `Wording`, `Numbers`, `Scroller`, `TapAreas`, `SideTabs` (the tab column of Options and Records) and `GameHost` |
 | `ohheck.fx` | Effects: `Sparks`, `Fireworks`, `Motes`, `Glints`, `FallingCards` |
@@ -93,7 +93,8 @@ first six have no libGDX and test in plain JUnit.
   shape, touch handling (`tap`, `drag`, `touchDown/Up`), `stateTag()` for the screenshot
   run, and steps the screenshot tour after each update (timed by `tourClock()`).
 - `Painter` holds the drawing tools: the fonts (`ui`, `serif`), text placed and aligned,
-  frames and buttons, the gold bid numerals (`numeral`). A screen has one (`paint`);
+  frames and buttons, the gold bid numerals (`numeral`), and soft additive glows (`glow`, with
+  `Palette.EMBER`, `LAMP` or `SPARKLE`). A screen has one (`paint`);
   helpers that draw for a screen take a `Painter`, not the screen. `MenuChrome` draws the
   settings-style header bar with Back (`header`, `HEADER_H`) and section headings
   (`heading`), for the screens that have them.
@@ -104,8 +105,8 @@ first six have no libGDX and test in plain JUnit.
   `Numbers.text` / `signed` for numbers, `Wording`'s cached ordinals and hand results, and
   each screen keeps lines that only change with the game.
 - Motion is described with `ohheck.anim`: a `Tween` is a length, a delay and an `Ease`
-  (`OUT`, `IN`, `SMOOTH`...); `Phases` splits a span into named parts; a `Timeline` is a
-  scene's clock. Name each movement as a constant tween next to what it moves.
+  (`OUT`, `IN`, `SMOOTH`...); `Phases` splits a span into named parts; `Kick` shakes and
+  zooms the camera. Name each movement as a constant tween next to what it moves.
 
 ### The table (`ohheck.table`)
 

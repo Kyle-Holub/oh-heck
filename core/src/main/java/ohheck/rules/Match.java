@@ -175,6 +175,10 @@ public final class Match {
 		return phase == Phase.SWAPPING;
 	}
 
+	public boolean beforeBidding() {
+		return pickingTrump() || swapping();
+	}
+
 	public List<Card> widow() {
 		return Collections.unmodifiableList(widow);
 	}
@@ -375,14 +379,6 @@ public final class Match {
 
 	public List<Card> legalPlays(int seat) {
 		return rules.legalPlays(hands.get(seat), seat == current ? leadSuit() : null);
-	}
-
-	public List<Card> playedThisHand() {
-		return Collections.unmodifiableList(history);
-	}
-
-	public List<Integer> playedThisHandSeats() {
-		return Collections.unmodifiableList(historySeats);
 	}
 
 	public void winningCards(List<Card> into) {

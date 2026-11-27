@@ -3,7 +3,6 @@ package ohheck.screens;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
@@ -41,7 +40,7 @@ public class CampaignScreen extends BaseScreen {
 			RISE_STAGGER = 0.08f, LIFT = 26;
 	private static final String HALL_TITLE = "Four tables, four champions", HALL_LINE = "Win each chapter's duel to open the next door.";
 	private static final String[] ROMAN = { "I", "II", "III", "IV" };
-	private static final float STEP_W = 136, STEP_H = STEP_W * 98 / 73, STEP_GAP = 36, PIP = 16, PIP_GAP = 24, EMBLEM = 46, ICON = 64;
+	private static final float STEP_W = 136, STEP_H = STEP_W * 98 / 73, STEP_GAP = 36, PIP = 16, PIP_GAP = 24, ICON = 64;
 	private static final float GLOW_W = 1.9f, GLOW_H = 1.6f;
 	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f);
 	private static final Tween LAYING = Tween.over(0.35f, Ease.OUT);
@@ -410,11 +409,7 @@ public class CampaignScreen extends BaseScreen {
 
 	private void pourLight(float x, float y, float k) {
 		float a = MathUtils.sin(k * MathUtils.PI), bw = PLAQUE_W * (0.6f + 1.6f * k), bh = h * 1.3f;
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		batch.setColor(Palette.SPARKLE.r, Palette.SPARKLE.g, Palette.SPARKLE.b, 0.55f * a);
-		batch.draw(assets.glow, x + PLAQUE_W / 2 - bw / 2, y + PLAQUE_H / 2 - bh / 2, bw, bh);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
+		paint.glow(x + PLAQUE_W / 2 - bw / 2, y + PLAQUE_H / 2 - bh / 2, bw, bh, Palette.SPARKLE, 0.55f * a);
 	}
 
 	private void pips(float cx, float y, boolean... done) {
@@ -469,12 +464,8 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	private void glow(float x, float y, float cw, float ch) {
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		float gw = cw * GLOW_W, gh = ch * GLOW_H, pulse = 0.8f + 0.2f * MathUtils.sin(shownFor * 2f);
-		batch.setColor(GLOW.r, GLOW.g, GLOW.b, GLOW.a * pulse);
-		batch.draw(assets.glow, x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
+		paint.glow(x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh, GLOW, GLOW.a * pulse);
 	}
 
 	private int rivalAt(float x, float y) {

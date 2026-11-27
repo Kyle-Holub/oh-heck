@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.function.IntPredicate;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -221,11 +220,7 @@ final class TableOverlays {
 		if (since >= VERSUS_SLAM && out < 1) {
 			float slam = VERSUS_IN.progress(since - VERSUS_SLAM);
 			float vsSize = 5.5f - 2.5f * slam;
-			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			paint.batch.setColor(1f, 0.8f, 0.4f, 0.6f * (1 - out));
-			paint.batch.draw(paint.assets.glow, w / 2 - 130, mid - 90, 260, 180);
-			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			paint.batch.setColor(Color.WHITE);
+			paint.glow(w / 2 - 130, mid - 90, 260, 180, Palette.EMBER, 0.6f * (1 - out));
 			paint.text(paint.serif(vsSize, VS_SHADOW, 1 - out), VS, w / 2 + 3, mid + 37, true);
 			paint.text(paint.serif(vsSize, Palette.GOLD_LIGHT, 1 - out), VS, w / 2, mid + 40, true);
 		}
@@ -350,10 +345,7 @@ final class TableOverlays {
 			float tx = layout.panelX(match.dealer()) + DEALER_CHIP_X, ty = layout.panelTop(match.dealer()) - DEALER_CHIP_Y;
 			float x = MathUtils.lerp(cx, tx, fly), y = MathUtils.lerp(cy, ty, fly), size = MathUtils.lerp(DEALER_CHIP, 26, fly);
 			float p = Math.min(1, t / DealerPick.LANDED), angle = DEALER_SPINS * MathUtils.PI * (1 - (1 - p) * (1 - p));
-			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			paint.batch.setColor(1f, 0.8f, 0.45f, 0.5f * (1 - fly));
-			paint.batch.draw(paint.assets.glow, x - size * 1.6f, y - size * 1.6f, size * 3.2f, size * 3.2f);
-			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			paint.glow(x - size * 1.6f, y - size * 1.6f, size * 3.2f, size * 3.2f, Palette.EMBER, 0.5f * (1 - fly));
 			coin(x, y, size, angle);
 		}
 		if (DealerPick.landed(t)) {
@@ -508,11 +500,7 @@ final class TableOverlays {
 	private void podiumCard(int seat, int place, float x, float y, float cw, float ch, float t) {
 		boolean first = place == 1;
 		if (first) {
-			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			paint.batch.setColor(1f, 0.8f, 0.4f, 0.45f + 0.15f * MathUtils.sin(t * 3));
-			paint.batch.draw(paint.assets.glow, x - cw * 0.6f, y - ch * 0.35f, cw * 2.2f, ch * 1.7f);
-			paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			paint.batch.setColor(Color.WHITE);
+			paint.glow(x - cw * 0.6f, y - ch * 0.35f, cw * 2.2f, ch * 1.7f, Palette.EMBER, 0.45f + 0.15f * MathUtils.sin(t * 3));
 		}
 		art.shadow(x, y, cw, ch, 6);
 		paint.batch.draw(paint.assets.campaignFace, x, y, cw, ch);
@@ -576,11 +564,7 @@ final class TableOverlays {
 			if (best) {
 				float locked = since - ROLL_FROM - (Numbers.text(match.score(s)).length() - 1) * ROLL_STEP;
 				if (locked >= 0 && locked < BEST_FLASH) {
-					paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-					paint.batch.setColor(Palette.SPARKLE.r, Palette.SPARKLE.g, Palette.SPARKLE.b, 0.8f * (1 - locked / BEST_FLASH));
-					paint.batch.draw(paint.assets.glow, sx - 90, y - 50, 120, 80);
-					paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-					paint.batch.setColor(Color.WHITE);
+					paint.glow(sx - 90, y - 50, 120, 80, Palette.SPARKLE, 0.8f * (1 - locked / BEST_FLASH));
 				}
 			}
 			if (best) {

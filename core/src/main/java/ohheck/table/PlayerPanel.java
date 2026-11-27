@@ -1,7 +1,6 @@
 package ohheck.table;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
@@ -95,9 +94,6 @@ public final class PlayerPanel {
 			float chip = 26, mid = top - 9 - nameH / 2;
 			paint.batch.draw(paint.assets.dealerIcon, x + 16 + nameW, mid - chip / 2, chip, chip);
 		}
-		if (!seat.scored) {
-			return;
-		}
 		f.setColor(waiting && !seat.turn ? WAIT_SCORE : Palette.GOLD);
 		String score = Numbers.text(seat.score);
 		paint.text(f, score, x + W - 10, top - 9, false);
@@ -118,11 +114,7 @@ public final class PlayerPanel {
 
 	private void gild(SeatState seat, float x, float y) {
 		float iw = iconWidth(seat.handSize), ih = iw * ICON_ASPECT * rows(seat.handSize), w = iconsWidth(seat);
-		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		paint.batch.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, 0.9f * seat.gilt);
-		paint.batch.draw(paint.assets.glow, x - iw, y - ih / 2, w + 2 * iw, ih * 2);
-		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		paint.batch.setColor(Color.WHITE);
+		paint.glow(x - iw, y - ih / 2, w + 2 * iw, ih * 2, Palette.GOLD_LIGHT, 0.9f * seat.gilt);
 	}
 
 	private void crack(SeatState seat, float x, float y) {

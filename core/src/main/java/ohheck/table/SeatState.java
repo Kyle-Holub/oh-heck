@@ -8,7 +8,7 @@ public final class SeatState {
 	String name = "";
 	int score, bid = NO_BID, won, handSize = 1;
 	boolean turn, dealer, doubled;
-	boolean plain, scored = true, cracked;
+	boolean plain, cracked;
 	float pulse, gilt, stamp, flip = 1;
 
 	public SeatState reset() {
@@ -19,7 +19,6 @@ public final class SeatState {
 		turn = dealer = plain = doubled = cracked = false;
 		pulse = gilt = stamp = 0;
 		flip = 1;
-		scored = true;
 		return this;
 	}
 
@@ -73,11 +72,6 @@ public final class SeatState {
 	public SeatState appear(float stamp, float flip) {
 		this.stamp = stamp;
 		this.flip = flip;
-		return this;
-	}
-
-	public SeatState unscored() {
-		scored = false;
 		return this;
 	}
 

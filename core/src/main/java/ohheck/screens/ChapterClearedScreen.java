@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -212,20 +211,12 @@ public class ChapterClearedScreen extends BaseScreen {
 
 	private void glint(float cx, float cy, float cw, float ch, float p) {
 		float gx = cx - cw / 2 + cw * p, gw = cw * 0.35f;
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		batch.setColor(1f, 0.97f, 0.85f, 0.7f * MathUtils.sin(p * MathUtils.PI));
-		batch.draw(assets.glow, gx - gw / 2, cy - ch / 2, gw, ch);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
+		paint.glow(gx - gw / 2, cy - ch / 2, gw, ch, Palette.LAMP, 0.7f * MathUtils.sin(p * MathUtils.PI));
 	}
 
 	private void glow(float cx, float cy, float cw, float ch, float alpha) {
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		float gw = cw * 2.2f, gh = ch * 1.8f, pulse = 0.85f + 0.15f * MathUtils.sin(time * 9f);
-		batch.setColor(GLOW.r, GLOW.g, GLOW.b, GLOW.a * alpha * pulse);
-		batch.draw(assets.glow, cx - gw / 2, cy - gh / 2, gw, gh);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
+		paint.glow(cx - gw / 2, cy - gh / 2, gw, gh, GLOW, GLOW.a * alpha * pulse);
 	}
 
 	private void drawFlash() {

@@ -42,10 +42,6 @@ public final class Painter {
 		return faded(ui(size, color), color, alpha);
 	}
 
-	public BitmapFont uiItalic(float size, Color color) {
-		return sized(assets.fontItalic, size * Assets.UI_BASE, color);
-	}
-
 	public BitmapFont serif(float size) {
 		return serif(size, Color.WHITE);
 	}
@@ -99,6 +95,14 @@ public final class Painter {
 	public void rect(float x, float y, float rw, float rh, Color c) {
 		batch.setColor(c);
 		batch.draw(assets.white, x, y, rw, rh);
+		batch.setColor(Color.WHITE);
+	}
+
+	public void glow(float x, float y, float w, float h, Color c, float alpha) {
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(c.r, c.g, c.b, alpha);
+		batch.draw(assets.glow, x, y, w, h);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		batch.setColor(Color.WHITE);
 	}
 

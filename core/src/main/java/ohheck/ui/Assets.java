@@ -24,7 +24,7 @@ public final class Assets implements Disposable {
 	public static final float UI_BASE = 16f / 42f, SERIF_BASE = 16f / 52f;
 
 	public Texture table;
-	public final Texture cardSheet, cardSheetBlur, cardSlot, cardBlank, badge, padlock;
+	public final Texture cardSheet, cardSheetBlur, cardSlot, badge, padlock;
 	public final Texture[] momentum = new Texture[3];
 	public final Texture campaignFace, plaque, plaqueLocked, stepTable, stepShots, stepDuel, pipOn, pipOff;
 	public final Texture menuContinue, menuCampaign, menuCustom, menuScores;
@@ -43,7 +43,7 @@ public final class Assets implements Disposable {
 	private final TextureRegion[] digits = new TextureRegion[11];
 	public final Texture white;
 	public final Texture stroke;
-	public final BitmapFont font, fontItalic;
+	public final BitmapFont font;
 	public final BitmapFont serif;
 
 	private final TextureRegion[][] faces = new TextureRegion[4][13];
@@ -81,7 +81,6 @@ public final class Assets implements Disposable {
 			emblems[s.ordinal()] = mipmapped("images/emblem_" + s.name().toLowerCase() + ".png");
 		}
 		cardSlot = mipmapped("images/card_slot.png");
-		cardBlank = mipmapped("images/card_blank.png");
 		cardSheetBlur = mipmapped("images/cards_blur.png");
 		shadow = linear(own(new Texture(Gdx.files.internal("images/shadow.png"))));
 		glow = mipmapped("images/glow.png");
@@ -116,7 +115,6 @@ public final class Assets implements Disposable {
 		white = own(whitePixel());
 		stroke = own(strokeTexture(32, 160));
 		font = bitmapFont("ui");
-		fontItalic = bitmapFont("ui_italic");
 		serif = bitmapFont("serif");
 	}
 	private void cutDigits() {
