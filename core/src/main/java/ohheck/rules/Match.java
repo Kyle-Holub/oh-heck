@@ -381,14 +381,6 @@ public final class Match {
 		return rules.legalPlays(hands.get(seat), seat == current ? leadSuit() : null);
 	}
 
-	public void winningCards(List<Card> into) {
-		into.clear();
-		for (int start = 0; start + players <= history.size(); start += players) {
-			List<Card> played = history.subList(start, start + players);
-			into.add(played.get(rules.trickWinner(played, trump())));
-		}
-	}
-
 	public List<Card> playedThisHand() {
 		return Collections.unmodifiableList(history);
 	}

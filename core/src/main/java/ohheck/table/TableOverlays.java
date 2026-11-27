@@ -21,7 +21,6 @@ import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Suit;
-import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.CardWipe;
 import ohheck.ui.Numbers;
@@ -46,8 +45,7 @@ final class TableOverlays {
 	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
 	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
-	private static final float WON_CARD_SCALE = 0.7f, WON_CARD_GAP = 8, WON_CARDS_RISE = 12, WON_CARDS_INSET = 18,
-			TAP_NOTE_GAP = 16;
+	private static final float TRICKS_RISE = 12, TRICKS_INSET = 18, TAP_NOTE_GAP = 16;
 	private static final float GAME_OVER_LIFT = 6, GAME_OVER_ART_DROP = 50, GAME_OVER_ART_SCALE = 0.66f,
 			GAME_OVER_RESULT_DROP = 94, GAME_OVER_ROWS_DROP = 130, GAME_OVER_PLACE_X = 60, GAME_OVER_NAME_X = 120,
 			GAME_OVER_SCORE_FROM_RIGHT = 140, NEW_BEST_FROM_RIGHT = 128, END_BUTTONS_RISE = 16, END_BUTTONS_GAP = 16;
@@ -87,7 +85,6 @@ final class TableOverlays {
 
 	void setMatch(Match match) {
 		this.match = match;
-		winningCardsOf = -1;
 	}
 
 	void hint(String s) {
@@ -417,9 +414,8 @@ final class TableOverlays {
 
 	void drawHandResults(float t) {
 		float py = scoreCard.draw(layout.w / 2, layout.centreY(), match.suddenDeath() ? SUDDEN_DEATH : Wording.handResults(match.handIndex() + 1), resultRows(), 1f, t);
-		drawWinningCards(py + WON_CARDS_RISE);
-		float right = layout.w / 2 + ScoreCard.W / 2 - WON_CARDS_INSET;
-		paint.button(targets.button(OverlayTargets.Button.TRICKS), TRICKS, right - TRICKS_W / 2, py + WON_CARDS_RISE, TRICKS_W, TRICKS_H,
+		float right = layout.w / 2 + ScoreCard.W / 2 - TRICKS_INSET;
+		paint.button(targets.button(OverlayTargets.Button.TRICKS), TRICKS, right - TRICKS_W / 2, py + TRICKS_RISE, TRICKS_W, TRICKS_H,
 				paint.assets.buttonAlt);
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
 		Rectangle win = targets.button(OverlayTargets.Button.FORCE_WIN);
@@ -434,27 +430,9 @@ final class TableOverlays {
 		}
 	}
 
-	private void drawWinningCards(float y) {
-		if (winningCardsOf != match.handIndex()) {
-			match.winningCards(winningCards);
-			winningCardsOf = match.handIndex();
-		}
-		float cw = Assets.CARD_W * WON_CARD_SCALE, ch = Assets.CARD_H * WON_CARD_SCALE;
-		int n = winningCards.size();
-		float room = ScoreCard.W - 2 * WON_CARDS_INSET - TRICKS_W - WON_CARD_GAP, left = layout.w / 2 - ScoreCard.W / 2 + WON_CARDS_INSET;
-		float step = n > 1 ? Math.min(cw + WON_CARD_GAP, (room - cw) / (n - 1)) : 0;
-		float x = left + (room - (cw + step * (n - 1))) / 2;
-		for (Card c : winningCards) {
-			art.shadow(x, y, cw, ch, 2);
-			paint.batch.draw(paint.assets.face(c), x, y, cw, ch);
-			x += step;
-		}
-	}
 
 	private static final String TAP_NOTE = "Tap to continue", TRICKS = "Tricks";
 	private static final float TRICKS_W = 104, TRICKS_H = 36;
-	private final List<Card> winningCards = new ArrayList<Card>();
-	private int winningCardsOf = -1;
 
 	private final List<ScoreCard.Row> resultRows = new ArrayList<ScoreCard.Row>();
 	private Match resultsOf;

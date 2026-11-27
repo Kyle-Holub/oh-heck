@@ -157,7 +157,7 @@ first six have no libGDX and test in plain JUnit.
     the ending (the shower, or fireworks if you won, then the scores) and is tested in
     `GameEndTest`.
 - Your hand is dealt in the order it comes off the deck and ripples into sorted order once trump turns.
-  On the hand-results card a Tricks button opens `TrickReview`: each trick's winning card in order (seven a
+  On the hand-results card (scores only) a Tricks button opens `TrickReview`: each trick's winning card in order (seven a
   row, so thirteen fit), and tapping one lays out the whole trick with who played each card; its open state
   lives in `OverlayTargets` (`review`).
 - `PlayerPanel` draws a player's placard from a `SeatState` (name, score, bid, tricks,
