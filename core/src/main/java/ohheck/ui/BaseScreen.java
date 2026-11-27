@@ -67,7 +67,7 @@ public abstract class BaseScreen extends ScreenAdapter {
 	protected void touchUp(float x, float y) {
 		if (isTap(x, y)) {
 			if (paint.pressed(x, y)) {
-				game.audio().press(paint.heralded(x, y));
+				game.audio().press(paint.pressedBack(x, y));
 			}
 			tap(x, y);
 		}
@@ -154,6 +154,7 @@ public abstract class BaseScreen extends ScreenAdapter {
 		@Override
 		public boolean keyDown(int keycode) {
 			if (keycode == Input.Keys.BACK || keycode == Input.Keys.ESCAPE) {
+				game.audio().press(true);
 				back();
 				return true;
 			}

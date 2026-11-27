@@ -20,7 +20,6 @@ public final class Audio implements Disposable {
 		PLAY_CARD("sfx/playCard.mp3", 1f),
 		WIN("sfx/win.mp3", 0.25f),
 		LOSE("sfx/lose.mp3", 1f),
-		CLINK("sfx/clink.wav", 0.4f),
 		TANKARD("sfx/tankard.wav", 0.4f),
 		THUMP("sfx/thump.wav", 0.6f),
 		KNOCK("sfx/knock.wav", 0.6f),
@@ -133,9 +132,9 @@ public final class Audio implements Disposable {
 		muffled.setVolume(MUSIC_MUFFLED * muffle);
 	}
 
-	public void press(boolean main) {
+	public void press(boolean back) {
 		if (settings.buttonSounds()) {
-			play(main ? Effect.TANKARD : Effect.CLINK);
+			play(back ? Effect.TANKARD : Effect.WHOOSH);
 		}
 		buzz(Buzz.TAP);
 	}

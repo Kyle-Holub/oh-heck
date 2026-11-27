@@ -203,6 +203,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public void refuseBid(int b) {
 		overlays.refuseBid(b);
+		game.audio().play(Audio.Effect.TANKARD);
 	}
 
 	@Override

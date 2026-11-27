@@ -12,7 +12,7 @@ import ohheck.ui.Assets;
 
 /*
  * The back stack of screens, and the change between them: a dark band narrowing away like a card turned on
- * its edge, with a soft whoosh.
+ * its edge.
  */
 final class Screens {
 
@@ -46,9 +46,6 @@ final class Screens {
 
 	private void show(Screen s) {
 		if (s != game.getScreen()) {
-			if (game.getScreen() != null) {
-				game.audio().play(Audio.Effect.WHOOSH);
-			}
 			sinceChange = 0;
 		}
 		game.setScreen(s);
