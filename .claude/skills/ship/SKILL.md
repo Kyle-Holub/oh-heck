@@ -1,7 +1,6 @@
 ---
 name: ship
 description: Take a finished Oh Heck! change from a feature/ or refactor/ branch to a published dev build - verify, push, review the preview screenshots, merge into develop, confirm the APK and desktop jar. Use when the user asks to ship, merge, release or "get it on my phone".
-disable-model-invocation: true
 ---
 
 # Ship a change

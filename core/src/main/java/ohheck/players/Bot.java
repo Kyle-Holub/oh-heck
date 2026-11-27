@@ -12,7 +12,9 @@ import ohheck.rules.TableView;
 /*
  * A computer player. It decides from a TableView, so it knows only what a person in its seat
  * would. Whatever its level or habit, it never bids zero holding the trump ace, a sure trick:
- * every bot's bid passes through neverZeroWithTheTrumpAce.
+ * every bot's bid passes through neverZeroWithTheTrumpAce. A misjudged or habit-leaned bid stays believable:
+ * within reach of what the cards are worth, never claiming tricks a hand plainly can't take, or
+ * giving up ones it plainly holds.
  */
 public interface Bot {
 
@@ -74,6 +76,16 @@ public interface Bot {
 			}
 		}
 		return best;
+	}
+
+	double BELIEVABLE_REACH = 1.5;
+
+	static boolean believable(TableView v, int bid) {
+		double worth = 0;
+		for (Card c : v.hand()) {
+			worth += BidTable.chance(v, c);
+		}
+		return Math.abs(bid - worth) < BELIEVABLE_REACH;
 	}
 
 	static int neverZeroWithTheTrumpAce(TableView v, int bid) {

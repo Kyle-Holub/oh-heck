@@ -10,25 +10,29 @@ import ohheck.rules.TableView;
 /*
  * A Normal player that loses count, misjudges its bid now and then, and plays loosely: often
  * another card that does the same job (another winner, another loser), never a careless one.
+ * A misjudged bid stays believable (see Bot). A poised player, a champion in their own games,
+ * never misjudges a bid.
  */
 final class EasyBot implements Bot {
 
-	private static final double BID_SLIP = 0.7, LOOSE_PLAY = 0.5;
+	private static final double BID_SLIP = 0.75, LOOSE_PLAY = 0.5;
 	private static final int TRICKS_REMEMBERED = 0;
 
 	private final NormalBot normal = new NormalBot();
 	private final Random rng;
+	private final boolean poised;
 
-	EasyBot(Random rng) {
+	EasyBot(Random rng, boolean poised) {
 		this.rng = rng;
+		this.poised = poised;
 	}
 
 	@Override
 	public int chooseBid(TableView v) {
 		int b = normal.chooseBid(v);
-		if (rng.nextDouble() < BID_SLIP) {
+		if (rng.nextDouble() < BID_SLIP && !poised) {
 			int off = b + (rng.nextBoolean() ? 1 : -1);
-			if (off >= 0 && off <= v.handSize() && v.isLegalBid(off)) {
+			if (off >= 0 && off <= v.handSize() && v.isLegalBid(off) && Bot.believable(v, off)) {
 				return Bot.neverZeroWithTheTrumpAce(v, off);
 			}
 		}
