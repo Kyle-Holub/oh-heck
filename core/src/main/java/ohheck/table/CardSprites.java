@@ -21,7 +21,9 @@ import ohheck.ui.Palette;
 
 /*
  * Every card on the table: sets each sprite's target from the game each frame, then draws them
- * back to front. A trump cutting another suit's lead trails gold, the card under your finger rises and tilts, and a card you may not play shakes its head.
+ * back to front. A trump cutting another suit's lead trails gold; your hand arrives in the order it was dealt
+ * and ripples into order once trump turns (or is picked); the card under your finger rises and tilts; and a
+ * card you may not play shakes its head.
  */
 final class CardSprites {
 
@@ -40,7 +42,8 @@ final class CardSprites {
 	private static final float RAKE_STAGGER = 0.03f, RIPPLE_STAGGER = 0.04f, RIPPLE_ARC = 14, RIPPLE_WINDOW = 0.3f;
 	private static final Tween RIPPLE = Tween.over(0.3f, Ease.OUT);
 	private Suit shownPick;
-	private float pickedAt = -99;
+	private boolean wasSorted;
+	private float reorderedAt = -99;
 
 	private final CardSprite[] sprites = new CardSprite[Card.COUNT];
 	private final int[] layer = new int[Card.COUNT], order = new int[Card.COUNT];
@@ -139,11 +142,13 @@ final class CardSprites {
 		int n = order.size();
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
 		boolean myTurn = s.humanCanPlay();
-		if (m.pickedTrump() != shownPick) {
+		boolean sorted = flow.trumpFaceUp();
+		if (m.pickedTrump() != shownPick || sorted && !wasSorted) {
 			shownPick = m.pickedTrump();
-			pickedAt = shownPick == null ? -99 : now;
+			reorderedAt = now;
 		}
-		boolean rippling = now - pickedAt < RIPPLE_WINDOW;
+		wasSorted = sorted;
+		boolean rippling = now - reorderedAt < RIPPLE_WINDOW;
 		List<Card> legal = myTurn ? m.legalPlays(Seating.YOU) : java.util.Collections.<Card>emptyList();
 		for (int i = 0; i < n; i++) {
 			Card c = order.get(i);

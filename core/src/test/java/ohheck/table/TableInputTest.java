@@ -380,4 +380,25 @@ public class TableInputTest {
 		flow.resume(early);
 		assertFalse("not before the last trick", flow.bidHangsOnLastTrick());
 	}
+
+	@Test
+	public void theTricksButtonOpensTheReviewAndATapOnATrickOpensIt() {
+		Match m = reached(RuleSet.STANDARD, x -> x.phase() == Match.Phase.HAND_OVER && x.handSize() > 2);
+		t.flow.resume(m);
+		t.pretend = TableState.RESULTS;
+		t.targets.button(OverlayTargets.Button.TRICKS).set(500, 100, 100, 36);
+		t.input.tap(550, 118);
+		assertEquals(OverlayTargets.REVIEW_ALL, t.targets.review());
+		TapAreas.sizeTo(t.targets.tricks(), 2);
+		t.targets.tricks().get(1).set(300, 300, 80, 110);
+		t.input.tap(340, 350);
+		assertEquals(1, t.targets.review());
+		t.targets.button(OverlayTargets.Button.REVIEW_BACK).set(100, 50, 150, 40);
+		t.input.tap(170, 70);
+		assertEquals(OverlayTargets.REVIEW_ALL, t.targets.review());
+		t.targets.button(OverlayTargets.Button.REVIEW_CLOSE).set(1200, 50, 150, 40);
+		t.input.tap(1270, 70);
+		assertEquals(OverlayTargets.REVIEW_CLOSED, t.targets.review());
+		assertEquals("nothing moved on while reviewing", Match.Phase.HAND_OVER, m.phase());
+	}
 }

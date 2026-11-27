@@ -60,6 +60,7 @@ final class TableOverlays {
 	private final CardArt art;
 	private final BidPopup bidPopup;
 	private final ScoreCard scoreCard;
+	private final TrickReview review;
 	private final IntPredicate legalBid = this::bidOk;
 	private String hint = "";
 	private float hintTime;
@@ -81,6 +82,7 @@ final class TableOverlays {
 		this.art = art;
 		this.bidPopup = new BidPopup(paint, art);
 		this.scoreCard = new ScoreCard(paint);
+		this.review = new TrickReview(paint, art, scene, layout, targets);
 	}
 
 	void setMatch(Match match) {
@@ -416,11 +418,20 @@ final class TableOverlays {
 	void drawHandResults(float t) {
 		float py = scoreCard.draw(layout.w / 2, layout.centreY(), match.suddenDeath() ? SUDDEN_DEATH : Wording.handResults(match.handIndex() + 1), resultRows(), 1f, t);
 		drawWinningCards(py + WON_CARDS_RISE);
+		float right = layout.w / 2 + ScoreCard.W / 2 - WON_CARDS_INSET;
+		paint.button(targets.button(OverlayTargets.Button.TRICKS), TRICKS, right - TRICKS_W / 2, py + WON_CARDS_RISE, TRICKS_W, TRICKS_H,
+				paint.assets.buttonAlt);
 		BitmapFont s = paint.ui(1f, Palette.GOLD);
 		Rectangle win = targets.button(OverlayTargets.Button.FORCE_WIN);
 		Rectangle menu = win.width > 0 ? win : targets.button(OverlayTargets.Button.MENU);
 		paint.glyphs.setText(s, TAP_NOTE);
 		paint.text(s, TAP_NOTE, menu.x - TAP_NOTE_GAP, menu.y + (menu.height + paint.glyphs.height) / 2, false);
+	}
+
+	void drawTrickReview() {
+		if (targets.review() != OverlayTargets.REVIEW_CLOSED) {
+			review.draw();
+		}
 	}
 
 	private void drawWinningCards(float y) {
@@ -430,9 +441,9 @@ final class TableOverlays {
 		}
 		float cw = Assets.CARD_W * WON_CARD_SCALE, ch = Assets.CARD_H * WON_CARD_SCALE;
 		int n = winningCards.size();
-		float room = ScoreCard.W - 2 * WON_CARDS_INSET;
+		float room = ScoreCard.W - 2 * WON_CARDS_INSET - TRICKS_W - WON_CARD_GAP, left = layout.w / 2 - ScoreCard.W / 2 + WON_CARDS_INSET;
 		float step = n > 1 ? Math.min(cw + WON_CARD_GAP, (room - cw) / (n - 1)) : 0;
-		float x = (layout.w - (cw + step * (n - 1))) / 2;
+		float x = left + (room - (cw + step * (n - 1))) / 2;
 		for (Card c : winningCards) {
 			art.shadow(x, y, cw, ch, 2);
 			paint.batch.draw(paint.assets.face(c), x, y, cw, ch);
@@ -440,7 +451,8 @@ final class TableOverlays {
 		}
 	}
 
-	private static final String TAP_NOTE = "Tap to continue";
+	private static final String TAP_NOTE = "Tap to continue", TRICKS = "Tricks";
+	private static final float TRICKS_W = 104, TRICKS_H = 36;
 	private final List<Card> winningCards = new ArrayList<Card>();
 	private int winningCardsOf = -1;
 

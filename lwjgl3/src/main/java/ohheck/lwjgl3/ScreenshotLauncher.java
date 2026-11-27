@@ -42,7 +42,7 @@ import ohheck.table.PlayScreen;
 public class ScreenshotLauncher {
 
 	private static final String[] WANTED = { "intro", "title", "play", "setup", "highscores", "statistics", "badges", "options", "players", "campaign", "brief:chapter", "chapter:1", "brief:table", "shot:lone-ace", "cleared", "tip:welcome", "tip:trump", "tip:bid", "picking", "shuffle:1", "deal:3", "bid:3",
-			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "play:8:",
+			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "tricks:7", "tricks:7:", "play:8:",
 			"tossing", "gameover" };
 
 	private static String[] only(String[] prefixes) {
@@ -245,6 +245,9 @@ public class ScreenshotLauncher {
 				then("tip:" + tip, 2.0f, s -> ((PlayScreen) s).dismissTip());
 			}
 			then("tip:bid", 2.0f, s -> game.newGame());
+			then("handover:7", 0.6f, s -> ((PlayScreen) s).reviewTricks(-1));
+			then("tricks:7", 0.6f, s -> ((PlayScreen) s).reviewTricks(1));
+			then("tricks:7:2", 0.6f, s -> ((PlayScreen) s).reviewTricks(-2));
 		}
 
 		private void then(String state, float seconds, Consumer<Screen> action) {
