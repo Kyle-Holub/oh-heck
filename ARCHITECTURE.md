@@ -291,10 +291,12 @@ to published dev build).
 
 ## Branches and releases
 
-Work happens on `feature/…` or `refactor/…` branches (previewed), and is merged into
-`develop/alpha-X.Y.Z` (published as dev builds). A release is a `release/alpha-X.Y.Z` branch
-cut from develop, with develop merged into `main`. Then the next `develop/` branch starts,
-with `OhHeckGame.VERSION` bumped.
+Each version has one working branch, `feature/alpha-X.Y.Z` (previewed), reused for every
+change; each finished change is merged into `develop/alpha-X.Y.Z` (published as dev builds).
+A release is a `release/alpha-X.Y.Z` branch cut from develop (a shrunk build), merged into
+`main`, so `main` is the newest release. Then the next version's `develop/` and `feature/`
+branches start, with `OhHeckGame.VERSION` bumped. Builds don't make branches: each is a
+`dev-NNNN` pre-release (newest three kept) and each preview a draft `preview-N` (newest three).
 
 ## The arena
 
