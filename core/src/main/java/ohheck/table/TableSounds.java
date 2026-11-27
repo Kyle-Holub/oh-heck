@@ -12,8 +12,8 @@ import ohheck.rules.Suit;
 /*
  * The table's sounds and buzzes. A card's sound waits for it to land (heavier for yours, deeper for a trump
  * cutting another suit's lead); the rest come as the table moves on: a knock when your turn comes, cards
- * raked to the winner, a coin for a made bid, the hearth crackling as momentum builds, and the music easing
- * down while your bid hangs on the last trick. Your bid and a picked trump are pressed home like wax seals,
+ * raked to the winner, a coin for a made bid, the hearth crackling as momentum builds, and the music muffled
+ * while your bid hangs on the last trick. Your bid and a picked trump are pressed home like wax seals,
  * blind bids are turned over with a riffle, a rival's swap with the widow whispers, and sudden death opens
  * on a drum. The score card counts up with coins ticking onto the pile, faster as it goes.
  */

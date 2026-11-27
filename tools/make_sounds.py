@@ -5,9 +5,14 @@ like a tavern, quietly. Most buttons clink like two glasses touching; the button
 (Play, Continue, Teach me) sound like a tankard set down on a wooden table. The table's accents keep to
 the same old-tavern palette: wood, felt, paper, coins, wax, brass, a drum and a creaking door.
 
-Usage: python3 tools/make_sounds.py [output dir, default assets/sfx]   (needs numpy)
+It also makes the muffled copy of the music (assets/music/backTrack_muffled.mp3: the track low-passed, as if
+heard through a wall), which the game crossfades to while your bid hangs on the last trick. That step needs
+ffmpeg.
+
+Usage: python3 tools/make_sounds.py [output dir, default assets/sfx]   (needs numpy, and ffmpeg for the music)
 """
 import os
+import subprocess
 import sys
 import wave
 
@@ -205,6 +210,18 @@ def write(path, samples):
         w.writeframes(data)
 
 
+def muffled_music(music_dir):
+    """The music low-passed twice at 700 Hz, so the bass and warmth stay and the detail goes, the same length
+    and rate as the original so the game can switch between them at the same moment; mono at a low bitrate,
+    since nothing it keeps needs more."""
+    source = os.path.join(music_dir, "backTrack.mp3")
+    target = os.path.join(music_dir, "backTrack_muffled.mp3")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", source, "-af", "lowpass=f=700,lowpass=f=700",
+                    "-ar", "44100", "-ac", "1", "-b:a", "32k", "-map_metadata", "-1", "-fflags", "+bitexact",
+                    "-flags:a", "+bitexact", target], check=True)
+    print("wrote", target)
+
+
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/sfx"
     os.makedirs(out, exist_ok=True)
@@ -215,3 +232,4 @@ if __name__ == "__main__":
                           ("whoosh.wav", whoosh()), ("latch.wav", latch())):
         write(os.path.join(out, name), samples)
         print("wrote", os.path.join(out, name))
+    muffled_music(os.path.join(os.path.dirname(out), "music"))

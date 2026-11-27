@@ -8,6 +8,11 @@ import com.badlogic.gdx.utils.Timer;
 
 import ohheck.util.Log;
 
+/*
+ * The game's sounds, music and buzzes. libGDX can't filter sound as it plays, so the music has a second,
+ * low-passed copy (made by tools/make_sounds.py): ducking crossfades to it at the same point in the track,
+ * which makes the music sound muffled, as if heard through a wall, until it crossfades back.
+ */
 public final class Audio implements Disposable {
 
 	public enum Effect {
@@ -45,7 +50,8 @@ public final class Audio implements Disposable {
 
 	private final Settings settings;
 	private final Sound[] sounds = new Sound[Effect.values().length];
-	private Music music;
+	private Music music, muffled;
+	private float muffle, muffleTarget;
 
 	public Audio(Settings settings) {
 		this.settings = settings;
@@ -60,6 +66,9 @@ public final class Audio implements Disposable {
 			music = Gdx.audio.newMusic(Gdx.files.internal("music/backTrack.mp3"));
 			music.setLooping(true);
 			music.setVolume(MUSIC_VOLUME);
+			muffled = Gdx.audio.newMusic(Gdx.files.internal("music/backTrack_muffled.mp3"));
+			muffled.setLooping(true);
+			muffled.setVolume(0);
 		} catch (RuntimeException ex) {
 			Log.warn("Audio", "Couldn't load music", ex);
 		}
@@ -104,9 +113,24 @@ public final class Audio implements Disposable {
 	}
 
 	public void duck(boolean on) {
-		if (music != null) {
-			music.setVolume(on ? MUSIC_DUCKED : MUSIC_VOLUME);
+		muffleTarget = on ? 1 : 0;
+	}
+
+	public void update(float dt) {
+		if (music == null || muffled == null || muffle == muffleTarget) {
+			return;
 		}
+		float step = dt / MUFFLE_FADE;
+		muffle = muffleTarget > muffle ? Math.min(muffleTarget, muffle + step) : Math.max(muffleTarget, muffle - step);
+		if (muffle > 0 && !muffled.isPlaying() && music.isPlaying()) {
+			muffled.setPosition(music.getPosition());
+			muffled.play();
+		}
+		if (muffle == 0 && muffled.isPlaying()) {
+			muffled.pause();
+		}
+		music.setVolume(MUSIC_VOLUME * (1 - muffle));
+		muffled.setVolume(MUSIC_MUFFLED * muffle);
 	}
 
 	public void press(boolean main) {
@@ -116,7 +140,7 @@ public final class Audio implements Disposable {
 		buzz(Buzz.TAP);
 	}
 
-	private static final float MUSIC_VOLUME = 0.6f, MUSIC_DUCKED = 0.25f;
+	private static final float MUSIC_VOLUME = 0.6f, MUSIC_MUFFLED = 0.22f, MUFFLE_FADE = 0.5f;
 
 	public void startMusic() {
 		if (music == null) {
@@ -126,8 +150,15 @@ public final class Audio implements Disposable {
 			if (!music.isPlaying()) {
 				music.play();
 			}
+			if (muffled != null && muffle > 0 && !muffled.isPlaying()) {
+				muffled.setPosition(music.getPosition());
+				muffled.play();
+			}
 		} else {
 			music.pause();
+			if (muffled != null) {
+				muffled.pause();
+			}
 		}
 	}
 
@@ -140,6 +171,9 @@ public final class Audio implements Disposable {
 		}
 		if (music != null) {
 			music.dispose();
+		}
+		if (muffled != null) {
+			muffled.dispose();
 		}
 	}
 }
