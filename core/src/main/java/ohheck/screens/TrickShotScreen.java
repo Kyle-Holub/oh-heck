@@ -40,8 +40,8 @@ public class TrickShotScreen extends BaseScreen {
 	private static final float YOURS = 1.0f, THEIRS = 0.72f, TRICK = 0.75f, PILE = 0.3f;
 	private static final float OTHER_STEP = 0.55f, TRICK_HOLD = 0.8f, GATHER = 0.35f;
 	private static final float TOP_HAND_Y = 320, SIDE_HAND_DROP = 20, TRICK_DROP = 24, LABEL_GAP = 16, LIFT = 10;
-	private static final float BUTTON_W = 120, BUTTON_H = 40, PLACARD_H = 50, PLACARD_PAD = 9, TARGET_FADE = 0.55f;
-	private static final float INTRO_HOLD = 2.2f, INTRO_W = 560, INTRO_H = 150;
+	private static final float BUTTON_W = 170, BUTTON_H = 40, PLACARD_H = 50, PLACARD_PAD = 9, TARGET_FADE = 0.55f;
+	private static final float INTRO_HOLD = 2.2f, INTRO_W = 660, INTRO_H = 150;
 	private static final Tween GLIDE = Tween.over(0.28f, Ease.OUT), BANNER_IN = Tween.over(0.4f, Ease.OUT),
 			INTRO_IN = Tween.over(0.3f, Ease.OUT), INTRO_OUT = Tween.over(0.5f, Ease.IN);
 
@@ -52,8 +52,7 @@ public class TrickShotScreen extends BaseScreen {
 	private final SeatState placardState = new SeatState();
 	private final CardArt art;
 	private final Sparks sparks = new Sparks();
-	private final Rectangle backButton = new Rectangle(), restartButton = new Rectangle(),
-			nextButton = new Rectangle();
+	private final Rectangle backButton = new Rectangle(), restartButton = new Rectangle();
 	private final List<Rectangle> handRects = new ArrayList<Rectangle>(), bidRects = new ArrayList<Rectangle>();
 	private final float[] fromX = new float[Card.COUNT], fromY = new float[Card.COUNT], fromW = new float[Card.COUNT],
 			toX = new float[Card.COUNT], toY = new float[Card.COUNT], toW = new float[Card.COUNT], movedAt = new float[Card.COUNT];
@@ -154,7 +153,7 @@ public class TrickShotScreen extends BaseScreen {
 	@Override
 	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
-		float zoomIn = finalAt >= 0 && play.solved() ? MathUtils.sin(MathUtils.clamp((time - finalAt) / SLOW_SPAN, 0, 1) * MathUtils.PI) : 0;
+		float zoomIn = slowing() ? MathUtils.sin((time - finalAt) / SLOW_SPAN * MathUtils.PI) : 0;
 		kickZoom = 1 - SLOW_ZOOM * zoomIn;
 		kickY = -TRICK_DROP * zoomIn;
 		begin();
@@ -340,11 +339,10 @@ public class TrickShotScreen extends BaseScreen {
 			float wobble = solved ? 0 : MathUtils.sin((time - overAt) * 22) * WOBBLE * (1 - k);
 			paint.centred(paint.serif(1.6f + 0.4f * (1 - a), solved ? Palette.GOLD_LIGHT : Palette.RED, a),
 					solved ? "Shot made!" : "Not this time", w / 2 + wobble, h / 2 - TRICK_DROP + 12);
-			paint.button(nextButton, solved ? nextLabel() : "Try again", x, y + BUTTON_H + 10, BUTTON_W, BUTTON_H, assets.button);
+			paint.button(restartButton, solved ? nextLabel() : "Try again", x, y, BUTTON_W, BUTTON_H, assets.button);
 		} else {
-			nextButton.set(0, 0, 0, 0);
+			paint.button(restartButton, "Restart", x, y, BUTTON_W, BUTTON_H, assets.buttonAlt);
 		}
-		paint.button(restartButton, "Restart", x, y, BUTTON_W, BUTTON_H, assets.buttonAlt);
 	}
 
 	private TrickShot nextTrickShot() {
@@ -363,17 +361,17 @@ public class TrickShotScreen extends BaseScreen {
 			introAt = Math.min(introAt, time - INTRO_HOLD);
 		} else if (backButton.contains(x, y)) {
 			back();
-		} else if (nextButton.contains(x, y)) {
-			if (!play.solved()) {
-				open(play.shot());
-			} else if (nextTrickShot() != null) {
-				open(nextTrickShot());
-			} else {
-				back();
-			}
 		} else if (restartButton.contains(x, y)) {
-			play.restart();
-			reset();
+			if (overAt >= 0 && play.solved()) {
+				if (nextTrickShot() != null) {
+					open(nextTrickShot());
+				} else {
+					back();
+				}
+			} else {
+				play.restart();
+				reset();
+			}
 		} else if (play.yourTurn() && !gathering()) {
 			tapPlay(x, y);
 		}

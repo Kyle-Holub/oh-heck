@@ -209,7 +209,8 @@ cards set aside face down; in `Match.Phase.SWAPPING` the highest made bid of las
 card, `Move.SwapWidow`). The
 duel adds the house hand order, scoring and the twist to `RuleSet.DUEL`. A chapter opens with a `Briefing` of a few pages in the
 page-by-page style (Back turns back a page; tapping a player shows their habit in a box below); each step opens with one
-page of panels, its text in a box beneath and Play in the corner. All are worded from the rules and the roster. The
+page of panels, its text in a box beneath and Play in the corner. A chapter's briefing and each step's appear by themselves only
+the first time (`Settings.seeFirstTime`); a chapter's Chapter info button (top right) shows them all again in turn. All are worded from the rules and the roster. The
 campaign opens on chapter 1's briefing the first time. A new player learns in the practice round (above); finished
 from the first Play, it turns into the Chapter 1 card and opens the campaign. Options, Start fresh forgets everything (preferences,
 records, campaign) and replays the intro, as for a new player. The plan the campaign follows is `docs/CAMPAIGN.md`.
@@ -315,11 +316,10 @@ Duplicate deals rotate seats, so luck cancels out. Run it after any AI change.
 
 ## The art
 
-`python3 tools/make_sounds.py` writes the tavern button sounds: a glass clink (`assets/sfx/clink.wav`)
-and a tankard set down on wood (`assets/sfx/tankard.wav`), both quiet, and a low-passed copy of the music
-(`assets/music/backTrack_muffled.mp3`) that `Audio.duck` crossfades to while your bid hangs on the last trick. Every button a `Painter` draws (and every bid button and
-open campaign card) clinks on a tap; the main buttons (drawn in the red `button` style: Play, Continue,
-Teach me...) sound the tankard instead (`Painter.heralded`). Preferences turns the sounds off (Button
+`python3 tools/make_sounds.py` writes the tavern sounds. Every button a `Painter` draws (and every bid button and
+open campaign card) gives a soft whoosh on a tap; going back (a Back button, marked with `Painter.back`, or the
+device's back key) and a bid the dealer may not make sound a tankard set down on wood (`assets/sfx/tankard.wav`).
+Preferences turns the sounds off (Button
 sounds) and, separately, the light vibration. The same script makes the table's accents in that old-tavern palette
 (felt thump, knock, coin, wax stamp, riffle, paper, drum, door creak, medal, latch...); `Audio.play`
 plays them and `Audio.buzz` gives the haptic vocabulary (tick, tap, thud, double, heartbeat). At the

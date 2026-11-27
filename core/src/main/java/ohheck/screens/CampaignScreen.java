@@ -1,5 +1,6 @@
 package ohheck.screens;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
@@ -44,7 +45,7 @@ public class CampaignScreen extends BaseScreen {
 	private static final float GLOW_W = 1.9f, GLOW_H = 1.6f;
 	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f);
 	private static final Tween LAYING = Tween.over(0.35f, Ease.OUT);
-	private static final float CAPTION_H = 92, CAPTION_W = 860, BIG_W = 170, BIG_H = BIG_W * 98 / 73, SMALL_W = 120,
+	private static final float CAPTION_H = 112, STAGE_CAPTION_H = 136, CAPTION_W = 860, BIG_W = 170, BIG_H = BIG_W * 98 / 73, SMALL_W = 120,
 			SMALL_H = SMALL_W * 98 / 73, BIG_ICON = 84,
 			BUTTON_ROOM = 64, PLAYER_GAP = 24, PANEL_GAP = 34, HABIT_W = 640, HABIT_H = 62;
 	private static final int SHOTS = 1, CHAMPION = 4;
@@ -70,6 +71,10 @@ public class CampaignScreen extends BaseScreen {
 	private String beatLine = "";
 	private final StringBuilder stageText = new StringBuilder();
 	private Briefing briefing;
+	private final List<Briefing> info = new ArrayList<Briefing>();
+	private final Rectangle infoButton = new Rectangle();
+	private static final String INFO = "Chapter info", NEXT = "Next", DONE = "Done";
+	private static final float INFO_W = 210;
 	private Runnable afterBriefing;
 
 	public CampaignScreen(GameHost game) {
@@ -123,21 +128,55 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	public void briefChapter(Chapter c) {
+		game.settings().seeFirstTime(c.name());
 		brief(Briefing.chapter(c), () -> openChapter(c));
 	}
 
 	public void briefTable(Chapter c) {
+		game.settings().seeFirstTime(c.name() + "." + Stage.TABLE.name());
 		brief(Briefing.table(c), () -> game.playCampaign(c, Stage.TABLE));
 	}
 
-	private void briefStep(Campaign progress, Chapter c, int step) {
+	private Briefing stepBriefing(Campaign progress, Chapter c, int step) {
+		Stage s = STAGE_AT[step];
+		return s == null ? Briefing.trickShots(c, progress) : s == Stage.TABLE ? Briefing.table(c) : s == Stage.FINAL ? Briefing.finalTable(c)
+				: Briefing.duel(c);
+	}
+
+	private void playStep(Campaign progress, Chapter c, int step) {
 		Stage s = STAGE_AT[step];
 		if (s == null) {
-			brief(Briefing.trickShots(c, progress), () -> game.playTrickShot(progress.nextTrickShot(c)));
+			game.playTrickShot(progress.nextTrickShot(c));
 		} else {
-			brief(s == Stage.TABLE ? Briefing.table(c) : s == Stage.FINAL ? Briefing.finalTable(c) : Briefing.duel(c),
-					() -> game.playCampaign(c, s));
+			game.playCampaign(c, s);
 		}
+	}
+
+	private void openStep(Campaign progress, Chapter c, int step) {
+		String intro = c.name() + "." + (STAGE_AT[step] == null ? "SHOTS" : STAGE_AT[step].name());
+		if (game.settings().seeFirstTime(intro)) {
+			brief(stepBriefing(progress, c, step), () -> playStep(progress, c, step));
+		} else {
+			playStep(progress, c, step);
+		}
+	}
+
+	private void showInfo(Campaign progress, Chapter c) {
+		info.clear();
+		info.add(Briefing.chapter(c));
+		for (int step = 0; step < STEPS.length; step++) {
+			info.add(stepBriefing(progress, c, step));
+		}
+		nextInfo();
+	}
+
+	private void nextInfo() {
+		if (info.isEmpty()) {
+			briefing = null;
+			return;
+		}
+		Briefing b = info.remove(0);
+		brief(new Briefing(b.tag(), b.chapter(), info.isEmpty() ? DONE : NEXT, b.pages()), this::nextInfo);
 	}
 
 	private boolean stepOpen(Campaign progress, Chapter c, int step) {
@@ -201,6 +240,12 @@ public class CampaignScreen extends BaseScreen {
 			drawBriefing();
 		}
 		chrome.header(chosen == null ? "Campaign" : "Chapter " + chosen.number(), backButton, w, h);
+		if (chosen != null && briefing == null) {
+			paint.button(infoButton, INFO, w - 30 - INFO_W / 2, h - MenuChrome.HEADER_H + (MenuChrome.HEADER_H - 44) / 2, INFO_W, 44,
+					assets.buttonAlt);
+		} else {
+			infoButton.set(0, 0, 0, 0);
+		}
 		CardWipe.draw(batch, assets.back(), w, h, wipeFor);
 		batch.end();
 	}
@@ -236,7 +281,7 @@ public class CampaignScreen extends BaseScreen {
 
 	private void drawStage(float a) {
 		List<Briefing.Page> pages = briefing.pages();
-		float top = h - MenuChrome.HEADER_H, boxTop = 12 + CAPTION_H, rise = (1 - a) * 30;
+		float top = h - MenuChrome.HEADER_H, boxTop = 12 + STAGE_CAPTION_H, rise = (1 - a) * 30;
 		paint.centred(paint.serif(1.6f, Palette.GOLD, a), pages.get(0).heading(), w / 2, top - 22 + rise);
 		float cy = (boxTop + top - 50) / 2 - rise, span = pages.size() * SMALL_W + (pages.size() - 1) * PANEL_GAP;
 		for (int i = 0; i < pages.size(); i++) {
@@ -244,10 +289,10 @@ public class CampaignScreen extends BaseScreen {
 		}
 		float bw = 180, boxW = w - 60 - bw - 16;
 		paint.fade(a);
-		paint.frame(assets.panel, 30, 12, boxW, CAPTION_H);
+		paint.frame(assets.panel, 30, 12, boxW, STAGE_CAPTION_H);
 		paint.fade(1f);
-		paint.ui(1.1f, Palette.CREAM, a).draw(batch, stageText, 52, 12 + CAPTION_H - 18, boxW - 44, Align.left, true);
-		paint.button(goButton, briefing.go(), w - 30 - bw / 2, 12 + (CAPTION_H - 44) / 2, bw, 44, assets.button);
+		paint.ui(1.1f, Palette.CREAM, a).draw(batch, stageText, 52, 12 + STAGE_CAPTION_H - 18, boxW - 44, Align.left, true);
+		paint.button(goButton, briefing.go(), w - 30 - bw / 2, 12 + (STAGE_CAPTION_H - 44) / 2, bw, 44, assets.button);
 	}
 
 	private void panel(Briefing.Page p, float cx, float cy, float a) {
@@ -515,16 +560,24 @@ public class CampaignScreen extends BaseScreen {
 			for (int i = 0; i < chapterCards.length; i++) {
 				Chapter c = Chapter.values()[i];
 				if (chapterCards[i].contains(x, y) && progress.open(c)) {
-					briefChapter(c);
+					if (game.settings().seeFirstTime(c.name())) {
+						brief(Briefing.chapter(c), () -> openChapter(c));
+					} else {
+						openChapter(c);
+					}
 					return;
 				}
 			}
 			return;
 		}
 		Chapter c = chosen;
+		if (infoButton.contains(x, y)) {
+			showInfo(progress, c);
+			return;
+		}
 		for (int i = 0; i < STEPS.length; i++) {
 			if (stepCards[i].contains(x, y) && stepOpen(progress, c, i)) {
-				briefStep(progress, c, i);
+				openStep(progress, c, i);
 			}
 		}
 	}

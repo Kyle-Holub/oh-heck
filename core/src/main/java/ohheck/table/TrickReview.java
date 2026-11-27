@@ -58,6 +58,7 @@ final class TrickReview {
 		int open = targets.review();
 		if (open >= 0 && open < count) {
 			drawTrick(m, open, py + ph / 2);
+			paint.back(targets.button(OverlayTargets.Button.REVIEW_BACK));
 			paint.button(targets.button(OverlayTargets.Button.REVIEW_BACK), BACK, px + 20 + BUTTON_W / 2, py + 18, BUTTON_W, BUTTON_H,
 					paint.assets.buttonAlt);
 		} else {

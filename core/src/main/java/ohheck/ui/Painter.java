@@ -123,11 +123,11 @@ public final class Painter {
 		batch.setColor(Color.WHITE);
 	}
 
-	private final Array<Rectangle> pressable = new Array<Rectangle>(false, 32), heralded = new Array<Rectangle>(false, 8);
+	private final Array<Rectangle> pressable = new Array<Rectangle>(false, 32), backs = new Array<Rectangle>(false, 4);
 
 	public void newFrame() {
 		pressable.clear();
-		heralded.clear();
+		backs.clear();
 	}
 
 	public void pressable(Rectangle r) {
@@ -136,12 +136,16 @@ public final class Painter {
 
 	public void quiet(Rectangle r) {
 		pressable.removeValue(r, true);
-		heralded.removeValue(r, true);
+		backs.removeValue(r, true);
 	}
 
-	public boolean heralded(float x, float y) {
-		for (int i = 0; i < heralded.size; i++) {
-			if (heralded.get(i).contains(x, y)) {
+	public void back(Rectangle r) {
+		backs.add(r);
+	}
+
+	public boolean pressedBack(float x, float y) {
+		for (int i = 0; i < backs.size; i++) {
+			if (backs.get(i).contains(x, y)) {
 				return true;
 			}
 		}
@@ -160,9 +164,6 @@ public final class Painter {
 	public Rectangle button(Rectangle area, String label, float cx, float y, float bw, float bh, NinePatch style) {
 		if (style != assets.buttonOff) {
 			pressable.add(area);
-		}
-		if (style == assets.button) {
-			heralded.add(area);
 		}
 		frame(style, cx - bw / 2, y, bw, bh);
 		BitmapFont f = serif(1.5f);
