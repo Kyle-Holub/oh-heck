@@ -197,7 +197,7 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void showPlayMenu() {
-		screens.open(playMenu);
+		screens.flashTo(playMenu);
 	}
 
 	@Override
