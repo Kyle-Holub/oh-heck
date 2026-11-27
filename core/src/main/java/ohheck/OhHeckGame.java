@@ -117,6 +117,7 @@ public class OhHeckGame extends Game implements GameHost {
 		if (getScreen() != null) {
 			getScreen().render(delta);
 		}
+		audio.update(delta);
 		if (!fixed) {
 			screens.drawChange(batch, assets, delta);
 		}
