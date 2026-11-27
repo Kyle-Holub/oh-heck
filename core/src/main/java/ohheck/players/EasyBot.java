@@ -15,7 +15,7 @@ import ohheck.rules.TableView;
  */
 final class EasyBot implements Bot {
 
-	private static final double BID_SLIP = 0.7, SLIP_REACH = 1.5, LOOSE_PLAY = 0.5;
+	private static final double BID_SLIP = 0.75, SLIP_REACH = 1.5, LOOSE_PLAY = 0.5;
 	private static final int TRICKS_REMEMBERED = 0;
 
 	private final NormalBot normal = new NormalBot();
