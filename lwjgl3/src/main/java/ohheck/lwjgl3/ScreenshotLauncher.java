@@ -79,7 +79,13 @@ public class ScreenshotLauncher {
 		if (state.equals("unfolding")) {
 			return 4;
 		}
-		if (state.equals("zooming") || state.equals("entering") || state.equals("door")) {
+		if (state.equals("picking")) {
+			return 10;
+		}
+		if (state.equals("entering")) {
+			return 6;
+		}
+		if (state.equals("zooming") || state.equals("door")) {
 			return 3;
 		}
 		if (state.equals("play")) {

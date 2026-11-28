@@ -894,7 +894,9 @@ def campaign_map(out):
         sd.ellipse([c - Z * 0.4, c - Z * 0.4, c + Z * 0.4, c + Z * 0.4], fill=fill + (255,))
         sd.ellipse([c - Z * 0.4, c - Z * 0.4, c + Z * 0.4, c + Z * 0.4], outline=rim + (255,), width=3 * SS)
         sd.ellipse([c - Z * 0.33, c - Z * 0.33, c + Z * 0.33, c + Z * 0.33], outline=rim + (160,), width=1 * SS)
-        sd.ellipse([c - Z * 0.3, c - Z * 0.36, c - Z * 0.05, c - Z * 0.22], fill=(255, 255, 255, 38))
+        shine = Image.new("RGBA", (Z, Z), (0, 0, 0, 0))
+        ImageDraw.Draw(shine).ellipse([c - Z * 0.3, c - Z * 0.36, c - Z * 0.05, c - Z * 0.22], fill=(255, 255, 255, 38))
+        im.alpha_composite(shine)
         downsample(im, 128, 128).save(os.path.join(out, name))
 
 
