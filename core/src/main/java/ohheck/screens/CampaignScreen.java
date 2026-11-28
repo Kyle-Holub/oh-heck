@@ -2,6 +2,7 @@ package ohheck.screens;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
@@ -20,6 +21,7 @@ import ohheck.campaign.Campaign;
 import ohheck.campaign.Chapter;
 import ohheck.campaign.Stage;
 import ohheck.campaign.TrickShots;
+import ohheck.fx.FallingCards;
 import ohheck.fx.Sparks;
 import ohheck.platform.Audio;
 import ohheck.players.Player;
@@ -36,8 +38,8 @@ import ohheck.ui.Palette;
  * the rest face down, the chapter in play lifted and lit. A tapped chapter lays its four steps
  * (table, trick shots, final table, duel) on the felt like a trick. A chapter, and each step, opens with a
  * briefing of what is about to happen: a few pages in the tutorial's style, a picture above and a caption below.
- * Entering a chapter swings its doors open on the light behind and dives the camera through the arch into the
- * chapter, where a first visit's briefing waits.
+ * Entering a chapter swings its doors open on a dark doorway of mist and sparkles, and the camera dives through
+ * the arch and the mist into the chapter, where a first visit's briefing waits.
  */
 public class CampaignScreen extends BaseScreen {
 
@@ -83,14 +85,23 @@ public class CampaignScreen extends BaseScreen {
 	private static final float ENTER_WAIT = 0.9f, ENTER_LENGTH = 1.0f, DIVE_SCALE = 9f, DOOR_SWING = 80f, ARRIVE = 0.45f;
 	private static final Tween DOORS = Tween.over(0.5f, Ease.SMOOTH), DIVE = Tween.over(0.6f, Ease.IN).after(ENTER_LENGTH - 0.6f),
 			ENTER_FLASH = Tween.over(0.2f, Ease.IN).after(ENTER_LENGTH - 0.2f), PAN = Tween.over(0.7f, Ease.SMOOTH).after(0.2f);
-	private Chapter entering;
+	private static final Tween JIGGLE = Tween.over(0.45f, Ease.LINEAR);
+	private static final float JIGGLE_TURNS = 7, JIGGLE_DEGREES = 14, JIGGLE_SHIFT = 5;
+	private Chapter entering, jiggling;
+	private float jiggleFor = JIGGLE.end();
 	private float enterFor, arrivedFor = ARRIVE;
-	private final Matrix4 dive = new Matrix4(), still = new Matrix4();
+	private static final float DOORWAY_DEPTH = 2000f, DOORWAY_FILL = 0.9f, STREAK_STEP = 1 / 30f, DOORWAY_INSET = 12, DOORWAY_ARCH = 55;
+	private final Rectangle opening = new Rectangle();
+	private final Matrix4 dive = new Matrix4(), still = new Matrix4(), doorwayFit = new Matrix4();
+	private final FallingCards doorway;
 	private final Color flash = new Color();
 
 	public CampaignScreen(GameHost game) {
 		super(game);
 		art = new CardArt(batch, assets);
+		Long seed = game.options().seed;
+		doorway = new FallingCards(assets, seed == null ? new Random() : new Random(seed), true);
+		doorway.setFalling(false);
 		for (int i = 0; i < chapterCards.length; i++) {
 			chapterCards[i] = new Rectangle();
 		}
@@ -141,7 +152,7 @@ public class CampaignScreen extends BaseScreen {
 	public void enter(Chapter c) {
 		entering = c;
 		enterFor = 0;
-		game.audio().play(Audio.Effect.CREAK);
+		game.audio().play(Audio.Effect.DOOR);
 	}
 
 	public void enterOnArrival(Chapter c) {
@@ -237,18 +248,22 @@ public class CampaignScreen extends BaseScreen {
 		revealFor += step * game.options().speed;
 		hallFor += step * game.options().speed;
 		arrivedFor += step * game.options().speed;
+		jiggleFor += step * game.options().speed;
 		if (entering != null) {
 			float was = enterFor;
 			enterFor += step * game.options().speed;
 			if (was < 0 && enterFor >= 0) {
-				game.audio().play(Audio.Effect.CREAK);
+				game.audio().play(Audio.Effect.DOOR);
 			}
+			float depth = DIVE.progress(enterFor) * DOORWAY_DEPTH;
+			doorway.fly(depth, depth - DIVE.progress(enterFor - STREAK_STEP) * DOORWAY_DEPTH);
+			doorway.update(step * game.options().speed, w, w * PLAQUE_H / PLAQUE_W);
 			if (enterFor >= ENTER_LENGTH) {
 				arrive();
 			}
 		}
 		if (revealing != null && before < 0 && revealFor >= 0) {
-			game.audio().play(Audio.Effect.CREAK);
+			game.audio().play(Audio.Effect.DOOR);
 		}
 		sparks.step(step * game.options().speed);
 		float half = REVEAL_FLIP_FROM + REVEAL_FLIP / 2;
@@ -260,7 +275,7 @@ public class CampaignScreen extends BaseScreen {
 
 	@Override
 	public boolean animating() {
-		return entering != null || arrivedFor < ARRIVE || chosen == null && briefing == null || chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor) || wipeFor < CardWipe.LENGTH || revealing != null && revealFor < REVEAL_LEN || sparks.active();
+		return entering != null || arrivedFor < ARRIVE || !JIGGLE.done(jiggleFor) || chosen == null && briefing == null || chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor) || wipeFor < CardWipe.LENGTH || revealing != null && revealFor < REVEAL_LEN || sparks.active();
 	}
 
 	@Override
@@ -294,6 +309,8 @@ public class CampaignScreen extends BaseScreen {
 		}
 		CardWipe.draw(batch, assets.back(), w, h, wipeFor);
 		if (entering != null) {
+			float light = DIVE.progress(enterFor) * (1 - ENTER_FLASH.progress(enterFor)), size = w * (0.2f + light * 1.2f);
+			paint.glow(w / 2 - size / 2, h / 2 - size * 0.35f, size, size * 0.7f, Palette.LAMP, 0.45f * light);
 			paint.rect(0, 0, w, h, flash.set(Palette.FLASH).mul(1, 1, 1, ENTER_FLASH.progress(enterFor)));
 		} else if (arrivedFor < ARRIVE) {
 			float fade = 1 - arrivedFor / ARRIVE;
@@ -503,9 +520,12 @@ public class CampaignScreen extends BaseScreen {
 			batch.setColor(Color.WHITE);
 		}
 		if (shut > 0) {
-			float lock = PADLOCK * (1 + opened * 0.8f);
+			float lock = PADLOCK * (1 + opened * 0.8f), shake = c == jiggling ? 1 - JIGGLE.progress(jiggleFor) : 0;
+			float swing = MathUtils.sin(JIGGLE.raw(jiggleFor) * JIGGLE_TURNS * MathUtils.PI2) * shake;
+			int tw = assets.padlock.getWidth(), th = assets.padlock.getHeight();
 			batch.setColor(1, 1, 1, alpha * shut);
-			batch.draw(assets.padlock, cx - lock / 2, ey - lock / 2, lock, lock);
+			batch.draw(assets.padlock, cx - lock / 2 + swing * JIGGLE_SHIFT, ey - lock / 2, lock / 2, lock, lock, lock, 1, 1,
+					swing * JIGGLE_DEGREES, 0, 0, tw, th, false, false);
 			batch.setColor(Color.WHITE);
 			paint.centred(paint.ui(0.9f, Palette.MUTED, alpha * shut), "Locked", cx, y + 60);
 		}
@@ -514,15 +534,19 @@ public class CampaignScreen extends BaseScreen {
 	private void drawOpeningDoors(float x, float y, float alpha) {
 		float open = DOORS.progress(enterFor), leaf = PLAQUE_W / 2 * MathUtils.cosDeg(open * DOOR_SWING);
 		int tw = assets.plaque.getWidth(), th = assets.plaque.getHeight();
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		batch.setColor(Palette.LAMP.r, Palette.LAMP.g, Palette.LAMP.b, open);
+		batch.setColor(0.05f, 0.04f, 0.04f, alpha);
 		batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		paint.glow(x - PLAQUE_W, y - PLAQUE_H * 0.6f, PLAQUE_W * 3, PLAQUE_H * 2.2f, Palette.LAMP, 0.25f * open);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		batch.setColor(Palette.LAMP.r, Palette.LAMP.g, Palette.LAMP.b, open * DIVE.progress(enterFor));
-		batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		float fit = PLAQUE_W * DOORWAY_FILL / w;
+		boolean clipped = clipTo(opening.set(x + DOORWAY_INSET, y + DOORWAY_INSET, PLAQUE_W - 2 * DOORWAY_INSET,
+				PLAQUE_H - DOORWAY_INSET - DOORWAY_ARCH));
+		doorwayFit.set(batch.getTransformMatrix()).translate(x + PLAQUE_W / 2, y + PLAQUE_H / 2, 0).scale(fit, fit, 1);
+		batch.setTransformMatrix(doorwayFit);
+		doorway.drawMist(batch, 0, 0);
+		doorway.draw(batch, 0, 0);
+		batch.setTransformMatrix(dive);
+		if (clipped) {
+			unclip();
+		}
 		float shade = 1 - 0.45f * open;
 		batch.setColor(shade, shade, shade, alpha);
 		batch.draw(assets.plaque, x, y, leaf, PLAQUE_H, 0, 0, tw / 2, th, false, false);
@@ -642,6 +666,13 @@ public class CampaignScreen extends BaseScreen {
 				Chapter c = Chapter.values()[i];
 				if (chapterCards[i].contains(x, y) && progress.open(c)) {
 					enter(c);
+					return;
+				}
+				if (chapterCards[i].contains(x, y)) {
+					jiggling = c;
+					jiggleFor = 0;
+					game.audio().play(Audio.Effect.TANKARD);
+					game.audio().buzz(Audio.Buzz.DOUBLE);
 					return;
 				}
 			}
