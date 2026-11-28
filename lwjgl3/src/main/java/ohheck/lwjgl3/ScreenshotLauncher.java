@@ -79,6 +79,9 @@ public class ScreenshotLauncher {
 		if (state.equals("unfolding")) {
 			return 4;
 		}
+		if (state.equals("picking")) {
+			return 5;
+		}
 		if (state.equals("entering")) {
 			return 6;
 		}
