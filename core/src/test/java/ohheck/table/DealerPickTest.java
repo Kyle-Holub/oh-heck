@@ -20,8 +20,9 @@ public class DealerPickTest {
 
 	@Test
 	public void theLightRunsRoundTheTableInOrder() {
-		int before = DealerPick.litSeat(0, 1, 4), next = DealerPick.litSeat(0.15f, 1, 4);
+		int before = DealerPick.litSeat(DealerPick.APPEAR, 1, 4), next = DealerPick.litSeat(DealerPick.APPEAR + 0.15f, 1, 4);
 		assertEquals((before + 1) % 4, next);
+		assertEquals("no seat is lit while the coin appears", -1, DealerPick.litSeat(DealerPick.APPEAR / 2, 1, 4));
 		assertFalse(DealerPick.landed(1f));
 		assertTrue(DealerPick.landed(DealerPick.LANDED));
 	}

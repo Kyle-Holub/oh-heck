@@ -130,7 +130,7 @@ final class TableDrawing {
 
 	void trump(boolean gone) {
 		TableFlow flow = scene.flow();
-		if (flow.state() == TableState.SHUFFLE || gone) {
+		if (flow.state() == TableState.SHUFFLE || flow.state() == TableState.PICK_DEALER || flow.state() == TableState.VERSUS || gone) {
 			if (gone) {
 				motes.draw(batch, assets.glow);
 			}

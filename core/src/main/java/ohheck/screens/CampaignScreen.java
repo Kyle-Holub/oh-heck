@@ -79,7 +79,9 @@ public class CampaignScreen extends BaseScreen {
 			WALK_FLASH = Tween.over(0.3f, Ease.IN).after(WALK_LENGTH - 0.3f);
 	private static final Tween JIGGLE = Tween.over(0.45f, Ease.LINEAR);
 	private static final float JIGGLE_TURNS = 7, JIGGLE_DEGREES = 14, JIGGLE_SHIFT = 5;
-	private static final float DOORWAY_DEPTH = 2000f, DOORWAY_FILL = 0.9f, STREAK_STEP = 1 / 30f, DOORWAY_INSET = 12, DOORWAY_ARCH = 55;
+	private static final float DOORWAY_DEPTH = 2000f, DOORWAY_FILL = 0.9f, STREAK_STEP = 1 / 30f, DOORWAY_INSET = 12, DOORWAY_ARCH = 55,
+			DOORWAY_SOFT = 46;
+	private static final Color DOORWAY_DARK = new Color(0.05f, 0.04f, 0.04f, 1f);
 	private static final float REVEAL_WAIT = 0.9f, REVEAL_LEN = 1.6f, REVEAL_FLIP_FROM = 0.35f, REVEAL_FLIP = 0.5f;
 	private static final Tween RISE_IN = Tween.over(0.45f, Ease.OUT);
 	private static final String INFO = "Chapter info", NEXT = "Next", DONE = "Done";
@@ -500,7 +502,7 @@ public class CampaignScreen extends BaseScreen {
 	private void drawOpeningDoors(float x, float y, float alpha) {
 		float open = DOORS.progress(doorFor), leaf = PLAQUE_W / 2 * MathUtils.cosDeg(open * DOOR_SWING);
 		int tw = assets.plaque.getWidth(), th = assets.plaque.getHeight();
-		batch.setColor(0.05f, 0.04f, 0.04f, alpha);
+		batch.setColor(DOORWAY_DARK.r, DOORWAY_DARK.g, DOORWAY_DARK.b, alpha);
 		batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
 		float fit = PLAQUE_W * DOORWAY_FILL / w;
 		boolean clipped = clipTo(opening.set(x + DOORWAY_INSET, y + DOORWAY_INSET, PLAQUE_W - 2 * DOORWAY_INSET,
@@ -510,6 +512,7 @@ public class CampaignScreen extends BaseScreen {
 		doorway.drawMist(batch, 0, 0);
 		doorway.draw(batch, 0, 0);
 		batch.setTransformMatrix(zoom);
+		softenEdges(opening, alpha);
 		if (clipped) {
 			unclip();
 		}
@@ -517,6 +520,16 @@ public class CampaignScreen extends BaseScreen {
 		batch.setColor(shade, shade, shade, alpha);
 		batch.draw(assets.plaque, x, y, leaf, PLAQUE_H, 0, 0, tw / 2, th, false, false);
 		batch.draw(assets.plaque, x + PLAQUE_W - leaf, y, leaf, PLAQUE_H, tw / 2, 0, tw / 2, th, false, false);
+		batch.setColor(Color.WHITE);
+	}
+
+	private void softenEdges(Rectangle r, float alpha) {
+		int tw = assets.fadeDown.getWidth(), th = assets.fadeDown.getHeight();
+		batch.setColor(DOORWAY_DARK.r, DOORWAY_DARK.g, DOORWAY_DARK.b, alpha);
+		batch.draw(assets.fadeDown, r.x, r.y + r.height - DOORWAY_SOFT, r.width, DOORWAY_SOFT);
+		batch.draw(assets.fadeDown, r.x + DOORWAY_SOFT, r.y, 0, 0, r.height, DOORWAY_SOFT, 1, 1, 90, 0, 0, tw, th, false, false);
+		batch.draw(assets.fadeDown, r.x + r.width - DOORWAY_SOFT, r.y + r.height, 0, 0, r.height, DOORWAY_SOFT, 1, 1, -90, 0, 0, tw, th,
+				false, false);
 		batch.setColor(Color.WHITE);
 	}
 

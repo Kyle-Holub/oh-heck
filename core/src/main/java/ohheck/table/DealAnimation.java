@@ -19,7 +19,7 @@ final class DealAnimation {
 	private static final float PASS = SPLIT + RIFFLE + SETTLE;
 	private static final int RIFFLE_CARDS = 24, DECK = 52;
 	private static final float DROP = 0.15f;
-	static final float DECK_SCALE = 0.85f;
+	static final float DECK_SCALE = 0.85f, CLEAR_OF_PLACARD = 0.45f;
 	private static final float HALF_GAP = 52f;
 
 	private static final Tween GATHERING = Tween.over(GATHER, Ease.OUT), SPLITTING = Tween.over(SPLIT, Ease.OUT),
@@ -83,9 +83,9 @@ final class DealAnimation {
 	void drawDeck(SpriteBatch batch, Assets assets, CardArt art, TableLayout layout) {
 		float cw = Assets.CARD_W * DECK_SCALE, ch = Assets.CARD_H * DECK_SCALE;
 		Vector2 home = layout.deckSpot(dealer);
-		float hx = home.x, hy = home.y;
+		float homeX = home.x, homeY = home.y;
 		Vector2 spot = layout.dealSpot(dealer);
-		float cx = spot.x, cy = spot.y;
+		float cx = spot.x, cy = spot.y, hx = MathUtils.lerp(homeX, cx, CLEAR_OF_PLACARD), hy = MathUtils.lerp(homeY, cy, CLEAR_OF_PLACARD);
 		if (t < GATHER) {
 			float p = GATHERING.progress(t);
 			art.stack(MathUtils.lerp(hx, cx, p), MathUtils.lerp(hy, cy, p), DECK, cw, ch, 0);

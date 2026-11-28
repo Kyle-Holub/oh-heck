@@ -30,7 +30,6 @@ final class ChapterMap {
 	private final SpriteBatch batch;
 	private final Assets assets;
 	private final Rectangle[] markers = new Rectangle[AT.length];
-	private final String[] versus = new String[AT.length];
 	private final float[] dotX = new float[MAX_DOTS], dotY = new float[MAX_DOTS];
 	private final int[] dotLeg = new int[MAX_DOTS];
 	private final float[] quad = new float[20];
@@ -44,7 +43,6 @@ final class ChapterMap {
 		this.assets = paint.assets;
 		for (int i = 0; i < markers.length; i++) {
 			markers[i] = new Rectangle();
-			versus[i] = "vs " + Chapter.values()[i].champion().name;
 		}
 	}
 
@@ -172,11 +170,10 @@ final class ChapterMap {
 			batch.draw(assets.emblem(c.emblem), cx - EMBLEM / 2, cy - EMBLEM / 2, EMBLEM, EMBLEM);
 			batch.setColor(Color.WHITE);
 			paint.centred(paint.serif(1.2f, Palette.MAP_INK, alpha * opened), c.mode.label, cx, cy - SEAL / 2 - 10);
-			paint.centred(paint.ui(0.9f, Palette.MAP_INK, alpha * opened), versus[c.ordinal()], cx, cy - SEAL / 2 - 38);
 			batch.setColor(1, 1, 1, alpha * opened);
 			for (int i = 0; i < PIPS; i++) {
 				float px = cx + (i - (PIPS - 1) / 2f) * PIP_GAP - PIP / 2;
-				batch.draw(done(progress, c, i) ? assets.pipOn : assets.pipOff, px, cy - SEAL / 2 - 70, PIP, PIP);
+				batch.draw(done(progress, c, i) ? assets.pipOn : assets.pipOff, px, cy - SEAL / 2 - 48, PIP, PIP);
 			}
 			batch.setColor(Color.WHITE);
 		}

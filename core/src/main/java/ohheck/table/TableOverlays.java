@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.function.IntPredicate;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -199,29 +200,69 @@ final class TableOverlays {
 		bidPopup.draw(layout.w / 2, layout.centreY(), match.handSize(), legalBid, -1, 1f, targets.bids());
 	}
 
-	static final float VERSUS_FROM = 0.6f, VERSUS_LENGTH = VERSUS_FROM + 2.8f, VERSUS_SLAM = VERSUS_FROM + 0.75f;
-	private static final float VERSUS_SLIDE = 0.45f, VERSUS_TILT = 9, VERSUS_GAP = 10, VERSUS_HABIT_W = 380;
-	private static final Tween VERSUS_IN = Tween.over(VERSUS_SLIDE, Ease.OUT), VERSUS_OUT = Tween.over(0.35f, Ease.IN);
-	private static final Color YOUR_BAND = new Color(0.2f, 0.11f, 0.06f, 0.97f), THEIR_BAND = new Color(0.4f, 0.07f, 0.06f, 0.97f);
+	static final float VERSUS_FROM = 0.35f, VERSUS_LENGTH = 3.8f, VERSUS_SLAM = 1.2f;
+	private static final float VERSUS_TILT = 12, VERSUS_HABIT_W = 380, SEAL_SIZE = 170, RISERS = 44;
+	private static final Tween PANELS_IN = Tween.over(0.55f, Ease.OUT).after(VERSUS_FROM),
+			STAMP = Tween.over(0.22f, Ease.OUT).after(VERSUS_SLAM), PARTING = Tween.over(0.75f, Ease.IN).after(VERSUS_LENGTH - 0.75f);
+	private static final Color YOUR_SIDE = new Color(0.17f, 0.1f, 0.06f, 1f);
+	private final Color theme = new Color(), themeDeep = new Color(), themeSide = new Color();
 
 	void drawVersus(float since) {
-		float t = since - VERSUS_FROM, in = VERSUS_IN.progress(t), out = VERSUS_OUT.progress(since - VERSUS_LENGTH + VERSUS_OUT.end()), w = layout.w, h = layout.h;
-		float shift = (1 - in + out) * (w + 200), mid = h / 2;
-		band(YOUR_BAND, -shift, mid - VERSUS_GAP / 2, false);
-		band(THEIR_BAND, shift, mid + VERSUS_GAP / 2, true);
-		gilding(mid, Math.min(in, 1 - out));
-		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT), scene.name(1), w * 0.62f + shift, mid + h * 0.3f, true);
-		paint.ui(1.05f, Palette.CREAM).draw(paint.batch, scene.habit(1), w * 0.62f - VERSUS_HABIT_W / 2 + shift, mid + h * 0.3f - 52,
+		float w = layout.w, h = layout.h, mid = h / 2, in = PANELS_IN.progress(since), part = PARTING.progress(since);
+		float shown = 1 - part;
+		theme.set(Palette.SPARKLE);
+		themeDeep.set(theme).mul(0.14f, 0.14f, 0.14f, 1);
+		themeSide.set(theme).mul(0.34f, 0.34f, 0.34f, 1);
+		paint.rect(0, 0, w, h, flashTint.set(themeDeep).mul(1, 1, 1, shown));
+		paint.glow(w / 2 - w * 0.6f, mid - h * 0.7f, w * 1.2f, h * 1.4f, theme, 0.22f * shown);
+		risingSparkles(since, shown);
+		float away = (1 - in) * (w + 300) + part * (w + 300);
+		side(YOUR_SIDE, -away, mid, false, 1 - part * 0.5f);
+		side(themeSide, away, mid, true, 1 - part * 0.5f);
+		gilding(mid, Math.min(in, 1 - part));
+		float names = Math.min(in, 1 - PARTING.progress(since + 0.3f));
+		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT, names), scene.name(1), w * 0.7f + away, mid + h * 0.3f, true);
+		paint.ui(1.05f, Palette.CREAM, names).draw(paint.batch, scene.habit(1), w * 0.7f - VERSUS_HABIT_W / 2 + away, mid + h * 0.3f - 52,
 				VERSUS_HABIT_W, Align.center, true);
-		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT), scene.name(Seating.YOU), w * 0.38f - shift, mid - h * 0.22f, true);
-		paint.text(paint.ui(1.05f, Palette.CREAM), CHALLENGER, w * 0.38f - shift, mid - h * 0.22f - 52, true);
-		if (since >= VERSUS_SLAM && out < 1) {
-			float slam = VERSUS_IN.progress(since - VERSUS_SLAM);
-			float vsSize = 5.5f - 2.5f * slam;
-			paint.glow(w / 2 - 130, mid - 90, 260, 180, Palette.EMBER, 0.6f * (1 - out));
-			paint.text(paint.serif(vsSize, VS_SHADOW, 1 - out), VS, w / 2 + 3, mid + 37, true);
-			paint.text(paint.serif(vsSize, Palette.GOLD_LIGHT, 1 - out), VS, w / 2, mid + 40, true);
+		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT, names), scene.name(Seating.YOU), w * 0.3f - away, mid - h * 0.2f, true);
+		paint.text(paint.ui(1.05f, Palette.CREAM, names), CHALLENGER, w * 0.3f - away, mid - h * 0.2f - 52, true);
+		if (since >= VERSUS_SLAM) {
+			float stamp = STAMP.progress(since), size = SEAL_SIZE * (1.9f - 0.9f * stamp) * (1 + part * 0.6f), a = Math.min(1, stamp * 3) * (1 - part);
+			paint.glow(w / 2 - size * 1.2f, mid - size * 1.2f, size * 2.4f, size * 2.4f, theme, 0.45f * a);
+			paint.batch.setColor(Math.min(1, theme.r * 1.15f), Math.min(1, theme.g * 1.15f), Math.min(1, theme.b * 1.15f), a);
+			paint.batch.draw(paint.assets.sealLocked, w / 2 - size / 2, mid - size / 2, size, size);
+			paint.batch.setColor(Color.WHITE);
+			float letters = 2.4f * size / SEAL_SIZE;
+			paint.text(paint.serif(letters, VS_SHADOW, a), VS, w / 2 + 2, mid + 22 * size / SEAL_SIZE - 2, true);
+			paint.text(paint.serif(letters, Palette.GOLD_LIGHT, a), VS, w / 2, mid + 22 * size / SEAL_SIZE, true);
 		}
+	}
+
+	private final Color flashTint = new Color();
+	private final float[] riserColour = new float[3];
+
+	private void risingSparkles(float since, float alpha) {
+		if (alpha <= 0) {
+			return;
+		}
+		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		for (int i = 0; i < RISERS; i++) {
+			float speed = 30 + (i * 37) % 50, x = (i * 173.7f) % layout.w, y = (since * speed + i * 97.3f) % (layout.h + 40) - 20;
+			float dot = 5 + (i % 4) * 3, twinkle = 0.5f + 0.5f * MathUtils.sin(since * (2 + i % 3) + i);
+			Palette.sparkle(0.6f + (i % 5) * 0.2f, 0, riserColour);
+			paint.batch.setColor(riserColour[0], riserColour[1], riserColour[2], alpha * twinkle * 0.8f);
+			paint.batch.draw(paint.assets.glow, x + MathUtils.sin(since + i) * 10 - dot / 2, y - dot / 2, dot, dot);
+		}
+		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		paint.batch.setColor(Color.WHITE);
+	}
+
+	private void side(Color c, float dx, float edge, boolean above, float alpha) {
+		float bw = layout.w * 2, bh = layout.h;
+		paint.batch.setColor(c.r, c.g, c.b, alpha);
+		paint.batch.draw(paint.assets.white, layout.w / 2 - bw / 2 + dx, above ? edge : edge - bh, bw / 2, above ? 0 : bh, bw, bh, 1, 1,
+				VERSUS_TILT, 0, 0, 1, 1, false, false);
+		paint.batch.setColor(Color.WHITE);
 	}
 
 	private void gilding(float mid, float a) {
@@ -245,14 +286,6 @@ final class TableOverlays {
 		paint.batch.setColor(c.r, c.g, c.b, a);
 		paint.batch.draw(paint.assets.white, layout.w / 2 - width / 2, y - thick / 2, width / 2, thick / 2, width, thick, 1, 1, VERSUS_TILT,
 				0, 0, 1, 1, false, false);
-	}
-
-	private void band(Color c, float dx, float edge, boolean above) {
-		float bw = layout.w * 2, bh = layout.h;
-		paint.batch.setColor(c);
-		paint.batch.draw(paint.assets.white, layout.w / 2 - bw / 2 + dx, above ? edge : edge - bh, bw / 2, above ? 0 : bh, bw, bh, 1, 1,
-				VERSUS_TILT, 0, 0, 1, 1, false, false);
-		paint.batch.setColor(Color.WHITE);
 	}
 
 	private static final String VS = "VS", CHALLENGER = "Challenger";
@@ -341,10 +374,13 @@ final class TableOverlays {
 		if (!DealerPick.settled(t)) {
 			float fly = Ease.IN.apply(MathUtils.clamp((t - DealerPick.LANDED) / DealerPick.FLIGHT, 0, 1));
 			float tx = layout.panelX(match.dealer()) + DEALER_CHIP_X, ty = layout.panelTop(match.dealer()) - DEALER_CHIP_Y;
-			float x = MathUtils.lerp(cx, tx, fly), y = MathUtils.lerp(cy, ty, fly), size = MathUtils.lerp(DEALER_CHIP, 26, fly);
-			float p = Math.min(1, t / DealerPick.LANDED), angle = DEALER_SPINS * MathUtils.PI * (1 - (1 - p) * (1 - p));
-			paint.glow(x - size * 1.6f, y - size * 1.6f, size * 3.2f, size * 3.2f, Palette.EMBER, 0.5f * (1 - fly));
-			coin(x, y, size, angle);
+			float appear = COIN_APPEAR.progress(t);
+			float x = MathUtils.lerp(cx, tx, fly), y = MathUtils.lerp(cy, ty, fly), size = MathUtils.lerp(DEALER_CHIP, 26, fly) * (0.3f + 0.7f * appear);
+			float p = MathUtils.clamp((t - DealerPick.APPEAR) / (DealerPick.LANDED - DealerPick.APPEAR), 0, 1);
+			float angle = DEALER_SPINS * MathUtils.PI * (1 - (1 - p) * (1 - p));
+			gatheringSparks(cx, cy, t);
+			paint.glow(x - size * 1.6f, y - size * 1.6f, size * 3.2f, size * 3.2f, Palette.EMBER, 0.5f * (1 - fly) * appear);
+			coin(x, y, size, angle, appear);
 		}
 		if (DealerPick.landed(t)) {
 			paint.centred(paint.serif(1.6f, Palette.GOLD, Math.min(1, (t - DealerPick.LANDED) * 3)), deals, cx, cy - DEALER_CHIP / 2 - 18);
@@ -354,16 +390,38 @@ final class TableOverlays {
 	private static final float DEALER_CHIP = 96, DEALER_SPINS = 8, DEALER_CHIP_X = 40, DEALER_CHIP_Y = 22, COIN_THICK = 0.12f;
 	private static final int COIN_LAYERS = 12;
 
-	private void coin(float cx, float cy, float size, float angle) {
+	private void coin(float cx, float cy, float size, float angle, float alpha) {
 		float face = size * Math.max(0.03f, Math.abs(MathUtils.cos(angle))), half = size * COIN_THICK / 2 * MathUtils.sin(angle);
 		for (int i = 0; i <= COIN_LAYERS; i++) {
 			float k = i / (float) COIN_LAYERS, shade = 0.42f + 0.16f * (i % 2) + 0.12f * k;
-			paint.batch.setColor(shade, shade * 0.78f, shade * 0.4f, 1);
+			paint.batch.setColor(shade, shade * 0.78f, shade * 0.4f, alpha);
 			paint.batch.draw(paint.assets.dealerIcon, cx - half + 2 * half * k - face / 2, cy - size / 2, face, size);
 		}
-		paint.batch.setColor(Color.WHITE);
+		paint.batch.setColor(1, 1, 1, alpha);
 		paint.batch.draw(paint.assets.dealerIcon, cx + half - face / 2, cy - size / 2, face, size);
+		paint.batch.setColor(Color.WHITE);
 	}
+
+	private void gatheringSparks(float cx, float cy, float t) {
+		float gather = COIN_APPEAR.progress(t), fade = 1 - SPARKS_FADE.progress(t);
+		if (fade <= 0) {
+			return;
+		}
+		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		for (int i = 0; i < GATHERING; i++) {
+			float angle = i * MathUtils.PI2 / GATHERING + t * 3 + (1 - gather) * 2, r = DEALER_CHIP * (0.45f + 1.4f * (1 - gather)) + (i % 3) * 8;
+			float dot = 7 + (i % 4) * 3;
+			Palette.sparkle(0.6f + (i % 5) * 0.2f, 0, sparkColour);
+			paint.batch.setColor(sparkColour[0], sparkColour[1], sparkColour[2], fade * Math.min(1, t * 4) * (0.6f + 0.4f * MathUtils.sin(t * 9 + i)));
+			paint.batch.draw(paint.assets.glow, cx + MathUtils.cos(angle) * r - dot / 2, cy + MathUtils.sin(angle) * r - dot / 2, dot, dot);
+		}
+		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		paint.batch.setColor(Color.WHITE);
+	}
+
+	private static final int GATHERING = 28;
+	private static final Tween COIN_APPEAR = Tween.over(DealerPick.APPEAR, Ease.OUT), SPARKS_FADE = Tween.over(0.5f, Ease.SMOOTH).after(DealerPick.APPEAR);
+	private final float[] sparkColour = new float[3];
 	private String deals = "";
 	private Match dealsOf;
 
@@ -495,7 +553,7 @@ final class TableOverlays {
 		paint.batch.draw(paint.assets.campaignFace, x, y, cw, ch);
 		float cx = x + cw / 2;
 		paint.text(paint.ui(0.85f, Palette.GOLD), PLACE_CAPS[place], cx, y + ch - 16, true);
-		paint.numeral(place, cx, y + ch * 0.6f, cw * 0.36f, first ? Palette.GOLD_LIGHT : Palette.GOLD);
+		paint.numeral(place, cx, y + ch * 0.6f, cw * 0.3f, first ? Palette.GOLD_LIGHT : Palette.GOLD);
 		paint.text(paint.serif(1.3f, Palette.GOLD_LIGHT), scene.name(seat), cx, y + ch * 0.34f, true);
 		paint.text(paint.ui(1.0f, Palette.CREAM), Numbers.text(match.score(seat)), cx, y + ch * 0.2f, true);
 	}
