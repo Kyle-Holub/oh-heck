@@ -43,7 +43,7 @@ final class TableOverlays {
 	private static final float MENU_BUTTON_Y = 10;
 	private static final float HAND_END_FADE = 0.3f, HAND_END_SCALE = 0.95f;
 	private static final Tween HAND_END_IN = Tween.over(HAND_END_FADE, Ease.LINEAR);
-	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.6f, LABEL_OPPONENT = 1.9f, LABEL_BESIDE = 16,
+	private static final float LABEL_BIG = 2.6f, LABEL_SMALL = 1.9f, LABEL_OPPONENT = LABEL_SMALL, LABEL_BESIDE = 16,
 			LABEL_SHADOW = 2;
 	private static final float TRICKS_RISE = 12, TRICKS_INSET = 18, TAP_NOTE_GAP = 16;
 	private static final float GAME_OVER_LIFT = 6, GAME_OVER_ART_DROP = 50, GAME_OVER_ART_SCALE = 0.66f,
@@ -233,9 +233,11 @@ final class TableOverlays {
 			paint.batch.setColor(Math.min(1, theme.r * 1.15f), Math.min(1, theme.g * 1.15f), Math.min(1, theme.b * 1.15f), a);
 			paint.batch.draw(paint.assets.sealLocked, w / 2 - size / 2, mid - size / 2, size, size);
 			paint.batch.setColor(Color.WHITE);
-			float letters = 2.4f * size / SEAL_SIZE;
-			paint.text(paint.serif(letters, VS_SHADOW, a), VS, w / 2 + 2, mid + 22 * size / SEAL_SIZE - 2, true);
-			paint.text(paint.serif(letters, Palette.GOLD_LIGHT, a), VS, w / 2, mid + 22 * size / SEAL_SIZE, true);
+			BitmapFont letters = paint.serif(2.4f * size / SEAL_SIZE, VS_SHADOW, a);
+			paint.glyphs.setText(letters, VS);
+			float top = mid + paint.glyphs.height / 2;
+			paint.text(letters, VS, w / 2 + 2, top - 2, true);
+			paint.text(paint.serif(2.4f * size / SEAL_SIZE, Palette.GOLD_LIGHT, a), VS, w / 2, top, true);
 		}
 		float arriving = 1 - ARRIVING.progress(since);
 		paint.rect(0, 0, w, h, flashTint.set(theme).mul(1, 1, 1, 0.55f * arriving * arriving));

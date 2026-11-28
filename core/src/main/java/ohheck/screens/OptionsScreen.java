@@ -1,5 +1,6 @@
 package ohheck.screens;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -8,6 +9,8 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import ohheck.campaign.Badge;
+import ohheck.campaign.Chapter;
 import ohheck.platform.Audio;
 import ohheck.platform.Settings;
 import ohheck.rules.RuleSet;
@@ -81,8 +84,12 @@ public class OptionsScreen extends BaseScreen {
 	public static OptionsScreen options(GameHost game) {
 		Settings s = game.settings();
 		return new OptionsScreen(game, "Options", "options", null,
-				new OptionsPage("Preferences",
-						OptionItem.heading("Sound"),
+				new OptionsPage("Game",
+						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
+								() -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame())),
+						OptionItem.choice("Hand sort", "Trumps on the left, then by suit or by rank.",
+								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next()))),
+				new OptionsPage("Sound",
 						OptionItem.toggle("Mute all", "Silences the music and sound effects.", s::muted, () -> {
 							s.setMuted(!s.muted());
 							game.audio().startMusic();
@@ -95,30 +102,40 @@ public class OptionsScreen extends BaseScreen {
 							s.setSound(!s.sound());
 							game.audio().play(Audio.Effect.PLAY_CARD);
 						}),
-						OptionItem.toggle("Button sounds", "A soft whoosh, or a tankard thud for going back.", s::buttonSounds,
+						OptionItem.toggle("Button sounds", "Auditory feedback on actions.", s::buttonSounds,
 								() -> s.setButtonSounds(!s.buttonSounds())),
-						OptionItem.heading("Display"),
-						OptionItem.look("Card back", "Won by clearing campaign chapters.", () -> s.cardBack().label, () -> {
-							s.setCardBack(s.cardBack().nextOwned(game.records().campaign()));
-							game.assets().dress(s.cardBack(), s.felt());
-						}, () -> game.assets().backOf(s.cardBack()), 38, 54),
-						OptionItem.look("Table felt", "Won by clearing campaign chapters.", () -> s.felt().label, () -> {
-							s.setFelt(s.felt().nextOwned(game.records().campaign()));
-							game.assets().dress(s.cardBack(), s.felt());
-						}, () -> game.assets().feltOf(s.felt()), 84, 42),
-						OptionItem.choice("Hand sort", "Trumps on the left, then by suit or by rank.",
-								() -> s.handSort().label, () -> s.setHandSort(s.handSort().next())),
-						OptionItem.choice("Game speed", "How fast the cards and the other players move.",
-								() -> s.fastGame() ? "Fast" : "Standard", () -> s.setFastGame(!s.fastGame())),
-						OptionItem.toggle("Visual effects", "Glow, vignette and film grain.", s::effects,
-								() -> s.setEffects(!s.effects())),
 						OptionItem.toggle("Vibration", "A light buzz when you press a button.", s::vibration,
 								() -> s.setVibration(!s.vibration()))),
+				new OptionsPage("Display",
+						OptionItem.toggle("Visual effects", "Glow, vignette and film grain.", s::effects,
+								() -> s.setEffects(!s.effects()))),
+				new OptionsPage("Unlockables", unlockables(game, s)),
 				new OptionsPage("Practice",
 						OptionItem.link("Practice round", "Learn the game by playing a short guided round.", () -> game.playPractice(false)),
 						OptionItem.link("Roster", "The players you can meet at the table.", game::showPlayers),
 						OptionItem.confirmed("Start fresh", "Forget everything, as a new player: tutorial, campaign, scores, settings.",
 								game::startFresh)));
+	}
+
+	private static OptionItem[] unlockables(GameHost game, Settings s) {
+		List<OptionItem> items = new ArrayList<OptionItem>();
+		items.add(OptionItem.look("Card back", "Won by clearing campaign chapters.", () -> s.cardBack().label, () -> {
+			s.setCardBack(s.cardBack().nextOwned(game.records().campaign()));
+			game.assets().dress(s.cardBack(), s.felt());
+		}, () -> game.assets().backOf(s.cardBack()), 38, 54));
+		items.add(OptionItem.look("Table felt", "Won by clearing campaign chapters.", () -> s.felt().label, () -> {
+			s.setFelt(s.felt().nextOwned(game.records().campaign()));
+			game.assets().dress(s.cardBack(), s.felt());
+		}, () -> game.assets().feltOf(s.felt()), 84, 42));
+		items.add(OptionItem.heading("Badges"));
+		for (Chapter c : Chapter.values()) {
+			items.add(OptionItem.badge("Beat " + c.champion().name, c.ready ? "Win chapter " + c.number() + "'s duel" : "Coming soon",
+					() -> game.records().campaign().cleared(c)));
+		}
+		for (Badge b : Badge.values()) {
+			items.add(OptionItem.badge(b.title, b.how, () -> game.records().campaign().has(b)));
+		}
+		return items.toArray(new OptionItem[0]);
 	}
 
 	@Override
@@ -250,6 +267,14 @@ public class OptionsScreen extends BaseScreen {
 
 	@Override
 	public String stateTag() {
-		return tag;
+		return tabs.chosen() == 0 ? tag : tag + ":" + pages.get(tabs.chosen()).name.toLowerCase();
+	}
+
+	public void showPage(String name) {
+		for (int i = 0; i < pages.size(); i++) {
+			if (pages.get(i).name.equals(name)) {
+				tabs.choose(i);
+			}
+		}
 	}
 }

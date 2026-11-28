@@ -55,6 +55,10 @@ abstract class OptionItem {
 		return new Heading(label);
 	}
 
+	static OptionItem badge(String title, String how, BooleanSupplier earned) {
+		return new Earned(title, how, earned);
+	}
+
 	float height() {
 		return ROW_H;
 	}
@@ -121,6 +125,35 @@ abstract class OptionItem {
 		@Override
 		void shown() {
 			armed = false;
+		}
+	}
+
+	private static final class Earned extends OptionItem {
+		private final BooleanSupplier earned;
+
+		Earned(String title, String how, BooleanSupplier earned) {
+			super(title, how);
+			this.earned = earned;
+		}
+
+		@Override
+		void draw(Painter paint, float x, float y, float w) {
+			bounds.set(x, y, w, ROW_H);
+			boolean has = earned.getAsBoolean();
+			float icon = ROW_H - 16, top = y + ROW_H;
+			paint.batch.setColor(1, 1, 1, has ? 1 : 0.25f);
+			paint.batch.draw(paint.assets.badge, x + PAD, y + 8, icon, icon);
+			paint.batch.setColor(1, 1, 1, 1);
+			paint.serif(1.3f, has ? Palette.GOLD_LIGHT : Palette.MUTED).draw(paint.batch, label, x + PAD + icon + 14, top - 10);
+			paint.ui(0.9f, has ? Palette.CREAM : Palette.MUTED).draw(paint.batch, detail, x + PAD + icon + 14, top - 38);
+		}
+
+		@Override
+		void drawControl(Painter paint, float right, float y, float h) {
+		}
+
+		@Override
+		void tap(float x, float y) {
 		}
 	}
 

@@ -460,6 +460,22 @@ def level_badges(out):
         downsample(img, 108, 108).save(os.path.join(out, "level_" + name + ".png"))
 
 
+def gilt_ring(out):
+    """The gilding around a champion's level badge: a double gold ring set with eight diamonds, open in the middle
+    so the badge shows through (drawn 1.3 times the badge's size)."""
+    S = 140 * SS
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    c = S / 2
+    for r, colour, width in ((64, GOLD_DARK, 3), (60, GOLD_LIGHT, 4), (55, GOLD, 2)):
+        d.ellipse([c - r * SS, c - r * SS, c + r * SS, c + r * SS], outline=colour + (255,), width=width * SS)
+    for k in range(8):
+        a = math.pi / 4 * k
+        x, y = c + math.cos(a) * 60 * SS, c + math.sin(a) * 60 * SS
+        suit_shape(d, "diamonds", x, y, 14 * SS, GOLD_LIGHT + (255,))
+    downsample(img, 140, 140).save(os.path.join(out, "gilt_ring.png"))
+
+
 def bid_icons(out):
     """The table's bid tracker, one card per trick in the hand: open (no bid on it yet), bid, and bid over the hand."""
     W, H = 84 * SS, 108 * SS
@@ -965,6 +981,7 @@ if __name__ == "__main__":
     table(out)
     icons(out)
     level_badges(out)
+    gilt_ring(out)
     bid_icons(out)
     bid_digits(out)
     sprites(out)

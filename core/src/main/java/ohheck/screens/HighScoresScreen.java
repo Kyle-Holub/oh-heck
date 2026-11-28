@@ -11,9 +11,6 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import ohheck.campaign.Badge;
-import ohheck.campaign.Campaign;
-import ohheck.campaign.Chapter;
 import ohheck.players.Difficulty;
 import ohheck.records.HighScores;
 import ohheck.records.Stats;
@@ -28,14 +25,14 @@ import ohheck.ui.SideTabs;
 import ohheck.ui.Wording;
 
 /*
- * Your records: the high scores, the statistics or the badges. A switch at the top of the panel
+ * Your records: the high scores or the statistics. A switch at the top of the panel
  * picks which; the difficulty tabs down the left filter the scores and statistics. High scores are
  * kept per game mode, picked by a row of buttons under the switch.
  */
 public class HighScoresScreen extends BaseScreen {
 
 	private static final float BADGE = 24, PAD = 22, FRAME = 6;
-	private static final float BADGE_ROW = 56, SWITCH_H = 40, SWITCH_ROOM = 58, MODE_H = 34, MODE_ROOM = 44, MODE_GAP = 8;
+	private static final float SWITCH_H = 40, SWITCH_ROOM = 58, MODE_H = 34, MODE_ROOM = 44, MODE_GAP = 8;
 	private static final float SCORE_ROW = 32, SCORE_HEADS_H = 34, STAT_ROW = 42, SECTION_H = 50;
 	private static final float RESET_W = 230, RESET_CONFIRM_TIME = 3f;
 	private static final float[] SCORE_COLS = { 0.07f, 0.2f, 0.38f, 0.58f };
@@ -53,7 +50,7 @@ public class HighScoresScreen extends BaseScreen {
 	private final Rectangle[] modeButtons = new Rectangle[GameMode.values().length];
 	private GameMode mode = GameMode.CLASSIC;
 	private enum View {
-		SCORES("High scores", "highscores"), STATS("Statistics", "statistics"), BADGES("Badges", "badges");
+		SCORES("High scores", "highscores"), STATS("Statistics", "statistics");
 
 		final String label, tag;
 
@@ -94,10 +91,6 @@ public class HighScoresScreen extends BaseScreen {
 
 	public void showStatistics() {
 		view(View.STATS);
-	}
-
-	public void showBadges() {
-		view(View.BADGES);
 	}
 
 	@Override
@@ -144,14 +137,12 @@ public class HighScoresScreen extends BaseScreen {
 			top += MODE_ROOM;
 		}
 		inside.set(page.x + FRAME, page.y + FRAME, page.width - 2 * FRAME, page.height - top - FRAME);
-		float content = view == View.STATS ? statsHeight() : view == View.BADGES ? badgesHeight() : scoresHeight();
+		float content = view == View.STATS ? statsHeight() : scoresHeight();
 		scroller.update(frameDelta(), Gdx.input.isTouched(), content - inside.height);
 		if (clipTo(inside)) {
 			float listTop = inside.y + inside.height + scroller.offset();
 			if (view == View.STATS) {
 				drawStats(listTop);
-			} else if (view == View.BADGES) {
-				drawBadges(listTop);
 			} else {
 				drawScores(listTop);
 			}
@@ -324,33 +315,6 @@ public class HighScoresScreen extends BaseScreen {
 			}
 		}
 		return null;
-	}
-
-	private float badgesHeight() {
-		return (Chapter.values().length + Badge.values().length) * BADGE_ROW + PAD;
-	}
-
-	private void drawBadges(float top) {
-		Campaign progress = game.records().campaign();
-		float y = top - 8;
-		for (Chapter c : Chapter.values()) {
-			drawBadge(y, "Beat " + c.champion().name, c.ready ? "Win chapter " + c.number() + "'s duel" : "Coming soon",
-					progress.cleared(c));
-			y -= BADGE_ROW;
-		}
-		for (Badge b : Badge.values()) {
-			drawBadge(y, b.title, b.how, progress.has(b));
-			y -= BADGE_ROW;
-		}
-	}
-
-	private void drawBadge(float top, String title, String how, boolean earned) {
-		float x = page.x + PAD, icon = BADGE_ROW - 14;
-		batch.setColor(1, 1, 1, earned ? 1 : 0.25f);
-		batch.draw(assets.badge, x, top - icon - 4, icon, icon);
-		batch.setColor(Color.WHITE);
-		paint.serif(1.3f, earned ? Palette.GOLD_LIGHT : Palette.MUTED).draw(batch, title, x + icon + 14, top - 8);
-		paint.ui(0.95f, earned ? Palette.CREAM : Palette.MUTED).draw(batch, how, x + icon + 14, top - 30);
 	}
 
 	private GameMode modeAt(float x, float y) {

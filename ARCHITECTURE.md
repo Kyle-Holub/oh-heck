@@ -169,7 +169,7 @@ first six have no libGDX and test in plain JUnit.
 
 `TitleScreen` (with `FallingCards`, the 3D shower; Play flies the camera through it into the Play menu), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long, each a list of
 `OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`; built twice:
-`options` for Preferences and the practice round, and `setup`, the screen before a custom game, whose
+`options` (pages Game, Sound, Display, Unlockables with the card backs, felts and badges, and Practice), and `setup`, the screen before a custom game, whose
 Table and Rules pages pick the difficulty and the game mode, where changing any rule makes the
 game Custom, and whose header deals the game), `PlayMenuScreen` (where to play, as a row of
 cards: Continue, Campaign, Custom game, High scores; a first visit asks "New to Oh Heck?" and can start the
@@ -198,11 +198,11 @@ unnamed, each bid shown with the table's icons on a small placard, the one to bl
 plus the champion's twist), and a duel against its champion
 (`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
 bid made after two made running). Winning the duel clears the chapter and wins its card back
-and felt (`Cosmetic`, chosen in Preferences with a preview; the felt also tints every sparkle through `Palette.SPARKLE`); the game-over panel's **Claim prizes** opens
+and felt (`Cosmetic`, chosen under Options, Unlockables with a preview; the felt also tints every sparkle through `Palette.SPARKLE`); the game-over panel's **Claim prizes** opens
 `ChapterClearedScreen`, which turns each prize over in turn (card back, felt, champion's badge)
 with fireworks, then puts the new look on. `PlayScreen.campaign` plays a `Stage` (table, final table or duel), each
 opened by winning the one before (`Campaign.open`); campaign games are not saved and don't touch the statistics or high scores, but every
-game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
+game can earn badges (`BadgeKeeper`, `Feats`), shown under Options, Unlockables. A duel seats the champion at
 the top (`TableLayout.spot`). Each chapter's champion brings a `Twist` to the final table and the duel: momentum in
 chapter 1, winner picks trump in chapter 2 (`RuleSet.pickTrump`: a hand opens in `Match.Phase.PICKING_TRUMP`
 when someone made a bid last hand, and the highest made bid names the trump suit from a panel of suits), hands won
@@ -221,7 +221,7 @@ records, campaign) and replays the intro, as for a new player. The plan the camp
 ### Saving
 
 `Settings` wraps the device's preferences: the options and whether you know how to play. Kept in the
-same preferences by `RecordPrefs`: the saved game (`SavedGame`, one text), statistics and
+same preferences by `RecordPrefs`: the saved game (`SavedGame`, one text: the latest game played, custom or campaign; Continue resumes it), statistics and
 high scores (`HighScores`, stored by field name, ten kept per game mode). Statistics are
 kept per difficulty only, in measures that hold for any rules (places, bids made, points a
 hand), so every mode counts toward them.
