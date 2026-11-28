@@ -297,6 +297,12 @@ public class CampaignScreen extends BaseScreen {
 					.translate(-cx, -cy, 0));
 		}
 		float tilt = TILT_FROM * (1 - TILT.progress(unfoldFor)), distance = MathUtils.lerp(FAR, NEAR, TILT.progress(unfoldFor));
+		if (!TILT.done(unfoldFor)) {
+			float table = 0.45f * MAP_LIGHT.progress(unfoldFor);
+			batch.setColor(table, table, table, 1);
+			batch.draw(assets.table, 0, 0, w, h);
+			batch.setColor(Color.WHITE);
+		}
 		map.drawMap(tilt, distance, MAP_LIGHT.progress(unfoldFor));
 		if (TILT.done(unfoldFor)) {
 			float seals = SEALS.progress(unfoldFor), pulse = 0.8f + 0.2f * MathUtils.sin(shownFor * 2f);

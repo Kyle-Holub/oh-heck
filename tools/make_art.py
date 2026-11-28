@@ -844,7 +844,7 @@ def campaign_map(out):
         d.line([(x, y), (x, y + r * 1.3)], fill=INK, width=2 * S)
         d.ellipse([x - r, y - r * 1.4, x + r, y + r * 0.4], outline=INK, width=2 * S)
 
-    for cx, cy, n in ((0.07, 0.58, 7), (0.5, 0.86, 8), (0.74, 0.14, 7), (0.95, 0.4, 6), (0.22, 0.9, 6)):
+    for cx, cy, n in ((0.06, 0.5, 7), (0.5, 0.86, 8), (0.74, 0.14, 7), (0.95, 0.4, 6), (0.06, 0.9, 5)):
         for k in range(n):
             tree(cx + rng.uniform(-0.035, 0.035), cy + rng.uniform(-0.05, 0.05), rng.uniform(9, 14))
 
@@ -860,7 +860,7 @@ def campaign_map(out):
     for k in range(3):
         d.arc([lx - 40 * S + k * 25 * S, ly - 6 * S, lx - 22 * S + k * 25 * S, ly + 6 * S], 200, 340, fill=(58, 66, 80, 150), width=2 * S)
 
-    cx, cy = at(0.075, 0.84)
+    cx, cy = at(0.3, 0.84)
     R = 56 * S
     d.ellipse([cx - R, cy - R, cx + R, cy + R], outline=INK, width=2 * S)
     d.ellipse([cx - R * 0.72, cy - R * 0.72, cx + R * 0.72, cy + R * 0.72], outline=FAINT, width=2 * S)
