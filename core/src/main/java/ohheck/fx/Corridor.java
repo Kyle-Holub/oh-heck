@@ -18,7 +18,8 @@ public final class Corridor {
 
 	private static final float FOCAL = 700f, HALF_W = 250f, HALF_H = 230f, LENGTH = 3400f, SLAB = 50f, NEAR = 30f,
 			TILE = 230f, FOG = 1300f, AMBIENT = 0.04f, TORCH_EVERY = 560f, TORCH_FIRST = 380f, TORCH_Y = 50f,
-			TORCH_REACH = 300f, STOP_SHORT = 520f, STRIDE = 1.9f, BOB = 7f, FLAME = 70f, ARCH_W = 260f, ARCH_H = 390f;
+			TORCH_REACH = 300f, STOP_SHORT = 520f, STRIDE = 1.9f, BOB = 7f, FLAME = 120f, ARCH_W = 260f, ARCH_H = 390f;
+	private static final int STRIPS = 8;
 	private static final Color WARM = new Color(1f, 0.68f, 0.38f, 1f), FLAME_TINT = new Color(1f, 0.62f, 0.25f, 1f),
 			HALL = new Color(1f, 0.85f, 0.6f, 1f);
 
@@ -57,11 +58,15 @@ public final class Corridor {
 
 	private void slab(SpriteBatch batch, Texture t, float cx, float cy, float x0, float y0, float x1, float y1, float near,
 			float far, boolean wall) {
-		corner(0, cx, cy, x0, y0, near, near, wall ? y0 : x0);
-		corner(5, cx, cy, x1, y1, near, near, wall ? y1 : x1);
-		corner(10, cx, cy, x1, y1, far, far, wall ? y1 : x1);
-		corner(15, cx, cy, x0, y0, far, far, wall ? y0 : x0);
-		batch.draw(t, quad, 0, 20);
+		for (int k = 0; k < STRIPS; k++) {
+			float ax = MathUtils.lerp(x0, x1, (float) k / STRIPS), ay = MathUtils.lerp(y0, y1, (float) k / STRIPS);
+			float bx = MathUtils.lerp(x0, x1, (float) (k + 1) / STRIPS), by = MathUtils.lerp(y0, y1, (float) (k + 1) / STRIPS);
+			corner(0, cx, cy, ax, ay, near, near, wall ? ay : ax);
+			corner(5, cx, cy, bx, by, near, near, wall ? by : bx);
+			corner(10, cx, cy, bx, by, far, far, wall ? by : bx);
+			corner(15, cx, cy, ax, ay, far, far, wall ? ay : ax);
+			batch.draw(t, quad, 0, 20);
+		}
 	}
 
 	private void corner(int o, float cx, float cy, float x, float y, float z, float u, float v) {
@@ -102,6 +107,12 @@ public final class Corridor {
 			}
 			float scale = FOCAL / depth, fog = (float) Math.exp(-depth / (FOG * 2)), f = flicker(i);
 			float x = cx + torchX(i) * scale, y = cy + TORCH_Y * scale, size = FLAME * scale * f;
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			float iron = 0.12f * fog;
+			batch.setColor(iron, iron * 0.8f, iron * 0.6f, 1f);
+			batch.draw(assets.white, x - size * 0.1f, y - size * 0.55f, size * 0.2f, size * 0.55f);
+			batch.draw(assets.white, x - size * 0.2f, y - size * 0.05f, size * 0.4f, size * 0.1f);
+			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 			batch.setColor(FLAME_TINT.r, FLAME_TINT.g, FLAME_TINT.b, 0.35f * fog);
 			batch.draw(assets.glow, x - size * 2, y - size * 1.6f, size * 4, size * 4);
 			batch.setColor(1f, 0.82f, 0.5f, 0.9f * fog);
@@ -121,9 +132,11 @@ public final class Corridor {
 		batch.draw(assets.stoneWall, quad, 0, 20);
 		float depth = LENGTH - camera, scale = FOCAL / depth, fog = (float) Math.exp(-depth / FOG);
 		float aw = ARCH_W * scale, ah = ARCH_H * scale, x = cx - aw / 2, y = cy - HALF_H * scale;
+		batch.setColor(0, 0, 0, 1);
+		batch.draw(assets.plaque, x, y, aw, ah);
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		float glow = 0.35f + 0.65f * (1 - depth / LENGTH);
-		batch.setColor(HALL.r, HALL.g, HALL.b, glow * Math.max(fog, 0.25f));
+		batch.setColor(HALL.r, HALL.g, HALL.b, glow);
 		batch.draw(assets.plaque, x, y, aw, ah);
 		batch.draw(assets.glow, cx - aw * 1.5f, y - ah * 0.2f, aw * 3, ah * 1.5f);
 		batch.setColor(Color.WHITE);
