@@ -118,7 +118,7 @@ first six have no libGDX and test in plain JUnit.
   moment (`TableFlow.inHitStop`); `GameEnd` raises the podium (player cards) from last place up before the
   scores, except in a duel; a tap finishes it, and the scores then wait for a tap (Continue or Main menu). A duel wears its chapter's look (`Cosmetic`) while it lasts.
   Screen jolts (shake, zoom) are an `ohheck.anim.Kick` read into `BaseScreen`'s camera; `CardWipe` is the
-  curtain of card backs into and out of a campaign table. `PlayScreen.practice` plays the practice round:
+  curtain of card backs into a custom game; a campaign table fades in from the light of the door it was entered by. `PlayScreen.practice` plays the practice round:
   `PracticeGuide` reads the table's moment, asks the `PracticeCoach` for a tip, spotlights what it points at and
   holds the table until it is tapped; in the scripted hands only the planned card or bid can be chosen. Each
   `TableState` constant holds its own behaviour (`entered`, `update`, `skip`) and what the
@@ -186,9 +186,9 @@ game's rules.
 
 The title's **Play** opens the Play screen: **Campaign**, **Custom game** (set up, then saved as it
 goes), High scores, and Continue when a custom game is in progress.
-The campaign (`CampaignScreen`) opens with the eye dropping onto a parchment map (`ChapterMap`, the map drawn by
+The campaign (`CampaignScreen`) opens looking out into mist and sparkles, then the eye drops through them onto a parchment map (`ChapterMap`, the map drawn by
 `make_art.py`), a tavern for each chapter marked by a wax seal along an inked trail (locked seals ash grey with a padlock
-that jiggles; an unlock breaks it with sparks). A tavern zooms into its chapter: a hall of four arched doors, one per
+that jiggles; an unlock breaks it with sparks). A tavern's seal lifts into the dark, is stamped, cracks and splits open, and its chapter unfolds out of it: a hall of four arched doors, one per
 stage, opening with a misty dive through the door; the duel's door leads instead down the torchlit 3D `Corridor`
 (`ohheck.fx`). The four stages in order: table play (a normal game against the chapter's rivals), trick shots
 (`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding
