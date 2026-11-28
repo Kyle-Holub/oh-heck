@@ -792,6 +792,112 @@ def stone(out):
     tile("stone_floor.png", 3, 2, (70, 62, 54), 10, (20, 16, 13), False)
 
 
+def campaign_map(out):
+    """The campaign's map, an old parchment chart of the country between the taverns: mountains, forests, a river,
+    a lake and a compass rose drawn in brown ink inside a ruled border (map.jpg, the screen's shape; the trail and
+    the taverns are drawn by the game over it). And the wax seal each tavern is marked with, lit (seal.png) and
+    locked (seal_locked.png)."""
+    rng = np.random.default_rng(41)
+    W, H = 2048, 848
+    def smooth_noise(scale, seed):
+        n = np.random.default_rng(seed).normal(0, 1, (H, W))
+        fy, fx = np.fft.fftfreq(H)[:, None], np.fft.fftfreq(W)[None, :]
+        out = np.real(np.fft.ifft2(np.fft.fft2(n) * np.exp(-(fx ** 2 + fy ** 2) * scale)))
+        return out / np.abs(out).max()
+    yy, xx = np.mgrid[0:H, 0:W]
+    edge = np.minimum(np.minimum(xx, W - 1 - xx) / W, np.minimum(yy, H - 1 - yy) / H * (H / W))
+    vignette = np.clip(edge / 0.09, 0, 1) ** 0.6
+    blotch = smooth_noise(4e5, 42) * 0.5 + smooth_noise(4e4, 43) * 0.3 + smooth_noise(4e3, 44) * 0.2
+    base = np.array((224, 203, 160), float)
+    shade = (0.82 + 0.1 * blotch) * (0.55 + 0.45 * vignette)
+    rgb = base[None, None, :] * shade[..., None]
+    rgb = rgb * (1 + 0.04 * rng.normal(0, 1, (H, W, 1)))
+    img = Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+    S = 2
+    ink = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(ink)
+    INK = (74, 48, 28, 230)
+    FAINT = (74, 48, 28, 120)
+    WATER = (58, 66, 80, 200)
+
+    def at(fx, fy):
+        return fx * W * S, fy * H * S
+
+    for inset, width in ((22, 5), (34, 2)):
+        d.rectangle([inset * S, inset * S, (W - inset) * S, (H - inset) * S], outline=INK, width=width * S)
+
+    def mountain(fx, fy, size):
+        x, y = at(fx, fy)
+        h, half = size * S, size * 0.75 * S
+        d.line([(x - half, y), (x, y - h), (x + half, y)], fill=INK, width=3 * S, joint="curve")
+        for k in range(1, 5):
+            t = k / 5
+            d.line([(x + half * t * 0.9, y - h * (1 - t) * 0.95), (x + half * t * 0.9 - 6 * S, y)], fill=FAINT, width=2 * S)
+
+    for fx, fy, size in ((0.24, 0.24, 46), (0.28, 0.21, 62), (0.33, 0.25, 40), (0.43, 0.2, 52), (0.48, 0.24, 38),
+                         (0.68, 0.88, 44), (0.73, 0.85, 58), (0.78, 0.9, 40), (0.97, 0.88, 36)):
+        mountain(fx, fy, size)
+
+    def tree(fx, fy, size):
+        x, y = at(fx, fy)
+        r = size * S
+        d.line([(x, y), (x, y + r * 1.3)], fill=INK, width=2 * S)
+        d.ellipse([x - r, y - r * 1.4, x + r, y + r * 0.4], outline=INK, width=2 * S)
+
+    for cx, cy, n in ((0.07, 0.58, 7), (0.5, 0.86, 8), (0.74, 0.14, 7), (0.95, 0.4, 6), (0.22, 0.9, 6)):
+        for k in range(n):
+            tree(cx + rng.uniform(-0.035, 0.035), cy + rng.uniform(-0.05, 0.05), rng.uniform(9, 14))
+
+    river = []
+    for k in range(41):
+        t = k / 40
+        river.append(at(0.555 - 0.07 * t + 0.025 * math.sin(t * 9), 0.035 + t * 0.93))
+    d.line(river, fill=WATER, width=7 * S, joint="curve")
+    d.line([(x + 10 * S, y) for x, y in river[::2]], fill=(58, 66, 80, 70), width=2 * S)
+
+    lx, ly = at(0.27, 0.66)
+    d.ellipse([lx - 70 * S, ly - 30 * S, lx + 70 * S, ly + 30 * S], outline=WATER, width=4 * S)
+    for k in range(3):
+        d.arc([lx - 40 * S + k * 25 * S, ly - 6 * S, lx - 22 * S + k * 25 * S, ly + 6 * S], 200, 340, fill=(58, 66, 80, 150), width=2 * S)
+
+    cx, cy = at(0.075, 0.84)
+    R = 56 * S
+    d.ellipse([cx - R, cy - R, cx + R, cy + R], outline=INK, width=2 * S)
+    d.ellipse([cx - R * 0.72, cy - R * 0.72, cx + R * 0.72, cy + R * 0.72], outline=FAINT, width=2 * S)
+    for k in range(8):
+        a = math.pi / 4 * k
+        long = R * (1.15 if k % 2 == 0 else 0.7)
+        tip = (cx + math.sin(a) * long, cy - math.cos(a) * long)
+        side = 9 * S
+        left = (cx + math.sin(a - math.pi / 2) * side, cy - math.cos(a - math.pi / 2) * side)
+        right = (cx + math.sin(a + math.pi / 2) * side, cy - math.cos(a + math.pi / 2) * side)
+        d.polygon([tip, left, (cx, cy)], fill=INK)
+        d.polygon([tip, right, (cx, cy)], outline=INK)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", 26 * S)
+    d.text((cx, cy - R * 1.15 - 6 * S), "N", fill=INK, font=font, anchor="md")
+
+    ink = ink.resize((W, H), Image.LANCZOS)
+    img.alpha_composite(ink)
+    img.convert("RGB").save(os.path.join(out, "map.jpg"), quality=88, optimize=True)
+
+    for name, fill, deep, rim in (("seal.png", (150, 32, 30), (84, 14, 14), GOLD), ("seal_locked.png", (92, 84, 76), (52, 46, 42), (130, 116, 96))):
+        Z = 128 * SS
+        im = Image.new("RGBA", (Z, Z), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(im)
+        c = Z / 2
+        pts = []
+        for k in range(48):
+            a = math.pi * 2 * k / 48
+            r = Z * 0.46 * (1 + 0.035 * math.sin(k * 2.7) + 0.02 * math.sin(k * 5.3))
+            pts.append((c + math.cos(a) * r, c + math.sin(a) * r))
+        sd.polygon(pts, fill=deep + (255,))
+        sd.ellipse([c - Z * 0.4, c - Z * 0.4, c + Z * 0.4, c + Z * 0.4], fill=fill + (255,))
+        sd.ellipse([c - Z * 0.4, c - Z * 0.4, c + Z * 0.4, c + Z * 0.4], outline=rim + (255,), width=3 * SS)
+        sd.ellipse([c - Z * 0.33, c - Z * 0.33, c + Z * 0.33, c + Z * 0.33], outline=rim + (160,), width=1 * SS)
+        sd.ellipse([c - Z * 0.3, c - Z * 0.36, c - Z * 0.05, c - Z * 0.22], fill=(255, 255, 255, 38))
+        downsample(im, 128, 128).save(os.path.join(out, name))
+
+
 def momentum_icons(out):
     """The momentum bar beside a placard, one image per state: empty, one notch, and lit (x2 on).
     A dark capsule rimmed in gold holds two chevrons that light gold as bids are made running; when
@@ -848,6 +954,7 @@ if __name__ == "__main__":
     campaign_art(out)
     chapter_plaques(out)
     stone(out)
+    campaign_map(out)
     play_menu_icons(out)
     badge(out)
     padlock(out)

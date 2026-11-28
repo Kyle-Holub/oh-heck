@@ -12,6 +12,7 @@ public final class Palette {
 	}
 
 	public static final Color EMBER = new Color(1f, 0.8f, 0.4f, 1f), LAMP = new Color(1f, 0.92f, 0.7f, 1f);
+	public static final Color MAP_INK = new Color(0.27f, 0.16f, 0.09f, 1f), MAP_INK_FAINT = new Color(0.27f, 0.16f, 0.09f, 0.45f);
 	public static final Color FLASH = new Color(1f, 0.9f, 0.7f, 0.4f);
 
 	public static final Color SPARKLE = new Color(1f, 0.72f, 0.31f, 1f);

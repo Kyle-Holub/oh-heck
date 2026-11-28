@@ -224,20 +224,19 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void showCampaign() {
-		boolean fromTable = getScreen() instanceof PlayScreen, walked = getScreen() == playMenu;
+		boolean fromTable = getScreen() instanceof PlayScreen, fromMenu = getScreen() == playMenu;
 		screens.replaceAll(title);
 		if (fromTable) {
 			campaignScreen.wipeIn();
+		}
+		if (fromMenu) {
+			campaignScreen.unfoldMap();
 		}
 		if (!settings.campaignIntroSeen() && !options.autoplayHuman) {
 			settings.setCampaignIntroSeen(true);
 			campaignScreen.enterOnArrival(Chapter.ONE);
 		}
-		if (walked) {
-			screens.flashTo(campaignScreen);
-		} else {
-			screens.open(campaignScreen);
-		}
+		screens.open(campaignScreen);
 	}
 
 	@Override
