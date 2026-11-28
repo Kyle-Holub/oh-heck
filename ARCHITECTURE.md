@@ -323,7 +323,7 @@ open campaign card) gives a soft whoosh on a tap; going back (a Back button, mar
 device's back key) and a bid the dealer may not make sound a tankard set down on wood (`assets/sfx/tankard.wav`).
 Preferences turns the sounds off (Button
 sounds) and, separately, the light vibration. The same script makes the table's accents in that old-tavern palette
-(felt thump, knock, coin, wax stamp, riffle, paper, drum, door creak, medal, latch...); `Audio.play`
+(felt thump, knock, coin, wax stamp, riffle, paper, drum, heavy door, medal, latch...); `Audio.play`
 plays them and `Audio.buzz` gives the haptic vocabulary (tick, tap, thud, double, heartbeat). At the
 table `TableSounds` times them to the game: a card's sound waits for it to land, the score card ticks
 as it counts. Screen changes whoosh (`Screens`), option toggles latch, the campaign hand riffles open.
