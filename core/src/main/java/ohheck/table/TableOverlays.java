@@ -200,34 +200,35 @@ final class TableOverlays {
 		bidPopup.draw(layout.w / 2, layout.centreY(), match.handSize(), legalBid, -1, 1f, targets.bids());
 	}
 
-	static final float VERSUS_FROM = 0.35f, VERSUS_LENGTH = 3.8f, VERSUS_SLAM = 1.2f;
-	private static final float VERSUS_TILT = 12, VERSUS_HABIT_W = 380, SEAL_SIZE = 170, RISERS = 44;
-	private static final Tween PANELS_IN = Tween.over(0.55f, Ease.OUT).after(VERSUS_FROM),
-			STAMP = Tween.over(0.22f, Ease.OUT).after(VERSUS_SLAM), PARTING = Tween.over(0.75f, Ease.IN).after(VERSUS_LENGTH - 0.75f);
-	private static final Color YOUR_SIDE = new Color(0.17f, 0.1f, 0.06f, 1f);
-	private final Color theme = new Color(), themeDeep = new Color(), themeSide = new Color();
+	static final float VERSUS_LENGTH = 3.8f, VERSUS_SLAM = 1.25f;
+	private static final float VERSUS_TILT = 12, SEAL_SIZE = 170, RISERS = 44, NAME_GLIDE = 70;
+	private static final Tween ARRIVING = Tween.over(0.5f, Ease.SMOOTH), LINE = Tween.over(0.5f, Ease.OUT).after(0.15f),
+			SIDES_IN = Tween.over(0.45f, Ease.SMOOTH).after(0.3f), NAMES_IN = Tween.over(0.5f, Ease.OUT).after(0.55f),
+			STAMP = Tween.over(0.22f, Ease.OUT).after(VERSUS_SLAM), NAMES_OUT = Tween.over(0.35f, Ease.SMOOTH).after(VERSUS_LENGTH - 1.0f),
+			PARTING = Tween.over(0.75f, Ease.IN).after(VERSUS_LENGTH - 0.75f);
+	private final Color theme = new Color(), themeDeep = new Color(), theirSide = new Color(), yourSide = new Color();
 
 	void drawVersus(float since) {
-		float w = layout.w, h = layout.h, mid = h / 2, in = PANELS_IN.progress(since), part = PARTING.progress(since);
-		float shown = 1 - part;
+		float w = layout.w, h = layout.h, mid = h / 2, part = PARTING.progress(since), shown = 1 - part;
 		theme.set(Palette.SPARKLE);
-		themeDeep.set(theme).mul(0.14f, 0.14f, 0.14f, 1);
-		themeSide.set(theme).mul(0.34f, 0.34f, 0.34f, 1);
+		themeDeep.set(theme).mul(0.1f, 0.1f, 0.1f, 1);
+		theirSide.set(theme).mul(0.42f, 0.42f, 0.42f, 1);
+		yourSide.set(theme).mul(0.15f, 0.15f, 0.15f, 1);
 		paint.rect(0, 0, w, h, flashTint.set(themeDeep).mul(1, 1, 1, shown));
-		paint.glow(w / 2 - w * 0.6f, mid - h * 0.7f, w * 1.2f, h * 1.4f, theme, 0.22f * shown);
+		float sides = SIDES_IN.progress(since) * shown, apart = part * h * 0.9f;
+		side(yourSide, -apart, mid, false, sides);
+		side(theirSide, apart, mid, true, sides);
+		paint.glow(w / 2 - w * 0.6f, mid - h * 0.7f, w * 1.2f, h * 1.4f, theme, 0.2f * shown);
 		risingSparkles(since, shown);
-		float away = (1 - in) * (w + 300) + part * (w + 300);
-		side(YOUR_SIDE, -away, mid, false, 1 - part * 0.5f);
-		side(themeSide, away, mid, true, 1 - part * 0.5f);
-		gilding(mid, Math.min(in, 1 - part));
-		float names = Math.min(in, 1 - PARTING.progress(since + 0.3f));
-		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT, names), scene.name(1), w * 0.7f + away, mid + h * 0.3f, true);
-		paint.ui(1.05f, Palette.CREAM, names).draw(paint.batch, scene.habit(1), w * 0.7f - VERSUS_HABIT_W / 2 + away, mid + h * 0.3f - 52,
-				VERSUS_HABIT_W, Align.center, true);
-		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT, names), scene.name(Seating.YOU), w * 0.3f - away, mid - h * 0.2f, true);
-		paint.text(paint.ui(1.05f, Palette.CREAM, names), CHALLENGER, w * 0.3f - away, mid - h * 0.2f - 52, true);
+		gilding(mid, LINE.progress(since), shown);
+		float names = NAMES_IN.progress(since) * (1 - NAMES_OUT.progress(since)), glide = (1 - NAMES_IN.progress(since)) * NAME_GLIDE;
+		float dx = glide * MathUtils.cosDeg(VERSUS_TILT), dy = glide * MathUtils.sinDeg(VERSUS_TILT);
+		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT, names), scene.name(1), w * 0.7f + dx, mid + h * 0.28f + dy, true);
+		paint.text(paint.ui(1.05f, Palette.CREAM, names), CHAMPION, w * 0.7f + dx, mid + h * 0.28f - 52 + dy, true);
+		paint.text(paint.serif(2.6f, Palette.GOLD_LIGHT, names), scene.name(Seating.YOU), w * 0.3f - dx, mid - h * 0.2f - dy, true);
+		paint.text(paint.ui(1.05f, Palette.CREAM, names), CHALLENGER, w * 0.3f - dx, mid - h * 0.2f - 52 - dy, true);
 		if (since >= VERSUS_SLAM) {
-			float stamp = STAMP.progress(since), size = SEAL_SIZE * (1.9f - 0.9f * stamp) * (1 + part * 0.6f), a = Math.min(1, stamp * 3) * (1 - part);
+			float stamp = STAMP.progress(since), size = SEAL_SIZE * (1.9f - 0.9f * stamp) * (1 + part * 0.6f), a = Math.min(1, stamp * 3) * shown;
 			paint.glow(w / 2 - size * 1.2f, mid - size * 1.2f, size * 2.4f, size * 2.4f, theme, 0.45f * a);
 			paint.batch.setColor(Math.min(1, theme.r * 1.15f), Math.min(1, theme.g * 1.15f), Math.min(1, theme.b * 1.15f), a);
 			paint.batch.draw(paint.assets.sealLocked, w / 2 - size / 2, mid - size / 2, size, size);
@@ -236,6 +237,8 @@ final class TableOverlays {
 			paint.text(paint.serif(letters, VS_SHADOW, a), VS, w / 2 + 2, mid + 22 * size / SEAL_SIZE - 2, true);
 			paint.text(paint.serif(letters, Palette.GOLD_LIGHT, a), VS, w / 2, mid + 22 * size / SEAL_SIZE, true);
 		}
+		float arriving = 1 - ARRIVING.progress(since);
+		paint.rect(0, 0, w, h, flashTint.set(theme).mul(1, 1, 1, 0.55f * arriving * arriving));
 	}
 
 	private final Color flashTint = new Color();
@@ -257,24 +260,27 @@ final class TableOverlays {
 		paint.batch.setColor(Color.WHITE);
 	}
 
-	private void side(Color c, float dx, float edge, boolean above, float alpha) {
-		float bw = layout.w * 2, bh = layout.h;
+	private void side(Color c, float apart, float edge, boolean above, float alpha) {
+		if (alpha <= 0) {
+			return;
+		}
+		float bw = layout.w * 2, bh = layout.h, nx = -MathUtils.sinDeg(VERSUS_TILT) * apart, ny = MathUtils.cosDeg(VERSUS_TILT) * apart;
 		paint.batch.setColor(c.r, c.g, c.b, alpha);
-		paint.batch.draw(paint.assets.white, layout.w / 2 - bw / 2 + dx, above ? edge : edge - bh, bw / 2, above ? 0 : bh, bw, bh, 1, 1,
+		paint.batch.draw(paint.assets.white, layout.w / 2 - bw / 2 + nx, (above ? edge : edge - bh) + ny, bw / 2, above ? 0 : bh, bw, bh, 1, 1,
 				VERSUS_TILT, 0, 0, 1, 1, false, false);
 		paint.batch.setColor(Color.WHITE);
 	}
 
-	private void gilding(float mid, float a) {
-		if (a <= 0) {
+	private void gilding(float mid, float drawn, float a) {
+		if (a <= 0 || drawn <= 0) {
 			return;
 		}
-		float bw = layout.w * 2, cos = MathUtils.cosDeg(VERSUS_TILT), sin = MathUtils.sinDeg(VERSUS_TILT);
+		float bw = layout.w * 2 * drawn, cos = MathUtils.cosDeg(VERSUS_TILT), sin = MathUtils.sinDeg(VERSUS_TILT);
 		rule(mid, bw, GILD_W, Palette.GOLD, a);
 		rule(mid + GILD_W, bw, 2, GILD_DARK, a);
 		rule(mid - GILD_W, bw, 2, GILD_DARK, a);
 		paint.batch.setColor(Palette.GOLD_LIGHT.r, Palette.GOLD_LIGHT.g, Palette.GOLD_LIGHT.b, a);
-		for (float d = -layout.w; d <= layout.w; d += GILD_STEP) {
+		for (float d = -layout.w * drawn; d <= layout.w * drawn; d += GILD_STEP) {
 			float x = layout.w / 2 + d * cos, y = mid + d * sin;
 			paint.batch.draw(paint.assets.white, x - GILD_DIAMOND / 2, y - GILD_DIAMOND / 2, GILD_DIAMOND / 2, GILD_DIAMOND / 2, GILD_DIAMOND,
 					GILD_DIAMOND, 1, 1, 45 + VERSUS_TILT, 0, 0, 1, 1, false, false);
@@ -288,7 +294,7 @@ final class TableOverlays {
 				0, 0, 1, 1, false, false);
 	}
 
-	private static final String VS = "VS", CHALLENGER = "Challenger";
+	private static final String VS = "VS", CHALLENGER = "Challenger", CHAMPION = "Champion";
 	private static final float GILD_W = 6, GILD_STEP = 110, GILD_DIAMOND = 12;
 	private static final Color VS_SHADOW = new Color(0.12f, 0.05f, 0.03f, 1), GILD_DARK = new Color(0.55f, 0.4f, 0.17f, 1);
 

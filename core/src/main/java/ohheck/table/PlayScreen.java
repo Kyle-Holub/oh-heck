@@ -694,10 +694,10 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (finishing()) {
 			guide.drawFinale(paint, layout, match(), time, w, h);
 		}
-		if (chapter != null) {
+		if (chapter != null && stage != Stage.DUEL) {
 			float fade = 1 - Math.min(1, time / ARRIVAL);
 			paint.rect(0, 0, w, h, arrivalLight.set(Palette.FLASH).mul(1, 1, 1, ARRIVAL_LIGHT * fade * fade));
-		} else if (guide == null) {
+		} else if (chapter == null && guide == null) {
 			CardWipe.draw(batch, assets.back(), w, h, time);
 		}
 		batch.end();
