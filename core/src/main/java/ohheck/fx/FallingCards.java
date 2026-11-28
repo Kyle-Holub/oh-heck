@@ -296,13 +296,17 @@ public final class FallingCards {
 	}
 
 	public void drawMist(SpriteBatch batch, float cx, float cy) {
+		drawMist(batch, cx, cy, 1);
+	}
+
+	public void drawMist(SpriteBatch batch, float cx, float cy, float alpha) {
 		for (int i = MIST - 1; i >= 0; i--) {
 			float z = mz[i] - camera;
 			if (z < PASSED) {
 				continue;
 			}
 			float scale = FOCAL / z, size = MIST_SIZE * scale, drift = MathUtils.sin(time * 0.3f + i) * 30f;
-			batch.setColor(MIST_TINT.r, MIST_TINT.g, MIST_TINT.b, MIST_ALPHA * MathUtils.clamp((z - PASSED) / NEAR_FADE, 0f, 1f));
+			batch.setColor(MIST_TINT.r, MIST_TINT.g, MIST_TINT.b, alpha * MIST_ALPHA * MathUtils.clamp((z - PASSED) / NEAR_FADE, 0f, 1f));
 			batch.draw(assets.glow, cx + (mx[i] + drift) * scale - size / 2, cy + my[i] * scale - size / 2, size, size);
 		}
 		batch.setColor(Color.WHITE);
