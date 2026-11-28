@@ -40,7 +40,7 @@ final class TableFlow {
 		}
 	}
 
-	static final float AI_DELAY = 0.8f, HAND_END_SHOW = 2.4f, TRUMP_FLIP_TIME = 0.45f;
+	static final float AI_DELAY = 0.8f, HAND_END_SHOW = 2.4f, TRUMP_FLIP_TIME = 0.45f, SORT_TIME = 0.8f;
 
 	private final DealAnimation deal = new DealAnimation();
 	private final List<Listener> listeners;
@@ -128,6 +128,10 @@ final class TableFlow {
 
 	boolean yourTurnToBid() {
 		return state == TableState.TURN && match.phase() == Match.Phase.BIDDING && match.currentSeat() == Seating.YOU;
+	}
+
+	boolean handSorted() {
+		return !isDealing() && trumpTime >= TRUMP_FLIP_TIME + SORT_TIME;
 	}
 
 	boolean yourTurnToPick() {

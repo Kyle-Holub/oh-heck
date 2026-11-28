@@ -381,6 +381,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (flow.state() == TableState.VERSUS && !slammed && flow.stateTime() >= TableOverlays.VERSUS_SLAM) {
 			slammed = true;
 			kick.shake(time, VERSUS_SHAKE);
+			sparks.burst(layout.w / 2, layout.h / 2, 120);
+			game.audio().play(Audio.Effect.THUMP);
 		}
 		overlays.update(dt);
 		sparks.step(dt);

@@ -140,7 +140,7 @@ enum TableState {
 
 		@Override
 		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
-			if (s.flow().yourTurnToBid()) {
+			if (s.flow().yourTurnToBid() && s.flow().handSorted()) {
 				o.drawBidPanel();
 			} else if (s.flow().yourTurnToPick()) {
 				o.drawPickTrump();

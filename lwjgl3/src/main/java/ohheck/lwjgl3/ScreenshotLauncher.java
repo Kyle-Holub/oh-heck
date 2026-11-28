@@ -42,7 +42,7 @@ import ohheck.table.PlayScreen;
  */
 public class ScreenshotLauncher {
 
-	private static final String[] WANTED = { "intro", "title", "zooming", "play", "setup", "highscores", "statistics", "badges", "options", "players", "unfolding", "campaign", "entering", "brief:chapter", "chapter:1", "door", "corridor", "brief:duel", "brief:table", "shot:lone-ace", "cleared", "tip:welcome", "tip:trump", "tip:bid", "picking", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "zooming", "play", "setup", "highscores", "statistics", "badges", "options", "players", "unfolding", "campaign", "entering", "brief:chapter", "chapter:1", "door", "corridor", "brief:duel", "versus", "brief:table", "shot:lone-ace", "cleared", "tip:welcome", "tip:trump", "tip:bid", "picking", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "tricks:7", "tricks:7:", "play:8:",
 			"tossing", "gameover" };
 
@@ -78,6 +78,9 @@ public class ScreenshotLauncher {
 		}
 		if (state.equals("unfolding")) {
 			return 4;
+		}
+		if (state.equals("versus")) {
+			return 16;
 		}
 		if (state.equals("picking")) {
 			return 10;
@@ -253,7 +256,9 @@ public class ScreenshotLauncher {
 			then("campaign", 1.5f, s -> ((CampaignScreen) s).enter(Chapter.ONE));
 			then("brief:chapter", 1.5f, s -> ((CampaignScreen) s).go());
 			then("chapter:1", 1.5f, s -> ((CampaignScreen) s).openStage(3));
-			then("brief:duel", 1.0f, s -> ((CampaignScreen) s).briefTable(Chapter.ONE));
+			then("brief:duel", 1.0f, s -> ((CampaignScreen) s).go());
+			then("versus", 4.0f, s -> game.showCampaign());
+			then("chapter:1", 1.0f, s -> ((CampaignScreen) s).briefTable(Chapter.ONE));
 			then("brief:table", 1.5f, s -> game.playTrickShot(TrickShots.ALL.get(0)));
 			then("shot:lone-ace", 3.5f, s -> game.showChapterCleared(Chapter.ONE));
 			then("cleared", 1.5f, s -> {

@@ -42,7 +42,7 @@ public final class Assets implements Disposable {
 	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon, waitingIcon;
 	public final Texture bidDigits;
 	private final TextureRegion[] digits = new TextureRegion[11];
-	public final Texture white;
+	public final Texture white, fadeDown;
 	public final Texture stroke;
 	public final BitmapFont font;
 	public final BitmapFont serif;
@@ -119,6 +119,7 @@ public final class Assets implements Disposable {
 		back = new TextureRegion(backOf(Cosmetic.CLASSIC));
 		backBlur = new TextureRegion(blurredBackOf(Cosmetic.CLASSIC));
 		white = own(whitePixel());
+		fadeDown = own(linear(fadeDownTexture()));
 		stroke = own(strokeTexture(32, 160));
 		font = bitmapFont("ui");
 		serif = bitmapFont("serif");
@@ -137,6 +138,19 @@ public final class Assets implements Disposable {
 				blurred[suit][rank] = new TextureRegion(cardSheetBlur, rank * bw, suit * bh, bw, bh);
 			}
 		}
+	}
+
+	private static Texture fadeDownTexture() {
+		Pixmap p = new Pixmap(1, 64, Pixmap.Format.RGBA8888);
+		p.setBlending(Pixmap.Blending.None);
+		for (int y = 0; y < 64; y++) {
+			float a = 1 - y / 63f;
+			p.setColor(1, 1, 1, a * a);
+			p.drawPixel(0, y);
+		}
+		Texture t = new Texture(p);
+		p.dispose();
+		return t;
 	}
 
 	private static Texture whitePixel() {
