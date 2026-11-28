@@ -279,7 +279,7 @@ public final class FallingCards {
 			sSize = new float[SPARKLES], sHue = new float[SPARKLES];
 	private boolean sparklesReady;
 	private static final int MIST = 18;
-	private static final float MIST_SIZE = 900f, MIST_ALPHA = 0.32f;
+	private static final float MIST_SIZE = 900f, MIST_ALPHA = 0.42f;
 	private static final Color MIST_TINT = new Color(0.36f, 0.3f, 0.27f, 1f);
 	private final float[] mx = new float[MIST], my = new float[MIST], mz = new float[MIST];
 
