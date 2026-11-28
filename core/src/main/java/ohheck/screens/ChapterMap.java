@@ -14,8 +14,8 @@ import ohheck.ui.Palette;
 
 /*
  * The campaign's map: a parchment chart with a tavern for each chapter, marked by a wax seal, and the trail between
- * them inked in dots (solid past a cleared chapter, faint ahead). The map can lie tilted away, as if seen lying on a
- * table before the eye drops to it, and its trail can be part inked. Marker positions are fractions of the map.
+ * them inked in dots (solid past a cleared chapter, faint ahead). The map can lie tilted away and below the view, as
+ * if seen lying on a table before the eye drops to it, and its trail can be part inked. Marker positions are fractions of the map.
  */
 final class ChapterMap {
 
@@ -113,8 +113,8 @@ final class ChapterMap {
 		return markers[c.ordinal()];
 	}
 
-	void drawMap(float tilt, float distance, float light) {
-		float cx = w / 2, cy = top / 2, cos = MathUtils.cosDeg(tilt), sin = MathUtils.sinDeg(tilt);
+	void drawMap(float tilt, float distance, float light, float drop) {
+		float cx = w / 2, cy = top / 2 + drop, cos = MathUtils.cosDeg(tilt), sin = MathUtils.sinDeg(tilt);
 		float color = tint.set(light, light, light, 1).toFloatBits();
 		for (int k = 0; k < STRIPS; k++) {
 			float y0 = -top / 2 + top * k / STRIPS, y1 = -top / 2 + top * (k + 1) / STRIPS;

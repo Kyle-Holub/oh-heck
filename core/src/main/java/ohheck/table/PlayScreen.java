@@ -42,7 +42,7 @@ import ohheck.ui.Wording;
 /* The card table screen: a custom game, saved as it goes, or a campaign chapter's table. */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
-	private static final float SIGN_BESIDE = 14, SIGN_TOP = 10, SIGN_H = 44, SIGN_PAD = 18, SIGN_DELAY = 0.3f, SIGN_LENGTH = 2.8f, VERSUS_SHAKE = 9, SET_SHAKE = 7, SET_EDGES = 0.7f, HIT_SHAKE = 5, HIT_FLASH = 0.35f;
+	private static final float SIGN_BESIDE = 14, SIGN_TOP = 10, SIGN_H = 44, SIGN_PAD = 18, SIGN_DELAY = 0.3f, ARRIVAL = 0.8f, ARRIVAL_LIGHT = 2.2f, SIGN_LENGTH = 2.8f, VERSUS_SHAKE = 9, SET_SHAKE = 7, SET_EDGES = 0.7f, HIT_SHAKE = 5, HIT_FLASH = 0.35f;
 	private static final Tween SIGN_IN = Tween.over(0.35f, Ease.OUT), SIGN_OUT = Tween.over(0.35f, Ease.IN);
 
 	private final GameOptions options;
@@ -54,7 +54,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final TableFlow flow;
 	private final TableSounds sounds;
 	private static final float TENSION_DIM = 0.3f, TENSION_EASE = 0.4f;
-	private final Color tensionShade = new Color();
+	private final Color tensionShade = new Color(), arrivalLight = new Color();
 	private float tension, bestFrom = -1;
 	private static final int BEST_SPARKS = 70;
 	private Card refused;
@@ -693,6 +693,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			guide.drawFinale(paint, layout, match(), time, w, h);
 		}
 		if (chapter != null) {
+			float fade = 1 - Math.min(1, time / ARRIVAL);
+			paint.rect(0, 0, w, h, arrivalLight.set(Palette.FLASH).mul(1, 1, 1, ARRIVAL_LIGHT * fade * fade));
+		} else if (guide == null) {
 			CardWipe.draw(batch, assets.back(), w, h, time);
 		}
 		batch.end();
@@ -731,7 +734,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	private float signFrom() {
-		return chapter == null ? SIGN_DELAY : stage == Stage.DUEL ? TableOverlays.VERSUS_LENGTH : CardWipe.LENGTH;
+		return chapter == null ? (guide == null ? CardWipe.LENGTH : SIGN_DELAY) : stage == Stage.DUEL ? TableOverlays.VERSUS_LENGTH : ARRIVAL;
 	}
 
 	private void drawTable() {

@@ -22,7 +22,6 @@ import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Suit;
 import ohheck.ui.CardArt;
-import ohheck.ui.CardWipe;
 import ohheck.ui.Numbers;
 import ohheck.ui.Painter;
 import ohheck.ui.Palette;
@@ -200,7 +199,7 @@ final class TableOverlays {
 		bidPopup.draw(layout.w / 2, layout.centreY(), match.handSize(), legalBid, -1, 1f, targets.bids());
 	}
 
-	static final float VERSUS_FROM = CardWipe.LENGTH * 0.7f, VERSUS_LENGTH = VERSUS_FROM + 2.8f, VERSUS_SLAM = VERSUS_FROM + 0.75f;
+	static final float VERSUS_FROM = 0.6f, VERSUS_LENGTH = VERSUS_FROM + 2.8f, VERSUS_SLAM = VERSUS_FROM + 0.75f;
 	private static final float VERSUS_SLIDE = 0.45f, VERSUS_TILT = 9, VERSUS_GAP = 10, VERSUS_HABIT_W = 380;
 	private static final Tween VERSUS_IN = Tween.over(VERSUS_SLIDE, Ease.OUT), VERSUS_OUT = Tween.over(0.35f, Ease.IN);
 	private static final Color YOUR_BAND = new Color(0.2f, 0.11f, 0.06f, 0.97f), THEIR_BAND = new Color(0.4f, 0.07f, 0.06f, 0.97f);
