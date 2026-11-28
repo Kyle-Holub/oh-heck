@@ -270,8 +270,10 @@ public class CampaignScreen extends BaseScreen {
 		Campaign progress = game.records().campaign();
 		if (entering != null) {
 			Rectangle door = chapterCards[entering.ordinal()];
-			float cx = door.x + door.width / 2, cy = door.y + door.height * 0.45f, scale = 1 + (DIVE_SCALE - 1) * DIVE.progress(enterFor);
-			batch.setTransformMatrix(dive.idt().translate(cx, cy, 0).scale(scale, scale, 1).translate(-cx, -cy, 0));
+			float p = DIVE.progress(enterFor), scale = 1 + (DIVE_SCALE - 1) * p;
+			float cx = door.x + door.width / 2, cy = door.y + door.height * 0.45f;
+			batch.setTransformMatrix(dive.idt().translate(MathUtils.lerp(cx, w / 2, p), MathUtils.lerp(cy, h / 2, p), 0).scale(scale, scale, 1)
+					.translate(-cx, -cy, 0));
 		}
 		batch.draw(assets.table, 0, 0, w, h);
 		if (chosen == null) {
@@ -516,7 +518,11 @@ public class CampaignScreen extends BaseScreen {
 		batch.setColor(Palette.LAMP.r, Palette.LAMP.g, Palette.LAMP.b, open);
 		batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		paint.glow(x - PLAQUE_W * 0.4f, y - PLAQUE_H * 0.2f, PLAQUE_W * 1.8f, PLAQUE_H * 1.4f, Palette.LAMP, 0.6f * open);
+		paint.glow(x - PLAQUE_W, y - PLAQUE_H * 0.6f, PLAQUE_W * 3, PLAQUE_H * 2.2f, Palette.LAMP, 0.25f * open);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(Palette.LAMP.r, Palette.LAMP.g, Palette.LAMP.b, open * DIVE.progress(enterFor));
+		batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 		float shade = 1 - 0.45f * open;
 		batch.setColor(shade, shade, shade, alpha);
 		batch.draw(assets.plaque, x, y, leaf, PLAQUE_H, 0, 0, tw / 2, th, false, false);
