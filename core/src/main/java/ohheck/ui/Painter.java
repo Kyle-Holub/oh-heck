@@ -98,6 +98,21 @@ public final class Painter {
 		batch.setColor(Color.WHITE);
 	}
 
+	public void lighting(boolean on) {
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, on ? GL20.GL_ONE : GL20.GL_ONE_MINUS_SRC_ALPHA);
+		if (!on) {
+			batch.setColor(Color.WHITE);
+		}
+	}
+
+	public void sparkle(float x, float y, float size, float hue, float alpha) {
+		Palette.sparkle(hue, 0, sparkleColour);
+		batch.setColor(sparkleColour[0], sparkleColour[1], sparkleColour[2], alpha);
+		batch.draw(assets.glow, x - size / 2, y - size / 2, size, size);
+	}
+
+	private final float[] sparkleColour = new float[3];
+
 	public void glow(float x, float y, float w, float h, Color c, float alpha) {
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		batch.setColor(c.r, c.g, c.b, alpha);

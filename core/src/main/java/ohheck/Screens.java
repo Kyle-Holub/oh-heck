@@ -7,7 +7,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Matrix4;
 
-import ohheck.platform.Audio;
 import ohheck.ui.Assets;
 import ohheck.ui.Palette;
 
