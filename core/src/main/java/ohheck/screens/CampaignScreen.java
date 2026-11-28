@@ -90,7 +90,8 @@ public class CampaignScreen extends BaseScreen {
 	private Chapter entering, jiggling;
 	private float jiggleFor = JIGGLE.end();
 	private float enterFor, arrivedFor = ARRIVE;
-	private static final float DOORWAY_DEPTH = 2000f, DOORWAY_FILL = 0.9f, STREAK_STEP = 1 / 30f;
+	private static final float DOORWAY_DEPTH = 2000f, DOORWAY_FILL = 0.9f, STREAK_STEP = 1 / 30f, DOORWAY_INSET = 12, DOORWAY_ARCH = 55;
+	private final Rectangle opening = new Rectangle();
 	private final Matrix4 dive = new Matrix4(), still = new Matrix4(), doorwayFit = new Matrix4();
 	private final FallingCards doorway;
 	private final Color flash = new Color();
@@ -536,11 +537,16 @@ public class CampaignScreen extends BaseScreen {
 		batch.setColor(0.05f, 0.04f, 0.04f, alpha);
 		batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
 		float fit = PLAQUE_W * DOORWAY_FILL / w;
+		boolean clipped = clipTo(opening.set(x + DOORWAY_INSET, y + DOORWAY_INSET, PLAQUE_W - 2 * DOORWAY_INSET,
+				PLAQUE_H - DOORWAY_INSET - DOORWAY_ARCH));
 		doorwayFit.set(batch.getTransformMatrix()).translate(x + PLAQUE_W / 2, y + PLAQUE_H / 2, 0).scale(fit, fit, 1);
 		batch.setTransformMatrix(doorwayFit);
 		doorway.drawMist(batch, 0, 0);
 		doorway.draw(batch, 0, 0);
 		batch.setTransformMatrix(dive);
+		if (clipped) {
+			unclip();
+		}
 		float shade = 1 - 0.45f * open;
 		batch.setColor(shade, shade, shade, alpha);
 		batch.draw(assets.plaque, x, y, leaf, PLAQUE_H, 0, 0, tw / 2, th, false, false);
