@@ -29,7 +29,7 @@ first six have no libGDX and test in plain JUnit.
 | `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Kick` (camera shake and zoom) and `FixedSteps` (the game loop's clock) |
 | `ohheck.platform` | The device: `Settings` (preferences) and `RecordPrefs` (where the records are kept), `Audio`, `GameOptions` (how a launcher runs the game) |
 | `ohheck.ui` | What every screen shares: `BaseScreen`, `Painter`, `MenuChrome`, `Assets`, `Palette`, `CardArt`, `PostProcessor`, `Wording`, `Numbers`, `Scroller`, `TapAreas`, `SideTabs` (the tab column of Options and Records) and `GameHost` |
-| `ohheck.fx` | Effects: `Sparks`, `Fireworks`, `Motes`, `Glints`, `FallingCards` |
+| `ohheck.fx` | Effects: `Sparks`, `Fireworks`, `Motes`, `Glints`, `FallingCards`, `Corridor` |
 | `ohheck.table` | The table screen and its parts |
 | `ohheck.screens` | Title, Options, Roster, High scores, the campaign and trick shot screens, and the screenshot tour |
 | `ohheck` | `OhHeckGame`: makes everything and connects it; `Screens`, the way between screens |
@@ -167,13 +167,13 @@ first six have no libGDX and test in plain JUnit.
 
 ### Other screens (`ohheck.screens`)
 
-`TitleScreen` (with `FallingCards`, the 3D shower; the first Play asks "New to Oh Heck?" and starts the
-practice round or the Play menu), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long, each a list of
+`TitleScreen` (with `FallingCards`, the 3D shower; Play flies the camera through it into the Play menu), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long, each a list of
 `OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`; built twice:
 `options` for Preferences and the practice round, and `setup`, the screen before a custom game, whose
 Table and Rules pages pick the difficulty and the game mode, where changing any rule makes the
 game Custom, and whose header deals the game), `PlayMenuScreen` (where to play, as a row of
-cards: Continue, Campaign, Custom game, High scores), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
+cards: Continue, Campaign, Custom game, High scores; a first visit asks "New to Oh Heck?" and can start the
+practice round; Campaign walks the torchlit 3D `Corridor` to the hall), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
 statistics, a switch at the top of the panel picks which, high scores have a button per game
 mode, and Reset statistics sits in the header; the panel scrolls, clipped with `BaseScreen.clipTo`).
 
