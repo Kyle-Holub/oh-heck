@@ -21,10 +21,6 @@ public record SavedGame(Match match, Difficulty level, Seating players, Chapter 
 				+ (chapter == null ? NONE : chapter.name()) + "\n" + "table.stage=" + (stage == null ? NONE : stage.name()) + "\n";
 	}
 
-	public boolean campaign() {
-		return chapter != null;
-	}
-
 	public static SavedGame decode(String saved, Random rng) {
 		Match m = Match.load(saved, rng);
 		Difficulty level = Difficulty.valueOf(value(saved, "table.level"));

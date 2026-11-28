@@ -30,13 +30,14 @@ Each chapter is a table: a group of players, their house rules (its game mode) a
 
 The rival line-ups are a first pass; the mode order runs from the most familiar game to the longest.
 
-## 3. Campaign screen: the hall of chapters
+## 3. Campaign screen: the map of taverns
 
-The campaign opens on a hall of four doors: one tall arched plaque per chapter, framed in gold, standing in a row and joined by a path.
+The campaign opens looking out into mist and sparkles; the eye drops through them to a parchment map lying on the table, with a tavern for each chapter along an inked trail.
 
-- **A chapter's door** shows its Roman numeral, its suit emblem, its mode, its champion and four pips for table, trick shots, final table and duel; a pip fills in gold when that step is done.
-- **Locked chapters** are ash grey with a padlock. The chapter in progress glows. Clearing a chapter lights the path to the next door, and the next door unlocks: the padlock lifts away, light pours out from behind it and the plaque warms to wine red.
-- **Tap a chapter** and its four steps lie on the felt as four cards, like a trick, each held back until the step before is won. The hall and the chapter deliberately look different: doors for the campaign, cards for a chapter's steps.
+- **A tavern** is a wax seal with its suit emblem, its Roman numeral above, and its mode and four pips below (table, trick shots, final table, duel); a pip fills in gold when that step is done. The trail past a cleared chapter is inked solid; ahead, it is faint.
+- **Locked taverns** are ash grey with a padlock that jiggles when tapped. The chapter in progress glows. Clearing a chapter breaks the next tavern's lock with sparks.
+- **Tap a tavern** and the eye is drawn into its seal as the map goes dark; sparkles gather, the seal twists away into a whirl of sparkles and fog, and the chapter fades in through it.
+- **A chapter** is a hall of four arched doors, one per stage, each locked until the stage before is won. A door swings open on a dark doorway of mist and sparkles and the camera dives through; the duel's door leads instead down a torchlit stone corridor to the champion.
 
 ## 4. Trick shots
 

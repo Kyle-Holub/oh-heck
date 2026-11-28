@@ -324,12 +324,12 @@ Duplicate deals rotate seats, so luck cancels out. Run it after any AI change.
 `python3 tools/make_sounds.py` writes the tavern sounds. Every button a `Painter` draws (and every bid button and
 open campaign card) gives a soft whoosh on a tap; going back (a Back button, marked with `Painter.back`, or the
 device's back key) and a bid the dealer may not make sound a tankard set down on wood (`assets/sfx/tankard.wav`).
-Preferences turns the sounds off (Button
+Options, Sound turns the sounds off (Button
 sounds) and, separately, the light vibration. The same script makes the table's accents in that old-tavern palette
 (felt thump, knock, coin, wax stamp, riffle, paper, drum, heavy door, medal, latch...); `Audio.play`
 plays them and `Audio.buzz` gives the haptic vocabulary (tick, tap, thud, double, heartbeat). At the
 table `TableSounds` times them to the game: a card's sound waits for it to land, the score card ticks
-as it counts. Screen changes whoosh (`Screens`), option toggles latch, the campaign hand riffles open.
+as it counts. Screen changes whoosh (`Screens`), option toggles latch, a tavern's map rustles as the campaign opens, a stage door opens with a heavy door.
 
 `python3 tools/build_art.py` rebuilds everything generated: the images in `assets/images`
 (`make_art.py`, with the court cards from `court_art.py`), the bitmap fonts (`make_fonts.py`)

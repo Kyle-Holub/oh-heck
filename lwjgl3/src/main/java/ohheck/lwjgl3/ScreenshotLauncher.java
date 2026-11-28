@@ -65,52 +65,21 @@ public class ScreenshotLauncher {
 	private static final float STEP = 0.1f, SPEED = 2f;
 
 	private static int settleFrames(String state) {
-		if (state.equals("intro")) {
-			return 10;
-		}
-		if (state.startsWith("tip:")) {
-			return 8;
-		}
-		if (state.equals("title")) {
-			return 10;
-		}
-		if (state.equals("corridor")) {
-			return 7;
-		}
-		if (state.equals("unfolding")) {
-			return 4;
-		}
-		if (state.equals("versus")) {
-			return 16;
-		}
-		if (state.equals("picking")) {
-			return 10;
-		}
-		if (state.equals("entering")) {
-			return 6;
-		}
-		if (state.equals("zooming") || state.equals("door")) {
-			return 3;
-		}
 		if (state.equals("play")) {
 			return 4;
 		}
-		if (state.equals("tossing")) {
-			return 8;
-		}
-		if (state.equals("gameover")) {
-			return 6;
-		}
-		if (state.startsWith("handover")) {
-			return 12;
-		}
-		if (state.startsWith("shuffle")) {
-			return 9;
-		}
-		if (state.startsWith("deal")) {
-			return 8;
-		}
-		return 2;
+		return switch (state.split(":")[0]) {
+		case "intro", "title", "picking" -> 10;
+		case "tip", "tossing", "deal" -> 8;
+		case "corridor" -> 7;
+		case "entering", "gameover" -> 6;
+		case "unfolding" -> 4;
+		case "zooming", "door" -> 3;
+		case "versus" -> 16;
+		case "handover" -> 12;
+		case "shuffle" -> 9;
+		default -> 2;
+		};
 	}
 
 	public static void main(String[] args) {

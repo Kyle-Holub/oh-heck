@@ -105,7 +105,7 @@ public class CampaignScreen extends BaseScreen {
 	private int page, rival, door = -1, jigglingArch = -1;
 	private float chosenFor, briefedFor, unfoldFor = UNFOLD_LENGTH, enterFor, arrivedFor = ARRIVE, doorFor, walkFor = -1,
 			jiggleFor = JIGGLE.end(), revealFor = REVEAL_LEN;
-	private String beatLine = "";
+	private String beatLine = "", header = "", shotsNote = "";
 	private Briefing briefing;
 	private Runnable afterBriefing;
 
@@ -133,8 +133,14 @@ public class CampaignScreen extends BaseScreen {
 	public void openChapter(Chapter c) {
 		chosen = c;
 		beatLine = c == null ? "" : "Win the table, then beat " + c.champion().name + " at the final table and in a duel";
+		header = c == null ? "" : "Chapter " + c.number();
+		noteShots();
 		chosenFor = 0;
 		briefing = null;
+	}
+
+	private void noteShots() {
+		shotsNote = chosen == null ? "" : game.records().campaign().madeIn(chosen) + " of " + TrickShots.of(chosen).size() + " made";
 	}
 
 	public void enter(Chapter c) {
@@ -202,6 +208,7 @@ public class CampaignScreen extends BaseScreen {
 		chosenFor = 0;
 		walkFor = -1;
 		door = -1;
+		noteShots();
 	}
 
 	@Override
@@ -279,7 +286,7 @@ public class CampaignScreen extends BaseScreen {
 		if (briefing != null) {
 			drawBriefing();
 		}
-		chrome.header(chosen == null ? "Campaign" : "Chapter " + chosen.number(), backButton, w, h);
+		chrome.header(chosen == null ? "Campaign" : header, backButton, w, h);
 		if (chosen != null && briefing == null && door < 0) {
 			paint.button(infoButton, INFO, w - 30 - INFO_W / 2, h - MenuChrome.HEADER_H + (MenuChrome.HEADER_H - 44) / 2, INFO_W, 44,
 					assets.buttonAlt);
@@ -771,7 +778,7 @@ public class CampaignScreen extends BaseScreen {
 
 	private String stepNote(Campaign progress, Chapter c, int step) {
 		if (step == SHOTS) {
-			return progress.madeIn(c) + " of " + TrickShots.of(c).size() + " made";
+			return shotsNote;
 		}
 		return stepDone(progress, c, step) ? "Won" : "Play";
 	}
