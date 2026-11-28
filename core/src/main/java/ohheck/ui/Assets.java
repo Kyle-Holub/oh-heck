@@ -26,6 +26,7 @@ public final class Assets implements Disposable {
 	public Texture table;
 	public final Texture cardSheet, cardSheetBlur, cardSlot, badge, padlock;
 	public final Texture[] momentum = new Texture[3];
+	public final Texture stoneWall, stoneFloor;
 	public final Texture campaignFace, plaque, plaqueLocked, stepTable, stepShots, stepDuel, pipOn, pipOff;
 	public final Texture menuContinue, menuCampaign, menuCustom, menuScores;
 	private final Texture[] emblems = new Texture[Suit.values().length];
@@ -67,6 +68,8 @@ public final class Assets implements Disposable {
 		}
 		campaignFace = mipmapped("images/campaign_face.png");
 		plaque = mipmapped("images/plaque.png");
+		stoneWall = tiled("images/stone_wall.png");
+		stoneFloor = tiled("images/stone_floor.png");
 		plaqueLocked = mipmapped("images/plaque_locked.png");
 		stepTable = mipmapped("images/step_table.png");
 		stepShots = mipmapped("images/step_shots.png");
@@ -240,6 +243,12 @@ public final class Assets implements Disposable {
 	private Texture mipmapped(String path) {
 		Texture t = own(new Texture(Gdx.files.internal(path), true));
 		t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+		return t;
+	}
+
+	private Texture tiled(String path) {
+		Texture t = mipmapped(path);
+		t.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 		return t;
 	}
 

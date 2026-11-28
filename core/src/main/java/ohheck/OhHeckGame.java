@@ -224,7 +224,7 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void showCampaign() {
-		boolean fromTable = getScreen() instanceof PlayScreen;
+		boolean fromTable = getScreen() instanceof PlayScreen, walked = getScreen() == playMenu;
 		screens.replaceAll(title);
 		if (fromTable) {
 			campaignScreen.wipeIn();
@@ -233,7 +233,11 @@ public class OhHeckGame extends Game implements GameHost {
 			settings.setCampaignIntroSeen(true);
 			campaignScreen.enterOnArrival(Chapter.ONE);
 		}
-		screens.open(campaignScreen);
+		if (walked) {
+			screens.flashTo(campaignScreen);
+		} else {
+			screens.open(campaignScreen);
+		}
 	}
 
 	@Override

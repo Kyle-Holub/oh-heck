@@ -1,5 +1,6 @@
 package ohheck.screens;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -8,6 +9,8 @@ import ohheck.anim.Ease;
 import ohheck.anim.Tween;
 import ohheck.campaign.Campaign;
 import ohheck.campaign.Chapter;
+import ohheck.fx.Corridor;
+import ohheck.platform.Audio;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.GameHost;
@@ -18,6 +21,8 @@ import ohheck.ui.Palette;
  * Where to play, as a row of cards dealt onto the felt: carry on the game in progress, the
  * campaign, a custom game, or the high scores. Each card rises in a beat after the one before.
  * Arriving from the title, someone new to the game is first asked whether to learn it in a practice round.
+ * The campaign is reached on foot: the menu fades to black and a torchlit corridor walks you to the hall's doorway
+ * (a tap skips ahead).
  */
 public class PlayMenuScreen extends BaseScreen {
 
@@ -27,6 +32,12 @@ public class PlayMenuScreen extends BaseScreen {
 	private static final String ASK_TITLE = "New to Oh Heck?", ASK_LINE = "A short practice round teaches the game as you play.";
 	private final Rectangle askPanel = new Rectangle(), teachButton = new Rectangle(), knowButton = new Rectangle();
 	private boolean asking;
+	private static final float WALK_LENGTH = 2.4f;
+	private static final Tween MENU_OUT = Tween.over(0.3f, Ease.SMOOTH), CORRIDOR_IN = Tween.over(0.5f, Ease.SMOOTH).after(0.3f),
+			WALK = Tween.over(WALK_LENGTH - 0.3f, Ease.SMOOTH).after(0.3f), WALK_FLASH = Tween.over(0.3f, Ease.IN).after(WALK_LENGTH - 0.3f);
+	private final Corridor corridor;
+	private final Color shade = new Color();
+	private float walkFor = -1;
 
 	private enum Choice {
 		CONTINUE("Continue", "Back to your game"), CAMPAIGN("Campaign", ""), CUSTOM("Custom game", "Your table, your rules"),
@@ -49,6 +60,7 @@ public class PlayMenuScreen extends BaseScreen {
 	public PlayMenuScreen(GameHost game) {
 		super(game);
 		art = new CardArt(batch, assets);
+		corridor = new Corridor(assets);
 		for (int i = 0; i < cards.length; i++) {
 			cards[i] = new Rectangle();
 		}
@@ -62,6 +74,7 @@ public class PlayMenuScreen extends BaseScreen {
 	public void show() {
 		super.show();
 		shownFor = 0;
+		walkFor = -1;
 		campaignNote = campaignNote(game.records().campaign());
 	}
 
@@ -77,11 +90,19 @@ public class PlayMenuScreen extends BaseScreen {
 	@Override
 	protected void update(float step) {
 		shownFor += step * game.options().speed;
+		if (walkFor >= 0) {
+			walkFor += step * game.options().speed;
+			corridor.update(step * game.options().speed);
+			corridor.walk(WALK.progress(walkFor));
+			if (walkFor >= WALK_LENGTH) {
+				game.showCampaign();
+			}
+		}
 	}
 
 	@Override
 	public boolean animating() {
-		return !RISING.done(shownFor - STAGGER * cards.length) || asking && !ASK_IN.done(shownFor);
+		return walkFor >= 0 || !RISING.done(shownFor - STAGGER * cards.length) || asking && !ASK_IN.done(shownFor);
 	}
 
 	private boolean shown(Choice c) {
@@ -90,6 +111,10 @@ public class PlayMenuScreen extends BaseScreen {
 
 	@Override
 	protected void draw() {
+		if (MENU_OUT.done(walkFor)) {
+			drawCorridor();
+			return;
+		}
 		ScreenUtils.clear(Palette.BG);
 		begin();
 		batch.draw(assets.table, 0, 0, w, h);
@@ -115,7 +140,25 @@ public class PlayMenuScreen extends BaseScreen {
 		if (asking) {
 			drawAsk(ASK_IN.progress(shownFor));
 		}
+		if (walkFor >= 0) {
+			paint.rect(0, 0, w, h, shade.set(0, 0, 0, MENU_OUT.progress(walkFor)));
+		}
 		batch.end();
+	}
+
+	private void drawCorridor() {
+		ScreenUtils.clear(Color.BLACK);
+		begin();
+		corridor.draw(batch, w, h);
+		paint.rect(0, 0, w, h, shade.set(0, 0, 0, 1 - CORRIDOR_IN.progress(walkFor)));
+		paint.rect(0, 0, w, h, shade.set(Palette.FLASH).mul(1, 1, 1, WALK_FLASH.progress(walkFor)));
+		batch.end();
+	}
+
+	public void walkToCampaign() {
+		walkFor = 0;
+		corridor.walk(0);
+		game.audio().play(Audio.Effect.CRACKLE);
 	}
 
 	private void drawCard(Choice c, float x, float y, float alpha) {
@@ -144,6 +187,10 @@ public class PlayMenuScreen extends BaseScreen {
 
 	@Override
 	protected void tap(float x, float y) {
+		if (walkFor >= 0) {
+			game.showCampaign();
+			return;
+		}
 		if (asking) {
 			if (!ASK_IN.done(shownFor)) {
 				return;
@@ -166,7 +213,7 @@ public class PlayMenuScreen extends BaseScreen {
 		if (cards[Choice.CONTINUE.ordinal()].contains(x, y)) {
 			game.continueGame();
 		} else if (cards[Choice.CAMPAIGN.ordinal()].contains(x, y)) {
-			game.showCampaign();
+			walkToCampaign();
 		} else if (cards[Choice.CUSTOM.ordinal()].contains(x, y)) {
 			game.showGameSetup();
 		} else if (cards[Choice.SCORES.ordinal()].contains(x, y)) {
@@ -176,6 +223,9 @@ public class PlayMenuScreen extends BaseScreen {
 
 	@Override
 	protected void back() {
+		if (walkFor >= 0) {
+			return;
+		}
 		if (asking) {
 			asking = false;
 		} else {
@@ -198,6 +248,6 @@ public class PlayMenuScreen extends BaseScreen {
 
 	@Override
 	public String stateTag() {
-		return asking ? "ask" : "play";
+		return walkFor >= 0 ? "corridor" : asking ? "ask" : "play";
 	}
 }

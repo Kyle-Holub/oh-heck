@@ -757,6 +757,41 @@ def padlock(out):
     downsample(img, 108, 108).save(os.path.join(out, "padlock.png"))
 
 
+def stone(out):
+    """The campaign corridor's stone, as tiles that repeat seamlessly: a wall of rough blocks in staggered courses
+    (stone_wall.png) and a floor of large worn flagstones (stone_floor.png). Grey-brown, with dark mortar and a
+    little grain, so torchlight can warm them."""
+    rng = np.random.default_rng(31)
+    S = 256
+
+    def tile(name, rows, cols, base, spread, mortar, stagger):
+        grain = rng.normal(0, 1, (S, S))
+        grain = np.real(np.fft.ifft2(np.fft.fft2(grain) * np.exp(-((np.fft.fftfreq(S)[:, None] ** 2 + np.fft.fftfreq(S)[None, :] ** 2) * 900))))
+        grain = grain / np.abs(grain).max()
+        rgb = np.zeros((S, S, 3))
+        rgb[:] = mortar
+        bh = S / rows
+        for r in range(rows):
+            bw = S / cols
+            shift = (bw / 2 if stagger and r % 2 else 0) + rng.uniform(-6, 6) * (not stagger)
+            for c in range(cols + 1):
+                tint = np.array(base) + rng.uniform(-spread, spread) + np.array((rng.uniform(-4, 4), 0, rng.uniform(-6, 2)))
+                x0, y0 = c * bw + shift + 3, r * bh + 3
+                x1, y1 = x0 + bw - 6, y0 + bh - 6
+                yy, xx = np.mgrid[0:S, 0:S]
+                for off in (-S, 0, S):
+                    inside = (xx >= x0 + off) & (xx < x1 + off) & (yy >= y0) & (yy < y1)
+                    edge = np.minimum(np.minimum(xx - (x0 + off), (x1 + off) - xx), np.minimum(yy - y0, y1 - yy))
+                    bevel = np.clip(edge / 5, 0, 1)
+                    lit = 0.75 + 0.25 * bevel + 0.18 * (yy < y0 + 4)
+                    rgb[inside] = (tint[None, :] * lit[inside][:, None])
+        rgb = rgb * (1 + 0.22 * grain[..., None])
+        Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, name), optimize=True)
+
+    tile("stone_wall.png", 6, 3, (88, 78, 68), 12, (26, 21, 18), True)
+    tile("stone_floor.png", 3, 2, (70, 62, 54), 10, (20, 16, 13), False)
+
+
 def momentum_icons(out):
     """The momentum bar beside a placard, one image per state: empty, one notch, and lit (x2 on).
     A dark capsule rimmed in gold holds two chevrons that light gold as bids are made running; when
@@ -812,6 +847,7 @@ if __name__ == "__main__":
     chapter_cosmetics(out)
     campaign_art(out)
     chapter_plaques(out)
+    stone(out)
     play_menu_icons(out)
     badge(out)
     padlock(out)
