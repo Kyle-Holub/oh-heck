@@ -101,9 +101,6 @@ public class TitleScreen extends BaseScreen {
 			drawMenu(titleY);
 		}
 		paint.fade(1f);
-		if (asking) {
-			drawAsk();
-		}
 		if (quitFor >= 0) {
 			sparks.draw(batch, assets.glow);
 			paint.rect(0, 0, w, h, black.set(0, 0, 0, QUIT_DARK.progress(quitFor)));
@@ -203,19 +200,6 @@ public class TitleScreen extends BaseScreen {
 		if (quitFor >= 0 || zoomFor >= 0) {
 			return;
 		}
-		if (asking) {
-			if (teachButton.contains(x, y)) {
-				asking = false;
-				game.playPractice(true);
-			} else if (knowButton.contains(x, y)) {
-				asking = false;
-				game.settings().setKnowsHowToPlay(true);
-				play();
-			} else if (!askPanel.contains(x, y)) {
-				asking = false;
-			}
-			return;
-		}
 		if (introT < INTRO_END) {
 			introT = Math.max(introT, INTRO_END);
 			game.audio().startMusic();
@@ -230,9 +214,7 @@ public class TitleScreen extends BaseScreen {
 	}
 
 	private void choose(String item) {
-		if (item.equals("Play") && !game.settings().knowsHowToPlay() && !game.options().autoplayHuman) {
-			asking = true;
-		} else if (item.equals("Play")) {
+		if (item.equals("Play")) {
 			play();
 		} else if (item.equals("Options")) {
 			game.showOptions();
@@ -254,34 +236,13 @@ public class TitleScreen extends BaseScreen {
 
 	@Override
 	protected void back() {
-		if (zoomFor >= 0) {
-			return;
-		}
-		if (asking) {
-			asking = false;
-		} else {
+		if (zoomFor < 0) {
 			quit();
 		}
 	}
 
-	private void drawAsk() {
-		paint.rect(0, 0, w, h, Palette.BACKDROP);
-		float pw = ASK_W, ph = ASK_H, px = (w - pw) / 2, py = (h - ph) / 2;
-		askPanel.set(px, py, pw, ph);
-		paint.frame(assets.panel, px, py, pw, ph);
-		paint.text(paint.serif(1.7f, Palette.GOLD), ASK_TITLE, w / 2, py + ph - 24, true);
-		paint.text(paint.ui(1.1f, Palette.CREAM), ASK_LINE, w / 2, py + ph - 80, true);
-		paint.button(teachButton, "Teach me", w / 2 - ASK_BUTTON_W / 2 - 8, py + 20, ASK_BUTTON_W, 46, assets.button);
-		paint.button(knowButton, "I know how to play", w / 2 + ASK_BUTTON_W / 2 + 8, py + 20, ASK_BUTTON_W, 46, assets.buttonAlt);
-	}
-
-	private static final float ASK_W = 560, ASK_H = 190, ASK_BUTTON_W = 250;
-	private static final String ASK_TITLE = "New to Oh Heck?", ASK_LINE = "A short practice round teaches the game as you play.";
-	private final Rectangle askPanel = new Rectangle(), teachButton = new Rectangle(), knowButton = new Rectangle();
-	private boolean asking;
-
 	@Override
 	public String stateTag() {
-		return quitFor >= 0 ? "quitting" : zoomFor >= 0 ? "zooming" : asking ? "ask" : introT < INTRO_END ? "intro" : "title";
+		return quitFor >= 0 ? "quitting" : zoomFor >= 0 ? "zooming" : introT < INTRO_END ? "intro" : "title";
 	}
 }

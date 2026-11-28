@@ -6,7 +6,9 @@ import java.util.List;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -34,6 +36,8 @@ import ohheck.ui.Palette;
  * the rest face down, the chapter in play lifted and lit. A tapped chapter lays its four steps
  * (table, trick shots, final table, duel) on the felt like a trick. A chapter, and each step, opens with a
  * briefing of what is about to happen: a few pages in the tutorial's style, a picture above and a caption below.
+ * Entering a chapter swings its doors open on the light behind and dives the camera through the arch into the
+ * chapter, where a first visit's briefing waits.
  */
 public class CampaignScreen extends BaseScreen {
 
@@ -76,6 +80,13 @@ public class CampaignScreen extends BaseScreen {
 	private static final String INFO = "Chapter info", NEXT = "Next", DONE = "Done";
 	private static final float INFO_W = 210;
 	private Runnable afterBriefing;
+	private static final float ENTER_WAIT = 0.9f, ENTER_LENGTH = 1.0f, DIVE_SCALE = 9f, DOOR_SWING = 80f, ARRIVE = 0.45f;
+	private static final Tween DOORS = Tween.over(0.5f, Ease.SMOOTH), DIVE = Tween.over(0.6f, Ease.IN).after(ENTER_LENGTH - 0.6f),
+			ENTER_FLASH = Tween.over(0.2f, Ease.IN).after(ENTER_LENGTH - 0.2f);
+	private Chapter entering;
+	private float enterFor, arrivedFor = ARRIVE;
+	private final Matrix4 dive = new Matrix4(), still = new Matrix4();
+	private final Color flash = new Color();
 
 	public CampaignScreen(GameHost game) {
 		super(game);
@@ -127,9 +138,25 @@ public class CampaignScreen extends BaseScreen {
 		}
 	}
 
-	public void briefChapter(Chapter c) {
-		game.settings().seeFirstTime(c.name());
-		brief(Briefing.chapter(c), () -> openChapter(c));
+	public void enter(Chapter c) {
+		entering = c;
+		enterFor = 0;
+		game.audio().play(Audio.Effect.CREAK);
+	}
+
+	public void enterOnArrival(Chapter c) {
+		entering = c;
+		enterFor = -ENTER_WAIT;
+	}
+
+	private void arrive() {
+		Chapter c = entering;
+		entering = null;
+		arrivedFor = 0;
+		openChapter(c);
+		if (game.settings().seeFirstTime(c.name())) {
+			brief(Briefing.chapter(c), () -> openChapter(c));
+		}
 	}
 
 	public void briefTable(Chapter c) {
@@ -209,6 +236,17 @@ public class CampaignScreen extends BaseScreen {
 		float before = revealFor;
 		revealFor += step * game.options().speed;
 		hallFor += step * game.options().speed;
+		arrivedFor += step * game.options().speed;
+		if (entering != null) {
+			float was = enterFor;
+			enterFor += step * game.options().speed;
+			if (was < 0 && enterFor >= 0) {
+				game.audio().play(Audio.Effect.CREAK);
+			}
+			if (enterFor >= ENTER_LENGTH) {
+				arrive();
+			}
+		}
 		if (revealing != null && before < 0 && revealFor >= 0) {
 			game.audio().play(Audio.Effect.CREAK);
 		}
@@ -222,17 +260,23 @@ public class CampaignScreen extends BaseScreen {
 
 	@Override
 	public boolean animating() {
-		return chosen == null && briefing == null || chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor) || wipeFor < CardWipe.LENGTH || revealing != null && revealFor < REVEAL_LEN || sparks.active();
+		return entering != null || arrivedFor < ARRIVE || chosen == null && briefing == null || chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor) || wipeFor < CardWipe.LENGTH || revealing != null && revealFor < REVEAL_LEN || sparks.active();
 	}
 
 	@Override
 	protected void draw() {
 		ScreenUtils.clear(Palette.BG);
 		begin();
-		batch.draw(assets.table, 0, 0, w, h);
 		Campaign progress = game.records().campaign();
+		if (entering != null) {
+			Rectangle door = chapterCards[entering.ordinal()];
+			float cx = door.x + door.width / 2, cy = door.y + door.height * 0.45f, scale = 1 + (DIVE_SCALE - 1) * DIVE.progress(enterFor);
+			batch.setTransformMatrix(dive.idt().translate(cx, cy, 0).scale(scale, scale, 1).translate(-cx, -cy, 0));
+		}
+		batch.draw(assets.table, 0, 0, w, h);
 		if (chosen == null) {
 			drawHand(progress);
+			batch.setTransformMatrix(still);
 		} else {
 			drawChapter(progress, chosen);
 		}
@@ -247,6 +291,12 @@ public class CampaignScreen extends BaseScreen {
 			infoButton.set(0, 0, 0, 0);
 		}
 		CardWipe.draw(batch, assets.back(), w, h, wipeFor);
+		if (entering != null) {
+			paint.rect(0, 0, w, h, flash.set(Palette.FLASH).mul(1, 1, 1, ENTER_FLASH.progress(enterFor)));
+		} else if (arrivedFor < ARRIVE) {
+			float fade = 1 - arrivedFor / ARRIVE;
+			paint.rect(0, 0, w, h, flash.set(Palette.FLASH).mul(1, 1, 1, fade * fade));
+		}
 		batch.end();
 	}
 
@@ -416,6 +466,11 @@ public class CampaignScreen extends BaseScreen {
 				glow(x, y, PLAQUE_W, PLAQUE_H);
 			}
 			float opened = !progress.unlocked(c) ? 0 : showing ? MathUtils.clamp((revealFor - REVEAL_FLIP_FROM) / REVEAL_FLIP, 0, 1) : 1;
+			if (c == entering) {
+				drawOpeningDoors(x, y, rise);
+				plaqueFace(progress, c, x, y, 1, rise * Math.max(0, 1 - 3 * DOORS.progress(enterFor)));
+				continue;
+			}
 			if (opened < 1) {
 				batch.setColor(1, 1, 1, rise);
 				batch.draw(assets.plaqueLocked, x, y, PLAQUE_W, PLAQUE_H);
@@ -441,7 +496,9 @@ public class CampaignScreen extends BaseScreen {
 			batch.setColor(Color.WHITE);
 			paint.centred(paint.serif(1.35f, Palette.GOLD_LIGHT, alpha * opened), c.mode.label, cx, y + 86);
 			paint.centred(paint.ui(0.85f, Palette.CREAM, alpha * opened), "vs " + c.champion().name, cx, y + 60);
+			batch.setColor(1, 1, 1, alpha * opened);
 			pips(cx, y + 22, progress.won(c, Stage.TABLE), progress.allMade(c), progress.won(c, Stage.FINAL), progress.cleared(c));
+			batch.setColor(Color.WHITE);
 		}
 		if (shut > 0) {
 			float lock = PADLOCK * (1 + opened * 0.8f);
@@ -450,6 +507,21 @@ public class CampaignScreen extends BaseScreen {
 			batch.setColor(Color.WHITE);
 			paint.centred(paint.ui(0.9f, Palette.MUTED, alpha * shut), "Locked", cx, y + 60);
 		}
+	}
+
+	private void drawOpeningDoors(float x, float y, float alpha) {
+		float open = DOORS.progress(enterFor), leaf = PLAQUE_W / 2 * MathUtils.cosDeg(open * DOOR_SWING);
+		int tw = assets.plaque.getWidth(), th = assets.plaque.getHeight();
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(Palette.LAMP.r, Palette.LAMP.g, Palette.LAMP.b, open);
+		batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		paint.glow(x - PLAQUE_W * 0.4f, y - PLAQUE_H * 0.2f, PLAQUE_W * 1.8f, PLAQUE_H * 1.4f, Palette.LAMP, 0.6f * open);
+		float shade = 1 - 0.45f * open;
+		batch.setColor(shade, shade, shade, alpha);
+		batch.draw(assets.plaque, x, y, leaf, PLAQUE_H, 0, 0, tw / 2, th, false, false);
+		batch.draw(assets.plaque, x + PLAQUE_W - leaf, y, leaf, PLAQUE_H, tw / 2, 0, tw / 2, th, false, false);
+		batch.setColor(Color.WHITE);
 	}
 
 	private void pourLight(float x, float y, float k) {
@@ -528,6 +600,9 @@ public class CampaignScreen extends BaseScreen {
 
 	@Override
 	protected void tap(float x, float y) {
+		if (entering != null) {
+			return;
+		}
 		if (briefing != null) {
 			if (briefing.isStage()) {
 				if (backButton.contains(x, y)) {
@@ -560,11 +635,7 @@ public class CampaignScreen extends BaseScreen {
 			for (int i = 0; i < chapterCards.length; i++) {
 				Chapter c = Chapter.values()[i];
 				if (chapterCards[i].contains(x, y) && progress.open(c)) {
-					if (game.settings().seeFirstTime(c.name())) {
-						brief(Briefing.chapter(c), () -> openChapter(c));
-					} else {
-						openChapter(c);
-					}
+					enter(c);
 					return;
 				}
 			}
@@ -584,6 +655,9 @@ public class CampaignScreen extends BaseScreen {
 
 	@Override
 	protected void back() {
+		if (entering != null) {
+			return;
+		}
 		if (briefing != null) {
 			closeOrTurnBack();
 		} else if (chosen != null) {
@@ -595,6 +669,9 @@ public class CampaignScreen extends BaseScreen {
 
 	@Override
 	public String stateTag() {
+		if (entering != null) {
+			return "entering";
+		}
 		if (briefing != null) {
 			return briefing.tag();
 		}
