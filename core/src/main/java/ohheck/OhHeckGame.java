@@ -197,6 +197,7 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void showPlayMenu() {
+		playMenu.askIfNew();
 		screens.flashTo(playMenu);
 	}
 
@@ -230,7 +231,7 @@ public class OhHeckGame extends Game implements GameHost {
 		}
 		if (!settings.campaignIntroSeen() && !options.autoplayHuman) {
 			settings.setCampaignIntroSeen(true);
-			campaignScreen.briefChapter(Chapter.ONE);
+			campaignScreen.enterOnArrival(Chapter.ONE);
 		}
 		screens.open(campaignScreen);
 	}
