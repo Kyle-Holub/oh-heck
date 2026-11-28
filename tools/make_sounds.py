@@ -3,7 +3,7 @@
 Makes the game's generated sound effects as 16-bit mono WAV files: the button presses, which sound
 like a tavern, quietly: buttons give a soft whoosh, and going back (or a bid the dealer may not make) a
 tankard set down on a wooden table. The table's accents keep to
-the same old-tavern palette: wood, felt, paper, coins, wax, brass, a drum and a creaking door.
+the same old-tavern palette: wood, felt, paper, coins, wax, brass, a drum and a heavy door.
 
 It also makes the muffled copy of the music (assets/music/backTrack_muffled.mp3: the track low-passed, as if
 heard through a wall), which the game crossfades to while your bid hangs on the last trick. That step needs
@@ -149,14 +149,25 @@ def tick():
     return level(ring((4200, 6100), (1, 0.4), (0.012, 0.008), 0.05), 0.07)
 
 
-def creak():
-    """An old tavern door swinging open."""
-    t = seconds(0.8)
-    rate = 38 + 30 * np.sin(np.pi * t / 0.8)
-    phase = np.cumsum(rate) / RATE
-    pulses = (np.diff(np.floor(phase), prepend=0) > 0).astype(float)
-    body = np.convolve(pulses, ring((620, 1340, 2100), (1, 0.6, 0.3), (0.01, 0.006, 0.004), 0.03), mode="full")[:len(t)]
-    return level(body * np.sin(np.pi * t / 0.8) ** 0.7, 0.14)
+def door():
+    """A heavy oak door opening on a hall: an iron latch lifting with a low wooden knock, then the leaves
+    swinging through still air, with the hall's echo behind. No hinge squeal."""
+    rng = np.random.default_rng(21)
+    length = 1.3
+    t = seconds(length)
+    out = np.zeros(len(t))
+    knock = ring((170, 410, 1150, 2350), (1, 0.45, 0.25, 0.12), (0.07, 0.035, 0.015, 0.008), 0.35)
+    knock[:60] += rng.normal(0, 0.6, 60) * np.exp(-np.arange(60) / 12)
+    out[:len(knock)] += knock
+    swing_from = int(RATE * 0.1)
+    swing_t = t[: len(t) - swing_from]
+    swing = band_noise(length - 0.1, 90, 650, 22)[: len(swing_t)] * np.sin(np.pi * np.minimum(1, swing_t / 1.0)) ** 1.5
+    out[swing_from:swing_from + len(swing)] += swing * 0.55
+    echo = np.zeros(len(out))
+    for delay, gain in ((0.11, 0.35), (0.23, 0.2), (0.37, 0.1)):
+        d = int(RATE * delay)
+        echo[d:] += out[:-d] * gain
+    return level((out + echo) * np.minimum(1, t / 0.002), 0.16)
 
 
 def medal():
@@ -206,7 +217,7 @@ if __name__ == "__main__":
     for name, samples in (("tankard.wav", tankard()), ("thump.wav", thump()), ("knock.wav", knock()),
                           ("thup.wav", thup()), ("whump.wav", whump()), ("sweep.wav", sweep()), ("coin.wav", coin()),
                           ("crackle.wav", crackle()), ("stamp.wav", stamp()), ("riffle.wav", riffle()), ("paper.wav", paper()),
-                          ("drum.wav", drum()), ("tick.wav", tick()), ("creak.wav", creak()), ("medal.wav", medal()),
+                          ("drum.wav", drum()), ("tick.wav", tick()), ("door.wav", door()), ("medal.wav", medal()),
                           ("whoosh.wav", whoosh()), ("latch.wav", latch())):
         write(os.path.join(out, name), samples)
         print("wrote", os.path.join(out, name))

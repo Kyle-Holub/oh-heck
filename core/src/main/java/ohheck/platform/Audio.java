@@ -33,7 +33,7 @@ public final class Audio implements Disposable {
 		PAPER("sfx/paper.wav", 0.6f),
 		DRUM("sfx/drum.wav", 0.6f),
 		TICK("sfx/tick.wav", 0.6f),
-		CREAK("sfx/creak.wav", 0.6f),
+		DOOR("sfx/door.wav", 0.6f),
 		MEDAL("sfx/medal.wav", 0.6f),
 		WHOOSH("sfx/whoosh.wav", 0.6f),
 		LATCH("sfx/latch.wav", 0.6f);

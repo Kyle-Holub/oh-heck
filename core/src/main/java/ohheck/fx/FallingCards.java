@@ -23,7 +23,8 @@ import ohheck.ui.Palette;
 
 /*
  * Playing cards tumbling down the screen in 3D, projected through a pinhole camera each frame. The camera can fly
- * forward through them (fly), leaving sparkle streaks behind it as it rushes.
+ * forward through them (fly), leaving sparkle streaks behind it as it rushes. Banks of mist drift among the sparkles,
+ * drawn only when asked for (drawMist).
  */
 public final class FallingCards {
 
@@ -277,12 +278,34 @@ public final class FallingCards {
 	private final float[] sDrift = new float[SPARKLES], sPhase = new float[SPARKLES], sRate = new float[SPARKLES],
 			sSize = new float[SPARKLES], sHue = new float[SPARKLES];
 	private boolean sparklesReady;
+	private static final int MIST = 18;
+	private static final float MIST_SIZE = 900f, MIST_ALPHA = 0.32f;
+	private static final Color MIST_TINT = new Color(0.36f, 0.3f, 0.27f, 1f);
+	private final float[] mx = new float[MIST], my = new float[MIST], mz = new float[MIST];
 
 	private void initSparkles(float viewW, float viewH) {
 		for (int i = 0; i < SPARKLES; i++) {
 			placeSparkle(i, viewW, viewH, (rng.nextFloat() * 2 - 1));
 		}
+		for (int i = 0; i < MIST; i++) {
+			mz[i] = NEAR + (FAR - NEAR) * i / MIST;
+			mx[i] = (rng.nextFloat() * 2 - 1) * halfW(mz[i], viewW) * 0.8f;
+			my[i] = (rng.nextFloat() * 2 - 1) * halfH(mz[i], viewH) * 0.8f;
+		}
 		sparklesReady = true;
+	}
+
+	public void drawMist(SpriteBatch batch, float cx, float cy) {
+		for (int i = MIST - 1; i >= 0; i--) {
+			float z = mz[i] - camera;
+			if (z < PASSED) {
+				continue;
+			}
+			float scale = FOCAL / z, size = MIST_SIZE * scale, drift = MathUtils.sin(time * 0.3f + i) * 30f;
+			batch.setColor(MIST_TINT.r, MIST_TINT.g, MIST_TINT.b, MIST_ALPHA * MathUtils.clamp((z - PASSED) / NEAR_FADE, 0f, 1f));
+			batch.draw(assets.glow, cx + (mx[i] + drift) * scale - size / 2, cy + my[i] * scale - size / 2, size, size);
+		}
+		batch.setColor(Color.WHITE);
 	}
 
 	private void placeSparkle(int i, float viewW, float viewH, float yFrac) {
