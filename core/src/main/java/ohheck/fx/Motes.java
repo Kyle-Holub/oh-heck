@@ -13,6 +13,7 @@ public final class Motes extends ParticlePool {
 
 	private static final float RATE = 6f;
 	private float toSpawn;
+	private final float[] rgb = new float[3];
 
 	public Motes() {
 		super(70);
@@ -54,7 +55,6 @@ public final class Motes extends ParticlePool {
 	}
 
 	public void draw(SpriteBatch batch, Texture glow) {
-		Color c = Palette.GOLD_LIGHT;
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		for (int i = 0; i < max; i++) {
 			if (!alive(i)) {
@@ -63,9 +63,11 @@ public final class Motes extends ParticlePool {
 			float age = age(i);
 			float a = Math.min(age * 6f, 1f) * (1 - age) * (0.6f + 0.4f * MathUtils.sin(clock * 7f + i * 2.3f));
 			float sz = size[i] * (1 - age * 0.4f);
-			batch.setColor(c.r, c.g * 0.9f, c.b * 0.6f, 0.45f * a);
+			Palette.sparkle(1.2f, 0, rgb);
+			batch.setColor(rgb[0], rgb[1], rgb[2], 0.45f * a);
 			batch.draw(glow, x[i] - sz, y[i] - sz, sz * 2, sz * 2);
-			batch.setColor(1f, 0.95f, 0.8f, 0.75f * a);
+			Palette.sparkle(1, 0.75f, rgb);
+			batch.setColor(rgb[0], rgb[1], rgb[2], 0.75f * a);
 			batch.draw(glow, x[i] - sz * 0.3f, y[i] - sz * 0.3f, sz * 0.6f, sz * 0.6f);
 		}
 		batch.setColor(Color.WHITE);

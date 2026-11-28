@@ -23,13 +23,13 @@ first six have no libGDX and test in plain JUnit.
 |---|---|
 | `ohheck.rules` | Cards, `Match`, `Trick`, `Move`, `MatchCodec`, `RuleSet`, `HandOrder`, `GameMode`, `TableView` |
 | `ohheck.players` | The roster (`Player`), who sits where (`Seating`), levels (`Difficulty`), habits (`Style`), the bots, `BidTable`; the arena lives here too |
-| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion), `Campaign` (progress, saved), `TrickShot`, `TrickShots` and `TrickShotPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won), `PracticeRound` and `PracticeCoach` (the scripted round that teaches a new player, dealt with `Match.scripted`) |
+| `ohheck.campaign` | The campaign: `Chapter` (mode, table rivals, duel champion, `Twist`), `Campaign` (progress, saved), `TrickShot`, `TrickShots` and `TrickShotPlay` (puzzles), `Badge` and `Feats` (what a game earns), `Cosmetic` (card backs and felts won), `PracticeRound` and `PracticeCoach` (the scripted round that teaches a new player, dealt with `Match.scripted`) |
 | `ohheck.records` | `SavedGame`, `Stats`, `HighScores`, and `Records`, which keeps them and the campaign's progress |
 | `ohheck.util` | `Log`, where code without a screen reports trouble it recovered from |
-| `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Timeline`, and `FixedSteps` (the game loop's clock) |
+| `ohheck.anim` | Motion over time: `Ease` (the curves), `Tween`, `Phases`, `Kick` (camera shake and zoom) and `FixedSteps` (the game loop's clock) |
 | `ohheck.platform` | The device: `Settings` (preferences) and `RecordPrefs` (where the records are kept), `Audio`, `GameOptions` (how a launcher runs the game) |
 | `ohheck.ui` | What every screen shares: `BaseScreen`, `Painter`, `MenuChrome`, `Assets`, `Palette`, `CardArt`, `PostProcessor`, `Wording`, `Numbers`, `Scroller`, `TapAreas`, `SideTabs` (the tab column of Options and Records) and `GameHost` |
-| `ohheck.fx` | Effects: `Sparks`, `Fireworks`, `Motes`, `Glints`, `FallingCards` |
+| `ohheck.fx` | Effects: `Sparks`, `Fireworks`, `Motes`, `Glints`, `FallingCards`, `Corridor` |
 | `ohheck.table` | The table screen and its parts |
 | `ohheck.screens` | Title, Options, Roster, High scores, the campaign and trick shot screens, and the screenshot tour |
 | `ohheck` | `OhHeckGame`: makes everything and connects it; `Screens`, the way between screens |
@@ -37,7 +37,7 @@ first six have no libGDX and test in plain JUnit.
 ## The rules and the players (no libGDX)
 
 - `Match` is a whole game: hands, bids, tricks, scores, whose turn. Moves are made with
-  `placeBid` and `playCard`, or as `Move`s (`Move.Bid`, `Move.Play`) through `apply`;
+  `placeBid`, `pickTrump` and `playCard`, or as `Move`s (`Move.Bid`, `Move.PickTrump`, `Move.Play`) through `apply`;
   anything illegal throws. `moves()` lists every move made (`ReplayTest` plays them back onto a
   fresh match). Bots answer with a `Move` (`Bot.chooseMove`). A bid not yet made is
   `Match.NO_BID` (`hasBid(seat)`), never null. `save()` / `load()` go through
@@ -46,8 +46,8 @@ first six have no libGDX and test in plain JUnit.
   or up and down), the biggest hand (8, or 13 for a marathon, whose 13-card hand deals the
   whole deck and so has no trump: `trump()` is null, and the table shows a dotted outline),
   whether a made bid scores big (8, plus 4 for the first trick bid, doubling with each trick after), and whether bids are blind (made unseen,
-  shown together, no dealer's limit: `Match.bidSeenBy` hides them from the other seats and from
-  their bots until bidding ends). It also says which card wins, what may be bid and played, and the score.
+  shown together: `Match.bidSeenBy` hides them from the other seats and from their bots until bidding
+  ends; the dealer's limit still holds, so `TableView` carries the dealer's barred bid). It also says which card wins, what may be bid and played, and the score.
   A `Match` holds its rules (`rules()`) and `TableView` carries them to the bots. A rule set is
   a value written as a short code (`UP/8`, `UP_AND_DOWN/13/big`) into saves and high scores.
   `GameMode` names four fixed sets (Classic, High Stakes, Poker Face, Marathon) and Custom, which plays
@@ -93,7 +93,8 @@ first six have no libGDX and test in plain JUnit.
   shape, touch handling (`tap`, `drag`, `touchDown/Up`), `stateTag()` for the screenshot
   run, and steps the screenshot tour after each update (timed by `tourClock()`).
 - `Painter` holds the drawing tools: the fonts (`ui`, `serif`), text placed and aligned,
-  frames and buttons, the gold bid numerals (`numeral`). A screen has one (`paint`);
+  frames and buttons, the gold bid numerals (`numeral`), and soft additive glows (`glow`, with
+  `Palette.EMBER`, `LAMP` or `SPARKLE`). A screen has one (`paint`);
   helpers that draw for a screen take a `Painter`, not the screen. `MenuChrome` draws the
   settings-style header bar with Back (`header`, `HEADER_H`) and section headings
   (`heading`), for the screens that have them.
@@ -104,8 +105,8 @@ first six have no libGDX and test in plain JUnit.
   `Numbers.text` / `signed` for numbers, `Wording`'s cached ordinals and hand results, and
   each screen keeps lines that only change with the game.
 - Motion is described with `ohheck.anim`: a `Tween` is a length, a delay and an `Ease`
-  (`OUT`, `IN`, `SMOOTH`...); `Phases` splits a span into named parts; a `Timeline` is a
-  scene's clock. Name each movement as a constant tween next to what it moves.
+  (`OUT`, `IN`, `SMOOTH`...); `Phases` splits a span into named parts; `Kick` shakes and
+  zooms the camera. Name each movement as a constant tween next to what it moves.
 
 ### The table (`ohheck.table`)
 
@@ -117,7 +118,7 @@ first six have no libGDX and test in plain JUnit.
   moment (`TableFlow.inHitStop`); `GameEnd` raises the podium (player cards) from last place up before the
   scores, except in a duel; a tap finishes it, and the scores then wait for a tap (Continue or Main menu). A duel wears its chapter's look (`Cosmetic`) while it lasts.
   Screen jolts (shake, zoom) are an `ohheck.anim.Kick` read into `BaseScreen`'s camera; `CardWipe` is the
-  curtain of card backs into and out of a campaign table. `PlayScreen.practice` plays the practice round:
+  curtain of card backs into a custom game; a campaign table fades in from the light of the door it was entered by. `PlayScreen.practice` plays the practice round:
   `PracticeGuide` reads the table's moment, asks the `PracticeCoach` for a tip, spotlights what it points at and
   holds the table until it is tapped; in the scripted hands only the planned card or bid can be chosen. Each
   `TableState` constant holds its own behaviour (`entered`, `update`, `skip`) and what the
@@ -155,6 +156,10 @@ first six have no libGDX and test in plain JUnit.
   - `DeckShower` sprays a deck's cards across the screen when you lose; `GameEnd` orders
     the ending (the shower, or fireworks if you won, then the scores) and is tested in
     `GameEndTest`.
+- Your hand is dealt in the order it comes off the deck and ripples into sorted order once trump turns.
+  On the hand-results card (scores only) a Tricks button opens `TrickReview`: each trick's winning card in order (seven a
+  row, so thirteen fit), and tapping one lays out the whole trick with who played each card; its open state
+  lives in `OverlayTargets` (`review`).
 - `PlayerPanel` draws a player's placard from a `SeatState` (name, score, bid, tricks,
   turn...). `Counters` draws the hand tally (one mark per hand, in gates of five) and the
   bid tracker. `BidPopup` is the "Make Your Bid" panel, drawn the same at the table and in trick shots;
@@ -162,13 +167,13 @@ first six have no libGDX and test in plain JUnit.
 
 ### Other screens (`ohheck.screens`)
 
-`TitleScreen` (with `FallingCards`, the 3D shower; the first Play asks "New to Oh Heck?" and starts the
-practice round or the Play menu), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long, each a list of
+`TitleScreen` (with `FallingCards`, the 3D shower; Play flies the camera through it into the Play menu), `OptionsScreen` (a tab per `OptionsPage`, scrolling when it's long, each a list of
 `OptionItem`s: `toggle`, `choice`, `link`, or a custom item like `DifficultyOption`; built twice:
-`options` for Preferences and the practice round, and `setup`, the screen before a custom game, whose
+`options` (pages Game, Sound, Display, Unlockables with the card backs, felts and badges, and Practice), and `setup`, the screen before a custom game, whose
 Table and Rules pages pick the difficulty and the game mode, where changing any rule makes the
 game Custom, and whose header deals the game), `PlayMenuScreen` (where to play, as a row of
-cards: Continue, Campaign, Custom game, High scores), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
+cards: Continue, Campaign, Custom game, High scores; a first visit asks "New to Oh Heck?" and can start the
+practice round), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
 statistics, a switch at the top of the panel picks which, high scores have a button per game
 mode, and Reset statistics sits in the header; the panel scrolls, clipped with `BaseScreen.clipTo`).
 
@@ -181,30 +186,42 @@ game's rules.
 
 The title's **Play** opens the Play screen: **Campaign**, **Custom game** (set up, then saved as it
 goes), High scores, and Continue when a custom game is in progress.
-The campaign (`CampaignScreen`) shows its chapters as a hand of cards; a chapter lays out its
-four steps in order: table play (a normal game against the chapter's rivals), trick shots
+The campaign (`CampaignScreen`) opens looking out into mist and sparkles, then the eye drops through them onto a parchment map (`ChapterMap`, the map drawn by
+`make_art.py`), a tavern for each chapter marked by a wax seal along an inked trail (locked seals ash grey with a padlock
+that jiggles; an unlock breaks it with sparks). A tapped tavern draws the eye into its seal as the map goes dark, the seal twists away like a whirlpool into
+sparkles and fog, and its chapter fades in through the fog: a hall of four arched doors, one per
+stage, opening with a misty dive through the door; the duel's door leads instead down the torchlit 3D `Corridor`
+(`ohheck.fx`). The four stages in order: table play (a normal game against the chapter's rivals), trick shots
 (`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding
 into place; its title and goal pop up on the felt and fade, and the goal stays in the header; the players are
 unnamed, each bid shown with the table's icons on a small placard, the one to block outlined), open once the table is won as practice, a final table (the champion sits in for a rival, under the house rules
-plus momentum), and a duel against its champion
+plus the champion's twist), and a duel against its champion
 (`RuleSet.DUEL`: two players, a short deck of nine to ace, five hands, momentum doubling a
 bid made after two made running). Winning the duel clears the chapter and wins its card back
-and felt (`Cosmetic`, chosen in Preferences); the game-over panel's **Claim prizes** opens
+and felt (`Cosmetic`, chosen under Options, Unlockables with a preview; the felt also tints every sparkle through `Palette.SPARKLE`); the game-over panel's **Claim prizes** opens
 `ChapterClearedScreen`, which turns each prize over in turn (card back, felt, champion's badge)
 with fireworks, then puts the new look on. `PlayScreen.campaign` plays a `Stage` (table, final table or duel), each
 opened by winning the one before (`Campaign.open`); campaign games are not saved and don't touch the statistics or high scores, but every
-game can earn badges (`BadgeKeeper`, `Feats`), shown on Records. A duel seats the champion at
-the top (`TableLayout.spot`). A chapter opens with a `Briefing` of a few pages in the
+game can earn badges (`BadgeKeeper`, `Feats`), shown under Options, Unlockables. A duel seats the champion at
+the top (`TableLayout.spot`). Each chapter's champion brings a `Twist` to the final table and the duel: momentum in
+chapter 1, winner picks trump in chapter 2 (`RuleSet.pickTrump`: a hand opens in `Match.Phase.PICKING_TRUMP`
+when someone made a bid last hand, and the highest made bid names the trump suit from a panel of suits), hands won
+in chapter 3 (`RuleSet.handsWon`: a made bid scores one, and a tie for first after the last hand plays on in
+one-card sudden-death hands, `Match.suddenDeath`, until it breaks), and the widow in chapter 4 (`RuleSet.widow`: two
+cards set aside face down; in `Match.Phase.SWAPPING` the highest made bid of last hand sees them and may swap one
+card, `Move.SwapWidow`). The
+duel adds the house hand order, scoring and the twist to `RuleSet.DUEL`. A chapter opens with a `Briefing` of a few pages in the
 page-by-page style (Back turns back a page; tapping a player shows their habit in a box below); each step opens with one
-page of panels, its text in a box beneath and Play in the corner. All are worded from the rules and the roster. The
-campaign opens on chapter 1's briefing the first time. A new player learns in the practice round (above); finished
+page of panels, its text in a box beneath and Play in the corner. A chapter's briefing and each step's appear by themselves only
+the first time (`Settings.seeFirstTime`); a chapter's Chapter info button (top right) shows them all again in turn. All are worded from the rules and the roster. The
+campaign's first visit zooms into chapter 1 by itself, to its briefing. A new player learns in the practice round (above); finished
 from the first Play, it turns into the Chapter 1 card and opens the campaign. Options, Start fresh forgets everything (preferences,
 records, campaign) and replays the intro, as for a new player. The plan the campaign follows is `docs/CAMPAIGN.md`.
 
 ### Saving
 
 `Settings` wraps the device's preferences: the options and whether you know how to play. Kept in the
-same preferences by `RecordPrefs`: the saved game (`SavedGame`, one text), statistics and
+same preferences by `RecordPrefs`: the saved game (`SavedGame`, one text: the latest game played, custom or campaign; Continue resumes it), statistics and
 high scores (`HighScores`, stored by field name, ten kept per game mode). Statistics are
 kept per difficulty only, in measures that hold for any rules (places, bids made, points a
 hand), so every mode counts toward them.
@@ -250,7 +267,7 @@ screenshot run).
 |---|---|---|
 | `tests.yml` | every push | rules and table tests, and the desktop build |
 | `preview.yml` | `feature/**`, `refactor/**` | the screenshot run, compared with the newest dev build's, put on a private draft release `preview-N` (newest three kept) with `compare.txt`, before/after pictures of changed shots and `phone-view.png` |
-| `android.yml` | `develop/**` | signed APK published as pre-release `dev-NNNN` (Obtainium picks these up; newest three per branch kept), then the desktop jar and screenshots attached |
+| `android.yml` | `develop/**`, `release/**` | signed APK published as pre-release `dev-NNNN` (Obtainium picks these up; newest three per branch kept); side by side, the desktop jar and screenshots are made and attached. Develop builds skip R8 shrinking (`-Pshrink=false`) to publish in about a minute; release builds shrink |
 | `arena.yml` | by hand only | arena experiments, deliberately kept off the build |
 
 ## Developer tools (`tools/dev`, `.claude`)
@@ -272,15 +289,17 @@ desktop jar into `build/dev`, and find JUnit in a Gradle install or cache):
   `develop/` or `main` is blocked unless the branch passes its tests and its preview's
   `compare.txt` shows nothing `CHANGED`, or the merge message says `[shots-reviewed]`.
 
-`.claude/skills` holds two skills: `verify` (which checks fit a change) and `ship` (branch
+`.claude/skills` holds three skills: `arena` (measuring a bot change), `verify` (which checks fit a change) and `ship` (branch
 to published dev build).
 
 ## Branches and releases
 
-Work happens on `feature/…` or `refactor/…` branches (previewed), and is merged into
-`develop/alpha-X.Y.Z` (published as dev builds). A release is a `release/alpha-X.Y.Z` branch
-cut from develop, with develop merged into `main`. Then the next `develop/` branch starts,
-with `OhHeckGame.VERSION` bumped.
+Each version has one working branch, `feature/alpha-X.Y.Z` (previewed), reused for every
+change; each finished change is merged into `develop/alpha-X.Y.Z` (published as dev builds).
+A release is a `release/alpha-X.Y.Z` branch cut from develop (a shrunk build), merged into
+`main`, so `main` is the newest release. Then the next version's `develop/` and `feature/`
+branches start, with `OhHeckGame.VERSION` bumped. Builds don't make branches: each is a
+`dev-NNNN` pre-release (newest three kept) and each preview a draft `preview-N` (newest three).
 
 ## The arena
 
@@ -302,9 +321,15 @@ Duplicate deals rotate seats, so luck cancels out. Run it after any AI change.
 
 ## The art
 
-`python3 tools/make_sounds.py` writes the button press chime (`assets/sfx/press.wav`); every button a
-`Painter` draws (and every bid button and open campaign card) plays it on a tap, with a light vibration
-unless Preferences turns it off.
+`python3 tools/make_sounds.py` writes the tavern sounds. Every button a `Painter` draws (and every bid button and
+open campaign card) gives a soft whoosh on a tap; going back (a Back button, marked with `Painter.back`, or the
+device's back key) and a bid the dealer may not make sound a tankard set down on wood (`assets/sfx/tankard.wav`).
+Preferences turns the sounds off (Button
+sounds) and, separately, the light vibration. The same script makes the table's accents in that old-tavern palette
+(felt thump, knock, coin, wax stamp, riffle, paper, drum, heavy door, medal, latch...); `Audio.play`
+plays them and `Audio.buzz` gives the haptic vocabulary (tick, tap, thud, double, heartbeat). At the
+table `TableSounds` times them to the game: a card's sound waits for it to land, the score card ticks
+as it counts. Screen changes whoosh (`Screens`), option toggles latch, the campaign hand riffles open.
 
 `python3 tools/build_art.py` rebuilds everything generated: the images in `assets/images`
 (`make_art.py`, with the court cards from `court_art.py`), the bitmap fonts (`make_fonts.py`)

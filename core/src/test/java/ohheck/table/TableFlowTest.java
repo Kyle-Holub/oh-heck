@@ -76,7 +76,7 @@ public class TableFlowTest {
 
 	private static TableFlow seated(TableFlow.Listener listener, Seating players, long seed) {
 		TableFlow f = new TableFlow(listener);
-		f.seat(players, new Random(seed));
+		f.seat(players, -1, new Random(seed));
 		return f;
 	}
 

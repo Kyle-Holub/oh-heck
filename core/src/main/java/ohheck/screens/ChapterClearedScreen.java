@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -33,6 +32,7 @@ public class ChapterClearedScreen extends BaseScreen {
 	private static final float INTRO = 1.4f, CARD_W = 130, CARD_H = CARD_W * 98 / 73, CARD_GAP = 40, POP = 0.22f;
 	private static final float BUTTON_W = 190, BUTTON_H = 44;
 	private static final float SHAKE_LEN = 0.9f, FLASH_LEN = 0.15f, FLIP_LEN = 0.35f, HOLD_LEN = 0.9f, FLIP_AT = SHAKE_LEN + FLASH_LEN;
+	private static final float BADGE_TURNS = 5, GLINT_LEN = 0.5f;
 	private static final Phases PRIZE = new Phases(SHAKE_LEN, FLASH_LEN, FLIP_LEN, HOLD_LEN);
 	private static final int SHAKE = 0, FLASH = 1, FLIP = 2;
 	private static final Tween TITLE_IN = Tween.over(0.6f, Ease.OUT), BUTTONS_IN = Tween.over(0.4f, Ease.OUT);
@@ -107,7 +107,7 @@ public class ChapterClearedScreen extends BaseScreen {
 		sparks.step(dt);
 		while (flipped < prizes.size() && revealT() >= flipped * PRIZE.length() + FLIP_AT + FLIP_LEN / 2) {
 			sparks.burst(slotX(flipped), cardY() + CARD_H / 2, 90);
-			game.audio().play(Audio.Effect.PLAY_CARD);
+			game.audio().play(prizes.get(flipped).face == assets.badge ? Audio.Effect.MEDAL : Audio.Effect.PLAY_CARD);
 			flipped++;
 		}
 		if (revealed() && !finale) {
@@ -172,12 +172,16 @@ public class ChapterClearedScreen extends BaseScreen {
 			glow(cx, cy, cw, ch, lit);
 		}
 		art.shadow(cx - cw / 2, cy - ch / 2, cw, ch, 6);
-		float sx = Math.abs(MathUtils.cos(flip * MathUtils.PI));
+		boolean badge = p.face == assets.badge;
+		float turns = badge ? BADGE_TURNS : 1, sx = Math.abs(MathUtils.cos(flip * turns * MathUtils.PI));
 		float fw = cw * Math.max(0.02f, sx);
-		if (flip < 0.5f) {
+		if (flip < 0.5f / turns) {
 			batch.draw(assets.back(), cx - fw / 2 + wobble, cy - ch / 2, fw / 2, ch / 2, fw, ch, 1, 1, wobble * -0.6f);
 		} else {
 			drawFace(p, cx - fw / 2, cy - ch / 2, fw, ch);
+		}
+		if (badge && phase > FLIP && into < GLINT_LEN) {
+			glint(cx, cy, cw, ch, into / GLINT_LEN);
 		}
 		if (flip >= 1) {
 			float la = Math.min(1, into / 0.3f + (phase > FLIP ? 1 : 0));
@@ -205,13 +209,14 @@ public class ChapterClearedScreen extends BaseScreen {
 		}
 	}
 
+	private void glint(float cx, float cy, float cw, float ch, float p) {
+		float gx = cx - cw / 2 + cw * p, gw = cw * 0.35f;
+		paint.glow(gx - gw / 2, cy - ch / 2, gw, ch, Palette.LAMP, 0.7f * MathUtils.sin(p * MathUtils.PI));
+	}
+
 	private void glow(float cx, float cy, float cw, float ch, float alpha) {
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		float gw = cw * 2.2f, gh = ch * 1.8f, pulse = 0.85f + 0.15f * MathUtils.sin(time * 9f);
-		batch.setColor(GLOW.r, GLOW.g, GLOW.b, GLOW.a * alpha * pulse);
-		batch.draw(assets.glow, cx - gw / 2, cy - gh / 2, gw, gh);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
+		paint.glow(cx - gw / 2, cy - gh / 2, gw, gh, GLOW, GLOW.a * alpha * pulse);
 	}
 
 	private void drawFlash() {

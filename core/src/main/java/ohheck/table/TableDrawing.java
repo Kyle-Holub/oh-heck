@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
@@ -34,7 +33,6 @@ final class TableDrawing {
 	private static final Tween TRUMP_TURNING = Tween.over(TableFlow.TRUMP_FLIP_TIME, Ease.LINEAR),
 			TRUMP_LIGHTING = Tween.over(TRUMP_GLOW_IN, Ease.LINEAR).after(TableFlow.TRUMP_FLIP_TIME);
 	private static final float TALLY_X = 22, TALLY_DROP = 12;
-	private static final float HAND_LIFT = 5;
 
 	private final TableScene scene;
 	private final PostProcessor post;
@@ -89,10 +87,37 @@ final class TableDrawing {
 		}
 	}
 
+	private static final Tween PICK_DROP = Tween.over(0.35f, Ease.IN), WIDOW_SLIDE = Tween.over(0.35f, Ease.OUT).after(TableFlow.TRUMP_FLIP_TIME),
+			BID_STAMP = Tween.over(0.22f, Ease.OUT), BID_FLIP = Tween.over(0.25f, Ease.OUT);
+	private static final float PICK_SWELL = 1.4f, PICK_RISE = -90, ALARM_FLICKER = 9, STAMP_SIZE = 0.8f, REVEAL_STAGGER = 0.09f,
+			WIDOW_SCALE = 0.6f, WIDOW_GAP = 8;
+	private final int[] shownBid = { Match.NO_BID, Match.NO_BID, Match.NO_BID, Match.NO_BID };
+	private final float[] bidAt = { -99, -99, -99, -99 };
+	private final boolean[] revealed = new boolean[Seating.SEATS];
+
+	void widow() {
+		Match m = scene.match();
+		TableFlow flow = scene.flow();
+		if (m.widow().isEmpty() || flow.isDealing() || m.phase() == Match.Phase.HAND_OVER) {
+			return;
+		}
+		float slide = WIDOW_SLIDE.progress(flow.trumpTime());
+		float cw = layout.trumpW() * WIDOW_SCALE, ch = layout.trumpH() * WIDOW_SCALE, y = layout.trumpY() - ch - WIDOW_GAP;
+		for (int k = 0; k < 2; k++) {
+			float restX = layout.trumpX() + layout.trumpW() - (k + 1) * cw - k * WIDOW_GAP;
+			float x = Ease.lerp(layout.trumpX() + layout.trumpW() / 2 - cw / 2, restX, slide);
+			art.shadow(x, y, cw, ch, 3);
+			batch.setColor(1, 1, 1, slide);
+			batch.draw(assets.back(), x, y, cw, ch);
+		}
+		batch.setColor(Color.WHITE);
+	}
+
 	void tally() {
 		Match m = scene.match();
-		int done = m.phase() == Match.Phase.GAME_OVER ? m.rules().numberOfHands() : m.handIndex();
-		counters.tally(TALLY_X, layout.h - TALLY_DROP, m.rules().numberOfHands(), done, Counters.pulse(scene.time()), 1f);
+		int done = m.phase() == Match.Phase.GAME_OVER ? m.rules().numberOfHands() : Math.min(m.handIndex(), m.rules().numberOfHands());
+		float alarm = m.suddenDeath() ? 0.5f + 0.5f * MathUtils.sin(scene.time() * ALARM_FLICKER) : 0;
+		counters.tally(TALLY_X, layout.h - TALLY_DROP, m.rules().numberOfHands(), done, Counters.pulse(scene.time()), 1f, alarm);
 	}
 
 	void bidTracker() {
@@ -105,16 +130,18 @@ final class TableDrawing {
 
 	void trump(boolean gone) {
 		TableFlow flow = scene.flow();
-		if (flow.state() == TableState.SHUFFLE || gone) {
+		if (flow.state() == TableState.SHUFFLE || flow.state() == TableState.PICK_DEALER || flow.state() == TableState.VERSUS || gone) {
 			if (gone) {
 				motes.draw(batch, assets.glow);
 			}
 			return;
 		}
 		float x = layout.trumpX(), y = layout.trumpY(), cw = layout.trumpW(), ch = layout.trumpH();
-		if (scene.match().trumpCard() == null) {
+		Match m = scene.match();
+		if (m.trumpCard() == null || m.pickingTrump() || m.pickedTrump() != null) {
 			if (!flow.isDealing()) {
 				batch.draw(assets.cardSlot, x, y, cw, ch);
+				pickedTrump(x, y, cw, ch);
 			}
 			return;
 		}
@@ -122,12 +149,8 @@ final class TableDrawing {
 		float p = flow.isDealing() ? 0 : TRUMP_TURNING.progress(flow.trumpTime());
 		float lit = TRUMP_LIGHTING.progress(flow.trumpTime());
 		if (p >= 1 && lit > 0) {
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 			float gw = cw * TRUMP_GLOW_W, gh = ch * TRUMP_GLOW_H;
-			batch.setColor(TRUMP_GLOW.r, TRUMP_GLOW.g, TRUMP_GLOW.b, TRUMP_GLOW.a * lit);
-			batch.draw(assets.glow, x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh);
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			batch.setColor(Color.WHITE);
+			paint.glow(x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh, TRUMP_GLOW, TRUMP_GLOW.a * lit);
 		}
 		Card trump = scene.match().trumpCard();
 		art.flip(trump, x, y, cw, ch, p);
@@ -141,6 +164,27 @@ final class TableDrawing {
 			post.light((x + cw / 2) / layout.w, (y + ch / 2) / layout.h, 0.3f, lit);
 		}
 		motes.draw(batch, assets.glow);
+	}
+
+	private static final float PICKED_EMBLEM = 0.72f;
+	private Suit shownPick;
+	private float pickedAt;
+
+	private void pickedTrump(float x, float y, float cw, float ch) {
+		Suit s = scene.match().pickedTrump();
+		if (s != shownPick) {
+			shownPick = s;
+			pickedAt = scene.time();
+		}
+		if (s == null) {
+			return;
+		}
+		float since = scene.time() - pickedAt, drop = PICK_DROP.progress(since);
+		float e = cw * PICKED_EMBLEM * (1 + PICK_SWELL * (1 - drop)), rise = PICK_RISE * (1 - drop);
+		batch.setColor(1, 1, 1, Math.min(1, drop * 3));
+		batch.draw(assets.emblem(s), x + (cw - e) / 2, y + (ch - e) / 2 - rise, e, e);
+		batch.setColor(Color.WHITE);
+		suitPuff(s, x + cw / 2, y + ch / 2, (since - PICK_DROP.end()) / PUFF_LEN);
 	}
 
 	void momentum() {
@@ -167,15 +211,12 @@ final class TableDrawing {
 		float cx = left ? layout.panelX(seat) - BAR_GAP - BAR_W / 2 : layout.panelX(seat) + PlayerPanel.W + BAR_GAP + BAR_W / 2;
 		float cy = layout.panelTop(seat) - PlayerPanel.H / 2;
 		if (lit >= MOMENTUM_NOTCHES) {
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			batch.setColor(1f, 0.8f, 0.4f, 0.35f + 0.15f * MathUtils.sin(now * 4));
-			batch.draw(assets.glow, cx - BAR_W * 2, cy - BAR_H * 0.75f, BAR_W * 4, BAR_H * 1.5f);
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			batch.setColor(Color.WHITE);
+			paint.glow(cx - BAR_W * 2, cy - BAR_H * 0.75f, BAR_W * 4, BAR_H * 1.5f, Palette.EMBER, 0.35f + 0.15f * MathUtils.sin(now * 4));
 		}
 		batch.draw(assets.momentum[lit], cx - bw / 2, cy - bh / 2, bw, bh);
 	}
 
+	private static final Tween TURN_PULSE = Tween.over(0.8f, Ease.LINEAR), BID_GILT = Tween.over(0.9f, Ease.OUT);
 	private static final float BAR_W = 22, BAR_H = BAR_W * 144 / 44, BAR_GAP = 5, BAR_POP = 0.25f, NOTCH_FILL = 0.45f;
 	private static final int MOMENTUM_NOTCHES = 2;
 	private final int[] shownStreak = new int[Seating.SEATS];
@@ -191,7 +232,31 @@ final class TableDrawing {
 		boolean dealer = m.dealer() == seat && (!picking || DealerPick.settled(flow.stateTime()));
 		state.reset().named(scene.placardName(seat)).score(scoreShown(flow, m, seat)).turn(turn).dealer(dealer)
 				.doubled(m.onMomentum(seat)).bid(m.bidSeenBy(seat, Seating.YOU)).won(m.tricksWon(seat)).cards(m.handSize()).plain(flow.isDealing());
+		appear(seat, m);
+		if (seat == Seating.YOU) {
+			boolean scored = m.phase() == Match.Phase.HAND_OVER && (flow.state() == TableState.HAND_END || flow.state() == TableState.RESULTS);
+			boolean made = scored && m.madeBid(seat);
+			float pulse = turn && flow.state() == TableState.TURN ? TURN_PULSE.progress(flow.stateTime()) : 1;
+			float gilt = made && flow.state() == TableState.HAND_END ? 1 - BID_GILT.progress(flow.stateTime()) : 0;
+			state.accents(pulse < 1 ? (float) Math.sin(Math.PI * pulse) : 0, gilt, scored && !made);
+		}
 		panel.draw(state, layout.panelX(seat), layout.panelTop(seat), scene.time());
+	}
+
+	private void appear(int seat, Match m) {
+		int bid = m.bidSeenBy(seat, Seating.YOU);
+		float now = scene.time();
+		if (bid != shownBid[seat]) {
+			boolean reveal = shownBid[seat] == Match.NO_BID && bid != Match.NO_BID && m.rules().blindBids && seat != Seating.YOU;
+			int order = ((seat - m.dealer() - 1) % m.players() + m.players()) % m.players();
+			bidAt[seat] = bid == Match.NO_BID ? -99 : now + (reveal ? order * REVEAL_STAGGER : 0);
+			revealed[seat] = reveal;
+			shownBid[seat] = bid;
+		}
+		float since = now - bidAt[seat];
+		float stamp = revealed[seat] ? 0 : STAMP_SIZE * (1 - BID_STAMP.progress(since));
+		float flip = revealed[seat] ? BID_FLIP.progress(since) : 1;
+		state.appear(stamp, flip);
 	}
 
 	static int scoreShown(TableFlow flow, Match m, int seat) {
@@ -206,7 +271,9 @@ final class TableDrawing {
 		List<Card> order = scene.handOrder();
 		order.clear();
 		order.addAll(m.hand(Seating.YOU));
-		Collections.sort(order, sort.get().order(m.trump()));
+		if (flow.trumpFaceUp()) {
+			Collections.sort(order, sort.get().order(m.trump()));
+		}
 		int n = order.size();
 		TapAreas.sizeTo(scene.handRects(), n);
 		if (n == 0) {

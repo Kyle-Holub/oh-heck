@@ -19,8 +19,13 @@ import ohheck.rules.Card;
 import ohheck.rules.Rank;
 import ohheck.rules.Suit;
 import ohheck.ui.Assets;
+import ohheck.ui.Palette;
 
-/* Playing cards tumbling down the screen in 3D, projected through a pinhole camera each frame. */
+/*
+ * Playing cards tumbling down the screen in 3D, projected through a pinhole camera each frame. The camera can fly
+ * forward through them (fly), leaving sparkle streaks behind it as it rushes. Banks of mist drift among the sparkles,
+ * drawn only when asked for (drawMist).
+ */
 public final class FallingCards {
 
 	private static final float FOCAL = 700f;
@@ -40,8 +45,9 @@ public final class FallingCards {
 
 	private final Assets assets;
 	private final Random rng;
+	private final float[] rgb = new float[3];
 	private final List<Flake> flakes = new ArrayList<Flake>();
-	private float time, spawnDebt;
+	private float time, spawnDebt, camera, rush;
 	private final boolean fromEmpty;
 	private final float period, phase;
 
@@ -61,6 +67,11 @@ public final class FallingCards {
 		this.rng = rng;
 		this.period = 9f + rng.nextFloat() * 8f;
 		this.phase = rng.nextFloat() * MathUtils.PI2;
+	}
+
+	public void fly(float cameraZ, float rushPerFrame) {
+		camera = cameraZ;
+		rush = rushPerFrame;
 	}
 
 	public boolean active() {
@@ -167,14 +178,18 @@ public final class FallingCards {
 	}
 
 	private void drawFlake(SpriteBatch batch, Flake f, float cx, float cy) {
+		float z = f.pos.z - camera;
+		if (z < PASSED) {
+			return;
+		}
 		n.set(0, 0, -1);
 		f.rot.transform(n);
-		toCam.set(f.pos).scl(-1).nor();
+		toCamera(f).nor();
 		boolean front = n.dot(toCam) > 0;
 		float lit = 0.38f + 0.62f * Math.abs(n.dot(LIGHT));
-		float depth = (f.pos.z - NEAR) / (FAR - NEAR);
+		float depth = MathUtils.clamp((z - NEAR) / (FAR - NEAR), 0f, 1f);
 		float b = Math.min(0.94f, lit * MathUtils.lerp(1.05f, 0.42f, depth));
-		float d = defocus(f.pos.z);
+		float d = defocus(z), near = MathUtils.clamp((z - PASSED) / NEAR_FADE, 0f, 1f);
 		float warmR = WARM_R, warmG = WARM_G, warmB = WARM_B;
 
 		VIEW_LIGHT.set(LIGHT).add(toCam).nor();
@@ -187,13 +202,19 @@ public final class FallingCards {
 		if (d > 0.02f) {
 			TextureRegion blur = front ? assets.blurredFace(f.card) : assets.blurredBack();
 			float grow = 1f / (1f - 2f * Assets.blurMarginX()), growY = 1f / (1f - 2f * Assets.blurMarginY());
-			float a = Math.min(1f, d * 3f);
+			float a = Math.min(1f, d * 3f) * near;
 			drawQuad(batch, f, cx, cy, blur, CARD_W * grow, CARD_H * growY, Color.toFloatBits(b * warmR, b * warmG, b * warmB, a));
 		}
 		if (d < 0.98f) {
 			TextureRegion r = front ? assets.face(f.card) : assets.back();
-			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(b * warmR, b * warmG, b * warmB, 1f - d));
+			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(b * warmR, b * warmG, b * warmB, (1f - d) * near));
 		}
+	}
+
+	private static final float PASSED = 40f, NEAR_FADE = 260f;
+
+	private Vector3 toCamera(Flake f) {
+		return toCam.set(-f.pos.x, -f.pos.y, camera - f.pos.z);
 	}
 
 	private void drawGlints(SpriteBatch batch, float cx, float cy) {
@@ -205,7 +226,7 @@ public final class FallingCards {
 			Flake f = glinting.get(i);
 			n.set(0, 0, -1);
 			f.rot.transform(n);
-			toCam.set(f.pos).scl(-1);
+			toCamera(f);
 			TextureRegion r = n.dot(toCam) > 0 ? assets.face(f.card) : assets.back();
 			drawQuad(batch, f, cx, cy, r, CARD_W, CARD_H, Color.toFloatBits(1f, 0.88f, 0.62f, Math.min(0.7f, glintStrength[i])));
 		}
@@ -218,6 +239,7 @@ public final class FallingCards {
 				v.set(((float) i / GRID_X - 0.5f) * w, ((float) j / GRID_Y - 0.5f) * h, 0);
 				f.rot.transform(v);
 				v.add(f.pos);
+				v.z -= camera;
 				if (v.z < 1f) {
 					return;
 				}
@@ -251,17 +273,43 @@ public final class FallingCards {
 		quad[o + 4] = v;
 	}
 
-	private static final int SPARKLES = 230;
+	private static final int SPARKLES = 230, STREAK = 14;
 	private final float[] sx = new float[SPARKLES], sy = new float[SPARKLES], sz = new float[SPARKLES];
 	private final float[] sDrift = new float[SPARKLES], sPhase = new float[SPARKLES], sRate = new float[SPARKLES],
 			sSize = new float[SPARKLES], sHue = new float[SPARKLES];
 	private boolean sparklesReady;
+	private static final int MIST = 18;
+	private static final float MIST_SIZE = 900f, MIST_ALPHA = 0.42f;
+	private static final Color MIST_TINT = new Color(0.36f, 0.3f, 0.27f, 1f);
+	private final float[] mx = new float[MIST], my = new float[MIST], mz = new float[MIST];
 
 	private void initSparkles(float viewW, float viewH) {
 		for (int i = 0; i < SPARKLES; i++) {
 			placeSparkle(i, viewW, viewH, (rng.nextFloat() * 2 - 1));
 		}
+		for (int i = 0; i < MIST; i++) {
+			mz[i] = NEAR + (FAR - NEAR) * i / MIST;
+			mx[i] = (rng.nextFloat() * 2 - 1) * halfW(mz[i], viewW) * 0.8f;
+			my[i] = (rng.nextFloat() * 2 - 1) * halfH(mz[i], viewH) * 0.8f;
+		}
 		sparklesReady = true;
+	}
+
+	public void drawMist(SpriteBatch batch, float cx, float cy) {
+		drawMist(batch, cx, cy, 1);
+	}
+
+	public void drawMist(SpriteBatch batch, float cx, float cy, float alpha) {
+		for (int i = MIST - 1; i >= 0; i--) {
+			float z = mz[i] - camera;
+			if (z < PASSED) {
+				continue;
+			}
+			float scale = FOCAL / z, size = MIST_SIZE * scale, drift = MathUtils.sin(time * 0.3f + i) * 30f;
+			batch.setColor(MIST_TINT.r, MIST_TINT.g, MIST_TINT.b, alpha * MIST_ALPHA * MathUtils.clamp((z - PASSED) / NEAR_FADE, 0f, 1f));
+			batch.draw(assets.glow, cx + (mx[i] + drift) * scale - size / 2, cy + my[i] * scale - size / 2, size, size);
+		}
+		batch.setColor(Color.WHITE);
 	}
 
 	private void placeSparkle(int i, float viewW, float viewH, float yFrac) {
@@ -292,17 +340,19 @@ public final class FallingCards {
 	private void drawSparkles(SpriteBatch batch, float cx, float cy, boolean behind) {
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		for (int i = 0; i < SPARKLES; i++) {
-			if ((sz[i] >= FOCUS) != behind) {
+			float z = sz[i] - camera;
+			if ((z >= FOCUS) != behind || z < PASSED) {
 				continue;
 			}
-			float scale = FOCAL / sz[i];
-			float d = defocus(sz[i]);
-			float size = sSize[i] * scale * (1f + d * 5f);
+			float d = defocus(z);
 			float twinkle = 0.55f + 0.45f * MathUtils.sin(time * sRate[i] * 2f + sPhase[i]);
-			float a = Math.min(1f, twinkle * MathUtils.lerp(1.2f, 0.3f, d) * MathUtils.clamp(scale * 1.6f, 0.35f, 1f));
-			float g = MathUtils.lerp(0.62f, 0.86f, sHue[i]);
-			batch.setColor(1f, g, MathUtils.lerp(0.25f, 0.55f, sHue[i]), a);
-			batch.draw(assets.glow, cx + sx[i] * scale - size / 2, cy + sy[i] * scale - size / 2, size, size);
+			Palette.sparkle(MathUtils.lerp(1.5f, 0.6f, sHue[i]), 0, rgb);
+			for (int k = rush > 0 ? STREAK : 0; k >= 0; k--) {
+				float scale = FOCAL / (z + rush * k / 3), size = sSize[i] * scale * (1f + d * 5f);
+				float a = Math.min(1f, twinkle * MathUtils.lerp(1.2f, 0.3f, d) * MathUtils.clamp(scale * 1.6f, 0.35f, 1f));
+				batch.setColor(rgb[0], rgb[1], rgb[2], a * (1f - (float) k / (STREAK + 1)));
+				batch.draw(assets.glow, cx + sx[i] * scale - size / 2, cy + sy[i] * scale - size / 2, size, size);
+			}
 		}
 		batch.setColor(Color.WHITE);
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);

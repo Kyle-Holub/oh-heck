@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -21,6 +20,7 @@ import ohheck.campaign.PracticeRound;
 import ohheck.campaign.Stage;
 import ohheck.fx.Fireworks;
 import ohheck.fx.Sparks;
+import ohheck.platform.Audio;
 import ohheck.platform.GameOptions;
 import ohheck.players.Difficulty;
 import ohheck.players.Player;
@@ -30,17 +30,19 @@ import ohheck.rules.Card;
 import ohheck.rules.Match;
 import ohheck.rules.Move;
 import ohheck.rules.RuleSet;
+import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.CardWipe;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
+import ohheck.ui.Wording;
 
 /* The card table screen: a custom game, saved as it goes, or a campaign chapter's table. */
 public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
-	private static final float SIGN_BESIDE = 14, SIGN_TOP = 10, SIGN_H = 44, SIGN_PAD = 18, SIGN_DELAY = 0.3f, SIGN_LENGTH = 2.8f, VERSUS_SHAKE = 9, SET_SHAKE = 7, SET_EDGES = 0.7f, HIT_SHAKE = 5, HIT_FLASH = 0.35f;
+	private static final float SIGN_BESIDE = 14, SIGN_TOP = 10, SIGN_H = 44, SIGN_PAD = 18, SIGN_DELAY = 0.3f, ARRIVAL = 0.8f, ARRIVAL_LIGHT = 2.2f, SIGN_LENGTH = 2.8f, VERSUS_SHAKE = 9, SET_SHAKE = 7, SET_EDGES = 0.7f, HIT_SHAKE = 5, HIT_FLASH = 0.35f;
 	private static final Tween SIGN_IN = Tween.over(0.35f, Ease.OUT), SIGN_OUT = Tween.over(0.35f, Ease.IN);
 
 	private final GameOptions options;
@@ -50,6 +52,13 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private final TableOverlays overlays;
 	private final OverlayTargets targets = new OverlayTargets();
 	private final TableFlow flow;
+	private final TableSounds sounds;
+	private static final float TENSION_DIM = 0.3f, TENSION_EASE = 0.4f;
+	private final Color tensionShade = new Color(), arrivalLight = new Color();
+	private float tension, bestFrom = -1;
+	private static final int BEST_SPARKS = 70;
+	private Card refused;
+	private float refusedAt = -99;
 	private final CardArt art;
 	private final TableDrawing drawing;
 	private final CardSprites cards = new CardSprites();
@@ -62,11 +71,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private float time;
 	private final Kick kick = new Kick();
 	private final PracticeGuide guide;
-	private boolean firstPractice, finaleDone;
-	private float finaleAt = -1;
-	private static final float FINALE_GATHER = 0.5f, FINALE_SHAKE = 1.3f, FINALE_FLASH = 1.45f, FINALE_FLIP = 0.4f, FINALE_LENGTH = 2.9f,
-			FINALE_W = 150, FINALE_H = FINALE_W * 98 / 73;
-	private static final String CHAPTER = "CHAPTER";
+	private boolean firstPractice;
 	private static final String PRACTICE_SIGN = "Practice round";
 	private static final String[] PRACTICE_NAMES = { "You", "Left", "Across", "Right" };
 	private boolean slammed;
@@ -98,7 +103,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	public static PlayScreen resume(GameHost game, SavedGame saved) {
-		return new PlayScreen(game, saved, null, null, false);
+		return new PlayScreen(game, saved, saved.chapter(), saved.stage(), false);
 	}
 
 	public static PlayScreen campaign(GameHost game, Chapter chapter, Stage stage) {
@@ -122,8 +127,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		this.badges = new BadgeKeeper(game.records());
 		TableFlow.Listener keeper = practice ? new TableFlow.Listener() {
 		} : chapter == null ? recorder : new CampaignKeeper();
-		this.flow = practice ? new TableFlow(you, new Effects(), new TableSounds(game.audio()))
-				: new TableFlow(you, new Effects(), new TableSounds(game.audio()), keeper, badges);
+		this.sounds = new TableSounds(game.audio());
+		this.flow = practice ? new TableFlow(you, new Effects(), sounds) : new TableFlow(you, new Effects(), sounds, keeper, badges);
 		if (!you.thinkAtOnce() && options.fixedStep <= 0) {
 			flow.thinkWith(Thinker.background());
 		}
@@ -138,11 +143,21 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		@Override
 		public void beforeDeal(Match m) {
 			input.clearTouch();
+			if (m.suddenDeath()) {
+				hint(Wording.SUDDEN_DEATH);
+			}
 		}
 
 		@Override
 		public void changed(Match m) {
 			PlayScreen.this.save();
+			List<Move> moves = m.moves();
+			Move last = moves.isEmpty() ? null : moves.get(moves.size() - 1);
+			if (last instanceof Move.PickTrump pick) {
+				hint(Wording.pickedTrump(pick.seat() == Seating.YOU ? null : name(pick.seat()), pick.suit()));
+			} else if (last instanceof Move.SwapWidow swap && swap.seat() != Seating.YOU) {
+				hint(Wording.widowSwap(name(swap.seat()), swap.give() != null));
+			}
 		}
 
 		@Override
@@ -188,6 +203,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public void refuseBid(int b) {
 		overlays.refuseBid(b);
+		game.audio().play(Audio.Effect.TANKARD);
 	}
 
 	@Override
@@ -307,7 +323,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private void resumeGame(SavedGame saved) {
 		level = saved.level();
 		seatPlayers(saved.players() != null ? saved.players() : Player.draw(level, streams.seating));
-		recorder.table(level, players, false);
+		if (chapter == null) {
+			recorder.table(level, players, false);
+		}
 		overlays.setMatch(saved.match());
 		flow.resume(saved.match());
 	}
@@ -328,18 +346,26 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 			return;
 		}
 		time += dt;
-		if (finaleAt >= 0) {
-			float before = time - dt - finaleAt;
-			if (before < FINALE_FLASH + FINALE_FLIP / 2 && time - finaleAt >= FINALE_FLASH + FINALE_FLIP / 2) {
+		if (finishing()) {
+			if (guide.finaleFlips(time - dt, time)) {
 				sparks.burst(w / 2, h / 2, 120);
 			}
-			if (time - finaleAt >= FINALE_LENGTH && !finaleDone) {
-				finaleDone = true;
+			if (guide.finaleEnds(time)) {
 				game.finishPractice();
 			}
 		} else if (guide == null || !guide.update(this)) {
 			flow.update(dt);
 		}
+		sounds.update(flow, time);
+		if (flow.state() == TableState.GAME_OVER && recorder.newHighScore() == 0) {
+			float since = sinceResults(), locks = overlays.bestLocksAt();
+			if (since >= locks && bestFrom < locks) {
+				sparks.burst(overlays.bestSpot().x, overlays.bestSpot().y, BEST_SPARKS);
+				game.audio().play(Audio.Effect.COIN);
+			}
+			bestFrom = since;
+		}
+		tension = MathUtils.clamp(tension + (flow.bidHangsOnLastTrick() ? dt : -dt) / TENSION_EASE, 0, 1);
 		if (flow.inHitStop() && !hitShown) {
 			kick.shake(time, HIT_SHAKE);
 			hitAt = time;
@@ -357,6 +383,8 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (flow.state() == TableState.VERSUS && !slammed && flow.stateTime() >= TableOverlays.VERSUS_SLAM) {
 			slammed = true;
 			kick.shake(time, VERSUS_SHAKE);
+			sparks.burst(layout.w / 2, layout.h / 2, 120);
+			game.audio().play(Audio.Effect.THUMP);
 		}
 		overlays.update(dt);
 		sparks.step(dt);
@@ -378,7 +406,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		if (flow.state().animating(this)) {
 			return true;
 		}
-		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || shower.active() || kick.active(time) || time - setAt < SET_EDGES || overlays.refusing() || finaleAt >= 0
+		return input.dragging() || sparks.active() || fireworks.active() || cards.moving(time) || shower.active() || kick.active(time) || time - setAt < SET_EDGES || overlays.refusing() || finishing()
 				|| time < signFrom() + SIGN_LENGTH;
 	}
 
@@ -395,6 +423,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public void hide() {
 		super.hide();
+		sounds.stop();
 		if (duelLook() != null) {
 			assets.dress(game.settings().cardBack(), game.settings().felt());
 		}
@@ -428,18 +457,22 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private void seatPlayers(Seating ids) {
 		players = ids;
 		layout.seat(ids.players());
-		flow.seat(ids, streams.bots);
+		flow.seat(ids, chapter != null && stage != Stage.TABLE ? chapter.championId : -1, streams.bots);
 	}
 
 	private void save() {
-		if (chapter != null || guide != null) {
+		if (guide != null) {
 			return;
 		}
 		if (isGameOver()) {
 			game.records().clearSavedGame();
 		} else {
-			game.records().saveGame(new SavedGame(match(), level, players));
+			game.records().saveGame(new SavedGame(match(), level, players, chapter, stage));
 		}
+	}
+
+	public boolean isCampaign() {
+		return chapter != null;
 	}
 
 	@Override
@@ -458,7 +491,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 
 	@Override
 	protected void touchDragged(float x, float y) {
-		input.touchDragged(x, y, movedFrom(x, y));
+		input.touchDragged(x, y);
 	}
 
 	@Override
@@ -487,8 +520,61 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	@Override
+	public boolean swapWidow(Card give, Card take) {
+		input.clearTouch();
+		return flow.swapWidow(give, take);
+	}
+
+	@Override
+	public void refuseCard(Card c) {
+		refused = c;
+		refusedAt = time;
+		game.audio().play(Audio.Effect.THUP);
+		game.audio().buzz(Audio.Buzz.DOUBLE);
+	}
+
+	@Override
+	public void liftWidow() {
+		game.audio().play(Audio.Effect.PAPER);
+	}
+
+	@Override
+	public void touchedCard() {
+		game.audio().buzz(Audio.Buzz.TICK);
+	}
+
+	@Override
+	public Card refusedCard() {
+		return refused;
+	}
+
+	@Override
+	public float refusedFor() {
+		return time - refusedAt;
+	}
+
+	@Override
+	public int reviewing() {
+		return targets.review();
+	}
+
+	public void reviewTricks(int which) {
+		targets.review(which);
+	}
+
+	@Override
+	public Card hoveredCard() {
+		return input.hovered();
+	}
+
+	@Override
+	public boolean pickTrump(Suit s) {
+		return flow.pickTrump(s);
+	}
+
+	@Override
 	public boolean finishing() {
-		return finaleAt >= 0;
+		return guide != null && guide.finishing();
 	}
 
 	@Override
@@ -550,9 +636,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	@Override
 	public void showHighScores() {
 		if (guide != null && firstPractice) {
-			if (finaleAt < 0) {
-				finaleAt = time;
-			}
+			guide.startFinale(time);
 		} else if (guide != null) {
 			game.back();
 		} else if (prizesWaiting) {
@@ -592,6 +676,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		begin();
 		layout.resize(w, h);
 		batch.draw(assets.table, 0, 0, w, h);
+		if (tension > 0) {
+			paint.rect(0, 0, w, h, tensionShade.set(0, 0, 0, TENSION_DIM * tension));
+		}
 		drawTable();
 		fireworks.draw(batch, assets.glow);
 		if (!input.menuOpen()) {
@@ -610,10 +697,13 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 		drawSetEdges();
 		drawSign();
-		if (finaleAt >= 0) {
-			drawFinale(time - finaleAt);
+		if (finishing()) {
+			guide.drawFinale(paint, layout, match(), time, w, h);
 		}
-		if (chapter != null) {
+		if (chapter != null && stage != Stage.DUEL) {
+			float fade = 1 - Math.min(1, time / ARRIVAL);
+			paint.rect(0, 0, w, h, arrivalLight.set(Palette.FLASH).mul(1, 1, 1, ARRIVAL_LIGHT * fade * fade));
+		} else if (chapter == null && guide == null) {
 			CardWipe.draw(batch, assets.back(), w, h, time);
 		}
 		batch.end();
@@ -626,56 +716,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 		}
 		Vector2 at = layout.trickSlot(match().lastTrickWinner());
 		float gw = Assets.CARD_W * 2.4f, gh = Assets.CARD_H * 2f;
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		batch.setColor(1f, 0.92f, 0.7f, 0.9f * (1 - t / HIT_FLASH));
-		batch.draw(assets.glow, at.x + Assets.CARD_W / 2 - gw / 2, at.y + Assets.CARD_H / 2 - gh / 2, gw, gh);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
+		paint.glow(at.x + Assets.CARD_W / 2 - gw / 2, at.y + Assets.CARD_H / 2 - gh / 2, gw, gh, Palette.LAMP, 0.9f * (1 - t / HIT_FLASH));
 	}
 
-	private void drawFinale(float t) {
-		paint.fade(Math.min(1, t * 3));
-		paint.rect(0, 0, w, h, Palette.BACKDROP);
-		paint.fade(1f);
-		float cx = w / 2, cy = h / 2;
-		if (t < FINALE_GATHER) {
-			float k = Ease.IN.apply(t / FINALE_GATHER);
-			for (int seat = 1; seat < match().players(); seat++) {
-				float sx = layout.panelX(seat) + PlayerPanel.W / 2, sy = layout.panelTop(seat) - PlayerPanel.H / 2;
-				float x = MathUtils.lerp(sx, cx, k), y = MathUtils.lerp(sy, cy, k), cw = MathUtils.lerp(FINALE_W * 0.6f, FINALE_W, k);
-				float ch = cw * 98 / 73;
-				batch.draw(assets.back(), x - cw / 2, y - ch / 2, cw / 2, ch / 2, cw, ch, 1, 1, (1 - k) * (seat * 20 - 40));
-			}
-			return;
-		}
-		float shake = t < FINALE_SHAKE ? (t - FINALE_GATHER) / (FINALE_SHAKE - FINALE_GATHER) : 0;
-		float flip = MathUtils.clamp((t - FINALE_FLASH) / FINALE_FLIP, 0, 1), sx = Math.abs(MathUtils.cos(flip * MathUtils.PI));
-		float glowA = t < FINALE_FLASH ? 0.3f + 0.6f * shake : 0.6f + 0.2f * MathUtils.sin(t * 3);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		batch.setColor(1f, 0.82f, 0.45f, glowA);
-		batch.draw(assets.glow, cx - FINALE_W * 1.3f, cy - FINALE_H, FINALE_W * 2.6f, FINALE_H * 2);
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
-		float wobble = MathUtils.sin(t * 40) * 6 * shake, cw = FINALE_W * Math.max(0.03f, sx);
-		if (flip < 0.5f) {
-			batch.draw(assets.back(), cx - cw / 2, cy - FINALE_H / 2, cw / 2, FINALE_H / 2, cw, FINALE_H, 1, 1, wobble);
-		} else {
-			batch.draw(assets.campaignFace, cx - cw / 2, cy - FINALE_H / 2, cw, FINALE_H);
-			if (flip >= 1) {
-				paint.text(paint.ui(0.9f, Palette.GOLD), CHAPTER, cx, cy + FINALE_H / 2 - 18, true);
-				paint.numeral(1, cx, cy + FINALE_H * 0.2f, 48, Palette.GOLD_LIGHT);
-				float e = 50;
-				batch.draw(assets.emblem(Chapter.ONE.emblem), cx - e / 2, cy - e / 2 - 14, e, e);
-				paint.text(paint.serif(1.4f, Palette.GOLD_LIGHT), Chapter.ONE.mode.label, cx, cy - FINALE_H / 2 + 46, true);
-			}
-		}
-		float flash = t - FINALE_FLASH;
-		if (flash >= 0 && flash < 0.2f) {
-			paint.fade(0.35f * (1 - flash / 0.2f));
-			paint.rect(0, 0, w, h, Palette.CREAM);
-			paint.fade(1f);
-		}
-	}
 
 	private void drawSetEdges() {
 		float t = time - setAt;
@@ -699,13 +742,14 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	private float signFrom() {
-		return chapter == null ? SIGN_DELAY : stage == Stage.DUEL ? TableOverlays.VERSUS_LENGTH : CardWipe.LENGTH;
+		return chapter == null ? (guide == null ? CardWipe.LENGTH : SIGN_DELAY) : stage == Stage.DUEL ? TableOverlays.VERSUS_LENGTH : ARRIVAL;
 	}
 
 	private void drawTable() {
 		drawing.tally();
 		drawing.bidTracker();
 		drawing.trump(gameOver());
+		drawing.widow();
 		for (int seat = 0; seat < match().players(); seat++) {
 			drawing.seat(seat);
 		}

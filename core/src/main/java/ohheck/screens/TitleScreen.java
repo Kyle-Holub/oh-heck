@@ -13,12 +13,17 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import ohheck.anim.Ease;
 import ohheck.anim.Tween;
 import ohheck.fx.FallingCards;
+import ohheck.fx.Sparks;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.GameHost;
 import ohheck.ui.Palette;
 import ohheck.ui.TapAreas;
 
-/* The main menu, over falling cards. */
+/*
+ * The main menu, over falling cards. Quitting fades the menu away, leaves the cards to a splash of sparks, then exits.
+ * Play flies the camera forward through the cards and sparkles down onto the felt, which brightens to the play
+ * menu's, and the play menu opens under a warm flash.
+ */
 public class TitleScreen extends BaseScreen {
 
 	private final FallingCards cards;
@@ -29,7 +34,14 @@ public class TitleScreen extends BaseScreen {
 	private static final Tween SCENE_IN = Tween.over(SCENE_FADE, Ease.LINEAR).after(SCENE_START),
 			TITLE_IN = Tween.over(TITLE_FADE, Ease.SMOOTH).after(TITLE_START),
 			MENU_IN = Tween.over(MENU_FADE, Ease.SMOOTH).after(MENU_START);
-	private float introT;
+	private static final float QUIT_LENGTH = 1.3f;
+	private static final int SPLASH = 130;
+	private static final Tween QUIT_MENU_OUT = Tween.over(0.25f, Ease.SMOOTH), QUIT_DARK = Tween.over(0.3f, Ease.SMOOTH).after(QUIT_LENGTH - 0.3f);
+	private static final float ZOOM_LENGTH = 0.9f, FLY_DEPTH = 2500f, FELT_DEPTH = 6400f, STREAK_STEP = 1 / 30f;
+	private static final Tween ZOOM_MENU_OUT = Tween.over(0.18f, Ease.SMOOTH), FLY = Tween.over(ZOOM_LENGTH, Ease.IN),
+			FELT_LIGHT = Tween.over(ZOOM_LENGTH, Ease.SMOOTH), ZOOM_FLASH = Tween.over(0.2f, Ease.IN).after(ZOOM_LENGTH - 0.2f);
+	private final Sparks sparks = new Sparks();
+	private float introT, quitFor = -1, zoomFor = -1;
 	private final List<String> items = new ArrayList<String>();
 	private final List<Rectangle> hits = new ArrayList<Rectangle>();
 	private final Color black = new Color();
@@ -54,6 +66,8 @@ public class TitleScreen extends BaseScreen {
 	@Override
 	public void show() {
 		super.show();
+		zoomFor = -1;
+		cards.fly(0, 0);
 		if (introT > 0) {
 			introT = Math.max(introT, INTRO_END);
 		}
@@ -81,19 +95,43 @@ public class TitleScreen extends BaseScreen {
 			drawScene();
 		}
 		float titleY = drawTitle();
-		paint.fade(MENU_IN.progress(introT));
+		paint.fade(MENU_IN.progress(introT) * menuLeft());
 		TapAreas.sizeTo(hits, items.size());
 		if (paint.fade() > 0) {
 			drawMenu(titleY);
 		}
 		paint.fade(1f);
-		if (asking) {
-			drawAsk();
+		if (quitFor >= 0) {
+			sparks.draw(batch, assets.glow);
+			paint.rect(0, 0, w, h, black.set(0, 0, 0, QUIT_DARK.progress(quitFor)));
+		}
+		if (zoomFor >= 0) {
+			paint.rect(0, 0, w, h, black.set(Palette.FLASH).mul(1, 1, 1, ZOOM_FLASH.progress(zoomFor)));
 		}
 		batch.end();
 	}
 
+	private float menuLeft() {
+		return (1 - QUIT_MENU_OUT.progress(quitFor)) * (1 - ZOOM_MENU_OUT.progress(zoomFor));
+	}
+
 	private void advance(float dt) {
+		if (zoomFor >= 0) {
+			zoomFor += dt;
+			float camera = FLY.progress(zoomFor) * FLY_DEPTH;
+			cards.fly(camera, camera - FLY.progress(zoomFor - STREAK_STEP) * FLY_DEPTH);
+			if (zoomFor >= ZOOM_LENGTH) {
+				game.showPlayMenu();
+				return;
+			}
+		}
+		if (quitFor >= 0) {
+			quitFor += dt;
+			sparks.step(dt);
+			if (quitFor >= QUIT_LENGTH) {
+				Gdx.app.exit();
+			}
+		}
 		introT += dt;
 		if (introT >= SCENE_START) {
 			cards.setFalling(introT >= CARDS_START);
@@ -108,11 +146,17 @@ public class TitleScreen extends BaseScreen {
 	}
 
 	private void drawScene() {
-		batch.setColor(0.5f, 0.5f, 0.5f, 1f);
-		batch.draw(assets.table, 0, 0, w, h);
+		float light = zoomFor >= 0 ? FELT_LIGHT.progress(zoomFor) : 0;
+		float felt = 0.5f + 0.5f * light, grow = FELT_DEPTH / (FELT_DEPTH - FLY.progress(zoomFor) * FLY_DEPTH);
+		batch.setColor(felt, felt, felt, 1f);
+		batch.draw(assets.table, (w - w * grow) / 2, (h - h * grow) / 2, w * grow, h * grow);
 		batch.setColor(Color.WHITE);
 		cards.draw(batch, w / 2, h / 2);
-		paint.rect(0, 0, w, h, Palette.SHADE);
+		paint.rect(0, 0, w, h, black.set(Palette.SHADE).mul(1, 1, 1, 1 - light));
+		if (zoomFor >= 0) {
+			float fly = FLY.progress(zoomFor), size = w * (0.2f + fly * 1.3f);
+			paint.glow(w / 2 - size / 2, h / 2 - size * 0.35f, size, size * 0.7f, Palette.LAMP, 0.5f * fly * (1 - ZOOM_FLASH.progress(zoomFor)));
+		}
 		float dark = 1f - SCENE_IN.progress(introT);
 		if (dark > 0) {
 			paint.rect(0, 0, w, h, black.set(0, 0, 0, dark));
@@ -122,7 +166,7 @@ public class TitleScreen extends BaseScreen {
 	private float drawTitle() {
 		float tw = assets.titleText.getWidth() * 0.85f, th = assets.titleText.getHeight() * 0.85f;
 		float titleY = h - 30 - th;
-		float titleA = TITLE_IN.progress(introT);
+		float titleA = TITLE_IN.progress(introT) * menuLeft();
 		batch.setColor(1f, 1f, 1f, titleA);
 		batch.draw(assets.titleText, (w - tw) / 2, titleY, tw, th);
 		batch.setColor(Color.WHITE);
@@ -136,6 +180,9 @@ public class TitleScreen extends BaseScreen {
 		float y = titleY - 18 - bh + (1 - paint.fade()) * -12;
 		for (int i = 0; i < items.size(); i++) {
 			paint.button(hits.get(i), items.get(i), w / 2, y, bw, bh, i == 0 ? assets.button : assets.buttonAlt);
+			if (items.get(i).equals("Quit")) {
+				paint.quiet(hits.get(i));
+			}
 			y -= bh + gap;
 		}
 		BitmapFont f = paint.ui(0.9f, Palette.MUTED, paint.fade());
@@ -150,17 +197,7 @@ public class TitleScreen extends BaseScreen {
 
 	@Override
 	protected void tap(float x, float y) {
-		if (asking) {
-			if (teachButton.contains(x, y)) {
-				asking = false;
-				game.playPractice(true);
-			} else if (knowButton.contains(x, y)) {
-				asking = false;
-				game.settings().setKnowsHowToPlay(true);
-				game.showPlayMenu();
-			} else if (!askPanel.contains(x, y)) {
-				asking = false;
-			}
+		if (quitFor >= 0 || zoomFor >= 0) {
 			return;
 		}
 		if (introT < INTRO_END) {
@@ -177,44 +214,35 @@ public class TitleScreen extends BaseScreen {
 	}
 
 	private void choose(String item) {
-		if (item.equals("Play") && !game.settings().knowsHowToPlay() && !game.options().autoplayHuman) {
-			asking = true;
-		} else if (item.equals("Play")) {
-			game.showPlayMenu();
+		if (item.equals("Play")) {
+			play();
 		} else if (item.equals("Options")) {
 			game.showOptions();
 		} else if (item.equals("Quit")) {
-			Gdx.app.exit();
+			quit();
+		}
+	}
+
+	public void play() {
+		zoomFor = 0;
+	}
+
+	private void quit() {
+		if (quitFor < 0) {
+			quitFor = 0;
+			sparks.burst(w / 2, h * 0.4f, SPLASH);
 		}
 	}
 
 	@Override
 	protected void back() {
-		if (asking) {
-			asking = false;
-		} else {
-			Gdx.app.exit();
+		if (zoomFor < 0) {
+			quit();
 		}
 	}
 
-	private void drawAsk() {
-		paint.rect(0, 0, w, h, Palette.BACKDROP);
-		float pw = ASK_W, ph = ASK_H, px = (w - pw) / 2, py = (h - ph) / 2;
-		askPanel.set(px, py, pw, ph);
-		paint.frame(assets.panel, px, py, pw, ph);
-		paint.text(paint.serif(1.7f, Palette.GOLD), ASK_TITLE, w / 2, py + ph - 24, true);
-		paint.text(paint.ui(1.1f, Palette.CREAM), ASK_LINE, w / 2, py + ph - 80, true);
-		paint.button(teachButton, "Teach me", w / 2 - ASK_BUTTON_W / 2 - 8, py + 20, ASK_BUTTON_W, 46, assets.button);
-		paint.button(knowButton, "I know how to play", w / 2 + ASK_BUTTON_W / 2 + 8, py + 20, ASK_BUTTON_W, 46, assets.buttonAlt);
-	}
-
-	private static final float ASK_W = 560, ASK_H = 190, ASK_BUTTON_W = 250;
-	private static final String ASK_TITLE = "New to Oh Heck?", ASK_LINE = "A short practice round teaches the game as you play.";
-	private final Rectangle askPanel = new Rectangle(), teachButton = new Rectangle(), knowButton = new Rectangle();
-	private boolean asking;
-
 	@Override
 	public String stateTag() {
-		return asking ? "ask" : introT < INTRO_END ? "intro" : "title";
+		return quitFor >= 0 ? "quitting" : zoomFor >= 0 ? "zooming" : introT < INTRO_END ? "intro" : "title";
 	}
 }

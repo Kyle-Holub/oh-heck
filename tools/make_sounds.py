@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 """
-Makes the game's generated sound effects (so far just the button press: a soft, bright two-note
-chime, like a menu select) as 16-bit mono WAV files.
+Makes the game's generated sound effects as 16-bit mono WAV files: the button presses, which sound
+like a tavern, quietly: buttons give a soft whoosh, and going back (or a bid the dealer may not make) a
+tankard set down on a wooden table. The table's accents keep to
+the same old-tavern palette: wood, felt, paper, coins, wax, brass, a drum and a heavy door.
 
-Usage: python3 tools/make_sounds.py [output dir, default assets/sfx]   (needs numpy)
+It also makes the muffled copy of the music (assets/music/backTrack_muffled.mp3: the track low-passed, as if
+heard through a wall), which the game crossfades to while your bid hangs on the last trick. That step needs
+ffmpeg.
+
+Usage: python3 tools/make_sounds.py [output dir, default assets/sfx]   (needs numpy, and ffmpeg for the music)
 """
 import os
+import subprocess
 import sys
 import wave
 
@@ -14,16 +21,173 @@ import numpy as np
 RATE = 22050
 
 
-def tone(freq, length, attack=0.004):
-    t = np.arange(int(RATE * length)) / RATE
-    wave_ = np.sin(2 * np.pi * freq * t) + 0.25 * np.sin(2 * np.pi * freq * 2 * t) + 0.08 * np.sin(2 * np.pi * freq * 3 * t)
-    envelope = np.minimum(1, t / attack) * np.exp(-t / (length * 0.45))
-    return wave_ * envelope
+def tankard():
+    """A pewter tankard set down on a wooden table: a short, warm knock of wood with a faint metal ring."""
+    rng = np.random.default_rng(5)
+    t = np.arange(int(RATE * 0.35)) / RATE
+    wood = (np.sin(2 * np.pi * 150 * t) + 0.6 * np.sin(2 * np.pi * 310 * t) + 0.3 * np.sin(2 * np.pi * 520 * t)) * np.exp(-t / 0.035)
+    thud = rng.normal(0, 1, len(t))
+    thud = np.convolve(thud, np.ones(12) / 12, mode="same") * np.exp(-t / 0.012) * 1.2
+    ring = (np.sin(2 * np.pi * 1180 * t) + 0.5 * np.sin(2 * np.pi * 2730 * t)) * np.exp(-t / 0.09) * 0.18
+    sound = (wood + thud + ring) * np.minimum(1, t / 0.001)
+    return sound / np.abs(sound).max() * 0.2
 
 
-def press():
-    gap = np.zeros(int(RATE * 0.012))
-    return np.concatenate([tone(1318.5, 0.055), gap, tone(1975.5, 0.09)]) * 0.35
+def seconds(length):
+    return np.arange(int(RATE * length)) / RATE
+
+
+def band_noise(length, low, high, seed):
+    """White noise kept between two frequencies."""
+    n = int(RATE * length)
+    spectrum = np.fft.rfft(np.random.default_rng(seed).normal(0, 1, n))
+    freqs = np.fft.rfftfreq(n, 1 / RATE)
+    spectrum[(freqs < low) | (freqs > high)] = 0
+    out = np.fft.irfft(spectrum, n)
+    return out / max(1e-9, np.abs(out).max())
+
+
+def ring(freqs, amps, decays, length):
+    t = seconds(length)
+    return sum(a * np.exp(-t / d) * np.sin(2 * np.pi * f * t) for f, a, d in zip(freqs, amps, decays))
+
+
+def level(sound, peak):
+    return sound / max(1e-9, np.abs(sound).max()) * peak
+
+
+def thump():
+    """Your own card landing: felt over wood, low and soft."""
+    t = seconds(0.18)
+    body = ring((95, 190, 300), (1, 0.4, 0.2), (0.045, 0.03, 0.02), 0.18)
+    return level(body + band_noise(0.18, 200, 1500, 1) * np.exp(-t / 0.01) * 0.5, 0.22)
+
+
+def knock():
+    """A knuckle on the table: your turn."""
+    t = seconds(0.12)
+    wood = ring((240, 510, 830), (1, 0.5, 0.25), (0.025, 0.015, 0.01), 0.12)
+    return level(wood + band_noise(0.12, 800, 4000, 2) * np.exp(-t / 0.003) * 0.4, 0.14)
+
+
+def thup():
+    """A dull, muffled no."""
+    t = seconds(0.14)
+    return level(ring((120, 180), (1, 0.4), (0.04, 0.025), 0.14) + band_noise(0.14, 80, 600, 3) * np.exp(-t / 0.02) * 0.6, 0.2)
+
+
+def whump():
+    """A trump coming down on another suit's lead: deep and heavy."""
+    t = seconds(0.3)
+    f = 85 - 30 * np.minimum(1, t / 0.15)
+    body = np.sin(2 * np.pi * np.cumsum(f) / RATE) * np.exp(-t / 0.09)
+    return level(body + band_noise(0.3, 60, 900, 4) * np.exp(-t / 0.02) * 0.5, 0.26)
+
+
+def sweep():
+    """Cards raked across the felt."""
+    t = seconds(0.28)
+    env = np.sin(np.pi * np.minimum(1, t / 0.28)) ** 1.5
+    return level(band_noise(0.28, 900, 5000, 5) * env, 0.1)
+
+
+def coin():
+    """A coin dropped on the table: a bright ting and a small bounce."""
+    first = ring((3150, 4870, 7900), (1, 0.6, 0.3), (0.25, 0.12, 0.06), 0.7)
+    second = ring((3150, 4870), (0.35, 0.2), (0.12, 0.06), 0.55)
+    mix = first.copy()
+    start = int(RATE * 0.11)
+    mix[start:start + len(second)] += second[:len(mix) - start]
+    return level(mix, 0.13)
+
+
+def crackle():
+    """A pinch of hearth crackle, for the momentum chevrons."""
+    rng = np.random.default_rng(6)
+    out = np.zeros(int(RATE * 0.3))
+    for _ in range(9):
+        at = rng.integers(0, len(out) - 200)
+        pop = band_noise(0.006, 1500, 7000, int(rng.integers(1000))) * np.exp(-seconds(0.006) / 0.0015) * rng.uniform(0.3, 1)
+        out[at:at + len(pop)] += pop
+    return level(out, 0.12)
+
+
+def stamp():
+    """A wax seal pressed home: a soft wooden thud with a squash."""
+    t = seconds(0.2)
+    return level(ring((90, 170), (1, 0.4), (0.05, 0.03), 0.2) + band_noise(0.2, 300, 2500, 7) * np.exp(-t / 0.03) * 0.5, 0.22)
+
+
+def riffle():
+    """Cards riffling: a run of small paper snaps, quickening."""
+    out = np.zeros(int(RATE * 0.38))
+    at = 0.0
+    for k in range(16):
+        snap = band_noise(0.008, 2000, 6000, 20 + k) * np.exp(-seconds(0.008) / 0.002) * (0.5 + 0.5 * np.sin(np.pi * k / 15))
+        i = int(RATE * at)
+        out[i:i + len(snap)] += snap[:len(out) - i]
+        at += 0.03 - 0.0012 * k
+    return level(out, 0.12)
+
+
+def paper():
+    """A card slid off the table: a soft paper whisper."""
+    t = seconds(0.3)
+    return level(band_noise(0.3, 2500, 7000, 8) * np.sin(np.pi * t / 0.3) ** 2, 0.06)
+
+
+def drum():
+    """One low drum hit, for sudden death."""
+    t = seconds(0.6)
+    f = 70 - 20 * np.minimum(1, t / 0.2)
+    body = np.sin(2 * np.pi * np.cumsum(f) / RATE) * np.exp(-t / 0.18)
+    return level(body + band_noise(0.6, 100, 1200, 9) * np.exp(-t / 0.03) * 0.4, 0.3)
+
+
+def tick():
+    """A coin counted onto the pile."""
+    return level(ring((4200, 6100), (1, 0.4), (0.012, 0.008), 0.05), 0.07)
+
+
+def door():
+    """A heavy oak door opening on a hall: an iron latch lifting with a low wooden knock, then the leaves
+    swinging through still air, with the hall's echo behind. No hinge squeal."""
+    rng = np.random.default_rng(21)
+    length = 1.3
+    t = seconds(length)
+    out = np.zeros(len(t))
+    knock = ring((170, 410, 1150, 2350), (1, 0.45, 0.25, 0.12), (0.07, 0.035, 0.015, 0.008), 0.35)
+    knock[:60] += rng.normal(0, 0.6, 60) * np.exp(-np.arange(60) / 12)
+    out[:len(knock)] += knock
+    swing_from = int(RATE * 0.1)
+    swing_t = t[: len(t) - swing_from]
+    swing = band_noise(length - 0.1, 90, 650, 22)[: len(swing_t)] * np.sin(np.pi * np.minimum(1, swing_t / 1.0)) ** 1.5
+    out[swing_from:swing_from + len(swing)] += swing * 0.55
+    echo = np.zeros(len(out))
+    for delay, gain in ((0.11, 0.35), (0.23, 0.2), (0.37, 0.1)):
+        d = int(RATE * delay)
+        echo[d:] += out[:-d] * gain
+    return level((out + echo) * np.minimum(1, t / 0.002), 0.16)
+
+
+def medal():
+    """A medal set down: a heavier metal clink."""
+    return level(ring((1480, 3910, 6200), (1, 0.45, 0.2), (0.3, 0.12, 0.05), 0.6), 0.13)
+
+
+def whoosh():
+    """A card turned over between screens: a soft rush of air."""
+    t = seconds(0.22)
+    return level(band_noise(0.22, 400, 2500, 10) * np.sin(np.pi * t / 0.22) ** 2, 0.06)
+
+
+def latch():
+    """A brass latch: click and clack."""
+    click = ring((2600, 5100), (1, 0.4), (0.008, 0.004), 0.04)
+    out = np.zeros(int(RATE * 0.09))
+    out[:len(click)] += click
+    out[int(RATE * 0.035):int(RATE * 0.035) + len(click)] += click * 0.6
+    return level(out, 0.1)
 
 
 def write(path, samples):
@@ -35,8 +199,26 @@ def write(path, samples):
         w.writeframes(data)
 
 
+def muffled_music(music_dir):
+    """The music low-passed twice at 700 Hz, so the bass and warmth stay and the detail goes, the same length
+    and rate as the original so the game can switch between them at the same moment; mono at a low bitrate,
+    since nothing it keeps needs more."""
+    source = os.path.join(music_dir, "backTrack.mp3")
+    target = os.path.join(music_dir, "backTrack_muffled.mp3")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", source, "-af", "lowpass=f=700,lowpass=f=700",
+                    "-ar", "44100", "-ac", "1", "-b:a", "32k", "-map_metadata", "-1", "-fflags", "+bitexact",
+                    "-flags:a", "+bitexact", target], check=True)
+    print("wrote", target)
+
+
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/sfx"
     os.makedirs(out, exist_ok=True)
-    write(os.path.join(out, "press.wav"), press())
-    print("wrote", os.path.join(out, "press.wav"))
+    for name, samples in (("tankard.wav", tankard()), ("thump.wav", thump()), ("knock.wav", knock()),
+                          ("thup.wav", thup()), ("whump.wav", whump()), ("sweep.wav", sweep()), ("coin.wav", coin()),
+                          ("crackle.wav", crackle()), ("stamp.wav", stamp()), ("riffle.wav", riffle()), ("paper.wav", paper()),
+                          ("drum.wav", drum()), ("tick.wav", tick()), ("door.wav", door()), ("medal.wav", medal()),
+                          ("whoosh.wav", whoosh()), ("latch.wav", latch())):
+        write(os.path.join(out, name), samples)
+        print("wrote", os.path.join(out, name))
+    muffled_music(os.path.join(os.path.dirname(out), "music"))

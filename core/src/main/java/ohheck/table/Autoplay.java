@@ -10,6 +10,7 @@ import ohheck.players.Difficulty;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Move;
 
 /* Plays your seat in the screenshot run, through the same taps a person would make. */
 final class Autoplay implements YourSeat {
@@ -34,14 +35,10 @@ final class Autoplay implements YourSeat {
 
 	@Override
 	public void beforeDeal(Match m) {
-		while (m.phase() == Match.Phase.BIDDING && options.skipHands.contains(m.handIndex() + 1)) {
-			while (m.phase() == Match.Phase.BIDDING || m.phase() == Match.Phase.PLAYING) {
-				int s = m.currentSeat();
-				if (m.phase() == Match.Phase.BIDDING) {
-					m.placeBid(s, bot.chooseBid(m.view(s)));
-				} else {
-					m.playCard(s, bot.choosePlay(m.view(s)));
-				}
+		while (m.phase() != Match.Phase.HAND_OVER && m.phase() != Match.Phase.GAME_OVER
+				&& options.skipHands.contains(m.handIndex() + 1)) {
+			while (m.phase() != Match.Phase.HAND_OVER) {
+				m.apply(bot.chooseMove(m.view(m.currentSeat())));
 			}
 			m.nextHand();
 		}
@@ -60,7 +57,7 @@ final class Autoplay implements YourSeat {
 	@Override
 	public void update(float dt) {
 		TableFlow flow = screen.flow();
-		if (flow.yourTurnToBid() || flow.yourTurnToPlay()) {
+		if (flow.yourTurnToBid() || flow.yourTurnToPlay() || flow.yourTurnToPick() || flow.yourTurnToSwap()) {
 			yourTurn(dt);
 		} else if (flow.state() == TableState.RESULTS) {
 			onResults(flow.stateTime());
@@ -89,7 +86,18 @@ final class Autoplay implements YourSeat {
 			return;
 		}
 		timer = 0;
-		if (m.phase() == Match.Phase.BIDDING) {
+		if (m.swapping()) {
+			Move.SwapWidow swap = bot.chooseSwap(m.view(Seating.YOU));
+			if (swap.give() == null) {
+				tapCentre(targets.button(OverlayTargets.Button.KEEP_HAND));
+			} else if (targets.widowChoice() < 0) {
+				tapCentre(targets.widowCard(m.widow().indexOf(swap.take())));
+			} else {
+				tapCentre(screen.handRects().get(screen.handOrder().indexOf(swap.give())));
+			}
+		} else if (m.pickingTrump()) {
+			tapCentre(targets.suit(bot.chooseTrump(m.view(Seating.YOU))));
+		} else if (m.phase() == Match.Phase.BIDDING) {
 			int b = bot.chooseBid(m.view(Seating.YOU));
 			tapCentre(targets.bid(b));
 		} else {
@@ -100,7 +108,7 @@ final class Autoplay implements YourSeat {
 	}
 
 	private void onResults(float shownFor) {
-		if (shownFor >= RESULTS_WAIT) {
+		if (shownFor >= RESULTS_WAIT && screen.reviewing() == OverlayTargets.REVIEW_CLOSED) {
 			input.tap(screen.layout().w / 2, screen.layout().h / 2);
 		}
 	}

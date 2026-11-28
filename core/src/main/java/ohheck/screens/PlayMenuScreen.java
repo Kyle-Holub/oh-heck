@@ -17,11 +17,17 @@ import ohheck.ui.Palette;
 /*
  * Where to play, as a row of cards dealt onto the felt: carry on the game in progress, the
  * campaign, a custom game, or the high scores. Each card rises in a beat after the one before.
+ * Arriving from the title, someone new to the game is first asked whether to learn it in a practice round.
  */
 public class PlayMenuScreen extends BaseScreen {
 
 	private static final float CARD_W = 186, CARD_H = CARD_W * 98 / 73, GAP = 24, ICON = 84, RISE = 40, STAGGER = 0.08f;
-	private static final Tween RISING = Tween.over(0.35f, Ease.OUT);
+	private static final Tween RISING = Tween.over(0.35f, Ease.OUT), ASK_IN = Tween.over(0.3f, Ease.OUT).after(0.55f);
+	private static final float ASK_W = 560, ASK_H = 190, ASK_BUTTON_W = 250;
+	private static final String ASK_TITLE = "New to Oh Heck?", ASK_LINE = "A short practice round teaches the game as you play.";
+	private final Rectangle askPanel = new Rectangle(), teachButton = new Rectangle(), knowButton = new Rectangle();
+	private boolean asking;
+
 
 	private enum Choice {
 		CONTINUE("Continue", "Back to your game"), CAMPAIGN("Campaign", ""), CUSTOM("Custom game", "Your table, your rules"),
@@ -49,6 +55,10 @@ public class PlayMenuScreen extends BaseScreen {
 		}
 	}
 
+	public void askIfNew() {
+		asking = !game.settings().knowsHowToPlay() && !game.options().autoplayHuman;
+	}
+
 	@Override
 	public void show() {
 		super.show();
@@ -68,11 +78,12 @@ public class PlayMenuScreen extends BaseScreen {
 	@Override
 	protected void update(float step) {
 		shownFor += step * game.options().speed;
+
 	}
 
 	@Override
 	public boolean animating() {
-		return !RISING.done(shownFor - STAGGER * cards.length);
+		return !RISING.done(shownFor - STAGGER * cards.length) || asking && !ASK_IN.done(shownFor);
 	}
 
 	private boolean shown(Choice c) {
@@ -103,6 +114,9 @@ public class PlayMenuScreen extends BaseScreen {
 			k++;
 		}
 		chrome.header("Play", backButton, w, h);
+		if (asking) {
+			drawAsk(ASK_IN.progress(shownFor));
+		}
 		batch.end();
 	}
 
@@ -132,6 +146,21 @@ public class PlayMenuScreen extends BaseScreen {
 
 	@Override
 	protected void tap(float x, float y) {
+		if (asking) {
+			if (!ASK_IN.done(shownFor)) {
+				return;
+			}
+			if (teachButton.contains(x, y)) {
+				asking = false;
+				game.playPractice(true);
+			} else if (knowButton.contains(x, y)) {
+				asking = false;
+				game.settings().setKnowsHowToPlay(true);
+			} else if (!askPanel.contains(x, y)) {
+				asking = false;
+			}
+			return;
+		}
 		if (backButton.contains(x, y)) {
 			back();
 			return;
@@ -149,11 +178,28 @@ public class PlayMenuScreen extends BaseScreen {
 
 	@Override
 	protected void back() {
-		game.back();
+		if (asking) {
+			asking = false;
+		} else {
+			game.back();
+		}
+	}
+
+	private void drawAsk(float a) {
+		paint.rect(0, 0, w, h, Palette.BACKDROP);
+		float pw = ASK_W, ph = ASK_H, px = (w - pw) / 2, py = (h - ph) / 2 - (1 - a) * RISE;
+		askPanel.set(px, py, pw, ph);
+		paint.fade(a);
+		paint.frame(assets.panel, px, py, pw, ph);
+		paint.text(paint.serif(1.7f, Palette.GOLD, a), ASK_TITLE, w / 2, py + ph - 24, true);
+		paint.text(paint.ui(1.1f, Palette.CREAM, a), ASK_LINE, w / 2, py + ph - 80, true);
+		paint.button(teachButton, "Teach me", w / 2 - ASK_BUTTON_W / 2 - 8, py + 20, ASK_BUTTON_W, 46, assets.button);
+		paint.button(knowButton, "I know how to play", w / 2 + ASK_BUTTON_W / 2 + 8, py + 20, ASK_BUTTON_W, 46, assets.buttonAlt);
+		paint.fade(1f);
 	}
 
 	@Override
 	public String stateTag() {
-		return "play";
+		return asking ? "ask" : "play";
 	}
 }

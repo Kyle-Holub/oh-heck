@@ -10,9 +10,10 @@ the screenshot run, CI, the arena and the art tools.
   need it today, not for a future that may not come. Delete what isn't used, and prefer
   fewer files and fewer hops between them to clever generality. When a change makes the
   code simpler, that's a reason to make it.
-- **Branches:** work on `feature/…` or `refactor/…` (CI previews the screenshots), then
-  merge into the current `develop/alpha-X.Y.Z` (CI publishes a dev build). Don't commit
-  straight to `develop/` or `main`.
+- **Branches:** one working branch per version, `feature/alpha-X.Y.Z` (CI previews the
+  screenshots), reused for every change in that version; merge it into
+  `develop/alpha-X.Y.Z` (CI publishes a dev build) after each finished change. Don't make
+  a branch per change, and don't commit straight to `develop/`, `release/` or `main`.
 - **Packages:** follow the map in `ARCHITECTURE.md`. A package may use those above it in
   the map, never one below (no cycles); anything may use `ohheck.util` and `ohheck.anim`. `ohheck.rules`, `ohheck.players`, `ohheck.records`,
   `ohheck.util` and `ohheck.anim` stay libGDX-free, so they run in plain JUnit. Put new game logic and timing

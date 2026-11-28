@@ -3,6 +3,7 @@ package ohheck.table;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 import ohheck.ui.Wording;
 
 /* Turns touches at the table into actions. */
@@ -15,7 +16,8 @@ final class TableInput {
 	private final OverlayTargets targets;
 
 	private boolean menuOpen;
-	private Card pressed;
+	private Card pressed, hovered;
+	private float downY;
 	private boolean dragging;
 	private float dragX, dragY;
 
@@ -37,6 +39,10 @@ final class TableInput {
 		return pressed;
 	}
 
+	Card hovered() {
+		return dragging ? null : hovered;
+	}
+
 	float dragX() {
 		return dragX;
 	}
@@ -47,22 +53,38 @@ final class TableInput {
 
 	void touchDown(float x, float y) {
 		clearTouch();
-		if (!scene.humanCanPlay()) {
+		int i = cardAt(x, y);
+		if (i < 0 || scene.isMenuOpen()) {
 			return;
 		}
-		int i = cardAt(x, y);
-		if (i >= 0) {
-			pressed = scene.handOrder().get(i);
+		hovered = scene.handOrder().get(i);
+		downY = y;
+		if (scene.humanCanPlay()) {
+			pressed = hovered;
 			dragX = x;
 			dragY = y;
 		}
 	}
 
-	void touchDragged(float x, float y, float moved) {
+	void touchDragged(float x, float y) {
+		if (hovered == null) {
+			return;
+		}
+		if (!dragging) {
+			int i = cardAt(x, y);
+			Card under = i >= 0 ? scene.handOrder().get(i) : hovered;
+			if (under != hovered) {
+				hovered = under;
+				actions.touchedCard();
+				if (pressed != null) {
+					pressed = under;
+				}
+			}
+		}
 		if (pressed == null) {
 			return;
 		}
-		if (!dragging && moved > DRAG_START && scene.playable(pressed)) {
+		if (!dragging && y - downY > DRAG_START && scene.playable(pressed)) {
 			dragging = true;
 		}
 		dragX = x;
@@ -72,6 +94,7 @@ final class TableInput {
 	boolean touchUp(float x, float y) {
 		if (!dragging) {
 			pressed = null;
+			hovered = null;
 			return false;
 		}
 		Card c = pressed;
@@ -114,7 +137,25 @@ final class TableInput {
 	}
 
 	void nextHand() {
+		targets.review(OverlayTargets.REVIEW_CLOSED);
 		actions.nextHand();
+	}
+
+	void tapResults(float x, float y) {
+		int open = targets.review();
+		if (open == OverlayTargets.REVIEW_CLOSED) {
+			if (targets.hit(OverlayTargets.Button.TRICKS, x, y)) {
+				targets.review(OverlayTargets.REVIEW_ALL);
+			} else {
+				nextHand();
+			}
+		} else if (targets.hit(OverlayTargets.Button.REVIEW_CLOSE, x, y)) {
+			targets.review(OverlayTargets.REVIEW_CLOSED);
+		} else if (open >= 0 && targets.hit(OverlayTargets.Button.REVIEW_BACK, x, y)) {
+			targets.review(OverlayTargets.REVIEW_ALL);
+		} else if (open == OverlayTargets.REVIEW_ALL && targets.trickAt(x, y) >= 0) {
+			targets.review(targets.trickAt(x, y));
+		}
 	}
 
 	void tapTurn(float x, float y) {
@@ -122,7 +163,14 @@ final class TableInput {
 		if (m.currentSeat() != Seating.YOU) {
 			return;
 		}
-		if (m.phase() == Match.Phase.BIDDING) {
+		if (m.swapping()) {
+			tapWidow(x, y);
+		} else if (m.pickingTrump()) {
+			Suit s = targets.suitAt(x, y);
+			if (s != null) {
+				actions.pickTrump(s);
+			}
+		} else if (m.phase() == Match.Phase.BIDDING) {
 			tapBid(x, y);
 		} else {
 			tapCard(x, y);
@@ -136,6 +184,26 @@ final class TableInput {
 			actions.showHighScores();
 		} else if (targets.hit(OverlayTargets.Button.MAIN_MENU, x, y)) {
 			actions.showTitle();
+		}
+	}
+
+	private void tapWidow(float x, float y) {
+		int w = targets.widowAt(x, y);
+		if (w >= 0) {
+			targets.chooseWidow(w == targets.widowChoice() ? -1 : w);
+			actions.liftWidow();
+			return;
+		}
+		if (targets.hit(OverlayTargets.Button.KEEP_HAND, x, y)) {
+			targets.chooseWidow(-1);
+			actions.swapWidow(null, null);
+			return;
+		}
+		int i = cardAt(x, y);
+		if (i >= 0 && targets.widowChoice() >= 0) {
+			Card take = scene.match().widow().get(targets.widowChoice());
+			targets.chooseWidow(-1);
+			actions.swapWidow(scene.handOrder().get(i), take);
 		}
 	}
 
@@ -154,6 +222,7 @@ final class TableInput {
 		}
 		Card c = scene.handOrder().get(i);
 		if (!scene.match().legalPlays(Seating.YOU).contains(c)) {
+			actions.refuseCard(c);
 			actions.hint(Wording.mustFollow(scene.match().leadSuit()));
 			return;
 		}
@@ -174,11 +243,16 @@ final class TableInput {
 
 	void clearTouch() {
 		pressed = null;
+		hovered = null;
 		dragging = false;
 	}
 
 	void back() {
-		if (menuOpen) {
+		if (targets.review() >= 0) {
+			targets.review(OverlayTargets.REVIEW_ALL);
+		} else if (targets.review() == OverlayTargets.REVIEW_ALL) {
+			targets.review(OverlayTargets.REVIEW_CLOSED);
+		} else if (menuOpen) {
 			menuOpen = false;
 		} else {
 			openMenu();

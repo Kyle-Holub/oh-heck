@@ -8,26 +8,29 @@ import ohheck.rules.Suit;
 
 /*
  * A chapter of the campaign: its game mode, the suit on its card, the three rivals at its table,
- * and the champion who must be beaten in a duel to move on. At the final table the champion takes
- * the top seat and the house rules gain the duel's twist (momentum). Only ready chapters can be played yet.
+ * the champion who must be beaten in a duel to move on, and the champion's twist. At the final table the champion
+ * takes the top seat and the house rules gain the twist; the duel plays the short deck with the house hand order
+ * and scoring, and the twist (so only chapter 1's duel has momentum). Only ready chapters can be played yet.
  */
 public enum Chapter {
-	ONE(GameMode.CLASSIC, Suit.SPADES, Seating.of(0, 1, 3), 2, true),
-	TWO(GameMode.HIGH_STAKES, Suit.DIAMONDS, Seating.of(4, 6, 7), 5, false),
-	THREE(GameMode.POKER_FACE, Suit.HEARTS, Seating.of(9, 11, 5), 10, false),
-	FOUR(GameMode.MARATHON, Suit.CLUBS, Seating.of(9, 10, 11), 8, false);
+	ONE(GameMode.CLASSIC, Suit.SPADES, Seating.of(0, 1, 3), 2, Twist.MOMENTUM, true),
+	TWO(GameMode.HIGH_STAKES, Suit.DIAMONDS, Seating.of(4, 6, 7), 5, Twist.PICK_TRUMP, true),
+	THREE(GameMode.POKER_FACE, Suit.HEARTS, Seating.of(9, 11, 5), 10, Twist.HANDS_WON, true),
+	FOUR(GameMode.MARATHON, Suit.CLUBS, Seating.of(9, 10, 11), 8, Twist.WIDOW, true);
 
 	public final GameMode mode;
 	public final Suit emblem;
 	public final Seating rivals;
 	public final int championId;
+	public final Twist twist;
 	public final boolean ready;
 
-	Chapter(GameMode mode, Suit emblem, Seating rivals, int championId, boolean ready) {
+	Chapter(GameMode mode, Suit emblem, Seating rivals, int championId, Twist twist, boolean ready) {
 		this.mode = mode;
 		this.emblem = emblem;
 		this.rivals = rivals;
 		this.championId = championId;
+		this.twist = twist;
 		this.ready = ready;
 	}
 
@@ -40,7 +43,11 @@ public enum Chapter {
 	}
 
 	public RuleSet rules(Stage s) {
-		return s == Stage.DUEL ? RuleSet.DUEL : s == Stage.FINAL ? rules().withMomentum(true) : rules();
+		if (s == Stage.DUEL) {
+			RuleSet house = rules();
+			return twist.apply(RuleSet.DUEL.withMomentum(false).withOrder(house.order).withBigBids(house.bigBids).withBlindBids(house.blindBids));
+		}
+		return s == Stage.FINAL ? twist.apply(rules()) : rules();
 	}
 
 	public Seating seating(Stage s) {

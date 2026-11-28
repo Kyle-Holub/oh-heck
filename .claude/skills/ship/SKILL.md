@@ -1,13 +1,13 @@
 ---
 name: ship
 description: Take a finished Oh Heck! change from a feature/ or refactor/ branch to a published dev build - verify, push, review the preview screenshots, merge into develop, confirm the APK and desktop jar. Use when the user asks to ship, merge, release or "get it on my phone".
-disable-model-invocation: true
 ---
 
 # Ship a change
 
-1. **On a branch.** Work is on `feature/...` or `refactor/...`, branched from the newest
-   `develop/alpha-X.Y.Z`. Never commit to `develop/` or `main` directly.
+1. **On the version's branch.** Work is on `feature/alpha-X.Y.Z`, the one working branch for
+   the current `develop/alpha-X.Y.Z` (start it from develop if it doesn't exist; after a
+   merge, keep using it). Never commit to `develop/`, `release/` or `main` directly.
 2. **Verify** with the `verify` skill: tests, the arena if bots could move, and the
    screenshots. Push and let the Preview run finish.
 3. **Review the report.** `python3 tools/dev/shots.py review <branch>`. Every `CHANGED`

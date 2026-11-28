@@ -12,10 +12,17 @@ import java.util.Set;
  * One game from the first deal to the final scores. Seats run clockwise from 0; the deal moves
  * one seat each hand; the player after the dealer leads, and the dealer bids last. Each hand is dealt
  * from a shuffled deck, or from a fixed list of deals for a scripted game such as the practice round.
+ * When the winner picks trump, the hand opens with PICKING_TRUMP: whoever made the highest bid last hand
+ * (ties to the first from the dealer's left) names the trump suit, which overrides the turned card. When hands
+ * won are counted, a tie for first after the last hand plays on in one-card sudden-death hands until it breaks.
+ * With the widow, that same player then sees two face-down cards set aside and may swap one of theirs for one
+ * of them (SWAPPING); the widow is dealt only when the deck has two cards to spare.
  */
 public final class Match {
 
 	public enum Phase {
+		PICKING_TRUMP,
+		SWAPPING,
 		BIDDING,
 		PLAYING,
 		HAND_OVER,
@@ -35,6 +42,8 @@ public final class Match {
 	int dealer;
 	int current;
 	Card trumpCard;
+	Suit pickedTrump;
+	final List<Card> widow = new ArrayList<Card>();
 
 	final List<List<Card>> hands = new ArrayList<List<Card>>();
 	final int[] bids;
@@ -135,6 +144,58 @@ public final class Match {
 		}
 	}
 
+	public void pickTrump(int seat, Suit suit) {
+		requirePhase(Phase.PICKING_TRUMP);
+		requireTurn(seat);
+		moves.add(new Move.PickTrump(seat, suit));
+		pickedTrump = suit;
+		if (widow.isEmpty()) {
+			startBidding();
+		} else {
+			phase = Phase.SWAPPING;
+		}
+	}
+
+	public void swapWidow(int seat, Card give, Card take) {
+		requirePhase(Phase.SWAPPING);
+		requireTurn(seat);
+		if (give != null && (!hands.get(seat).contains(give) || !widow.contains(take))) {
+			throw new IllegalArgumentException("Seat " + seat + " may not swap " + give + " for " + take);
+		}
+		moves.add(new Move.SwapWidow(seat, give, take));
+		if (give != null) {
+			hands.get(seat).remove(give);
+			hands.get(seat).add(take);
+			widow.set(widow.indexOf(take), give);
+		}
+		startBidding();
+	}
+
+	public boolean swapping() {
+		return phase == Phase.SWAPPING;
+	}
+
+	public boolean beforeBidding() {
+		return pickingTrump() || swapping();
+	}
+
+	public List<Card> widow() {
+		return Collections.unmodifiableList(widow);
+	}
+
+	private void startBidding() {
+		phase = Phase.BIDDING;
+		current = next(dealer);
+	}
+
+	public boolean pickingTrump() {
+		return phase == Phase.PICKING_TRUMP;
+	}
+
+	public Suit pickedTrump() {
+		return pickedTrump;
+	}
+
 	public int apply(Move move) {
 		return move.applyTo(this);
 	}
@@ -181,7 +242,7 @@ public final class Match {
 
 	public void nextHand() {
 		requirePhase(Phase.HAND_OVER);
-		if (handIndex + 1 >= rules.numberOfHands()) {
+		if (handIndex + 1 >= rules.numberOfHands() && !(rules.handsWon && leaders().size() > 1)) {
 			phase = Phase.GAME_OVER;
 			return;
 		}
@@ -218,12 +279,16 @@ public final class Match {
 		return rules.handSize(handIndex);
 	}
 
+	public boolean suddenDeath() {
+		return handIndex >= rules.numberOfHands();
+	}
+
 	public Card trumpCard() {
 		return trumpCard;
 	}
 
 	public Suit trump() {
-		return trumpCard == null ? null : trumpCard.suit();
+		return pickedTrump != null ? pickedTrump : trumpCard == null ? null : trumpCard.suit();
 	}
 
 	public List<Card> hand(int seat) {
@@ -269,7 +334,7 @@ public final class Match {
 	}
 
 	public int forbiddenBid() {
-		if (phase != Phase.BIDDING || current != dealer || rules.blindBids) {
+		if (phase != Phase.BIDDING || current != dealer) {
 			return -1;
 		}
 		int f = rules.forbiddenDealerBid(handSize(), bidsSoFar());
@@ -324,14 +389,6 @@ public final class Match {
 		return Collections.unmodifiableList(historySeats);
 	}
 
-	public void winningCards(List<Card> into) {
-		into.clear();
-		for (int start = 0; start + players <= history.size(); start += players) {
-			List<Card> played = history.subList(start, start + players);
-			into.add(played.get(rules.trickWinner(played, trump())));
-		}
-	}
-
 	public List<Card> lastTrick() {
 		return lastTrick;
 	}
@@ -370,7 +427,9 @@ public final class Match {
 
 	public TableView view(int seat) {
 		TableView.Builder v = new TableView.Builder(players).seat(seat)
-				.hand(handIndex, rules.numberOfHands(), handSize(), dealer, trumpCard, rules).cards(hands.get(seat))
+				.hand(handIndex, rules.numberOfHands(), handSize(), dealer, trumpCard, rules)
+				.pickedTrump(pickedTrump, pickingTrump()).dealerForbids(seat == dealer ? rules.forbiddenDealerBid(handSize(), bidsSoFar()) : -1).widow(swapping() && seat == current ? widow : Collections.<Card>emptyList(), swapping())
+				.cards(hands.get(seat))
 				.trick(trick.cards(), trick.seats()).history(history, historySeats);
 		for (int s = 0; s < players; s++) {
 			v.seatState(s, bidSeenBy(s, seat), tricks[s], scores[s], hands.get(s).size());
@@ -387,7 +446,7 @@ public final class Match {
 	}
 
 	void check() {
-		if (handIndex < 0 || handIndex >= rules.numberOfHands() || dealer < 0 || dealer >= players || current < 0
+		if (handIndex < 0 || handIndex >= rules.numberOfHands() && !rules.handsWon || dealer < 0 || dealer >= players || current < 0
 				|| current >= players || trick.cards.size() != trick.seats.size() || trick.size() >= players
 				|| history.size() != historySeats.size()) {
 			throw new IllegalArgumentException("Inconsistent game state");
@@ -395,6 +454,11 @@ public final class Match {
 		Set<Card> seen = new HashSet<Card>();
 		if (trumpCard != null) {
 			seen.add(trumpCard);
+		}
+		for (Card c : widow) {
+			if (!seen.add(c)) {
+				throw new IllegalArgumentException("Card appears twice: " + c);
+			}
 		}
 		for (List<Card> h : hands) {
 			for (Card c : h) {
@@ -410,7 +474,22 @@ public final class Match {
 		}
 	}
 
+	private int trumpPicker() {
+		if (!rules.pickTrump && !rules.widow || handIndex == 0) {
+			return -1;
+		}
+		int picker = -1;
+		for (int i = 0; i < players; i++) {
+			int seat = (dealer + 1 + i) % players;
+			if (bids[seat] != NO_BID && bids[seat] == tricks[seat] && (picker < 0 || bids[seat] > bids[picker])) {
+				picker = seat;
+			}
+		}
+		return picker;
+	}
+
 	private void startHand() {
+		int picker = trumpPicker();
 		Deck deck = script == null ? Deck.shuffled(rng, rules) : null;
 		for (int i = 0; i < players; i++) {
 			int seat = (dealer + 1 + i) % players;
@@ -419,11 +498,23 @@ public final class Match {
 			tricks[seat] = 0;
 		}
 		trumpCard = deck == null ? script.get(handIndex).trump() : deck.size() > 0 ? deck.deal() : null;
+		pickedTrump = null;
+		widow.clear();
+		if (rules.widow && picker >= 0 && deck != null && deck.size() >= 2) {
+			widow.add(deck.deal());
+			widow.add(deck.deal());
+		}
 		trick.clear();
 		history.clear();
 		historySeats.clear();
-		phase = Phase.BIDDING;
-		current = next(dealer);
+		current = picker;
+		if (rules.pickTrump && picker >= 0) {
+			phase = Phase.PICKING_TRUMP;
+		} else if (!widow.isEmpty()) {
+			phase = Phase.SWAPPING;
+		} else {
+			startBidding();
+		}
 	}
 
 	private int next(int seat) {

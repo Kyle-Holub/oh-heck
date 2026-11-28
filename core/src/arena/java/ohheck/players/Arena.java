@@ -75,7 +75,9 @@ public final class Arena {
 			}
 			int s = m.currentSeat();
 			TableView v = m.view(s);
-			if (m.phase() == Match.Phase.BIDDING) {
+			if (m.beforeBidding()) {
+				m.apply(bots[s].chooseMove(v));
+			} else if (m.phase() == Match.Phase.BIDDING) {
 				if (s == seat) {
 					expected = 0;
 					for (Card c : v.hand()) {
@@ -108,16 +110,24 @@ public final class Arena {
 		for (HandOrder order : HandOrder.values()) {
 			for (int most : new int[] { RuleSet.USUAL_CARDS, RuleSet.MOST_CARDS }) {
 				for (int flags = 0; flags < 4; flags++) {
-					rules = new RuleSet(order, most, (flags & 1) != 0, (flags & 2) != 0);
-					System.out.println("== " + rules.code());
-					report("  Easy (all four)", run(n, level(Difficulty.EASY), level(Difficulty.EASY)));
-					report("  Normal (all four)", run(n, level(Difficulty.NORMAL), level(Difficulty.NORMAL)));
-					report("  Normal vs 3 Easy", run(n, level(Difficulty.NORMAL), level(Difficulty.EASY)));
-					report("  Hard vs 3 Normal", run(Math.max(1, n / 4), level(Difficulty.HARD), level(Difficulty.NORMAL)));
+					variant(n, new RuleSet(order, most, (flags & 1) != 0, (flags & 2) != 0));
 				}
 			}
 		}
+		for (RuleSet twisted : new RuleSet[] { RuleSet.STANDARD.withMomentum(true), RuleSet.STANDARD.withPickTrump(true),
+				RuleSet.STANDARD.withHandsWon(true), RuleSet.STANDARD.withWidow(true) }) {
+			variant(n, twisted);
+		}
 		rules = RuleSet.STANDARD;
+	}
+
+	private static void variant(int n, RuleSet r) {
+		rules = r;
+		System.out.println("== " + rules.code());
+		report("  Easy (all four)", run(n, level(Difficulty.EASY), level(Difficulty.EASY)));
+		report("  Normal (all four)", run(n, level(Difficulty.NORMAL), level(Difficulty.NORMAL)));
+		report("  Normal vs 3 Easy", run(n, level(Difficulty.NORMAL), level(Difficulty.EASY)));
+		report("  Hard vs 3 Normal", run(Math.max(1, n / 4), level(Difficulty.HARD), level(Difficulty.NORMAL)));
 	}
 
 	static void report(String name, Stats s) {
@@ -152,7 +162,9 @@ public final class Arena {
 					continue;
 				}
 				int s = m.currentSeat();
-				if (m.phase() == Match.Phase.BIDDING) {
+				if (m.beforeBidding()) {
+					m.apply(bot.chooseMove(m.view(s)));
+				} else if (m.phase() == Match.Phase.BIDDING) {
 					if (dealtAs.isEmpty()) {
 						for (int q = 0; q < players; q++) {
 							TableView v = m.view(q);
@@ -308,7 +320,7 @@ public final class Arena {
 			report("Hard vs 3 Normal", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.NORMAL)));
 			report("Hard vs 3 Easy", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.EASY)));
 		} else if (what.equals("duel")) {
-			rules = RuleSet.DUEL;
+			rules = args.length > 2 ? rules : RuleSet.DUEL;
 			players = 2;
 			report("Normal vs Easy", run(n, level(Difficulty.NORMAL), level(Difficulty.EASY)));
 			report("Hard vs Normal", run(n / 4 + 1, level(Difficulty.HARD), level(Difficulty.NORMAL)));

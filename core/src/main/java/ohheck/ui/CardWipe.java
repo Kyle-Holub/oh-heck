@@ -8,7 +8,7 @@ import ohheck.anim.Ease;
 
 /*
  * A curtain of card backs that covers the screen and sweeps off to the right, column by column,
- * uncovering what is behind: the way into a campaign table and back out of it.
+ * uncovering what is behind: the way into a custom game.
  */
 public final class CardWipe {
 

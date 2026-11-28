@@ -15,7 +15,7 @@ import ohheck.rules.RuleSet;
 public record Briefing(String tag, Chapter chapter, String go, List<Briefing.Page> pages) {
 
 	public enum Picture {
-		CHAPTER, HOUSE_RULES, RIVALS, TABLE, WIN, SHOTS, CHAMPION, SHORT_DECK, MOMENTUM
+		CHAPTER, HOUSE_RULES, RIVALS, TABLE, WIN, SHOTS, CHAMPION, SHORT_DECK, TWIST
 	}
 
 	public record Page(Picture picture, String heading, String line, String figure) {
@@ -56,10 +56,10 @@ public record Briefing(String tag, Chapter chapter, String go, List<Briefing.Pag
 		Player champion = c.champion();
 		List<Page> p = new ArrayList<Page>();
 		p.add(new Page(Picture.CHAMPION, "The final table",
-				champion.name + " takes " + c.leaving().name + "'s seat for a full game against " + names(c.seating(Stage.FINAL)) + ".",
+				champion.name + " takes " + c.leaving().name + "'s seat for a full game with " + c.rivals.at(1).name + " and "
+						+ c.rivals.at(3).name + ".",
 				champion.name));
-		p.add(new Page(Picture.MOMENTUM, "Momentum",
-				champion.name + "'s rule: make your bid twice running and your next made bid scores double.", "x2"));
+		p.add(new Page(Picture.TWIST, c.twist.label, champion.name + "'s rule: " + c.twist.line, c.twist.figure));
 		p.add(new Page(Picture.WIN, "To win", "Finish first to earn your duel with " + champion.name + ".", "1st"));
 		return new Briefing("brief:final", c, "Play", p);
 	}
@@ -80,10 +80,11 @@ public record Briefing(String tag, Chapter chapter, String go, List<Briefing.Pag
 		RuleSet r = c.rules(Stage.DUEL);
 		List<Page> p = new ArrayList<Page>();
 		p.add(new Page(Picture.CHAMPION, "Duel: " + champion.name, champion.trait, champion.name));
-		p.add(new Page(Picture.SHORT_DECK, "A short deck",
-				"Nine to ace, over " + r.numberOfHands() + " hands of 1 to " + r.mostCards + " cards.", "9-A"));
-		p.add(new Page(Picture.MOMENTUM, "Momentum", "Make your bid twice running and your next made bid scores double.", "x2"));
-		p.add(new Page(Picture.WIN, "To win", "Beat " + champion.name + " to clear the chapter and claim its prizes.", "1st"));
+		p.add(new Page(Picture.SHORT_DECK, "A short deck", "Nine to ace, " + r.numberOfHands() + " hands of 1 to " + r.mostCards
+				+ " cards" + (r.bigBids ? ", big bids" : "") + (r.blindBids ? ", blind bids" : "")
+				+ ".", "9-A"));
+		p.add(new Page(Picture.TWIST, c.twist.label, capital(c.twist.line), c.twist.figure));
+		p.add(new Page(Picture.WIN, "To win", "Win to clear the chapter.", "1st"));
 		return new Briefing("brief:duel", c, "Play", p);
 	}
 
@@ -95,6 +96,10 @@ public record Briefing(String tag, Chapter chapter, String go, List<Briefing.Pag
 
 	private static String scoringFigure(RuleSet r) {
 		return r.bigBids ? r.made() + " + bonus" : r.made() + " + " + r.perTrickBid() + " per trick";
+	}
+
+	private static String capital(String s) {
+		return Character.toUpperCase(s.charAt(0)) + s.substring(1);
 	}
 
 	private static String names(Seating s) {

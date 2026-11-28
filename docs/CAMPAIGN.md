@@ -30,15 +30,13 @@ Each chapter is a table: a group of players, their house rules (its game mode) a
 
 The rival line-ups are a first pass; the mode order runs from the most familiar game to the longest.
 
-## 3. Campaign screen: the chapter hand
+## 3. Campaign screen: the hall of chapters
 
-The campaign is shown as a hand of cards, one large card per chapter, fanned across the felt like your hand at the table.
+The campaign opens on a hall of four doors: one tall arched plaque per chapter, framed in gold, standing in a row and joined by a path.
 
-- **A chapter card** shows its number, its mode (Classic, High Stakes, Poker Face, Marathon) and its champion's name.
-- **Four pips** on each card stand for table, trick shots, final table and duel; a pip fills in gold when that step is done.
-- **Locked chapters** lie face down, showing the card back. The chapter in progress is lifted out of the fan with the trump glow.
-- **Tap a chapter** and its card flips and grows; its four steps lie on the felt as four cards, like a trick, each held back until the step before is won.
-- Built from what the table already draws (card art, the fan, glints, the deal motion), so it looks like the game rather than a menu.
+- **A chapter's door** shows its Roman numeral, its suit emblem, its mode, its champion and four pips for table, trick shots, final table and duel; a pip fills in gold when that step is done.
+- **Locked chapters** are ash grey with a padlock. The chapter in progress glows. Clearing a chapter lights the path to the next door, and the next door unlocks: the padlock lifts away, light pours out from behind it and the plaque warms to wine red.
+- **Tap a chapter** and its four steps lie on the felt as four cards, like a trick, each held back until the step before is won. The hall and the chapter deliberately look different: doors for the campaign, cards for a chapter's steps.
 
 ## 4. Trick shots
 
@@ -63,7 +61,7 @@ A duel is you against the chapter's champion, one-on-one; winning it is the only
 
 - **Short deck:** 9 through Ace (24 cards), hands of 1 to 6 cards, so most of the deck is in play and counting matters.
 - **Hidden hands:** the champion's cards are never shown; nothing in a duel reveals an opponent's hand.
-- **Momentum:** make your bid twice running and the next hand scores x2.
+- **Momentum:** make your bid twice running and the next hand scores x2 (chapter 1's twist; the other duels play their own twist instead).
 - **Champion quirks:** the champion's style shows plainly, but only ever as a choice between sensible moves (Phillip takes the higher of two sound bids; Mortimer empties his shortest suit first when it costs nothing). A quirk never overrides common sense: no zero bid on the trump ace, no thrown hand.
 - **Length:** best of five short hands, about 2 to 3 minutes.
 - **Within the chapter's mode:** a High Stakes duel scores big bids, a Poker Face duel bids blind.
@@ -74,7 +72,7 @@ A duel is you against the chapter's champion, one-on-one; winning it is the only
 | Variation | How it plays | Why it's fun |
 | --- | --- | --- |
 | Standard | points, with momentum | the baseline |
-| Winner picks trump | whoever made their bid last hand chooses the trump suit once the next hand is dealt | a made bid earns a real choice, not just points |
+| Winner picks trump | whoever made the highest bid last hand (and made it) chooses the trump suit once the next hand is dealt | a made bid earns a real choice, not just points |
 | Hands won | the duel counts made bids, not points; a tie goes to sudden death, one hand of a single card | every hand is a must-make; ties are tense |
 | The widow | two cards lie face down to the side; whoever made their bid last hand may swap one card from their hand for one of them before bidding | a made bid buys a chance to mend a bad hand |
 
@@ -109,7 +107,7 @@ The MVP is the Campaign / Custom game split with chapter 1 playable end to end; 
 4. **Trick shots:** the puzzle screen, 3 Classic puzzles (one of each goal), and the solver test.
 5. **Practice hand-off:** the practice round ends by opening chapter 1.
 6. **Badges and unlockables:** the first badges on Records (including the chapter 1 champion's), chapter 1's card back and felt.
-7. **Chapters 2 to 4.**
+7. **Chapters 2 to 4.** Chapter 2 (High Stakes; winner picks trump; the Amethyst back and felt), chapter 3 (Poker Face; hands won, with sudden death; Midnight) and chapter 4 (Marathon; the widow, with up-and-down duel hands; Gilded) are playable.
 
 ## 10. Decisions
 

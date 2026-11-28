@@ -32,6 +32,7 @@ public final class MenuChrome {
 	}
 
 	public Rectangle backButton(Rectangle area, float y) {
+		paint.back(area);
 		return paint.button(area, "Back", BACK_X, y, BACK_W, BACK_H, paint.assets.buttonAlt);
 	}
 

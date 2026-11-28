@@ -250,39 +250,116 @@ public class MatchTest {
 	}
 
 	@Test
-	public void theWinningCardsOfEachTrickInOrder() {
-		Match m = new Match(4, new java.util.Random(3), 2, RuleSet.STANDARD.withOrder(HandOrder.DOWN));
-		java.util.List<Card> winners = new java.util.ArrayList<Card>();
-		for (int s = 0; s < 4; s++) {
-			m.placeBid(m.currentSeat(), m.isLegalBid(0) ? 0 : 1);
-		}
-		java.util.List<Card> expected = new java.util.ArrayList<Card>();
-		for (int trick = 0; trick < 3; trick++) {
-			for (int i = 0; i < 4; i++) {
-				int seat = m.currentSeat();
-				m.playCard(seat, m.legalPlays(seat).get(0));
-			}
-			expected.add(m.lastTrick().get(m.rules().trickWinner(m.lastTrick(), m.trump())));
-			m.winningCards(winners);
-			assertEquals(expected, winners);
-		}
-	}
-
-	@Test
-	public void blindBidsAreHiddenUntilAllAreIn() {
+	public void blindBidsAreHiddenUntilAllAreInAndTheHookStillHolds() {
 		Match m = new Match(4, new Random(1), 0, GameMode.POKER_FACE.rules(null));
 		m.placeBid(1, 1);
 		m.placeBid(2, 0);
 		m.placeBid(3, 0);
-		assertEquals(-1, m.forbiddenBid());
-		assertTrue("the dealer may make the bids add up", m.isLegalBid(0));
+		assertEquals("the hook still holds", 0, m.forbiddenBid());
+		assertFalse(m.isLegalBid(0));
+		assertFalse("the dealer's view knows the hook", m.view(0).isLegalBid(0));
+		assertTrue(m.view(0).isLegalBid(1));
 		assertFalse(m.view(0).hasBid(1));
 		assertEquals(0, m.view(0).bidsSoFar());
 		assertEquals(1, m.view(1).bid(1));
 		assertEquals(0, m.bidsSeenBy(0));
-		m.placeBid(0, 0);
+		m.placeBid(0, 1);
 		assertEquals(Match.Phase.PLAYING, m.phase());
 		assertEquals(1, m.view(0).bid(1));
-		assertEquals(1, m.bidsSeenBy(0));
+		assertEquals(2, m.bidsSeenBy(0));
+	}
+
+	@Test
+	public void theHighestMadeBidPicksTheNextTrump() {
+		RuleSet rules = RuleSet.STANDARD.withPickTrump(true);
+		for (long seed = 0; seed < 300; seed++) {
+			Match m = Match.random(4, new Random(seed), rules);
+			assertEquals("nobody picks on the first hand", Match.Phase.BIDDING, m.phase());
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				if (m.phase() == Match.Phase.HAND_OVER) {
+					int best = -1;
+					int[] made = new int[4];
+					for (int s = 0; s < 4; s++) {
+						made[s] = m.madeBid(s) ? m.bid(s) : -1;
+						best = Math.max(best, made[s]);
+					}
+					m.nextHand();
+					if (m.phase() == Match.Phase.GAME_OVER) {
+						break;
+					}
+					assertEquals(best >= 0, m.pickingTrump());
+					if (m.pickingTrump()) {
+						int picker = m.currentSeat();
+						assertEquals(best, made[picker]);
+						assertFalse(m.view(picker).bidding());
+						Suit other = m.trumpCard() == null || m.trumpCard().suit() != Suit.HEARTS ? Suit.HEARTS : Suit.CLUBS;
+						m.pickTrump(picker, other);
+						assertEquals(other, m.trump());
+						assertEquals(other, m.view(0).trump());
+						assertEquals(Match.Phase.BIDDING, m.phase());
+						assertEquals((m.dealer() + 1) % 4, m.currentSeat());
+					}
+					continue;
+				}
+				m.apply(bot.chooseMove(m.view(m.currentSeat())));
+			}
+		}
+	}
+
+	@Test
+	public void handsWonCountMadeBidsAndATiePlaysOnInOneCardHands() {
+		RuleSet rules = RuleSet.DUEL.withHandsWon(true);
+		int suddenDeaths = 0;
+		for (long seed = 0; seed < 400; seed++) {
+			Match m = Match.random(2, new Random(seed), rules);
+			int[] made = new int[2];
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				if (m.phase() == Match.Phase.HAND_OVER) {
+					for (int s = 0; s < 2; s++) {
+						made[s] += m.madeBid(s) ? (m.lastHandPoints(s) == 2 ? 2 : 1) : 0;
+						assertEquals(m.madeBid(s) ? made[s] : made[s], m.score(s));
+					}
+					m.nextHand();
+					if (m.phase() != Match.Phase.GAME_OVER && m.suddenDeath()) {
+						suddenDeaths++;
+						assertEquals(1, m.handSize());
+						assertEquals("only a tie plays on", m.score(0), m.score(1));
+					}
+					continue;
+				}
+				m.apply(bot.chooseMove(m.view(m.currentSeat())));
+			}
+			assertEquals("a game of hands won always has one winner", 1, m.leaders().size());
+			assertEquals(m.save(), Match.load(m.save(), new Random()).save());
+		}
+		assertTrue("some games went to sudden death", suddenDeaths > 0);
+	}
+
+	@Test
+	public void theHighestMadeBidMaySwapWithTheWidow() {
+		RuleSet rules = RuleSet.DUEL.withOrder(HandOrder.UP_AND_DOWN).withWidow(true);
+		int swaps = 0;
+		for (long seed = 0; seed < 300; seed++) {
+			Match m = Match.random(2, new Random(seed), rules);
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				if (m.phase() == Match.Phase.HAND_OVER) {
+					m.nextHand();
+					if (m.swapping()) {
+						int seat = m.currentSeat();
+						assertEquals(2, m.widow().size());
+						assertEquals(m.widow(), m.view(seat).widow());
+						assertTrue("the other seat can't see the widow", m.view(1 - seat).widow().isEmpty());
+						Card give = m.hand(seat).get(0), take = m.widow().get(1);
+						m.swapWidow(seat, give, take);
+						assertTrue(m.hand(seat).contains(take) && m.widow().contains(give));
+						assertEquals(Match.Phase.BIDDING, m.phase());
+						swaps++;
+					}
+					continue;
+				}
+				m.apply(bot.chooseMove(m.view(m.currentSeat())));
+			}
+		}
+		assertTrue(swaps > 100);
 	}
 }

@@ -40,7 +40,7 @@ final class TableFlow {
 		}
 	}
 
-	static final float AI_DELAY = 0.8f, HAND_END_SHOW = 2.4f, TRUMP_FLIP_TIME = 0.45f;
+	static final float AI_DELAY = 0.8f, HAND_END_SHOW = 2.4f, TRUMP_FLIP_TIME = 0.45f, SORT_TIME = 0.8f;
 
 	private final DealAnimation deal = new DealAnimation();
 	private final List<Listener> listeners;
@@ -74,10 +74,11 @@ final class TableFlow {
 		System.arraycopy(chosen, 0, bots, 0, bots.length);
 	}
 
-	void seat(Seating players, Random rng) {
+	void seat(Seating players, int championId, Random rng) {
 		for (int s = 0; s < players.players(); s++) {
 			if (s != Seating.YOU) {
-				bots[s] = players.at(s).bot(new Random(rng.nextLong()));
+				Random seed = new Random(rng.nextLong());
+				bots[s] = players.idAt(s) == championId ? players.at(s).championBot(seed) : players.at(s).bot(seed);
 			}
 		}
 	}
@@ -127,6 +128,43 @@ final class TableFlow {
 
 	boolean yourTurnToBid() {
 		return state == TableState.TURN && match.phase() == Match.Phase.BIDDING && match.currentSeat() == Seating.YOU;
+	}
+
+	boolean handSorted() {
+		return !isDealing() && trumpTime >= TRUMP_FLIP_TIME + SORT_TIME;
+	}
+
+	boolean yourTurnToPick() {
+		return state == TableState.TURN && match.pickingTrump() && match.currentSeat() == Seating.YOU && trumpFaceUp();
+	}
+
+	boolean pickTrump(Suit s) {
+		if (!yourTurnToPick()) {
+			return false;
+		}
+		make(new Move.PickTrump(Seating.YOU, s));
+		return true;
+	}
+
+	boolean bidHangsOnLastTrick() {
+		boolean lastTrick = state == TableState.TURN && match.phase() == Match.Phase.PLAYING
+				&& match.hand(Seating.YOU).size() + (match.currentTrickSeats().contains(Seating.YOU) ? 1 : 0) == 1
+				|| state == TableState.TRICK && match.phase() == Match.Phase.HAND_OVER;
+		int need = match.bid(Seating.YOU) - match.tricksWon(Seating.YOU)
+				+ (state == TableState.TRICK && match.lastTrickWinner() == Seating.YOU ? 1 : 0);
+		return lastTrick && match.handSize() > 1 && (need == 0 || need == 1);
+	}
+
+	boolean yourTurnToSwap() {
+		return state == TableState.TURN && match.swapping() && match.currentSeat() == Seating.YOU && trumpFaceUp();
+	}
+
+	boolean swapWidow(Card give, Card take) {
+		if (!yourTurnToSwap()) {
+			return false;
+		}
+		make(new Move.SwapWidow(Seating.YOU, give, take));
+		return true;
 	}
 
 	boolean yourTurnToPlay() {

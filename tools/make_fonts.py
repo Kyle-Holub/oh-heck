@@ -4,6 +4,11 @@ Bakes TrueType fonts into large BMFont (.fnt + .png) bitmap fonts that the
 game draws mipmapped and scaled down, so text stays sharp at any size
 without needing libGDX's FreeType natives.
 
+The game's faces are Cinzel for headings and buttons and EB Garamond for everything else (both SIL Open
+Font License, tools/fonts/*-OFL.txt). Each is baked at the size that makes it read as large as the DejaVu
+fonts the game was laid out with (EB Garamond's short lowercase needs 54px to match DejaVu Sans at 42).
+Characters they lack (the suit signs) come from DejaVu Sans.
+
 Usage: python3 tools/make_fonts.py [output dir, default assets/fonts]   (needs Pillow and the DejaVu fonts)
 """
 import os
@@ -11,28 +16,39 @@ import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+FALLBACK = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONTS = [
-    # name, ttf, pixel size, slant (an italic made by leaning the upright glyphs; no oblique font needed)
-    ("ui", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42, 0),
-    ("ui_italic", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42, 0.2),
-    ("serif", "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 52, 0),
+    # name, ttf, weight (a named instance of the variable font), pixel size
+    ("ui", os.path.join(HERE, "fonts", "EBGaramond.ttf"), b"Medium", 54),
+    ("serif", os.path.join(HERE, "fonts", "Cinzel.ttf"), b"Bold", 48),
 ]
 CHARS = [chr(c) for c in range(32, 127)] + ["©", "–", "—", "…", "’", "♥", "♠", "♦", "♣"]
 PAD = 3
 ATLAS_W = 1024
 
 
-def bake(name, ttf, size, slant, out_dir):
+def missing(font, ch):
+    """True if the font has no glyph for ch: it draws the same box as a private-use character."""
+    def ink(c):
+        m = font.getmask(c)
+        return m.size, bytes(m)
+
+    return ch != " " and ink(ch) == ink("\ue000")
+
+
+def bake(name, ttf, weight, size, out_dir):
     font = ImageFont.truetype(ttf, size)
+    font.set_variation_by_name(weight)
+    fallback = ImageFont.truetype(FALLBACK, size)
     ascent, descent = font.getmetrics()
     glyphs = []
     for ch in CHARS:
-        adv = round(font.getlength(ch))
+        face = fallback if missing(font, ch) else font
+        adv = round(face.getlength(ch))
         # render on a roomy canvas with the baseline origin at (size, 2*size), then crop to the ink
         canvas = Image.new("L", (size * 4, size * 3), 0)
-        ImageDraw.Draw(canvas).text((size, 2 * size), ch, font=font, fill=255, anchor="ls")
-        if slant:
-            canvas = canvas.transform(canvas.size, Image.AFFINE, (1, slant, -slant * 2 * size, 0, 1, 0), Image.BICUBIC)
+        ImageDraw.Draw(canvas).text((size, 2 * size), ch, font=face, fill=255, anchor="ls")
         ink = canvas.getbbox()
         if ink is None:
             glyphs.append((ch, None, 0, 0, 0, 0, adv))
@@ -85,5 +101,5 @@ def bake(name, ttf, size, slant, out_dir):
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "assets/fonts"
     os.makedirs(out, exist_ok=True)
-    for n, t, s, lean in FONTS:
-        bake(n, t, s, lean, out)
+    for n, t, weight, s in FONTS:
+        bake(n, t, weight, s, out)

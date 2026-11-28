@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 
@@ -13,13 +14,16 @@ import ohheck.fx.Glints;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.Match;
+import ohheck.rules.Suit;
 import ohheck.ui.Assets;
 import ohheck.ui.CardArt;
 import ohheck.ui.Palette;
 
 /*
  * Every card on the table: sets each sprite's target from the game each frame, then draws them
- * back to front.
+ * back to front. A trump cutting another suit's lead trails gold; your hand arrives in the order it was dealt
+ * and ripples into order once trump turns (or is picked); the card under your finger rises and tilts; and a
+ * card you may not play shakes its head.
  */
 final class CardSprites {
 
@@ -31,11 +35,20 @@ final class CardSprites {
 	private static final float DEAL_LIFT = 30, TRICK_LIFT = 5, COLLECT_LIFT = 23, HAND_LIFT = 5, HELD_LIFT = 0;
 
 	private static final int FAN = 0, HAND = 1, TRICK = 2, DEALING = 3, HELD = 4;
+	private static final Tween REFUSED = Tween.over(0.4f, Ease.LINEAR);
+	private static final float HOVER_RISE = 16, HOVER_TILT = -4, REFUSE_SHAKE = 8,
+			STREAK_STEP = 0.025f, STREAK_GLOW = 1.4f;
+	private static final int STREAK_GHOSTS = 5;
+	private static final float RAKE_STAGGER = 0.03f, RIPPLE_STAGGER = 0.04f, RIPPLE_ARC = 14, RIPPLE_WINDOW = 0.3f;
+	private static final Tween RIPPLE = Tween.over(0.3f, Ease.OUT);
+	private Suit shownPick;
+	private boolean wasSorted;
+	private float reorderedAt = -99;
 
 	private final CardSprite[] sprites = new CardSprite[Card.COUNT];
 	private final int[] layer = new int[Card.COUNT], order = new int[Card.COUNT];
 	private final float[] glintW = new float[Card.COUNT];
-	private final boolean[] seen = new boolean[Card.COUNT], dim = new boolean[Card.COUNT];
+	private final boolean[] seen = new boolean[Card.COUNT], dim = new boolean[Card.COUNT], cuts = new boolean[Card.COUNT];
 	private final CardSprite[] drawOrder = new CardSprite[Card.COUNT];
 	private final CardSprite.Pose pose = new CardSprite.Pose(), dealer = new CardSprite.Pose();
 	private int framed = -1;
@@ -129,6 +142,13 @@ final class CardSprites {
 		int n = order.size();
 		float cw = TableLayout.handCardW(), ch = TableLayout.handCardH();
 		boolean myTurn = s.humanCanPlay();
+		boolean sorted = flow.trumpFaceUp();
+		if (m.pickedTrump() != shownPick || sorted && !wasSorted) {
+			shownPick = m.pickedTrump();
+			reorderedAt = now;
+		}
+		wasSorted = sorted;
+		boolean rippling = now - reorderedAt < RIPPLE_WINDOW;
 		List<Card> legal = myTurn ? m.legalPlays(Seating.YOU) : java.util.Collections.<Card>emptyList();
 		for (int i = 0; i < n; i++) {
 			Card c = order.get(i);
@@ -142,13 +162,27 @@ final class CardSprites {
 				continue;
 			}
 			float x = layout.handStart + i * layout.handGap, y = TableLayout.HAND_Y + (canPlay ? TableLayout.LIFT : 0);
-			pose.set(x, y, cw, ch, 0, 1, y - TableLayout.HAND_Y + HAND_LIFT);
+			boolean hovered = c == s.hoveredCard();
+			if (hovered) {
+				y += HOVER_RISE;
+			}
+			float refusing = c == s.refusedCard() ? REFUSED.progress(s.refusedFor()) : 1;
+			if (refusing < 1) {
+				x += (float) Math.sin(s.refusedFor() * 45) * REFUSE_SHAKE * (1 - refusing);
+			}
+			pose.set(x, y, cw, ch, hovered ? HOVER_TILT : 0, 1, y - TableLayout.HAND_Y + HAND_LIFT);
 			if (flow.isDealing()) {
 				pose.flip = 0;
 				pose.lift = HAND_LIFT;
 				if (dealt(flow, Seating.YOU, i, sp, pose, now) < 0) {
 					continue;
 				}
+			} else if (refusing < 1) {
+				place(sp, HAND, i);
+				sp.snap(pose);
+			} else if (rippling) {
+				place(sp, HAND, i);
+				sp.moveTo(pose, RIPPLE, RIPPLE_ARC, now, -i * RIPPLE_STAGGER);
 			} else {
 				place(sp, HAND, i);
 				sp.moveTo(pose, SETTLE, 0, now, 0);
@@ -165,6 +199,7 @@ final class CardSprites {
 			CardSprite sp = sprite(c);
 			Vector2 slot = layout.trickSlot(seat);
 			place(sp, TRICK, i);
+			cuts[c.index()] = i > 0 && c.suit() == m.trump() && cards.get(0).suit() != m.trump();
 			sp.moveTo(pose.set(slot.x, slot.y, Assets.CARD_W, Assets.CARD_H, TrickView.tilt(c, seat, m.handIndex()), 1,
 					TRICK_LIFT), PLAYED, PLAY_ARC, now, 0);
 		}
@@ -192,8 +227,20 @@ final class CardSprites {
 		for (int i = 0; i < cards.size(); i++) {
 			CardSprite sp = sprite(cards.get(i));
 			place(sp, TRICK, i);
-			sp.moveTo(pose, COLLECT, 0, now, elapsed - gatherFrom);
+			sp.moveTo(pose, COLLECT, 0, now, elapsed - gatherFrom - i * RAKE_STAGGER);
 		}
+	}
+
+	private void streak(SpriteBatch batch, Assets assets, CardSprite sp, float now) {
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		for (int g = STREAK_GHOSTS; g >= 1; g--) {
+			CardSprite.Pose p = sp.pose(now - g * STREAK_STEP);
+			float a = 0.5f * (1 - g / (float) (STREAK_GHOSTS + 1)), gw = p.w * STREAK_GLOW, gh = p.h * STREAK_GLOW;
+			batch.setColor(Palette.SPARKLE.r, Palette.SPARKLE.g, Palette.SPARKLE.b, a);
+			batch.draw(assets.glow, p.x + p.w / 2 - gw / 2, p.y + p.h / 2 - gh / 2, gw, gh);
+		}
+		batch.setColor(Color.WHITE);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	boolean moving(float now) {
@@ -219,6 +266,9 @@ final class CardSprites {
 		for (int k = 0; k < n; k++) {
 			CardSprite sp = drawOrder[k];
 			int i = sp.card.index();
+			if (layer[i] == TRICK && cuts[i] && sp.moving(now)) {
+				streak(batch, assets, sp, now);
+			}
 			CardSprite.Pose p = sp.pose(now);
 			if (p.lift > 0.5f && layer[i] != FAN) {
 				art.shadow(p.x, p.y, p.w, p.h, p.lift);

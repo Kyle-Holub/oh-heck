@@ -140,8 +140,12 @@ enum TableState {
 
 		@Override
 		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
-			if (s.flow().yourTurnToBid()) {
+			if (s.flow().yourTurnToBid() && s.flow().handSorted()) {
 				o.drawBidPanel();
+			} else if (s.flow().yourTurnToPick()) {
+				o.drawPickTrump();
+			} else if (s.flow().yourTurnToSwap()) {
+				o.drawWidow();
 			}
 		}
 
@@ -159,6 +163,12 @@ enum TableState {
 		String tag(TableScene s, int hand) {
 			Match m = s.match();
 			boolean yours = m.currentSeat() == Seating.YOU;
+			if (m.pickingTrump()) {
+				return (yours ? "pick:" : "picking-trump:") + hand;
+			}
+			if (m.swapping()) {
+				return (yours ? "widow:" : "swapping:") + hand;
+			}
 			if (m.phase() == Match.Phase.BIDDING) {
 				return (yours ? "bid:" : "bidding:") + hand;
 			}
@@ -230,11 +240,12 @@ enum TableState {
 		void drawOverlay(TableScene s, TableOverlays o, int newHighScore) {
 			o.drawHandResults(s.stateTime());
 			o.drawHandLabels(LABELS_DROP.progress(s.stateTime()), 1f);
+			o.drawTrickReview();
 		}
 
 		@Override
 		void tap(TableInput in, float x, float y) {
-			in.nextHand();
+			in.tapResults(x, y);
 		}
 
 		@Override
@@ -244,7 +255,8 @@ enum TableState {
 
 		@Override
 		String tag(TableScene s, int hand) {
-			return "handover:" + hand;
+			int review = s.reviewing();
+			return review == OverlayTargets.REVIEW_CLOSED ? "handover:" + hand : "tricks:" + hand + (review >= 0 ? ":" + (review + 1) : "");
 		}
 	},
 	GAME_OVER {

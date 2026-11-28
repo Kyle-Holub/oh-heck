@@ -8,15 +8,17 @@ public final class SeatState {
 	String name = "";
 	int score, bid = NO_BID, won, handSize = 1;
 	boolean turn, dealer, doubled;
-	boolean plain, scored = true;
+	boolean plain, cracked;
+	float pulse, gilt, stamp, flip = 1;
 
 	public SeatState reset() {
 		name = "";
 		score = won = 0;
 		bid = NO_BID;
 		handSize = 1;
-		turn = dealer = plain = doubled = false;
-		scored = true;
+		turn = dealer = plain = doubled = cracked = false;
+		pulse = gilt = stamp = 0;
+		flip = 1;
 		return this;
 	}
 
@@ -60,8 +62,16 @@ public final class SeatState {
 		return this;
 	}
 
-	public SeatState unscored() {
-		scored = false;
+	public SeatState accents(float pulse, float gilt, boolean cracked) {
+		this.pulse = pulse;
+		this.gilt = gilt;
+		this.cracked = cracked;
+		return this;
+	}
+
+	public SeatState appear(float stamp, float flip) {
+		this.stamp = stamp;
+		this.flip = flip;
 		return this;
 	}
 

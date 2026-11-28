@@ -13,6 +13,10 @@ public final class TableView {
 	private final int players;
 	private RuleSet rules = RuleSet.STANDARD;
 	private Card trumpCard;
+	private Suit pickedTrump;
+	private boolean pickingTrump, swapping;
+	private int dealerForbids = -1;
+	private final List<Card> widow = new ArrayList<Card>();
 	private final List<Card> hand = new ArrayList<Card>();
 	private final int[] bids;
 	private final int[] tricksWon, scores;
@@ -40,7 +44,7 @@ public final class TableView {
 	}
 
 	public Suit trump() {
-		return trumpCard == null ? null : trumpCard.suit();
+		return pickedTrump != null ? pickedTrump : trumpCard == null ? null : trumpCard.suit();
 	}
 
 	public Suit leadSuit() {
@@ -52,7 +56,23 @@ public final class TableView {
 	}
 
 	public boolean bidding() {
-		return !hasBid(seat);
+		return !pickingTrump && !swapping && !hasBid(seat);
+	}
+
+	public boolean pickingTrump() {
+		return pickingTrump;
+	}
+
+	public Suit pickedTrump() {
+		return pickedTrump;
+	}
+
+	public boolean swapping() {
+		return swapping;
+	}
+
+	public List<Card> widow() {
+		return Collections.unmodifiableList(widow);
 	}
 
 	public boolean hasBid(int seat) {
@@ -60,6 +80,9 @@ public final class TableView {
 	}
 
 	public boolean isLegalBid(int bid) {
+		if (rules.blindBids) {
+			return bid >= 0 && bid <= handSize && bid != dealerForbids;
+		}
 		return rules.isLegalBid(bid, handSize, bidsSoFar(), seat == dealer);
 	}
 
@@ -174,6 +197,24 @@ public final class TableView {
 			v.dealer = dealer;
 			v.trumpCard = trumpCard;
 			v.rules = rules;
+			return this;
+		}
+
+		public Builder pickedTrump(Suit suit, boolean picking) {
+			v.pickedTrump = suit;
+			v.pickingTrump = picking;
+			return this;
+		}
+
+		public Builder dealerForbids(int bid) {
+			v.dealerForbids = bid;
+			return this;
+		}
+
+		public Builder widow(List<Card> cards, boolean swapping) {
+			v.widow.clear();
+			v.widow.addAll(cards);
+			v.swapping = swapping;
 			return this;
 		}
 

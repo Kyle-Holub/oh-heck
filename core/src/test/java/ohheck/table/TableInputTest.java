@@ -7,15 +7,19 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Predicate;
 
 import com.badlogic.gdx.math.Rectangle;
 import org.junit.Test;
 
+import ohheck.players.Bot;
+import ohheck.players.Difficulty;
 import ohheck.players.Seating;
 import ohheck.rules.Card;
 import ohheck.rules.HandOrder;
 import ohheck.rules.Match;
 import ohheck.rules.RuleSet;
+import ohheck.rules.Suit;
 import ohheck.ui.TapAreas;
 import ohheck.ui.Wording;
 
@@ -33,7 +37,7 @@ public class TableInputTest {
 		boolean results;
 
 		FakeTable() {
-			flow.seat(Seating.of(4, 5, 6), new Random(1));
+			flow.seat(Seating.of(4, 5, 6), -1, new Random(1));
 		}
 
 		@Override
@@ -120,6 +124,18 @@ public class TableInputTest {
 		public void play(Card c) {
 			did.add("play " + c);
 			flow.play(c);
+		}
+
+		@Override
+		public boolean swapWidow(Card give, Card take) {
+			did.add("swap " + give);
+			return flow.swapWidow(give, take);
+		}
+
+		@Override
+		public boolean pickTrump(Suit suit) {
+			did.add("pick " + suit);
+			return flow.pickTrump(suit);
 		}
 
 		@Override
@@ -230,7 +246,7 @@ public class TableInputTest {
 		t.handOrder.add(c);
 		t.handRects.add(new Rectangle(300, 10, 80, 110));
 		t.input.touchDown(340, 60);
-		t.input.touchDragged(340, 200, 140);
+		t.input.touchDragged(340, 200);
 		assertTrue(t.input.dragging());
 		assertTrue(t.input.touchUp(340, 260));
 		assertEquals("play " + c, t.did.get(0));
@@ -281,5 +297,108 @@ public class TableInputTest {
 			}
 		}
 		assertTrue("no deal with a card that can't follow", false);
+	}
+
+	private static Match reached(RuleSet rules, Predicate<Match> where) {
+		Bot bot = Bot.of(Difficulty.NORMAL, new Random(1));
+		for (long seed = 0; seed < 500; seed++) {
+			Match m = Match.random(4, new Random(seed), rules);
+			while (m.phase() != Match.Phase.GAME_OVER) {
+				if (where.test(m)) {
+					return m;
+				}
+				if (m.phase() == Match.Phase.HAND_OVER) {
+					m.nextHand();
+				} else {
+					m.apply(bot.chooseMove(m.view(m.currentSeat())));
+				}
+			}
+		}
+		throw new AssertionError("never reached");
+	}
+
+	@Test
+	public void aTapOnASuitPicksTrump() {
+		Match m = reached(RuleSet.STANDARD.withPickTrump(true), x -> x.pickingTrump() && x.currentSeat() == Seating.YOU);
+		t.flow.resume(m);
+		assertTrue(t.flow.yourTurnToPick());
+		t.targets.suit(Suit.HEARTS).set(100, 100, 80, 80);
+		t.input.tap(140, 140);
+		assertEquals(Suit.HEARTS, m.trump());
+		assertEquals("pick HEARTS", t.did.get(0));
+	}
+
+	@Test
+	public void aWidowCardThenOneOfYoursSwapsThem() {
+		Match m = reached(RuleSet.STANDARD.withWidow(true), x -> x.swapping() && x.currentSeat() == Seating.YOU);
+		t.flow.resume(m);
+		assertTrue(t.flow.yourTurnToSwap());
+		Card take = m.widow().get(1), give = m.hand(Seating.YOU).get(0);
+		t.targets.widowCard(1).set(300, 300, 60, 90);
+		t.handOrder.add(give);
+		t.handRects.add(new Rectangle(300, 10, 80, 110));
+		t.input.tap(330, 340);
+		assertEquals(1, t.targets.widowChoice());
+		t.input.tap(340, 60);
+		assertTrue(m.hand(Seating.YOU).contains(take) && m.widow().contains(give));
+		assertEquals("swap " + give, t.did.get(0));
+	}
+
+	@Test
+	public void keepMyHandLeavesTheWidowAlone() {
+		Match m = reached(RuleSet.STANDARD.withWidow(true), x -> x.swapping() && x.currentSeat() == Seating.YOU);
+		List<Card> hand = new ArrayList<Card>(m.hand(Seating.YOU));
+		t.flow.resume(m);
+		t.targets.button(OverlayTargets.Button.KEEP_HAND).set(100, 100, 200, 40);
+		t.input.tap(200, 120);
+		assertEquals(hand, m.hand(Seating.YOU));
+		assertEquals(Match.Phase.BIDDING, m.phase());
+	}
+
+	@Test
+	public void aBidHangsOnTheLastTrickOnlyWhenThatTrickDecidesIt() {
+		int hanging = 0, settled = 0;
+		for (long seed = 0; seed < 60; seed++) {
+			final long s = seed;
+			Match m = reached(RuleSet.STANDARD, x -> x.phase() == Match.Phase.PLAYING && x.handSize() > 1 && x.currentSeat() == Seating.YOU
+					&& x.hand(Seating.YOU).size() == 1 && x.handIndex() == 1 + (int) (s % 6));
+			TableFlow flow = new TableFlow();
+			flow.seat(Seating.of(4, 5, 6), -1, new Random(1));
+			flow.resume(m);
+			int need = m.bid(Seating.YOU) - m.tricksWon(Seating.YOU);
+			boolean decides = need == 0 || need == 1;
+			assertEquals(decides, flow.bidHangsOnLastTrick());
+			if (decides) {
+				hanging++;
+			} else {
+				settled++;
+			}
+		}
+		assertTrue(hanging > 0 && settled > 0);
+		Match early = reached(RuleSet.STANDARD, x -> x.phase() == Match.Phase.PLAYING && x.hand(Seating.YOU).size() > 1);
+		TableFlow flow = new TableFlow();
+		flow.resume(early);
+		assertFalse("not before the last trick", flow.bidHangsOnLastTrick());
+	}
+
+	@Test
+	public void theTricksButtonOpensTheReviewAndATapOnATrickOpensIt() {
+		Match m = reached(RuleSet.STANDARD, x -> x.phase() == Match.Phase.HAND_OVER && x.handSize() > 2);
+		t.flow.resume(m);
+		t.pretend = TableState.RESULTS;
+		t.targets.button(OverlayTargets.Button.TRICKS).set(500, 100, 100, 36);
+		t.input.tap(550, 118);
+		assertEquals(OverlayTargets.REVIEW_ALL, t.targets.review());
+		TapAreas.sizeTo(t.targets.tricks(), 2);
+		t.targets.tricks().get(1).set(300, 300, 80, 110);
+		t.input.tap(340, 350);
+		assertEquals(1, t.targets.review());
+		t.targets.button(OverlayTargets.Button.REVIEW_BACK).set(100, 50, 150, 40);
+		t.input.tap(170, 70);
+		assertEquals(OverlayTargets.REVIEW_ALL, t.targets.review());
+		t.targets.button(OverlayTargets.Button.REVIEW_CLOSE).set(1200, 50, 150, 40);
+		t.input.tap(1270, 70);
+		assertEquals(OverlayTargets.REVIEW_CLOSED, t.targets.review());
+		assertEquals("nothing moved on while reviewing", Match.Phase.HAND_OVER, m.phase());
 	}
 }

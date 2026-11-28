@@ -80,6 +80,22 @@ interface TableScene {
 
 	Card pressedCard();
 
+	default int reviewing() {
+		return OverlayTargets.REVIEW_CLOSED;
+	}
+
+	default Card hoveredCard() {
+		return null;
+	}
+
+	default Card refusedCard() {
+		return null;
+	}
+
+	default float refusedFor() {
+		return 99;
+	}
+
 	float dragX();
 
 	float dragY();

@@ -35,7 +35,7 @@ import ohheck.util.Log;
 /* The libGDX entry point for Android and desktop: owns the shared services and the screens. */
 public class OhHeckGame extends Game implements GameHost {
 
-	public static final String VERSION = "alpha-1.1.0";
+	public static final String VERSION = "alpha-1.1.1";
 
 	private final GameOptions options;
 
@@ -58,7 +58,7 @@ public class OhHeckGame extends Game implements GameHost {
 	private ChapterClearedScreen clearedScreen;
 	private PlayScreen practicePlay;
 	private final List<Screen> keptScreens = new ArrayList<Screen>();
-	private PlayScreen play, campaignPlay;
+	private PlayScreen play, campaignPlay, lastPlayed;
 
 	private final FramePacer pacer = new FramePacer();
 	private boolean capturing;
@@ -117,6 +117,7 @@ public class OhHeckGame extends Game implements GameHost {
 		if (getScreen() != null) {
 			getScreen().render(delta);
 		}
+		audio.update(delta);
 		if (!fixed) {
 			screens.drawChange(batch, assets, delta);
 		}
@@ -196,7 +197,8 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void showPlayMenu() {
-		screens.open(playMenu);
+		playMenu.askIfNew();
+		screens.flashTo(playMenu);
 	}
 
 	@Override
@@ -222,16 +224,20 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public void showCampaign() {
-		boolean fromTable = getScreen() instanceof PlayScreen;
+		boolean fromTable = getScreen() instanceof PlayScreen, fromMenu = getScreen() == playMenu;
 		screens.replaceAll(title);
-		if (fromTable) {
-			campaignScreen.wipeIn();
+		if (fromMenu) {
+			campaignScreen.unfoldMap();
 		}
 		if (!settings.campaignIntroSeen() && !options.autoplayHuman) {
 			settings.setCampaignIntroSeen(true);
-			campaignScreen.briefChapter(Chapter.ONE);
+			campaignScreen.enterOnArrival(Chapter.ONE);
 		}
-		screens.open(campaignScreen);
+		if (fromTable) {
+			screens.flashTo(campaignScreen);
+		} else {
+			screens.open(campaignScreen);
+		}
 	}
 
 	@Override
@@ -240,9 +246,10 @@ public class OhHeckGame extends Game implements GameHost {
 			campaignPlay.dispose();
 		}
 		campaignPlay = PlayScreen.campaign(this, chapter, stage);
+		lastPlayed = campaignPlay;
 		screens.replaceAll(title);
 		screens.open(campaignScreen);
-		screens.open(campaignPlay);
+		screens.flashTo(campaignPlay);
 	}
 
 	@Override
@@ -280,20 +287,32 @@ public class OhHeckGame extends Game implements GameHost {
 			play.dispose();
 		}
 		play = PlayScreen.fresh(this);
+		lastPlayed = play;
 		screens.replaceAll(play);
 	}
 
 	@Override
 	public void continueGame() {
-		if (play == null) {
+		if (lastPlayed == null) {
 			SavedGame saved = records.savedGame(new Random());
 			if (saved == null) {
 				newGame();
 				return;
 			}
-			play = PlayScreen.resume(this, saved);
+			lastPlayed = PlayScreen.resume(this, saved);
+			if (saved.campaign()) {
+				campaignPlay = lastPlayed;
+			} else {
+				play = lastPlayed;
+			}
 		}
-		screens.replaceAll(play);
+		if (lastPlayed.isCampaign()) {
+			screens.replaceAll(title);
+			screens.open(campaignScreen);
+			screens.flashTo(lastPlayed);
+		} else {
+			screens.replaceAll(lastPlayed);
+		}
 	}
 
 	@Override
@@ -306,7 +325,7 @@ public class OhHeckGame extends Game implements GameHost {
 				p.dispose();
 			}
 		}
-		play = campaignPlay = null;
+		play = campaignPlay = lastPlayed = null;
 		campaignScreen.openChapter(null);
 		title.replayIntro();
 		screens.replaceAll(title);
@@ -315,8 +334,8 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public boolean hasGameInProgress() {
-		if (play != null) {
-			return !play.isGameOver();
+		if (lastPlayed != null) {
+			return !lastPlayed.isGameOver();
 		}
 		return records.hasSavedGame();
 	}

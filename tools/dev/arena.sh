@@ -3,7 +3,7 @@
 #   tools/dev/arena.sh                 this tree against develop's newest commit
 #   tools/dev/arena.sh <ref>           this tree against <ref> (a branch, tag or commit)
 #   tools/dev/arena.sh <ref> quick     fewer games (players 20, levels 60): a smoke check
-#   tools/dev/arena.sh <ref> variants  the levels across all 24 rule sets
+#   tools/dev/arena.sh <ref> variants  the levels across all 24 rule sets and the champion twists
 #   tools/dev/arena.sh <ref> duel      the levels and the roster one-on-one under the duel's rules
 # The arena is seeded, so code that leaves the bots alone gives identical results; a bot
 # change shows exactly what moved. Exit status 0 if identical, 1 if they differ.

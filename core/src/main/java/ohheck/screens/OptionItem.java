@@ -3,6 +3,7 @@ package ohheck.screens;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Rectangle;
 
@@ -12,7 +13,7 @@ import ohheck.ui.Palette;
 /* One setting on an options page: its name and a line on what it does, with a control on the right. */
 abstract class OptionItem {
 
-	static final float ROW_H = 66, PAD = 22, PILL_W = 150, PILL_H = 38, MORE_W = 64, DOT = 5, DOT_GAP = 10;
+	static final float ROW_H = 66, PAD = 22, PREVIEW_GAP = 14, PILL_W = 150, PILL_H = 38, MORE_W = 64, DOT = 5, DOT_GAP = 10;
 
 	final String label, detail;
 	final Rectangle bounds = new Rectangle();
@@ -30,6 +31,18 @@ abstract class OptionItem {
 		return new Choice(label, detail, value, () -> true, next);
 	}
 
+	static OptionItem look(String label, String detail, Supplier<String> value, Runnable next, Supplier<Texture> preview,
+			float previewW, float previewH) {
+		return new Choice(label, detail, value, () -> true, next) {
+			@Override
+			void drawControl(Painter paint, float right, float y, float h) {
+				super.drawControl(paint, right, y, h);
+				float px = right - PILL_W - PREVIEW_GAP - previewW, py = y + (h - previewH) / 2;
+				paint.batch.draw(preview.get(), px, py, previewW, previewH);
+			}
+		};
+	}
+
 	static OptionItem link(String label, String detail, Runnable open) {
 		return new Link(label, detail, open);
 	}
@@ -40,6 +53,10 @@ abstract class OptionItem {
 
 	static OptionItem heading(String label) {
 		return new Heading(label);
+	}
+
+	static OptionItem badge(String title, String how, BooleanSupplier earned) {
+		return new Earned(title, how, earned);
 	}
 
 	float height() {
@@ -60,6 +77,10 @@ abstract class OptionItem {
 	abstract void drawControl(Painter paint, float right, float y, float h);
 
 	abstract void tap(float x, float y);
+
+	boolean latches() {
+		return false;
+	}
 
 	boolean grabs(float x, float y) {
 		return false;
@@ -107,6 +128,35 @@ abstract class OptionItem {
 		}
 	}
 
+	private static final class Earned extends OptionItem {
+		private final BooleanSupplier earned;
+
+		Earned(String title, String how, BooleanSupplier earned) {
+			super(title, how);
+			this.earned = earned;
+		}
+
+		@Override
+		void draw(Painter paint, float x, float y, float w) {
+			bounds.set(x, y, w, ROW_H);
+			boolean has = earned.getAsBoolean();
+			float icon = ROW_H - 16, top = y + ROW_H;
+			paint.batch.setColor(1, 1, 1, has ? 1 : 0.25f);
+			paint.batch.draw(paint.assets.badge, x + PAD, y + 8, icon, icon);
+			paint.batch.setColor(1, 1, 1, 1);
+			paint.serif(1.3f, has ? Palette.GOLD_LIGHT : Palette.MUTED).draw(paint.batch, label, x + PAD + icon + 14, top - 10);
+			paint.ui(0.9f, has ? Palette.CREAM : Palette.MUTED).draw(paint.batch, detail, x + PAD + icon + 14, top - 38);
+		}
+
+		@Override
+		void drawControl(Painter paint, float right, float y, float h) {
+		}
+
+		@Override
+		void tap(float x, float y) {
+		}
+	}
+
 	private static final class Heading extends OptionItem {
 		private static final float H = 44;
 
@@ -139,7 +189,7 @@ abstract class OptionItem {
 		}
 	}
 
-	private static final class Choice extends OptionItem {
+	private static class Choice extends OptionItem {
 		private final Supplier<String> value;
 		private final BooleanSupplier lit;
 		private final Runnable next;
@@ -162,6 +212,11 @@ abstract class OptionItem {
 		@Override
 		void tap(float x, float y) {
 			next.run();
+		}
+
+		@Override
+		boolean latches() {
+			return true;
 		}
 	}
 

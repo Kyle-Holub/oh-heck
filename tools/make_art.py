@@ -191,7 +191,7 @@ def card_sheet(out):
     return sheet
 
 
-def card_back(out, name="back_hd.png", colour=OXBLOOD, deep=OXBLOOD_DARK, suit="spades"):
+def card_back(out, name="back_hd.png", colour=OXBLOOD, deep=OXBLOOD_DARK, suit="spades", gilt=False):
     W, H = CARD_W * SS, CARD_H * SS
     y = np.linspace(0, 1, H)[:, None, None]
     x = np.linspace(0, 1, W)[None, :, None]
@@ -217,17 +217,41 @@ def card_back(out, name="back_hd.png", colour=OXBLOOD, deep=OXBLOOD_DARK, suit="
     d.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=deep, outline=GOLD, width=3 * SS)
     d.ellipse([cx - rad + 7 * SS, cy - rad + 7 * SS, cx + rad - 7 * SS, cy + rad - 7 * SS], outline=GOLD_DARK, width=SS)
     suit_shape(d, suit, cx, cy, 40 * SS, GOLD)
+    if gilt:
+        gild(img, d, W, H, inset, cx, cy, rad, suit)
     d.rounded_rectangle([SS, SS, W - 1 - SS, H - 1 - SS], 15 * SS, outline=CREAM_EDGE, width=5 * SS)
     img.putalpha(rounded_mask(W, H, 16 * SS))
     downsample(img, CARD_W, CARD_H).save(os.path.join(out, name), optimize=True)
 
 
+def gild(img, d, W, H, inset, cx, cy, rad, suit):
+    """Gold leaf for the Gilded back: a burnished band inside the border, rays from the medallion,
+    a ring of pips and a gold suit in each corner."""
+    band = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    bd = ImageDraw.Draw(band)
+    for k, a in ((0, 255), (5, 200), (10, 140)):
+        bd.rounded_rectangle([inset - (9 - k) * SS, inset - (9 - k) * SS, W - inset + (9 - k) * SS, H - inset + (9 - k) * SS],
+                             12 * SS, outline=GOLD_LIGHT + (a,), width=2 * SS)
+    img.alpha_composite(band)
+    rays = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    rd = ImageDraw.Draw(rays)
+    for k in range(24):
+        a = math.radians(k * 15)
+        r0, r1 = rad + 6 * SS, rad + (34 if k % 2 == 0 else 20) * SS
+        rd.line([(cx + r0 * math.cos(a), cy + r0 * math.sin(a)), (cx + r1 * math.cos(a), cy + r1 * math.sin(a))],
+                fill=GOLD_LIGHT + (230,), width=2 * SS)
+    img.alpha_composite(rays)
+    for k in range(12):
+        a = math.radians(k * 30 + 15)
+        px, py = cx + (rad - 4 * SS) * math.cos(a), cy + (rad - 4 * SS) * math.sin(a)
+        d.ellipse([px - 2.5 * SS, py - 2.5 * SS, px + 2.5 * SS, py + 2.5 * SS], fill=GOLD_LIGHT)
+    for qx, qy in ((inset + 20 * SS, inset + 20 * SS), (W - inset - 20 * SS, inset + 20 * SS),
+                   (inset + 20 * SS, H - inset - 20 * SS), (W - inset - 20 * SS, H - inset - 20 * SS)):
+        d.ellipse([qx - 13 * SS, qy - 13 * SS, qx + 13 * SS, qy + 13 * SS], fill=GOLD_DARK, outline=GOLD_LIGHT, width=2 * SS)
+        suit_shape(d, suit, qx, qy, 14 * SS, GOLD_LIGHT)
+
+
 # ---------------------------------------------------------------- table and UI
-
-def card_blank(out):
-    """A card face with nothing printed on it, for the campaign's chapter and step cards."""
-    downsample(card_base(77), CARD_W, CARD_H).save(os.path.join(out, "card_blank.png"), optimize=True)
-
 
 def card_slot(out):
     """An empty card's place: a dashed outline of a card, for a hand dealt with no trump card."""
@@ -265,7 +289,7 @@ def card_slot(out):
     downsample(img, CARD_W, CARD_H).save(os.path.join(out, "card_slot.png"), optimize=True)
 
 
-def table(out, name="table.jpg", dark=(20, 12, 8), lit=(92, 58, 38)):
+def table(out, name="table.jpg", dark=(20, 12, 8), lit=(92, 58, 38), gilt=False):
     """Dark warm felt under a soft overhead spotlight, falling away to near-black."""
     W, H = 1280, 640
     rng = np.random.default_rng(7)
@@ -280,6 +304,10 @@ def table(out, name="table.jpg", dark=(20, 12, 8), lit=(92, 58, 38)):
     fibre = np.clip(fibre * 40 + 128, 0, 255).astype(np.uint8)
     fibre = (np.asarray(Image.fromarray(fibre, "L").filter(ImageFilter.GaussianBlur(0.8))).astype(float) - 128) / 40
     img += fibre[..., None] * 6
+    if gilt:
+        flecks = np.clip(rng.normal(0, 1, (H, W)) - 2.6, 0, None) * light
+        flecks = np.asarray(Image.fromarray(np.clip(flecks * 255, 0, 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(0.6))) / 255.0
+        img += flecks[..., None] * np.array((255, 205, 110), float) * 1.4
     Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, name), quality=90, optimize=True)
 
 
@@ -432,6 +460,22 @@ def level_badges(out):
         downsample(img, 108, 108).save(os.path.join(out, "level_" + name + ".png"))
 
 
+def gilt_ring(out):
+    """The gilding around a champion's level badge: a double gold ring set with eight diamonds, open in the middle
+    so the badge shows through (drawn 1.3 times the badge's size)."""
+    S = 140 * SS
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    c = S / 2
+    for r, colour, width in ((64, GOLD_DARK, 3), (60, GOLD_LIGHT, 4), (55, GOLD, 2)):
+        d.ellipse([c - r * SS, c - r * SS, c + r * SS, c + r * SS], outline=colour + (255,), width=width * SS)
+    for k in range(8):
+        a = math.pi / 4 * k
+        x, y = c + math.cos(a) * 60 * SS, c + math.sin(a) * 60 * SS
+        suit_shape(d, "diamonds", x, y, 14 * SS, GOLD_LIGHT + (255,))
+    downsample(img, 140, 140).save(os.path.join(out, "gilt_ring.png"))
+
+
 def bid_icons(out):
     """The table's bid tracker, one card per trick in the hand: open (no bid on it yet), bid, and bid over the hand."""
     W, H = 84 * SS, 108 * SS
@@ -540,10 +584,50 @@ def blurred_back(out, src, dst, pad=24, radius=7):
 
 
 def chapter_cosmetics(out):
-    """Each chapter's prize: a card back and a felt. Chapter 1: emerald and club, a card-room green."""
+    """Each chapter's prize: a card back and a felt. Chapter 1: emerald and club, a card-room green;
+    2: amethyst and diamond, a deep purple; 3: midnight and heart, a late-night navy; 4: gilded and spade, gold leaf
+    on old gold."""
     card_back(out, "back_ch1.png", colour=(22, 92, 58), deep=(10, 48, 30), suit="clubs")
     blurred_back(out, "back_ch1.png", "back_ch1_blur.png")
     table(out, "table_ch1.jpg", dark=(6, 18, 12), lit=(30, 86, 56))
+    card_back(out, "back_ch2.png", colour=(98, 40, 150), deep=(44, 14, 74), suit="diamonds")
+    blurred_back(out, "back_ch2.png", "back_ch2_blur.png")
+    table(out, "table_ch2.jpg", dark=(14, 6, 22), lit=(72, 34, 108))
+    card_back(out, "back_ch3.png", colour=(24, 38, 92), deep=(10, 16, 46), suit="hearts")
+    blurred_back(out, "back_ch3.png", "back_ch3_blur.png")
+    table(out, "table_ch3.jpg", dark=(6, 9, 22), lit=(30, 44, 92))
+    card_back(out, "back_ch4.png", colour=(150, 108, 34), deep=(70, 44, 10), suit="spades", gilt=True)
+    blurred_back(out, "back_ch4.png", "back_ch4_blur.png")
+    table(out, "table_ch4.jpg", dark=(20, 14, 6), lit=(96, 70, 30), gilt=True)
+
+
+def chapter_plaques(out):
+    """The campaign hall's chapters: a tall arched plaque framed in gold, like a doorway, in a lit
+    (wine) and a locked (ash) version."""
+    W, H = 200 * SS, 300 * SS
+    for name, top, bottom, edge, inner in (("plaque.png", (92, 30, 26), (40, 12, 12), GOLD, GOLD_DARK),
+                                          ("plaque_locked.png", (46, 40, 36), (20, 17, 15), GOLD_DARK, (70, 58, 40))):
+        y = np.linspace(0, 1, H)[:, None, None]
+        x = np.linspace(0, 1, W)[None, :, None]
+        glow = np.clip(1 - np.sqrt((x - 0.5) ** 2 * 3 + (y - 0.35) ** 2), 0, 1)
+        fill = np.array(bottom, float) + (np.array(top, float) - np.array(bottom, float)) * glow
+        body = Image.fromarray(np.clip(fill, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+        mask = Image.new("L", (W, H), 0)
+        md = ImageDraw.Draw(mask)
+        r = W / 2
+        md.ellipse([0, 0, W - 1, 2 * r], fill=255)
+        md.rectangle([0, r, W - 1, H - 1], fill=255)
+        body.putalpha(mask)
+        d = ImageDraw.Draw(body)
+        for inset, colour, width in ((3 * SS, edge, 4 * SS), (12 * SS, inner, 2 * SS), (17 * SS, edge, 1 * SS)):
+            rr = r - inset
+            d.arc([inset, inset, W - 1 - inset, inset + 2 * rr], 180, 360, fill=colour, width=width)
+            d.line([(inset + width / 2 - SS, r), (inset + width / 2 - SS, H - 1 - inset)], fill=colour, width=width)
+            d.line([(W - 1 - inset - width / 2 + SS, r), (W - 1 - inset - width / 2 + SS, H - 1 - inset)], fill=colour, width=width)
+            d.line([(inset, H - 1 - inset - width / 2 + SS), (W - 1 - inset, H - 1 - inset - width / 2 + SS)], fill=colour, width=width)
+        for cx, cy, size in ((W / 2, 12 * SS, 14 * SS), (14 * SS, H - 14 * SS, 10 * SS), (W - 14 * SS, H - 14 * SS, 10 * SS)):
+            suit_shape(d, "diamonds", cx, cy, size, edge)
+        downsample(body, 200, 300).save(os.path.join(out, name), optimize=True)
 
 
 def campaign_art(out):
@@ -689,6 +773,149 @@ def padlock(out):
     downsample(img, 108, 108).save(os.path.join(out, "padlock.png"))
 
 
+def stone(out):
+    """The campaign corridor's stone, as tiles that repeat seamlessly: a wall of rough blocks in staggered courses
+    (stone_wall.png) and a floor of large worn flagstones (stone_floor.png). Grey-brown, with dark mortar and a
+    little grain, so torchlight can warm them."""
+    rng = np.random.default_rng(31)
+    S = 256
+
+    def tile(name, rows, cols, base, spread, mortar, stagger):
+        grain = rng.normal(0, 1, (S, S))
+        grain = np.real(np.fft.ifft2(np.fft.fft2(grain) * np.exp(-((np.fft.fftfreq(S)[:, None] ** 2 + np.fft.fftfreq(S)[None, :] ** 2) * 900))))
+        grain = grain / np.abs(grain).max()
+        rgb = np.zeros((S, S, 3))
+        rgb[:] = mortar
+        bh = S / rows
+        for r in range(rows):
+            bw = S / cols
+            shift = (bw / 2 if stagger and r % 2 else 0) + rng.uniform(-6, 6) * (not stagger)
+            for c in range(cols + 1):
+                tint = np.array(base) + rng.uniform(-spread, spread) + np.array((rng.uniform(-4, 4), 0, rng.uniform(-6, 2)))
+                x0, y0 = c * bw + shift + 3, r * bh + 3
+                x1, y1 = x0 + bw - 6, y0 + bh - 6
+                yy, xx = np.mgrid[0:S, 0:S]
+                for off in (-S, 0, S):
+                    inside = (xx >= x0 + off) & (xx < x1 + off) & (yy >= y0) & (yy < y1)
+                    edge = np.minimum(np.minimum(xx - (x0 + off), (x1 + off) - xx), np.minimum(yy - y0, y1 - yy))
+                    bevel = np.clip(edge / 5, 0, 1)
+                    lit = 0.75 + 0.25 * bevel + 0.18 * (yy < y0 + 4)
+                    rgb[inside] = (tint[None, :] * lit[inside][:, None])
+        rgb = rgb * (1 + 0.22 * grain[..., None])
+        Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), "RGB").save(os.path.join(out, name), optimize=True)
+
+    tile("stone_wall.png", 6, 3, (88, 78, 68), 12, (26, 21, 18), True)
+    tile("stone_floor.png", 3, 2, (70, 62, 54), 10, (20, 16, 13), False)
+
+
+def campaign_map(out):
+    """The campaign's map, an old parchment chart of the country between the taverns: mountains, forests, a river,
+    a lake and a compass rose drawn in brown ink inside a ruled border (map.jpg, the screen's shape; the trail and
+    the taverns are drawn by the game over it). And the wax seal each tavern is marked with, lit (seal.png) and
+    locked (seal_locked.png)."""
+    rng = np.random.default_rng(41)
+    W, H = 2048, 848
+    def smooth_noise(scale, seed):
+        n = np.random.default_rng(seed).normal(0, 1, (H, W))
+        fy, fx = np.fft.fftfreq(H)[:, None], np.fft.fftfreq(W)[None, :]
+        out = np.real(np.fft.ifft2(np.fft.fft2(n) * np.exp(-(fx ** 2 + fy ** 2) * scale)))
+        return out / np.abs(out).max()
+    yy, xx = np.mgrid[0:H, 0:W]
+    edge = np.minimum(np.minimum(xx, W - 1 - xx) / W, np.minimum(yy, H - 1 - yy) / H * (H / W))
+    vignette = np.clip(edge / 0.09, 0, 1) ** 0.6
+    blotch = smooth_noise(4e5, 42) * 0.5 + smooth_noise(4e4, 43) * 0.3 + smooth_noise(4e3, 44) * 0.2
+    base = np.array((224, 203, 160), float)
+    shade = (0.82 + 0.1 * blotch) * (0.55 + 0.45 * vignette)
+    rgb = base[None, None, :] * shade[..., None]
+    rgb = rgb * (1 + 0.04 * rng.normal(0, 1, (H, W, 1)))
+    img = Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+    S = 2
+    ink = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(ink)
+    INK = (74, 48, 28, 230)
+    FAINT = (74, 48, 28, 120)
+    WATER = (58, 66, 80, 200)
+
+    def at(fx, fy):
+        return fx * W * S, fy * H * S
+
+    for inset, width in ((22, 5), (34, 2)):
+        d.rectangle([inset * S, inset * S, (W - inset) * S, (H - inset) * S], outline=INK, width=width * S)
+
+    def mountain(fx, fy, size):
+        x, y = at(fx, fy)
+        h, half = size * S, size * 0.75 * S
+        d.line([(x - half, y), (x, y - h), (x + half, y)], fill=INK, width=3 * S, joint="curve")
+        for k in range(1, 5):
+            t = k / 5
+            d.line([(x + half * t * 0.9, y - h * (1 - t) * 0.95), (x + half * t * 0.9 - 6 * S, y)], fill=FAINT, width=2 * S)
+
+    for fx, fy, size in ((0.24, 0.24, 46), (0.28, 0.21, 62), (0.33, 0.25, 40), (0.43, 0.2, 52), (0.48, 0.24, 38),
+                         (0.68, 0.88, 44), (0.73, 0.85, 58), (0.78, 0.9, 40), (0.97, 0.88, 36)):
+        mountain(fx, fy, size)
+
+    def tree(fx, fy, size):
+        x, y = at(fx, fy)
+        r = size * S
+        d.line([(x, y), (x, y + r * 1.3)], fill=INK, width=2 * S)
+        d.ellipse([x - r, y - r * 1.4, x + r, y + r * 0.4], outline=INK, width=2 * S)
+
+    for cx, cy, n in ((0.06, 0.5, 7), (0.5, 0.86, 8), (0.74, 0.14, 7), (0.95, 0.4, 6), (0.06, 0.9, 5)):
+        for k in range(n):
+            tree(cx + rng.uniform(-0.035, 0.035), cy + rng.uniform(-0.05, 0.05), rng.uniform(9, 14))
+
+    river = []
+    for k in range(41):
+        t = k / 40
+        river.append(at(0.555 - 0.07 * t + 0.025 * math.sin(t * 9), 0.035 + t * 0.93))
+    d.line(river, fill=WATER, width=7 * S, joint="curve")
+    d.line([(x + 10 * S, y) for x, y in river[::2]], fill=(58, 66, 80, 70), width=2 * S)
+
+    lx, ly = at(0.27, 0.66)
+    d.ellipse([lx - 70 * S, ly - 30 * S, lx + 70 * S, ly + 30 * S], outline=WATER, width=4 * S)
+    for k in range(3):
+        d.arc([lx - 40 * S + k * 25 * S, ly - 6 * S, lx - 22 * S + k * 25 * S, ly + 6 * S], 200, 340, fill=(58, 66, 80, 150), width=2 * S)
+
+    cx, cy = at(0.3, 0.84)
+    R = 56 * S
+    d.ellipse([cx - R, cy - R, cx + R, cy + R], outline=INK, width=2 * S)
+    d.ellipse([cx - R * 0.72, cy - R * 0.72, cx + R * 0.72, cy + R * 0.72], outline=FAINT, width=2 * S)
+    for k in range(8):
+        a = math.pi / 4 * k
+        long = R * (1.15 if k % 2 == 0 else 0.7)
+        tip = (cx + math.sin(a) * long, cy - math.cos(a) * long)
+        side = 9 * S
+        left = (cx + math.sin(a - math.pi / 2) * side, cy - math.cos(a - math.pi / 2) * side)
+        right = (cx + math.sin(a + math.pi / 2) * side, cy - math.cos(a + math.pi / 2) * side)
+        d.polygon([tip, left, (cx, cy)], fill=INK)
+        d.polygon([tip, right, (cx, cy)], outline=INK)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", 26 * S)
+    d.text((cx, cy - R * 1.15 - 6 * S), "N", fill=INK, font=font, anchor="md")
+
+    ink = ink.resize((W, H), Image.LANCZOS)
+    img.alpha_composite(ink)
+    img.convert("RGB").save(os.path.join(out, "map.jpg"), quality=88, optimize=True)
+
+    for name, fill, deep, rim in (("seal.png", (150, 32, 30), (84, 14, 14), GOLD), ("seal_locked.png", (92, 84, 76), (52, 46, 42), (130, 116, 96))):
+        Z = 128 * SS
+        im = Image.new("RGBA", (Z, Z), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(im)
+        c = Z / 2
+        pts = []
+        for k in range(48):
+            a = math.pi * 2 * k / 48
+            r = Z * 0.46 * (1 + 0.035 * math.sin(k * 2.7) + 0.02 * math.sin(k * 5.3))
+            pts.append((c + math.cos(a) * r, c + math.sin(a) * r))
+        sd.polygon(pts, fill=deep + (255,))
+        sd.ellipse([c - Z * 0.4, c - Z * 0.4, c + Z * 0.4, c + Z * 0.4], fill=fill + (255,))
+        sd.ellipse([c - Z * 0.4, c - Z * 0.4, c + Z * 0.4, c + Z * 0.4], outline=rim + (255,), width=3 * SS)
+        sd.ellipse([c - Z * 0.33, c - Z * 0.33, c + Z * 0.33, c + Z * 0.33], outline=rim + (160,), width=1 * SS)
+        shine = Image.new("RGBA", (Z, Z), (0, 0, 0, 0))
+        ImageDraw.Draw(shine).ellipse([c - Z * 0.3, c - Z * 0.36, c - Z * 0.05, c - Z * 0.22], fill=(255, 255, 255, 38))
+        im.alpha_composite(shine)
+        downsample(im, 128, 128).save(os.path.join(out, name))
+
+
 def momentum_icons(out):
     """The momentum bar beside a placard, one image per state: empty, one notch, and lit (x2 on).
     A dark capsule rimmed in gold holds two chevrons that light gold as bids are made running; when
@@ -741,9 +968,11 @@ if __name__ == "__main__":
     sheet = card_sheet(out)
     card_back(out)
     card_slot(out)
-    card_blank(out)
     chapter_cosmetics(out)
     campaign_art(out)
+    chapter_plaques(out)
+    stone(out)
+    campaign_map(out)
     play_menu_icons(out)
     badge(out)
     padlock(out)
@@ -752,6 +981,7 @@ if __name__ == "__main__":
     table(out)
     icons(out)
     level_badges(out)
+    gilt_ring(out)
     bid_icons(out)
     bid_digits(out)
     sprites(out)

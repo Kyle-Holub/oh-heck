@@ -24,9 +24,10 @@ public final class Assets implements Disposable {
 	public static final float UI_BASE = 16f / 42f, SERIF_BASE = 16f / 52f;
 
 	public Texture table;
-	public final Texture cardSheet, cardSheetBlur, cardSlot, cardBlank, badge, padlock;
+	public final Texture cardSheet, cardSheetBlur, cardSlot, badge, padlock;
 	public final Texture[] momentum = new Texture[3];
-	public final Texture campaignFace, stepTable, stepShots, stepDuel, pipOn, pipOff;
+	public final Texture stoneWall, stoneFloor, campaignMap, seal, sealLocked, giltRing;
+	public final Texture campaignFace, plaque, plaqueLocked, stepTable, stepShots, stepDuel, pipOn, pipOff;
 	public final Texture menuContinue, menuCampaign, menuCustom, menuScores;
 	private final Texture[] emblems = new Texture[Suit.values().length];
 	private final Texture[] tables = new Texture[Cosmetic.values().length], backs = new Texture[Cosmetic.values().length],
@@ -41,9 +42,9 @@ public final class Assets implements Disposable {
 	public final Texture dealerIcon, trickIcon, overIcon, zeroIcon, waitingIcon;
 	public final Texture bidDigits;
 	private final TextureRegion[] digits = new TextureRegion[11];
-	public final Texture white;
+	public final Texture white, fadeDown;
 	public final Texture stroke;
-	public final BitmapFont font, fontItalic;
+	public final BitmapFont font;
 	public final BitmapFont serif;
 
 	private final TextureRegion[][] faces = new TextureRegion[4][13];
@@ -58,12 +59,7 @@ public final class Assets implements Disposable {
 	}
 
 	public Assets() {
-		for (Cosmetic c : Cosmetic.values()) {
-			tables[c.ordinal()] = linear(own(new Texture(Gdx.files.internal("images/" + c.felt + ".jpg"))));
-			backs[c.ordinal()] = mipmapped("images/" + c.back + ".png");
-			backBlurs[c.ordinal()] = mipmapped("images/" + c.backBlur + ".png");
-		}
-		table = tables[0];
+		table = feltOf(Cosmetic.CLASSIC);
 		cardSheet = mipmapped("images/cards_hd.png");
 		badge = mipmapped("images/badge.png");
 		padlock = mipmapped("images/padlock.png");
@@ -71,6 +67,14 @@ public final class Assets implements Disposable {
 			momentum[i] = mipmapped("images/momentum_" + i + ".png");
 		}
 		campaignFace = mipmapped("images/campaign_face.png");
+		plaque = mipmapped("images/plaque.png");
+		stoneWall = tiled("images/stone_wall.png");
+		stoneFloor = tiled("images/stone_floor.png");
+		campaignMap = mipmapped("images/map.jpg");
+		seal = mipmapped("images/seal.png");
+		sealLocked = mipmapped("images/seal_locked.png");
+		giltRing = mipmapped("images/gilt_ring.png");
+		plaqueLocked = mipmapped("images/plaque_locked.png");
 		stepTable = mipmapped("images/step_table.png");
 		stepShots = mipmapped("images/step_shots.png");
 		stepDuel = mipmapped("images/step_duel.png");
@@ -84,7 +88,6 @@ public final class Assets implements Disposable {
 			emblems[s.ordinal()] = mipmapped("images/emblem_" + s.name().toLowerCase() + ".png");
 		}
 		cardSlot = mipmapped("images/card_slot.png");
-		cardBlank = mipmapped("images/card_blank.png");
 		cardSheetBlur = mipmapped("images/cards_blur.png");
 		shadow = linear(own(new Texture(Gdx.files.internal("images/shadow.png"))));
 		glow = mipmapped("images/glow.png");
@@ -114,12 +117,12 @@ public final class Assets implements Disposable {
 			levelBadge[d.ordinal()] = mipmapped("images/level_" + d.key() + ".png");
 		}
 		cutCards();
-		back = new TextureRegion(backs[0]);
-		backBlur = new TextureRegion(backBlurs[0]);
+		back = new TextureRegion(backOf(Cosmetic.CLASSIC));
+		backBlur = new TextureRegion(blurredBackOf(Cosmetic.CLASSIC));
 		white = own(whitePixel());
+		fadeDown = own(linear(fadeDownTexture()));
 		stroke = own(strokeTexture(32, 160));
 		font = bitmapFont("ui");
-		fontItalic = bitmapFont("ui_italic");
 		serif = bitmapFont("serif");
 	}
 	private void cutDigits() {
@@ -136,6 +139,19 @@ public final class Assets implements Disposable {
 				blurred[suit][rank] = new TextureRegion(cardSheetBlur, rank * bw, suit * bh, bw, bh);
 			}
 		}
+	}
+
+	private static Texture fadeDownTexture() {
+		Pixmap p = new Pixmap(1, 64, Pixmap.Format.RGBA8888);
+		p.setBlending(Pixmap.Blending.None);
+		for (int y = 0; y < 64; y++) {
+			float a = 1 - y / 63f;
+			p.setColor(1, 1, 1, a * a);
+			p.drawPixel(0, y);
+		}
+		Texture t = new Texture(p);
+		p.dispose();
+		return t;
 	}
 
 	private static Texture whitePixel() {
@@ -171,16 +187,30 @@ public final class Assets implements Disposable {
 	}
 
 	public void dress(Cosmetic cardBack, Cosmetic felt) {
-		table = tables[felt.ordinal()];
-		back.setRegion(backs[cardBack.ordinal()]);
-		backBlur.setRegion(backBlurs[cardBack.ordinal()]);
+		table = feltOf(felt);
+		Color.rgb888ToColor(Palette.SPARKLE, felt.sparkle);
+		back.setRegion(backOf(cardBack));
+		backBlur.setRegion(blurredBackOf(cardBack));
 	}
 
 	public Texture backOf(Cosmetic c) {
+		if (backs[c.ordinal()] == null) {
+			backs[c.ordinal()] = mipmapped("images/" + c.back + ".png");
+		}
 		return backs[c.ordinal()];
 	}
 
+	private Texture blurredBackOf(Cosmetic c) {
+		if (backBlurs[c.ordinal()] == null) {
+			backBlurs[c.ordinal()] = mipmapped("images/" + c.backBlur + ".png");
+		}
+		return backBlurs[c.ordinal()];
+	}
+
 	public Texture feltOf(Cosmetic c) {
+		if (tables[c.ordinal()] == null) {
+			tables[c.ordinal()] = linear(own(new Texture(Gdx.files.internal("images/" + c.felt + ".jpg"))));
+		}
 		return tables[c.ordinal()];
 	}
 
@@ -231,6 +261,12 @@ public final class Assets implements Disposable {
 	private Texture mipmapped(String path) {
 		Texture t = own(new Texture(Gdx.files.internal(path), true));
 		t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+		return t;
+	}
+
+	private Texture tiled(String path) {
+		Texture t = mipmapped(path);
+		t.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 		return t;
 	}
 

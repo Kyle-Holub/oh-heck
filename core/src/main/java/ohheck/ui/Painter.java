@@ -42,10 +42,6 @@ public final class Painter {
 		return faded(ui(size, color), color, alpha);
 	}
 
-	public BitmapFont uiItalic(float size, Color color) {
-		return sized(assets.fontItalic, size * Assets.UI_BASE, color);
-	}
-
 	public BitmapFont serif(float size) {
 		return serif(size, Color.WHITE);
 	}
@@ -102,6 +98,14 @@ public final class Painter {
 		batch.setColor(Color.WHITE);
 	}
 
+	public void glow(float x, float y, float w, float h, Color c, float alpha) {
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		batch.setColor(c.r, c.g, c.b, alpha);
+		batch.draw(assets.glow, x, y, w, h);
+		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+		batch.setColor(Color.WHITE);
+	}
+
 	public void edgeGlow(Color c, float alpha, float w, float h) {
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		batch.setColor(c.r, c.g, c.b, alpha);
@@ -119,14 +123,33 @@ public final class Painter {
 		batch.setColor(Color.WHITE);
 	}
 
-	private final Array<Rectangle> pressable = new Array<Rectangle>(false, 32);
+	private final Array<Rectangle> pressable = new Array<Rectangle>(false, 32), backs = new Array<Rectangle>(false, 4);
 
 	public void newFrame() {
 		pressable.clear();
+		backs.clear();
 	}
 
 	public void pressable(Rectangle r) {
 		pressable.add(r);
+	}
+
+	public void quiet(Rectangle r) {
+		pressable.removeValue(r, true);
+		backs.removeValue(r, true);
+	}
+
+	public void back(Rectangle r) {
+		backs.add(r);
+	}
+
+	public boolean pressedBack(float x, float y) {
+		for (int i = 0; i < backs.size; i++) {
+			if (backs.get(i).contains(x, y)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public boolean pressed(float x, float y) {
