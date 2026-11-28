@@ -65,13 +65,7 @@ public class CampaignScreen extends BaseScreen {
 	private static final Tween LOOK_DOWN = Tween.over(1.7f, Ease.SMOOTH).after(0.3f), MAP_LIGHT = Tween.over(0.9f, Ease.SMOOTH).after(0.3f),
 			MIST_IN = Tween.over(0.5f, Ease.SMOOTH), INKING = Tween.over(0.7f, Ease.SMOOTH).after(1.9f),
 			SEALS = Tween.over(0.4f, Ease.OUT).after(2.0f);
-	private static final float ENTER_WAIT = UNFOLD_LENGTH + 0.3f, ENTER_LENGTH = 2.6f, OPEN_AT = 1.75f, ZOOM_SCALE = 2.6f, SMALL_SEAL = 104,
-			TWIST_TURN = 900f, TWIST_SPIN = 0.35f, TWIST_SHRINK = 0.75f, SWIRL_SPEED = 1.5f, FOG_FROM = 0.3f, FOG_TO = 1.4f, ARRIVE = 0.45f;
-	private static final int SWIRLERS = 56, TWIRL_GRID = 12;
-	private static final Tween ZOOM_IN = Tween.over(0.7f, Ease.SMOOTH), DARKEN = Tween.over(0.6f, Ease.SMOOTH).after(0.1f),
-			SPREAD = Tween.over(0.9f, Ease.OUT).after(0.35f), TWIST = Tween.over(0.95f, Ease.IN).after(0.85f),
-			FOG_IN = Tween.over(0.7f, Ease.SMOOTH).after(1.2f), FOG_OUT = Tween.over(0.85f, Ease.SMOOTH).after(OPEN_AT),
-			HALL_IN = Tween.over(0.85f, Ease.SMOOTH).after(OPEN_AT);
+	private static final float ENTER_WAIT = UNFOLD_LENGTH + 0.3f, ARRIVE = 0.45f;
 	private static final float DOOR_LENGTH = 1.0f, DIVE_SCALE = 9f, DOOR_SWING = 80f;
 	private static final Tween DOORS = Tween.over(0.5f, Ease.SMOOTH), DIVE = Tween.over(0.6f, Ease.IN).after(DOOR_LENGTH - 0.6f),
 			DOOR_FLASH = Tween.over(0.2f, Ease.IN).after(DOOR_LENGTH - 0.2f), PAN = Tween.over(0.7f, Ease.SMOOTH).after(0.2f);
@@ -93,6 +87,7 @@ public class CampaignScreen extends BaseScreen {
 	private final ChapterMap map;
 	private final Corridor corridor;
 	private final FallingCards doorway, fog;
+	private final SealWhirl whirl;
 	private final Rectangle backButton = new Rectangle(), goButton = new Rectangle(), infoButton = new Rectangle(), opening = new Rectangle();
 	private final Rectangle[] arches = new Rectangle[STEPS.length];
 	private final Rectangle[] playerCards = { new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle() };
@@ -113,6 +108,7 @@ public class CampaignScreen extends BaseScreen {
 		super(game);
 		art = new CardArt(batch, assets);
 		map = new ChapterMap(paint);
+		whirl = new SealWhirl(paint);
 		corridor = new Corridor(assets);
 		Long seed = game.options().seed;
 		doorway = new FallingCards(assets, seed == null ? new Random() : new Random(seed), true);
@@ -233,7 +229,7 @@ public class CampaignScreen extends BaseScreen {
 			enterFor += dt;
 			sealMoments(was, enterFor);
 			fog.update(dt, w, h);
-			if (enterFor >= ENTER_LENGTH) {
+			if (enterFor >= SealWhirl.LENGTH) {
 				unseal();
 			}
 		}
@@ -301,12 +297,17 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	private void sealMoments(float was, float now) {
-		if (crossed(was, now, TWIST.start())) {
+		if (crossed(was, now, SealWhirl.TWIST.start())) {
 			game.audio().play(Audio.Effect.WHOOSH);
 		}
-		if (crossed(was, now, OPEN_AT)) {
+		if (crossed(was, now, SealWhirl.OPENS)) {
 			openChapter(entering);
 		}
+	}
+
+	private Matrix4 lookInto(float x, float y, float centring, float scale) {
+		return zoom.idt().translate(MathUtils.lerp(x, w / 2, centring), MathUtils.lerp(y, h / 2, centring), 0).scale(scale, scale, 1)
+				.translate(-x, -y, 0);
 	}
 
 	private static boolean crossed(float was, float now, float at) {
@@ -314,77 +315,9 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	private void drawSealing() {
-		float t = enterFor, zoomIn = ZOOM_IN.progress(t), twist = TWIST.progress(t);
-		float dark = t < OPEN_AT ? DARKEN.progress(t) : 1 - HALL_IN.progress(t);
-		paint.rect(0, 0, w, h, flash.set(0, 0, 0, dark));
 		Rectangle m = map.marker(entering);
-		float cx = MathUtils.lerp(m.x + m.width / 2, w / 2, zoomIn), cy = MathUtils.lerp(m.y + m.height / 2, h / 2, zoomIn);
-		float size = SMALL_SEAL * (1 + (ZOOM_SCALE - 1) * zoomIn), shrunk = size * (1 - TWIST_SHRINK * twist);
-		if (twist < 1) {
-			drawTwirled(assets.seal, cx, cy, shrunk, twist, 1 - twist * twist);
-			drawTwirled(assets.emblem(entering.emblem), cx, cy, shrunk * 0.45f, twist, 1 - twist * twist);
-		}
-		float fogIn = FOG_IN.progress(t), fogA = fogIn * (1 - FOG_OUT.progress(t));
-		if (fogA > 0) {
-			float grow = MathUtils.lerp(FOG_FROM, FOG_TO, fogIn);
-			batch.setTransformMatrix(zoom.idt().translate(cx, cy, 0).scale(grow, grow, 1));
-			fog.drawMist(batch, 0, 0, fogA);
-			batch.setTransformMatrix(still);
-		}
-		float glow = twist * (1 - HALL_IN.progress(t)), glowSize = size * (1 + twist);
-		paint.glow(cx - glowSize, cy - glowSize, glowSize * 2, glowSize * 2, Palette.LAMP, 0.35f * glow);
-		drawSwirl(cx, cy, size, t, twist);
+		whirl.draw(enterFor, m.x + m.width / 2, m.y + m.height / 2, w, h, assets.emblem(entering.emblem), fog);
 	}
-
-	private void drawTwirled(Texture texture, float cx, float cy, float size, float twist, float alpha) {
-		float colour = flash.set(1, 1, 1, alpha).toFloatBits();
-		for (int j = 0; j < TWIRL_GRID; j++) {
-			for (int i = 0; i < TWIRL_GRID; i++) {
-				twirled(0, i, j, cx, cy, size, twist, colour);
-				twirled(5, i + 1, j, cx, cy, size, twist, colour);
-				twirled(10, i + 1, j + 1, cx, cy, size, twist, colour);
-				twirled(15, i, j + 1, cx, cy, size, twist, colour);
-				batch.draw(texture, twirl, 0, 20);
-			}
-		}
-	}
-
-	private void twirled(int o, int i, int j, float cx, float cy, float size, float twist, float colour) {
-		float u = (float) i / TWIRL_GRID, v = (float) j / TWIRL_GRID, px = (u - 0.5f) * size, py = (v - 0.5f) * size;
-		float r = Math.min(1, (float) Math.hypot(px, py) / (size / 2)), inner = 1 - r;
-		float turn = (twist * TWIST_TURN * inner * inner + twist * TWIST_TURN * TWIST_SPIN) * MathUtils.degRad;
-		float cos = MathUtils.cos(turn), sin = MathUtils.sin(turn);
-		twirl[o] = cx + px * cos - py * sin;
-		twirl[o + 1] = cy + px * sin + py * cos;
-		twirl[o + 2] = colour;
-		twirl[o + 3] = u;
-		twirl[o + 4] = 1 - v;
-	}
-
-	private final float[] twirl = new float[20];
-
-	private void drawSwirl(float cx, float cy, float size, float t, float twist) {
-		float a = SPREAD.progress(t) * (1 - HALL_IN.progress(t));
-		if (a <= 0) {
-			return;
-		}
-		float[] rgb = swirlColour;
-		float spread = SPREAD.progress(t), out = HALL_IN.progress(t), whirl = twist * TWIST_TURN * MathUtils.degRad * 0.8f;
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-		for (int i = 0; i < SWIRLERS; i++) {
-			float lane = 0.5f + 0.9f * spread * (0.6f + 0.4f * ((i * 7) % 10) / 10f);
-			float angle = i * MathUtils.PI2 / SWIRLERS + t * SWIRL_SPEED * (1 + (i % 3) * 0.15f) + whirl * (1.3f - lane * 0.4f);
-			float r = size * lane * (1 - 0.45f * twist) + out * size * 1.6f;
-			float dot = 8 + (i % 4) * 4;
-			Palette.sparkle(0.6f + (i % 5) * 0.2f, 0, rgb);
-			batch.setColor(rgb[0], rgb[1], rgb[2], a * (0.55f + 0.45f * MathUtils.sin(t * 7 + i)));
-			batch.draw(assets.glow, cx + MathUtils.cos(angle) * r - dot / 2, cy + MathUtils.sin(angle) * r - dot / 2, dot, dot);
-		}
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		batch.setColor(Color.WHITE);
-	}
-
-	private final float[] swirlColour = new float[3];
 
 	private void drawFlashes() {
 		float light = door >= 0 ? DOOR_FLASH.progress(doorFor) : 0;
@@ -419,9 +352,7 @@ public class CampaignScreen extends BaseScreen {
 		}
 		if (entering != null && enterFor >= 0) {
 			Rectangle m = map.marker(entering);
-			float zoomIn = ZOOM_IN.progress(enterFor), scale = 1 + (ZOOM_SCALE - 1) * zoomIn, mx = m.x + m.width / 2, my = m.y + m.height / 2;
-			batch.setTransformMatrix(zoom.idt().translate(MathUtils.lerp(mx, w / 2, zoomIn), MathUtils.lerp(my, h / 2, zoomIn), 0)
-					.scale(scale, scale, 1).translate(-mx, -my, 0));
+			batch.setTransformMatrix(lookInto(m.x + m.width / 2, m.y + m.height / 2, SealWhirl.ZOOM_IN.progress(enterFor), SealWhirl.scale(enterFor)));
 		}
 		map.drawMap(0, NEAR, 1, 0);
 		float seals = SEALS.progress(unfoldFor), pulse = 0.8f + 0.2f * MathUtils.sin(shownFor * 2f);
@@ -450,8 +381,7 @@ public class CampaignScreen extends BaseScreen {
 			Rectangle a = arches[door];
 			float pan = PAN.progress(doorFor), scale = 1 + (DIVE_SCALE - 1) * DIVE.progress(doorFor);
 			float cx = a.x + a.width / 2, cy = a.y + a.height * 0.45f;
-			batch.setTransformMatrix(zoom.idt().translate(MathUtils.lerp(cx, w / 2, pan), MathUtils.lerp(cy, h / 2, pan), 0).scale(scale, scale, 1)
-					.translate(-cx, -cy, 0));
+			batch.setTransformMatrix(lookInto(cx, cy, pan, scale));
 		}
 		batch.draw(assets.table, 0, 0, w, h);
 		paint.centred(paint.serif(1.5f, Palette.GOLD_LIGHT), c.mode.label, w / 2, top - 22);

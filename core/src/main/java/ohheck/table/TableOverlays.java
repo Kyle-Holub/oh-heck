@@ -244,22 +244,18 @@ final class TableOverlays {
 	}
 
 	private final Color flashTint = new Color();
-	private final float[] riserColour = new float[3];
 
 	private void risingSparkles(float since, float alpha) {
 		if (alpha <= 0) {
 			return;
 		}
-		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		paint.lighting(true);
 		for (int i = 0; i < RISERS; i++) {
 			float speed = 30 + (i * 37) % 50, x = (i * 173.7f) % layout.w, y = (since * speed + i * 97.3f) % (layout.h + 40) - 20;
-			float dot = 5 + (i % 4) * 3, twinkle = 0.5f + 0.5f * MathUtils.sin(since * (2 + i % 3) + i);
-			Palette.sparkle(0.6f + (i % 5) * 0.2f, 0, riserColour);
-			paint.batch.setColor(riserColour[0], riserColour[1], riserColour[2], alpha * twinkle * 0.8f);
-			paint.batch.draw(paint.assets.glow, x + MathUtils.sin(since + i) * 10 - dot / 2, y - dot / 2, dot, dot);
+			float twinkle = 0.5f + 0.5f * MathUtils.sin(since * (2 + i % 3) + i);
+			paint.sparkle(x + MathUtils.sin(since + i) * 10, y, 5 + (i % 4) * 3, 0.6f + (i % 5) * 0.2f, alpha * twinkle * 0.8f);
 		}
-		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		paint.batch.setColor(Color.WHITE);
+		paint.lighting(false);
 	}
 
 	private void side(Color c, float apart, float edge, boolean above, float alpha) {
@@ -415,21 +411,17 @@ final class TableOverlays {
 		if (fade <= 0) {
 			return;
 		}
-		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+		paint.lighting(true);
 		for (int i = 0; i < GATHERING; i++) {
 			float angle = i * MathUtils.PI2 / GATHERING + t * 3 + (1 - gather) * 2, r = DEALER_CHIP * (0.45f + 1.4f * (1 - gather)) + (i % 3) * 8;
-			float dot = 7 + (i % 4) * 3;
-			Palette.sparkle(0.6f + (i % 5) * 0.2f, 0, sparkColour);
-			paint.batch.setColor(sparkColour[0], sparkColour[1], sparkColour[2], fade * Math.min(1, t * 4) * (0.6f + 0.4f * MathUtils.sin(t * 9 + i)));
-			paint.batch.draw(paint.assets.glow, cx + MathUtils.cos(angle) * r - dot / 2, cy + MathUtils.sin(angle) * r - dot / 2, dot, dot);
+			paint.sparkle(cx + MathUtils.cos(angle) * r, cy + MathUtils.sin(angle) * r, 7 + (i % 4) * 3, 0.6f + (i % 5) * 0.2f,
+					fade * Math.min(1, t * 4) * (0.6f + 0.4f * MathUtils.sin(t * 9 + i)));
 		}
-		paint.batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		paint.batch.setColor(Color.WHITE);
+		paint.lighting(false);
 	}
 
 	private static final int GATHERING = 28;
 	private static final Tween COIN_APPEAR = Tween.over(DealerPick.APPEAR, Ease.OUT), SPARKS_FADE = Tween.over(0.5f, Ease.SMOOTH).after(DealerPick.APPEAR);
-	private final float[] sparkColour = new float[3];
 	private String deals = "";
 	private Match dealsOf;
 
