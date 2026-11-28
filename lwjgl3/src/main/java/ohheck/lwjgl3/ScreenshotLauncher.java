@@ -32,6 +32,7 @@ import ohheck.records.Stats;
 import ohheck.rules.Match;
 import ohheck.screens.CampaignScreen;
 import ohheck.screens.HighScoresScreen;
+import ohheck.screens.OptionsScreen;
 import ohheck.screens.PlayersScreen;
 import ohheck.screens.TitleScreen;
 import ohheck.table.PlayScreen;
@@ -42,7 +43,7 @@ import ohheck.table.PlayScreen;
  */
 public class ScreenshotLauncher {
 
-	private static final String[] WANTED = { "intro", "title", "zooming", "play", "setup", "highscores", "statistics", "badges", "options", "players", "unfolding", "campaign", "entering", "brief:chapter", "chapter:1", "door", "corridor", "brief:duel", "versus", "brief:table", "shot:lone-ace", "cleared", "tip:welcome", "tip:trump", "tip:bid", "picking", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "zooming", "play", "setup", "highscores", "statistics", "options", "options:unlockables", "players", "unfolding", "campaign", "entering", "brief:chapter", "chapter:1", "door", "corridor", "brief:duel", "versus", "brief:table", "shot:lone-ace", "cleared", "tip:welcome", "tip:trump", "tip:bid", "picking", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "tricks:7", "tricks:7:", "play:8:",
 			"tossing", "gameover" };
 
@@ -247,9 +248,9 @@ public class ScreenshotLauncher {
 			then("play", 1.5f, s -> game.showGameSetup());
 			then("setup", 1.5f, s -> game.showHighScores(-1));
 			then("highscores", 1.5f, s -> ((HighScoresScreen) s).showStatistics());
-			then("statistics", 1.5f, s -> ((HighScoresScreen) s).showBadges());
-			then("badges", 1.5f, s -> game.showOptions());
-			then("options", 1.5f, s -> game.showPlayers());
+			then("statistics", 1.5f, s -> game.showOptions());
+			then("options", 1.5f, s -> ((OptionsScreen) s).showPage("Unlockables"));
+			then("options:unlockables", 1.5f, s -> game.showPlayers());
 			then("players", 1.0f, s -> ((PlayersScreen) s).scrollToEnd());
 			then("players", 1.2f, s -> game.showPlayMenu());
 			then("play", 1.0f, s -> game.showCampaign());
