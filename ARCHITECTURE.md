@@ -188,7 +188,8 @@ The title's **Play** opens the Play screen: **Campaign**, **Custom game** (set u
 goes), High scores, and Continue when a custom game is in progress.
 The campaign (`CampaignScreen`) opens looking out into mist and sparkles, then the eye drops through them onto a parchment map (`ChapterMap`, the map drawn by
 `make_art.py`), a tavern for each chapter marked by a wax seal along an inked trail (locked seals ash grey with a padlock
-that jiggles; an unlock breaks it with sparks). A tavern's seal lifts into the dark, is stamped, cracks and splits open, and its chapter unfolds out of it: a hall of four arched doors, one per
+that jiggles; an unlock breaks it with sparks). A tapped tavern draws the eye into its seal as the map goes dark, the seal twists away like a whirlpool into
+sparkles and fog, and its chapter fades in through the fog: a hall of four arched doors, one per
 stage, opening with a misty dive through the door; the duel's door leads instead down the torchlit 3D `Corridor`
 (`ohheck.fx`). The four stages in order: table play (a normal game against the chapter's rivals), trick shots
 (`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding

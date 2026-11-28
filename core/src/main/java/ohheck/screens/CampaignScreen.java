@@ -35,8 +35,9 @@ import ohheck.ui.Palette;
 /*
  * The campaign. Arriving from the Play menu, the eye looks out into mist and sparkles, then drops through them to a
  * parchment map lying on the table (ChapterMap): a tavern for each chapter, marked by a wax seal, the trail between
- * them inking itself in. A tapped tavern's seal lifts to the middle of the dark, is stamped, swirled with sparkles,
- * cracks open with light, and the chapter unfolds out of it: a hall of arched doors, one for each stage (table, trick shots, final table, duel). A
+ * them inking itself in. A tapped tavern's seal draws the eye in as the map goes dark and sparkles gather round it,
+ * then twists away into itself like a whirlpool, the sparkles turning with it, and becomes a fog through which the
+ * chapter fades in: a hall of arched doors, one for each stage (table, trick shots, final table, duel). A
  * tapped door swings open on a dark doorway of mist and sparkles and the camera dives through; the duel's door leads
  * instead into a torchlit corridor walked to the champion. A chapter, and each stage, opens with a briefing of what
  * is about to happen on a first visit: a few pages in the tutorial's style, a picture above and a caption below.
@@ -63,13 +64,13 @@ public class CampaignScreen extends BaseScreen {
 	private static final Tween LOOK_DOWN = Tween.over(1.7f, Ease.SMOOTH).after(0.3f), MAP_LIGHT = Tween.over(0.9f, Ease.SMOOTH).after(0.3f),
 			MIST_IN = Tween.over(0.5f, Ease.SMOOTH), INKING = Tween.over(0.7f, Ease.SMOOTH).after(1.9f),
 			SEALS = Tween.over(0.4f, Ease.OUT).after(2.0f);
-	private static final float ENTER_WAIT = UNFOLD_LENGTH + 0.3f, ENTER_LENGTH = 2.1f, OPEN_AT = 1.45f, BIG_SEAL = 250, SMALL_SEAL = 104,
-			PRESSED = 0.12f, SPLIT_SPREAD = 0.9f, SPLIT_TURN = 30, CRACK_WIDTH = 4, SWIRL_SPEED = 2.6f, ARRIVE = 0.45f;
-	private static final int SWIRLERS = 56;
-	private static final float[] CRACK_X = { 0.03f, -0.07f, 0.05f, -0.04f, 0.06f, -0.03f, 0.02f };
-	private static final Tween SEAL_LIFT = Tween.over(0.45f, Ease.SMOOTH), PRESS = Tween.over(0.2f, Ease.OUT).after(0.45f),
-			SWIRL = Tween.over(0.25f, Ease.SMOOTH).after(0.5f), CRACK = Tween.over(0.3f, Ease.OUT).after(1.05f),
-			SPLIT = Tween.over(0.5f, Ease.IN).after(1.4f), HALL_GROW = Tween.over(0.65f, Ease.OUT).after(OPEN_AT);
+	private static final float ENTER_WAIT = UNFOLD_LENGTH + 0.3f, ENTER_LENGTH = 2.6f, OPEN_AT = 1.75f, ZOOM_SCALE = 2.6f, SMALL_SEAL = 104,
+			TWIST_TURN = 900f, TWIST_SPIN = 0.35f, TWIST_SHRINK = 0.75f, SWIRL_SPEED = 1.5f, FOG_FROM = 0.3f, FOG_TO = 1.4f, ARRIVE = 0.45f;
+	private static final int SWIRLERS = 56, TWIRL_GRID = 12;
+	private static final Tween ZOOM_IN = Tween.over(0.7f, Ease.SMOOTH), DARKEN = Tween.over(0.6f, Ease.SMOOTH).after(0.1f),
+			SPREAD = Tween.over(0.9f, Ease.OUT).after(0.35f), TWIST = Tween.over(0.95f, Ease.IN).after(0.85f),
+			FOG_IN = Tween.over(0.7f, Ease.SMOOTH).after(1.2f), FOG_OUT = Tween.over(0.85f, Ease.SMOOTH).after(OPEN_AT),
+			HALL_IN = Tween.over(0.85f, Ease.SMOOTH).after(OPEN_AT);
 	private static final float DOOR_LENGTH = 1.0f, DIVE_SCALE = 9f, DOOR_SWING = 80f;
 	private static final Tween DOORS = Tween.over(0.5f, Ease.SMOOTH), DIVE = Tween.over(0.6f, Ease.IN).after(DOOR_LENGTH - 0.6f),
 			DOOR_FLASH = Tween.over(0.2f, Ease.IN).after(DOOR_LENGTH - 0.2f), PAN = Tween.over(0.7f, Ease.SMOOTH).after(0.2f);
@@ -136,6 +137,7 @@ public class CampaignScreen extends BaseScreen {
 	public void enter(Chapter c) {
 		entering = c;
 		enterFor = 0;
+		fog.fly(0, 0);
 	}
 
 	public void enterOnArrival(Chapter c) {
@@ -220,6 +222,7 @@ public class CampaignScreen extends BaseScreen {
 			float was = enterFor;
 			enterFor += dt;
 			sealMoments(was, enterFor);
+			fog.update(dt, w, h);
 			if (enterFor >= ENTER_LENGTH) {
 				unseal();
 			}
@@ -274,29 +277,22 @@ public class CampaignScreen extends BaseScreen {
 			drawBriefing();
 		}
 		chrome.header(chosen == null ? "Campaign" : "Chapter " + chosen.number(), backButton, w, h);
-		if (entering != null && enterFor >= 0) {
-			drawSealing();
-		}
 		if (chosen != null && briefing == null && door < 0) {
 			paint.button(infoButton, INFO, w - 30 - INFO_W / 2, h - MenuChrome.HEADER_H + (MenuChrome.HEADER_H - 44) / 2, INFO_W, 44,
 					assets.buttonAlt);
 		} else {
 			infoButton.set(0, 0, 0, 0);
 		}
+		if (entering != null && enterFor >= 0) {
+			drawSealing();
+		}
 		drawFlashes();
 		batch.end();
 	}
 
 	private void sealMoments(float was, float now) {
-		if (crossed(was, now, PRESS.start())) {
-			game.audio().play(Audio.Effect.THUMP);
-			game.audio().buzz(Audio.Buzz.THUD);
-		}
-		if (crossed(was, now, CRACK.start())) {
-			game.audio().play(Audio.Effect.STAMP);
-		}
-		if (crossed(was, now, SPLIT.start())) {
-			sparks.burst(w / 2, h / 2, 120);
+		if (crossed(was, now, TWIST.start())) {
+			game.audio().play(Audio.Effect.WHOOSH);
 		}
 		if (crossed(was, now, OPEN_AT)) {
 			openChapter(entering);
@@ -308,35 +304,70 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	private void drawSealing() {
-		float t = enterFor, lift = SEAL_LIFT.progress(t), split = SPLIT.progress(t);
-		float dark = t < OPEN_AT ? lift : 1 - HALL_GROW.progress(t);
+		float t = enterFor, zoomIn = ZOOM_IN.progress(t), twist = TWIST.progress(t);
+		float dark = t < OPEN_AT ? DARKEN.progress(t) : 1 - HALL_IN.progress(t);
 		paint.rect(0, 0, w, h, flash.set(0, 0, 0, dark));
 		Rectangle m = map.marker(entering);
-		float cx = MathUtils.lerp(m.x + m.width / 2, w / 2, lift), cy = MathUtils.lerp(m.y + m.height / 2, h / 2, lift);
-		float size = MathUtils.lerp(SMALL_SEAL, BIG_SEAL, lift) * (1 + PRESSED * (1 - PRESS.progress(t)));
-		float burst = split * (1 - HALL_GROW.progress(t - 0.2f)), glowSize = size * (1 + 4 * split);
-		paint.glow(cx - glowSize, cy - glowSize, glowSize * 2, glowSize * 2, Palette.LAMP, 0.85f * burst);
-		if (split < 1) {
-			drawSwirl(cx, cy, size, t, split);
-			drawSealHalves(cx, cy, size, split);
-			drawCrack(cx, cy, size, CRACK.progress(t), 1 - split);
+		float cx = MathUtils.lerp(m.x + m.width / 2, w / 2, zoomIn), cy = MathUtils.lerp(m.y + m.height / 2, h / 2, zoomIn);
+		float size = SMALL_SEAL * (1 + (ZOOM_SCALE - 1) * zoomIn), shrunk = size * (1 - TWIST_SHRINK * twist);
+		if (twist < 1) {
+			drawTwirled(assets.seal, cx, cy, shrunk, twist, 1 - twist * twist);
+			drawTwirled(assets.emblem(entering.emblem), cx, cy, shrunk * 0.45f, twist, 1 - twist * twist);
 		}
-		sparks.draw(batch, assets.glow);
+		float fogIn = FOG_IN.progress(t), fogA = fogIn * (1 - FOG_OUT.progress(t));
+		if (fogA > 0) {
+			float grow = MathUtils.lerp(FOG_FROM, FOG_TO, fogIn);
+			batch.setTransformMatrix(zoom.idt().translate(cx, cy, 0).scale(grow, grow, 1));
+			fog.drawMist(batch, 0, 0, fogA);
+			batch.setTransformMatrix(still);
+		}
+		float glow = twist * (1 - HALL_IN.progress(t)), glowSize = size * (1 + twist);
+		paint.glow(cx - glowSize, cy - glowSize, glowSize * 2, glowSize * 2, Palette.LAMP, 0.35f * glow);
+		drawSwirl(cx, cy, size, t, twist);
 	}
 
-	private void drawSwirl(float cx, float cy, float size, float t, float split) {
-		float a = SWIRL.progress(t) * (1 - split);
+	private void drawTwirled(Texture texture, float cx, float cy, float size, float twist, float alpha) {
+		float colour = flash.set(1, 1, 1, alpha).toFloatBits();
+		for (int j = 0; j < TWIRL_GRID; j++) {
+			for (int i = 0; i < TWIRL_GRID; i++) {
+				twirled(0, i, j, cx, cy, size, twist, colour);
+				twirled(5, i + 1, j, cx, cy, size, twist, colour);
+				twirled(10, i + 1, j + 1, cx, cy, size, twist, colour);
+				twirled(15, i, j + 1, cx, cy, size, twist, colour);
+				batch.draw(texture, twirl, 0, 20);
+			}
+		}
+	}
+
+	private void twirled(int o, int i, int j, float cx, float cy, float size, float twist, float colour) {
+		float u = (float) i / TWIRL_GRID, v = (float) j / TWIRL_GRID, px = (u - 0.5f) * size, py = (v - 0.5f) * size;
+		float r = Math.min(1, (float) Math.hypot(px, py) / (size / 2)), inner = 1 - r;
+		float turn = (twist * TWIST_TURN * inner * inner + twist * TWIST_TURN * TWIST_SPIN) * MathUtils.degRad;
+		float cos = MathUtils.cos(turn), sin = MathUtils.sin(turn);
+		twirl[o] = cx + px * cos - py * sin;
+		twirl[o + 1] = cy + px * sin + py * cos;
+		twirl[o + 2] = colour;
+		twirl[o + 3] = u;
+		twirl[o + 4] = 1 - v;
+	}
+
+	private final float[] twirl = new float[20];
+
+	private void drawSwirl(float cx, float cy, float size, float t, float twist) {
+		float a = SPREAD.progress(t) * (1 - HALL_IN.progress(t));
 		if (a <= 0) {
 			return;
 		}
 		float[] rgb = swirlColour;
+		float spread = SPREAD.progress(t), out = HALL_IN.progress(t), whirl = twist * TWIST_TURN * MathUtils.degRad * 0.8f;
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 		for (int i = 0; i < SWIRLERS; i++) {
-			float angle = i * MathUtils.PI2 / SWIRLERS + t * SWIRL_SPEED * (1 + (i % 3) * 0.15f);
-			float r = size * (0.62f + 0.12f * MathUtils.sin(t * 3 + i * 1.3f)) + split * size * 2;
+			float lane = 0.5f + 0.9f * spread * (0.6f + 0.4f * ((i * 7) % 10) / 10f);
+			float angle = i * MathUtils.PI2 / SWIRLERS + t * SWIRL_SPEED * (1 + (i % 3) * 0.15f) + whirl * (1.3f - lane * 0.4f);
+			float r = size * lane * (1 - 0.45f * twist) + out * size * 1.6f;
 			float dot = 8 + (i % 4) * 4;
 			Palette.sparkle(0.6f + (i % 5) * 0.2f, 0, rgb);
-			batch.setColor(rgb[0], rgb[1], rgb[2], a * (0.5f + 0.5f * MathUtils.sin(t * 7 + i)));
+			batch.setColor(rgb[0], rgb[1], rgb[2], a * (0.55f + 0.45f * MathUtils.sin(t * 7 + i)));
 			batch.draw(assets.glow, cx + MathUtils.cos(angle) * r - dot / 2, cy + MathUtils.sin(angle) * r - dot / 2, dot, dot);
 		}
 		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
@@ -344,39 +375,6 @@ public class CampaignScreen extends BaseScreen {
 	}
 
 	private final float[] swirlColour = new float[3];
-
-	private void drawSealHalves(float cx, float cy, float size, float split) {
-		Texture seal = assets.seal, emblem = assets.emblem(entering.emblem);
-		float off = split * size * SPLIT_SPREAD, turn = split * SPLIT_TURN, half = size / 2, e = size * 0.45f;
-		int sw = seal.getWidth(), sh = seal.getHeight(), ew = emblem.getWidth(), eh = emblem.getHeight();
-		batch.setColor(1, 1, 1, 1 - split);
-		batch.draw(seal, cx - half - off, cy - half, half, half, half, size, 1, 1, turn, 0, 0, sw / 2, sh, false, false);
-		batch.draw(seal, cx + off, cy - half, 0, half, half, size, 1, 1, -turn, sw / 2, 0, sw / 2, sh, false, false);
-		batch.draw(emblem, cx - e / 2 - off, cy - e / 2, e / 2, e / 2, e / 2, e, 1, 1, turn, 0, 0, ew / 2, eh, false, false);
-		batch.draw(emblem, cx + off, cy - e / 2, 0, e / 2, e / 2, e, 1, 1, -turn, ew / 2, 0, ew / 2, eh, false, false);
-		batch.setColor(Color.WHITE);
-	}
-
-	private void drawCrack(float cx, float cy, float size, float grown, float alpha) {
-		if (grown <= 0) {
-			return;
-		}
-		int segments = CRACK_X.length - 1;
-		float reach = grown * segments;
-		for (int i = 0; i < segments && i < reach; i++) {
-			float part = Math.min(1, reach - i);
-			float x0 = cx + CRACK_X[i] * size, y0 = cy + size * 0.42f - size * 0.84f * i / segments;
-			float x1 = cx + CRACK_X[i + 1] * size, y1 = cy + size * 0.42f - size * 0.84f * (i + 1) / segments;
-			float len = (float) Math.hypot(x1 - x0, y1 - y0) * part, angle = MathUtils.atan2(y1 - y0, x1 - x0) * MathUtils.radDeg;
-			batch.setColor(0.08f, 0.02f, 0.02f, alpha);
-			batch.draw(assets.white, x0, y0 - CRACK_WIDTH / 2, 0, CRACK_WIDTH / 2, len, CRACK_WIDTH, 1, 1, angle, 0, 0, 1, 1, false, false);
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			batch.setColor(Palette.LAMP.r, Palette.LAMP.g, Palette.LAMP.b, alpha * grown);
-			batch.draw(assets.white, x0, y0 - 1, 0, 1, len, 2, 1, 1, angle, 0, 0, 1, 1, false, false);
-			batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-		}
-		batch.setColor(Color.WHITE);
-	}
 
 	private void drawFlashes() {
 		float light = door >= 0 ? DOOR_FLASH.progress(doorFor) : 0;
@@ -409,6 +407,12 @@ public class CampaignScreen extends BaseScreen {
 			paint.rect(0, 0, w, h, flash.set(0, 0, 0, 1 - MIST_IN.progress(unfoldFor)));
 			return;
 		}
+		if (entering != null && enterFor >= 0) {
+			Rectangle m = map.marker(entering);
+			float zoomIn = ZOOM_IN.progress(enterFor), scale = 1 + (ZOOM_SCALE - 1) * zoomIn, mx = m.x + m.width / 2, my = m.y + m.height / 2;
+			batch.setTransformMatrix(zoom.idt().translate(MathUtils.lerp(mx, w / 2, zoomIn), MathUtils.lerp(my, h / 2, zoomIn), 0)
+					.scale(scale, scale, 1).translate(-mx, -my, 0));
+		}
 		map.drawMap(0, NEAR, 1, 0);
 		float seals = SEALS.progress(unfoldFor), pulse = 0.8f + 0.2f * MathUtils.sin(shownFor * 2f);
 		map.drawTrail(progress, INKING.progress(unfoldFor));
@@ -428,13 +432,10 @@ public class CampaignScreen extends BaseScreen {
 		if (entering == null) {
 			sparks.draw(batch, assets.glow);
 		}
+		batch.setTransformMatrix(still);
 	}
 
 	private void drawHall(Campaign progress, Chapter c, float top) {
-		if (entering != null && enterFor >= 0) {
-			float grow = MathUtils.lerp(0.25f, 1, HALL_GROW.progress(enterFor));
-			batch.setTransformMatrix(zoom.idt().translate(w / 2, h / 2, 0).scale(grow, grow, 1).translate(-w / 2, -h / 2, 0));
-		}
 		if (door >= 0) {
 			Rectangle a = arches[door];
 			float pan = PAN.progress(doorFor), scale = 1 + (DIVE_SCALE - 1) * DIVE.progress(doorFor);
