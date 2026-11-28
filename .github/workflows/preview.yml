@@ -65,7 +65,7 @@ jobs:
           TAG="preview-${{ github.run_number }}"
           gh release create "$TAG" build/screenshots/*.png build/report/* --draft --target "$GITHUB_SHA" \
             --title "Preview ${{ github.run_number }} (${GITHUB_REF_NAME})" --notes "$(git log -1 --pretty=%s)"
-          # keep only the newest three previews
+          # keep only the newest three previews (another preview running alongside may have deleted one already)
           gh release list --limit 100 --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName' \
             | grep -E '^preview-[0-9]+$' | sort -t- -k2 -n -r | tail -n +4 \
-            | while read -r old; do gh release delete "$old" --yes; done
+            | while read -r old; do gh release delete "$old" --yes || true; done

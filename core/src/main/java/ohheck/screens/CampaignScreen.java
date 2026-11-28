@@ -21,11 +21,11 @@ import ohheck.campaign.Campaign;
 import ohheck.campaign.Chapter;
 import ohheck.campaign.Stage;
 import ohheck.campaign.TrickShots;
+import ohheck.fx.Corridor;
 import ohheck.fx.FallingCards;
 import ohheck.fx.Sparks;
 import ohheck.platform.Audio;
 import ohheck.players.Player;
-import ohheck.rules.Suit;
 import ohheck.ui.BaseScreen;
 import ohheck.ui.CardArt;
 import ohheck.ui.CardWipe;
@@ -34,80 +34,88 @@ import ohheck.ui.MenuChrome;
 import ohheck.ui.Palette;
 
 /*
- * The campaign as a hand of chapter cards: open chapters face up with a pip for each step done,
- * the rest face down, the chapter in play lifted and lit. A tapped chapter lays its four steps
- * (table, trick shots, final table, duel) on the felt like a trick. A chapter, and each step, opens with a
- * briefing of what is about to happen: a few pages in the tutorial's style, a picture above and a caption below.
- * Entering a chapter swings its doors open on a dark doorway of mist and sparkles, and the camera dives through
- * the arch and the mist into the chapter, where a first visit's briefing waits.
+ * The campaign. Arriving from the Play menu, the eye drops to a parchment map lying on the table (ChapterMap): a
+ * tavern for each chapter, marked by a wax seal, the trail between them inking itself in. A tapped tavern zooms the
+ * map down into the chapter: a hall of arched doors, one for each stage (table, trick shots, final table, duel). A
+ * tapped door swings open on a dark doorway of mist and sparkles and the camera dives through; the duel's door leads
+ * instead into a torchlit corridor walked to the champion. A chapter, and each stage, opens with a briefing of what
+ * is about to happen on a first visit: a few pages in the tutorial's style, a picture above and a caption below.
+ * Locked seals and doors jiggle their padlocks.
  */
 public class CampaignScreen extends BaseScreen {
 
-	private static final float PLAQUE_W = 200, PLAQUE_H = 300, PLAQUE_GAP = 54, PLAQUE_EMBLEM = 58, PADLOCK = 46, PATH_GEM = 18,
-			RISE_STAGGER = 0.08f, LIFT = 26;
-	private static final String HALL_TITLE = "Four tables, four champions", HALL_LINE = "Win each chapter's duel to open the next door.";
-	private static final String[] ROMAN = { "I", "II", "III", "IV" };
-	private static final float STEP_W = 136, STEP_H = STEP_W * 98 / 73, STEP_GAP = 36, PIP = 16, PIP_GAP = 24, ICON = 64;
+	private static final float PLAQUE_W = 200, PLAQUE_H = 300, PLAQUE_GAP = 54, PADLOCK = 46, RISE_STAGGER = 0.08f, LIFT = 26, ICON = 64,
+			STAGE_ICON = 70;
+	private static final String MAP_LINE = "Four taverns, four champions. Win each chapter's duel to open the road ahead.";
 	private static final float GLOW_W = 1.9f, GLOW_H = 1.6f;
 	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f);
 	private static final Tween LAYING = Tween.over(0.35f, Ease.OUT);
 	private static final float CAPTION_H = 112, STAGE_CAPTION_H = 136, CAPTION_W = 860, BIG_W = 170, BIG_H = BIG_W * 98 / 73, SMALL_W = 120,
 			SMALL_H = SMALL_W * 98 / 73, BIG_ICON = 84,
 			BUTTON_ROOM = 64, PLAYER_GAP = 24, PANEL_GAP = 34, HABIT_W = 640, HABIT_H = 62;
-	private static final int SHOTS = 1, CHAMPION = 4;
-	private static final String[] STEPS = { "Table", "Trick shots", "Final table", "Duel" };
+	private static final int SHOTS = 1, DUEL = 3, CHAMPION = 4;
+	private static final String[] STEPS = { "Table", "Trick shots", "Final table", "Duel" },
+			STAGE_LABELS = { "STAGE 1", "STAGE 2", "STAGE 3", "STAGE 4" };
 	private static final Stage[] STAGE_AT = { Stage.TABLE, null, Stage.FINAL, Stage.DUEL };
+
+	private static final float UNFOLD_LENGTH = 1.7f, TILT_FROM = 64f, FAR = 1250f, NEAR = 700f;
+	private static final Tween TILT = Tween.over(1.2f, Ease.OUT), MAP_LIGHT = Tween.over(0.6f, Ease.SMOOTH),
+			INKING = Tween.over(0.7f, Ease.SMOOTH).after(1.0f), SEALS = Tween.over(0.4f, Ease.OUT).after(1.2f);
+	private static final float ENTER_WAIT = UNFOLD_LENGTH + 0.4f, ENTER_LENGTH = 0.9f, ZOOM_SCALE = 7f, ARRIVE = 0.45f;
+	private static final Tween ZOOM = Tween.over(ENTER_LENGTH, Ease.IN), ZOOM_PAN = Tween.over(0.7f, Ease.SMOOTH),
+			ENTER_FLASH = Tween.over(0.2f, Ease.IN).after(ENTER_LENGTH - 0.2f);
+	private static final float DOOR_LENGTH = 1.0f, DIVE_SCALE = 9f, DOOR_SWING = 80f;
+	private static final Tween DOORS = Tween.over(0.5f, Ease.SMOOTH), DIVE = Tween.over(0.6f, Ease.IN).after(DOOR_LENGTH - 0.6f),
+			DOOR_FLASH = Tween.over(0.2f, Ease.IN).after(DOOR_LENGTH - 0.2f), PAN = Tween.over(0.7f, Ease.SMOOTH).after(0.2f);
+	private static final float WALK_LENGTH = 2.4f;
+	private static final Tween WALK = Tween.over(WALK_LENGTH - 0.1f, Ease.SMOOTH).after(0.1f), WALK_IN = Tween.over(0.5f, Ease.OUT),
+			WALK_FLASH = Tween.over(0.3f, Ease.IN).after(WALK_LENGTH - 0.3f);
+	private static final Tween JIGGLE = Tween.over(0.45f, Ease.LINEAR);
+	private static final float JIGGLE_TURNS = 7, JIGGLE_DEGREES = 14, JIGGLE_SHIFT = 5;
+	private static final float DOORWAY_DEPTH = 2000f, DOORWAY_FILL = 0.9f, STREAK_STEP = 1 / 30f, DOORWAY_INSET = 12, DOORWAY_ARCH = 55;
+	private static final float REVEAL_WAIT = CardWipe.LENGTH + 0.3f, REVEAL_LEN = 1.6f, REVEAL_FLIP_FROM = 0.35f, REVEAL_FLIP = 0.5f;
+	private static final Tween RISE_IN = Tween.over(0.45f, Ease.OUT);
+	private static final String INFO = "Chapter info", NEXT = "Next", DONE = "Done";
+	private static final float INFO_W = 210;
 
 	private final MenuChrome chrome = new MenuChrome(paint);
 	private final CardArt art;
-	private final Rectangle backButton = new Rectangle();
-	private final Rectangle[] chapterCards = new Rectangle[Chapter.values().length];
-	private final Rectangle[] stepCards = new Rectangle[STEPS.length];
-	private final Rectangle goButton = new Rectangle();
-	private final Rectangle[] playerCards = { new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle() };
-	private final StringBuilder pageCount = new StringBuilder();
-	private Chapter chosen;
-	private float chosenFor, briefedFor;
-	private int page, rival;
-	private float wipeFor = CardWipe.LENGTH, revealFor = REVEAL_LEN, hallFor;
-	private static final Tween RISE_IN = Tween.over(0.45f, Ease.OUT);
-	private Chapter revealing;
-	private final Sparks sparks = new Sparks();
-	private static final float REVEAL_WAIT = CardWipe.LENGTH + 0.3f, REVEAL_LEN = 1.6f, REVEAL_FLIP_FROM = 0.35f, REVEAL_FLIP = 0.5f;
-	private String beatLine = "";
-	private final StringBuilder stageText = new StringBuilder();
-	private Briefing briefing;
-	private final List<Briefing> info = new ArrayList<Briefing>();
-	private final Rectangle infoButton = new Rectangle();
-	private static final String INFO = "Chapter info", NEXT = "Next", DONE = "Done";
-	private static final float INFO_W = 210;
-	private Runnable afterBriefing;
-	private static final float ENTER_WAIT = 0.9f, ENTER_LENGTH = 1.0f, DIVE_SCALE = 9f, DOOR_SWING = 80f, ARRIVE = 0.45f;
-	private static final Tween DOORS = Tween.over(0.5f, Ease.SMOOTH), DIVE = Tween.over(0.6f, Ease.IN).after(ENTER_LENGTH - 0.6f),
-			ENTER_FLASH = Tween.over(0.2f, Ease.IN).after(ENTER_LENGTH - 0.2f), PAN = Tween.over(0.7f, Ease.SMOOTH).after(0.2f);
-	private static final Tween JIGGLE = Tween.over(0.45f, Ease.LINEAR);
-	private static final float JIGGLE_TURNS = 7, JIGGLE_DEGREES = 14, JIGGLE_SHIFT = 5;
-	private Chapter entering, jiggling;
-	private float jiggleFor = JIGGLE.end();
-	private float enterFor, arrivedFor = ARRIVE;
-	private static final float DOORWAY_DEPTH = 2000f, DOORWAY_FILL = 0.9f, STREAK_STEP = 1 / 30f, DOORWAY_INSET = 12, DOORWAY_ARCH = 55;
-	private final Rectangle opening = new Rectangle();
-	private final Matrix4 dive = new Matrix4(), still = new Matrix4(), doorwayFit = new Matrix4();
+	private final ChapterMap map;
+	private final Corridor corridor;
 	private final FallingCards doorway;
+	private final Rectangle backButton = new Rectangle(), goButton = new Rectangle(), infoButton = new Rectangle(), opening = new Rectangle();
+	private final Rectangle[] arches = new Rectangle[STEPS.length];
+	private final Rectangle[] playerCards = { new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle(), new Rectangle() };
+	private final StringBuilder pageCount = new StringBuilder(), stageText = new StringBuilder();
+	private final List<Briefing> info = new ArrayList<Briefing>();
+	private final Sparks sparks = new Sparks();
+	private final Matrix4 zoom = new Matrix4(), still = new Matrix4(), doorwayFit = new Matrix4();
 	private final Color flash = new Color();
+	private Chapter chosen, entering, revealing, jigglingSeal;
+	private int page, rival, door = -1, jigglingArch = -1;
+	private float chosenFor, briefedFor, unfoldFor = UNFOLD_LENGTH, enterFor, arrivedFor = ARRIVE, doorFor, walkFor = -1,
+			jiggleFor = JIGGLE.end(), wipeFor = CardWipe.LENGTH, revealFor = REVEAL_LEN;
+	private String beatLine = "";
+	private Briefing briefing;
+	private Runnable afterBriefing;
 
 	public CampaignScreen(GameHost game) {
 		super(game);
 		art = new CardArt(batch, assets);
+		map = new ChapterMap(paint);
+		corridor = new Corridor(assets);
 		Long seed = game.options().seed;
 		doorway = new FallingCards(assets, seed == null ? new Random() : new Random(seed), true);
 		doorway.setFalling(false);
-		for (int i = 0; i < chapterCards.length; i++) {
-			chapterCards[i] = new Rectangle();
+		for (int i = 0; i < arches.length; i++) {
+			arches[i] = new Rectangle();
 		}
-		for (int i = 0; i < stepCards.length; i++) {
-			stepCards[i] = new Rectangle();
-		}
+	}
+
+	public void unfoldMap() {
+		chosen = null;
+		unfoldFor = 0;
+		game.audio().play(Audio.Effect.PAPER);
 	}
 
 	public void openChapter(Chapter c) {
@@ -117,42 +125,10 @@ public class CampaignScreen extends BaseScreen {
 		briefing = null;
 	}
 
-	public void reveal(Chapter next) {
-		chosen = null;
-		briefing = null;
-		revealing = next;
-		revealFor = -REVEAL_WAIT;
-	}
-
-	public void wipeIn() {
-		wipeFor = 0;
-	}
-
-	public void brief(Briefing b, Runnable then) {
-		briefing = b;
-		afterBriefing = then;
-		briefedFor = 0;
-		page = 0;
-		rival = 0;
-		stageText.setLength(0);
-		for (Briefing.Page p : b.pages()) {
-			stageText.append(stageText.length() > 0 ? " " : "").append(p.line());
-		}
-	}
-
-	private void closeOrTurnBack() {
-		if (!briefing.isStage() && page > 0) {
-			page--;
-			rival = 0;
-		} else {
-			briefing = null;
-		}
-	}
-
 	public void enter(Chapter c) {
 		entering = c;
 		enterFor = 0;
-		game.audio().play(Audio.Effect.DOOR);
+		game.audio().play(Audio.Effect.PAPER);
 	}
 
 	public void enterOnArrival(Chapter c) {
@@ -170,24 +146,30 @@ public class CampaignScreen extends BaseScreen {
 		}
 	}
 
-	public void briefTable(Chapter c) {
-		game.settings().seeFirstTime(c.name() + "." + Stage.TABLE.name());
-		brief(Briefing.table(c), () -> game.playCampaign(c, Stage.TABLE));
+	public void openStage(int step) {
+		door = step;
+		doorFor = 0;
+		doorway.fly(0, 0);
+		game.audio().play(Audio.Effect.DOOR);
 	}
 
-	private Briefing stepBriefing(Campaign progress, Chapter c, int step) {
-		Stage s = STAGE_AT[step];
-		return s == null ? Briefing.trickShots(c, progress) : s == Stage.TABLE ? Briefing.table(c) : s == Stage.FINAL ? Briefing.finalTable(c)
-				: Briefing.duel(c);
-	}
-
-	private void playStep(Campaign progress, Chapter c, int step) {
-		Stage s = STAGE_AT[step];
-		if (s == null) {
-			game.playTrickShot(progress.nextTrickShot(c));
+	private void throughTheDoor() {
+		int step = door;
+		door = -1;
+		if (step == DUEL) {
+			walkFor = 0;
+			corridor.walk(0);
+			game.audio().play(Audio.Effect.CRACKLE);
 		} else {
-			game.playCampaign(c, s);
+			arrivedFor = 0;
+			openStep(game.records().campaign(), chosen, step);
 		}
+	}
+
+	private void endOfTheCorridor() {
+		walkFor = -1;
+		arrivedFor = 0;
+		openStep(game.records().campaign(), chosen, DUEL);
 	}
 
 	private void openStep(Campaign progress, Chapter c, int step) {
@@ -199,123 +181,239 @@ public class CampaignScreen extends BaseScreen {
 		}
 	}
 
-	private void showInfo(Campaign progress, Chapter c) {
-		info.clear();
-		info.add(Briefing.chapter(c));
-		for (int step = 0; step < STEPS.length; step++) {
-			info.add(stepBriefing(progress, c, step));
-		}
-		nextInfo();
-	}
-
-	private void nextInfo() {
-		if (info.isEmpty()) {
-			briefing = null;
-			return;
-		}
-		Briefing b = info.remove(0);
-		brief(new Briefing(b.tag(), b.chapter(), info.isEmpty() ? DONE : NEXT, b.pages()), this::nextInfo);
-	}
-
-	private boolean stepOpen(Campaign progress, Chapter c, int step) {
-		return STAGE_AT[step] == null ? progress.shotsOpen(c) : progress.open(c, STAGE_AT[step]);
-	}
-
-	private boolean stepDone(Campaign progress, Chapter c, int step) {
-		return STAGE_AT[step] == null ? progress.allMade(c) : progress.won(c, STAGE_AT[step]);
-	}
-
-	public void go() {
-		Runnable then = afterBriefing;
-		briefing = null;
-		then.run();
+	private boolean busy() {
+		return entering != null || door >= 0 || walkFor >= 0 || !TILT.done(unfoldFor);
 	}
 
 	@Override
 	public void show() {
 		super.show();
 		game.audio().startMusic();
-		hallFor = 0;
+		chosenFor = 0;
+		walkFor = -1;
+		door = -1;
 	}
 
 	@Override
 	protected void update(float step) {
-		shownFor += step * game.options().speed;
-		chosenFor += step * game.options().speed;
-		briefedFor += step * game.options().speed;
-		wipeFor += step * game.options().speed;
+		float dt = step * game.options().speed;
+		shownFor += dt;
+		chosenFor += dt;
+		briefedFor += dt;
+		wipeFor += dt;
+		unfoldFor += dt;
+		arrivedFor += dt;
+		jiggleFor += dt;
 		float before = revealFor;
-		revealFor += step * game.options().speed;
-		hallFor += step * game.options().speed;
-		arrivedFor += step * game.options().speed;
-		jiggleFor += step * game.options().speed;
+		revealFor += dt;
+		sparks.step(dt);
 		if (entering != null) {
-			float was = enterFor;
-			enterFor += step * game.options().speed;
-			if (was < 0 && enterFor >= 0) {
-				game.audio().play(Audio.Effect.DOOR);
-			}
-			float depth = DIVE.progress(enterFor) * DOORWAY_DEPTH;
-			doorway.fly(depth, depth - DIVE.progress(enterFor - STREAK_STEP) * DOORWAY_DEPTH);
-			doorway.update(step * game.options().speed, w, w * PLAQUE_H / PLAQUE_W);
+			enterFor += dt;
 			if (enterFor >= ENTER_LENGTH) {
 				arrive();
 			}
 		}
-		if (revealing != null && before < 0 && revealFor >= 0) {
-			game.audio().play(Audio.Effect.DOOR);
+		if (door >= 0) {
+			doorFor += dt;
+			float depth = DIVE.progress(doorFor) * DOORWAY_DEPTH;
+			doorway.fly(depth, depth - DIVE.progress(doorFor - STREAK_STEP) * DOORWAY_DEPTH);
+			doorway.update(dt, w, w * PLAQUE_H / PLAQUE_W);
+			if (doorFor >= DOOR_LENGTH) {
+				throughTheDoor();
+			}
 		}
-		sparks.step(step * game.options().speed);
+		if (walkFor >= 0) {
+			walkFor += dt;
+			corridor.update(dt);
+			corridor.walk(WALK.progress(walkFor));
+			if (walkFor >= WALK_LENGTH) {
+				endOfTheCorridor();
+			}
+		}
 		float half = REVEAL_FLIP_FROM + REVEAL_FLIP / 2;
 		if (revealing != null && before < half && revealFor >= half) {
-			Rectangle r = chapterCards[revealing.ordinal()];
+			Rectangle r = map.marker(revealing);
 			sparks.burst(r.x + r.width / 2, r.y + r.height / 2, 90);
+			game.audio().play(Audio.Effect.LATCH);
 		}
 	}
 
 	@Override
 	public boolean animating() {
-		return entering != null || arrivedFor < ARRIVE || !JIGGLE.done(jiggleFor) || chosen == null && briefing == null || chosen != null && !LAYING.done(chosenFor) || briefing != null && !LAYING.done(briefedFor) || wipeFor < CardWipe.LENGTH || revealing != null && revealFor < REVEAL_LEN || sparks.active();
+		return true;
 	}
 
 	@Override
 	protected void draw() {
-		ScreenUtils.clear(Palette.BG);
+		if (walkFor >= 0) {
+			drawCorridor();
+			return;
+		}
+		ScreenUtils.clear(Color.BLACK);
 		begin();
 		Campaign progress = game.records().campaign();
-		if (entering != null) {
-			Rectangle door = chapterCards[entering.ordinal()];
-			float pan = PAN.progress(enterFor), scale = 1 + (DIVE_SCALE - 1) * DIVE.progress(enterFor);
-			float cx = door.x + door.width / 2, cy = door.y + door.height * 0.45f;
-			batch.setTransformMatrix(dive.idt().translate(MathUtils.lerp(cx, w / 2, pan), MathUtils.lerp(cy, h / 2, pan), 0).scale(scale, scale, 1)
-					.translate(-cx, -cy, 0));
-		}
-		batch.draw(assets.table, 0, 0, w, h);
+		float top = h - MenuChrome.HEADER_H;
+		map.layout(w, top);
 		if (chosen == null) {
-			drawHand(progress);
-			batch.setTransformMatrix(still);
+			drawMap(progress, top);
 		} else {
-			drawChapter(progress, chosen);
+			drawHall(progress, chosen, top);
 		}
 		if (briefing != null) {
 			drawBriefing();
 		}
 		chrome.header(chosen == null ? "Campaign" : "Chapter " + chosen.number(), backButton, w, h);
-		if (chosen != null && briefing == null) {
+		if (chosen != null && briefing == null && door < 0) {
 			paint.button(infoButton, INFO, w - 30 - INFO_W / 2, h - MenuChrome.HEADER_H + (MenuChrome.HEADER_H - 44) / 2, INFO_W, 44,
 					assets.buttonAlt);
 		} else {
 			infoButton.set(0, 0, 0, 0);
 		}
 		CardWipe.draw(batch, assets.back(), w, h, wipeFor);
-		if (entering != null) {
-			float light = DIVE.progress(enterFor) * (1 - ENTER_FLASH.progress(enterFor)), size = w * (0.2f + light * 1.2f);
-			paint.glow(w / 2 - size / 2, h / 2 - size * 0.35f, size, size * 0.7f, Palette.LAMP, 0.45f * light);
-			paint.rect(0, 0, w, h, flash.set(Palette.FLASH).mul(1, 1, 1, ENTER_FLASH.progress(enterFor)));
+		drawFlashes();
+		batch.end();
+	}
+
+	private void drawFlashes() {
+		float light = entering != null ? ENTER_FLASH.progress(enterFor) : door >= 0 ? DOOR_FLASH.progress(doorFor) : 0;
+		if (door >= 0) {
+			float glow = DIVE.progress(doorFor) * (1 - light), size = w * (0.2f + glow * 1.2f);
+			paint.glow(w / 2 - size / 2, h / 2 - size * 0.35f, size, size * 0.7f, Palette.LAMP, 0.45f * glow);
+		}
+		if (light > 0) {
+			paint.rect(0, 0, w, h, flash.set(Palette.FLASH).mul(1, 1, 1, light));
 		} else if (arrivedFor < ARRIVE) {
 			float fade = 1 - arrivedFor / ARRIVE;
 			paint.rect(0, 0, w, h, flash.set(Palette.FLASH).mul(1, 1, 1, fade * fade));
 		}
+	}
+
+	private void drawMap(Campaign progress, float top) {
+		if (entering != null && enterFor > 0) {
+			Rectangle m = map.marker(entering);
+			float pan = ZOOM_PAN.progress(enterFor), scale = 1 + (ZOOM_SCALE - 1) * ZOOM.progress(enterFor);
+			float cx = m.x + m.width / 2, cy = m.y + m.height / 2;
+			batch.setTransformMatrix(zoom.idt().translate(MathUtils.lerp(cx, w / 2, pan), MathUtils.lerp(cy, h / 2, pan), 0).scale(scale, scale, 1)
+					.translate(-cx, -cy, 0));
+		}
+		float tilt = TILT_FROM * (1 - TILT.progress(unfoldFor)), distance = MathUtils.lerp(FAR, NEAR, TILT.progress(unfoldFor));
+		if (!TILT.done(unfoldFor)) {
+			float table = 0.45f * MAP_LIGHT.progress(unfoldFor);
+			batch.setColor(table, table, table, 1);
+			batch.draw(assets.table, 0, 0, w, h);
+			batch.setColor(Color.WHITE);
+		}
+		map.drawMap(tilt, distance, MAP_LIGHT.progress(unfoldFor));
+		if (TILT.done(unfoldFor)) {
+			float seals = SEALS.progress(unfoldFor), pulse = 0.8f + 0.2f * MathUtils.sin(shownFor * 2f);
+			map.drawTrail(progress, INKING.progress(unfoldFor));
+			Chapter lit = current(progress);
+			for (Chapter c : Chapter.values()) {
+				boolean showing = c == revealing && revealFor < REVEAL_LEN;
+				float opened = !progress.unlocked(c) ? 0
+						: showing ? MathUtils.clamp((revealFor - REVEAL_FLIP_FROM) / REVEAL_FLIP, 0, 1) : 1;
+				if (progress.open(c)) {
+					paint.pressable(map.marker(c));
+				}
+				map.drawMarker(progress, c, seals, opened, c == jigglingSeal ? JIGGLE.raw(jiggleFor) : 1, c == lit, pulse);
+			}
+			paint.centred(paint.ui(1.0f, Palette.MAP_INK, seals), MAP_LINE, w / 2, top - 30);
+			sparks.draw(batch, assets.glow);
+		}
+		batch.setTransformMatrix(still);
+	}
+
+	private void drawHall(Campaign progress, Chapter c, float top) {
+		if (door >= 0) {
+			Rectangle a = arches[door];
+			float pan = PAN.progress(doorFor), scale = 1 + (DIVE_SCALE - 1) * DIVE.progress(doorFor);
+			float cx = a.x + a.width / 2, cy = a.y + a.height * 0.45f;
+			batch.setTransformMatrix(zoom.idt().translate(MathUtils.lerp(cx, w / 2, pan), MathUtils.lerp(cy, h / 2, pan), 0).scale(scale, scale, 1)
+					.translate(-cx, -cy, 0));
+		}
+		batch.draw(assets.table, 0, 0, w, h);
+		paint.centred(paint.serif(1.5f, Palette.GOLD_LIGHT), c.mode.label, w / 2, top - 22);
+		paint.centred(paint.ui(0.95f, Palette.MUTED), beatLine, w / 2, top - 52);
+		float span = STEPS.length * PLAQUE_W + (STEPS.length - 1) * PLAQUE_GAP, x0 = (w - span) / 2, base = (top - PLAQUE_H) / 2 - 14;
+		int lit = -1;
+		for (int i = 0; i < STEPS.length && lit < 0; i++) {
+			if (stepOpen(progress, c, i) && !stepDone(progress, c, i)) {
+				lit = i;
+			}
+		}
+		for (int i = 0; i < STEPS.length; i++) {
+			float rise = RISE_IN.progress(chosenFor - i * RISE_STAGGER), x = x0 + i * (PLAQUE_W + PLAQUE_GAP), y = base - (1 - rise) * 30;
+			boolean open = stepOpen(progress, c, i);
+			arches[i].set(x, y, PLAQUE_W, PLAQUE_H);
+			paint.pressable(arches[i]);
+			if (i == lit) {
+				glow(x, y, PLAQUE_W, PLAQUE_H);
+			}
+			if (i == door) {
+				drawOpeningDoors(x, y, rise);
+				archFace(progress, c, i, x, y, true, rise * Math.max(0, 1 - 3 * DOORS.progress(doorFor)));
+				continue;
+			}
+			batch.setColor(1, 1, 1, rise);
+			batch.draw(open ? assets.plaque : assets.plaqueLocked, x, y, PLAQUE_W, PLAQUE_H);
+			batch.setColor(Color.WHITE);
+			archFace(progress, c, i, x, y, open, rise);
+		}
+		batch.setTransformMatrix(still);
+	}
+
+	private void archFace(Campaign progress, Chapter c, int step, float x, float y, boolean open, float alpha) {
+		float cx = x + PLAQUE_W / 2, iy = y + PLAQUE_H * 0.46f;
+		paint.centred(paint.ui(0.8f, Palette.GOLD, alpha), STAGE_LABELS[step], cx, y + PLAQUE_H - 40);
+		paint.centred(paint.serif(1.4f, open ? Palette.GOLD_LIGHT : Palette.MUTED, alpha), STEPS[step], cx, y + PLAQUE_H - 66);
+		if (open) {
+			batch.setColor(1, 1, 1, alpha);
+			batch.draw(stepIcon(step), cx - STAGE_ICON / 2, iy - STAGE_ICON / 2, STAGE_ICON, STAGE_ICON);
+			batch.setColor(Color.WHITE);
+			boolean done = stepDone(progress, c, step);
+			paint.centred(paint.ui(0.95f, done ? Palette.GOLD : Palette.CREAM, alpha), stepNote(progress, c, step), cx, y + 62);
+			return;
+		}
+		float shake = step == jigglingArch ? 1 - JIGGLE.progress(jiggleFor) : 0;
+		float swing = MathUtils.sin(JIGGLE.raw(jiggleFor) * JIGGLE_TURNS * MathUtils.PI2) * shake;
+		int tw = assets.padlock.getWidth(), th = assets.padlock.getHeight();
+		batch.setColor(1, 1, 1, alpha);
+		batch.draw(assets.padlock, cx - PADLOCK / 2 + swing * JIGGLE_SHIFT, iy - PADLOCK / 2, PADLOCK / 2, PADLOCK, PADLOCK, PADLOCK, 1, 1,
+				swing * JIGGLE_DEGREES, 0, 0, tw, th, false, false);
+		batch.setColor(Color.WHITE);
+		paint.textIn(paint.ui(0.85f, Palette.MUTED, alpha), step == DUEL ? "Win the final table" : "Win the table first", x + 16, y + 52,
+				PLAQUE_W - 32, 20);
+	}
+
+	private void drawOpeningDoors(float x, float y, float alpha) {
+		float open = DOORS.progress(doorFor), leaf = PLAQUE_W / 2 * MathUtils.cosDeg(open * DOOR_SWING);
+		int tw = assets.plaque.getWidth(), th = assets.plaque.getHeight();
+		batch.setColor(0.05f, 0.04f, 0.04f, alpha);
+		batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
+		float fit = PLAQUE_W * DOORWAY_FILL / w;
+		boolean clipped = clipTo(opening.set(x + DOORWAY_INSET, y + DOORWAY_INSET, PLAQUE_W - 2 * DOORWAY_INSET,
+				PLAQUE_H - DOORWAY_INSET - DOORWAY_ARCH));
+		doorwayFit.set(batch.getTransformMatrix()).translate(x + PLAQUE_W / 2, y + PLAQUE_H / 2, 0).scale(fit, fit, 1);
+		batch.setTransformMatrix(doorwayFit);
+		doorway.drawMist(batch, 0, 0);
+		doorway.draw(batch, 0, 0);
+		batch.setTransformMatrix(zoom);
+		if (clipped) {
+			unclip();
+		}
+		float shade = 1 - 0.45f * open;
+		batch.setColor(shade, shade, shade, alpha);
+		batch.draw(assets.plaque, x, y, leaf, PLAQUE_H, 0, 0, tw / 2, th, false, false);
+		batch.draw(assets.plaque, x + PLAQUE_W - leaf, y, leaf, PLAQUE_H, tw / 2, 0, tw / 2, th, false, false);
+		batch.setColor(Color.WHITE);
+	}
+
+	private void drawCorridor() {
+		ScreenUtils.clear(Color.BLACK);
+		begin();
+		corridor.draw(batch, w, h);
+		float in = 1 - WALK_IN.progress(walkFor);
+		paint.rect(0, 0, w, h, flash.set(Palette.FLASH).mul(1, 1, 1, Math.max(in * in, WALK_FLASH.progress(walkFor))));
 		batch.end();
 	}
 
@@ -419,10 +517,6 @@ public class CampaignScreen extends BaseScreen {
 		}
 	}
 
-	private Texture stepIcon(int step) {
-		return step == SHOTS ? assets.stepShots : STAGE_AT[step] == Stage.DUEL ? assets.stepDuel : assets.stepTable;
-	}
-
 	private void bigCard(float cx, float cy, Texture icon, String label, float a) {
 		float x = cx - BIG_W / 2, y = cy - BIG_H / 2;
 		glow(x, y, BIG_W, BIG_H);
@@ -444,172 +538,6 @@ public class CampaignScreen extends BaseScreen {
 		paint.textIn(paint.serif(1.1f, Palette.GOLD_LIGHT, a), label, x, y + 16, SMALL_W, 24);
 	}
 
-	private Chapter current(Campaign progress) {
-		for (Chapter c : Chapter.values()) {
-			if (progress.open(c) && !progress.cleared(c)) {
-				return c;
-			}
-		}
-		return null;
-	}
-
-	private void drawHand(Campaign progress) {
-		Chapter[] all = Chapter.values();
-		float top = h - MenuChrome.HEADER_H, span = all.length * PLAQUE_W + (all.length - 1) * PLAQUE_GAP, x0 = (w - span) / 2;
-		float base = (top - PLAQUE_H) / 2 - 6, pathY = base + PLAQUE_H * 0.42f;
-		Chapter lit = current(progress);
-		paint.centred(paint.serif(1.5f, Palette.GOLD_LIGHT), HALL_TITLE, w / 2, top - 22);
-		paint.centred(paint.ui(0.95f, Palette.MUTED), HALL_LINE, w / 2, top - 52);
-		for (int i = 0; i + 1 < all.length; i++) {
-			float from = x0 + i * (PLAQUE_W + PLAQUE_GAP) + PLAQUE_W, mid = from + PLAQUE_GAP / 2;
-			Color line = progress.cleared(all[i]) ? Palette.GOLD : Palette.MUTED;
-			paint.rect(from, pathY - 1, PLAQUE_GAP, 2, line);
-			batch.setColor(line);
-			batch.draw(assets.emblem(Suit.DIAMONDS), mid - PATH_GEM / 2, pathY - PATH_GEM / 2, PATH_GEM, PATH_GEM);
-			batch.setColor(Color.WHITE);
-		}
-		for (int i = 0; i < all.length; i++) {
-			Chapter c = all[i];
-			boolean showing = c == revealing && revealFor < REVEAL_LEN;
-			float k = showing ? MathUtils.clamp(revealFor / REVEAL_LEN, 0, 1) : 0;
-			float rise = RISE_IN.progress(hallFor - i * RISE_STAGGER);
-			float x = x0 + i * (PLAQUE_W + PLAQUE_GAP), y = base;
-			chapterCards[i].set(x, y, PLAQUE_W, PLAQUE_H);
-			if (progress.open(c)) {
-				paint.pressable(chapterCards[i]);
-			}
-			if (showing && revealFor > 0) {
-				pourLight(x, y, k);
-			}
-			if (c == lit || showing && k > 0) {
-				glow(x, y, PLAQUE_W, PLAQUE_H);
-			}
-			float opened = !progress.unlocked(c) ? 0 : showing ? MathUtils.clamp((revealFor - REVEAL_FLIP_FROM) / REVEAL_FLIP, 0, 1) : 1;
-			if (c == entering) {
-				drawOpeningDoors(x, y, rise);
-				plaqueFace(progress, c, x, y, 1, rise * Math.max(0, 1 - 3 * DOORS.progress(enterFor)));
-				continue;
-			}
-			if (opened < 1) {
-				batch.setColor(1, 1, 1, rise);
-				batch.draw(assets.plaqueLocked, x, y, PLAQUE_W, PLAQUE_H);
-			}
-			if (opened > 0) {
-				batch.setColor(1, 1, 1, rise * opened);
-				batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
-			}
-			batch.setColor(Color.WHITE);
-			plaqueFace(progress, c, x, y, opened, rise);
-		}
-		sparks.draw(batch, assets.glow);
-		paint.centred(paint.ui(1.0f, Palette.MUTED), "Tap a chapter", w / 2, base - 34);
-	}
-
-	private void plaqueFace(Campaign progress, Chapter c, float x, float y, float opened, float alpha) {
-		float cx = x + PLAQUE_W / 2, shut = 1 - opened, ey = y + PLAQUE_H * 0.44f;
-		paint.centred(paint.ui(0.8f, Palette.GOLD, alpha), "CHAPTER", cx, y + PLAQUE_H - 40);
-		paint.centred(paint.serif(2.4f, opened > 0 ? Palette.GOLD_LIGHT : Palette.MUTED, alpha), ROMAN[c.ordinal()], cx, y + PLAQUE_H - 64);
-		if (opened > 0) {
-			batch.setColor(1, 1, 1, alpha * opened);
-			batch.draw(assets.emblem(c.emblem), cx - PLAQUE_EMBLEM / 2, ey - PLAQUE_EMBLEM / 2, PLAQUE_EMBLEM, PLAQUE_EMBLEM);
-			batch.setColor(Color.WHITE);
-			paint.centred(paint.serif(1.35f, Palette.GOLD_LIGHT, alpha * opened), c.mode.label, cx, y + 86);
-			paint.centred(paint.ui(0.85f, Palette.CREAM, alpha * opened), "vs " + c.champion().name, cx, y + 60);
-			batch.setColor(1, 1, 1, alpha * opened);
-			pips(cx, y + 22, progress.won(c, Stage.TABLE), progress.allMade(c), progress.won(c, Stage.FINAL), progress.cleared(c));
-			batch.setColor(Color.WHITE);
-		}
-		if (shut > 0) {
-			float lock = PADLOCK * (1 + opened * 0.8f), shake = c == jiggling ? 1 - JIGGLE.progress(jiggleFor) : 0;
-			float swing = MathUtils.sin(JIGGLE.raw(jiggleFor) * JIGGLE_TURNS * MathUtils.PI2) * shake;
-			int tw = assets.padlock.getWidth(), th = assets.padlock.getHeight();
-			batch.setColor(1, 1, 1, alpha * shut);
-			batch.draw(assets.padlock, cx - lock / 2 + swing * JIGGLE_SHIFT, ey - lock / 2, lock / 2, lock, lock, lock, 1, 1,
-					swing * JIGGLE_DEGREES, 0, 0, tw, th, false, false);
-			batch.setColor(Color.WHITE);
-			paint.centred(paint.ui(0.9f, Palette.MUTED, alpha * shut), "Locked", cx, y + 60);
-		}
-	}
-
-	private void drawOpeningDoors(float x, float y, float alpha) {
-		float open = DOORS.progress(enterFor), leaf = PLAQUE_W / 2 * MathUtils.cosDeg(open * DOOR_SWING);
-		int tw = assets.plaque.getWidth(), th = assets.plaque.getHeight();
-		batch.setColor(0.05f, 0.04f, 0.04f, alpha);
-		batch.draw(assets.plaque, x, y, PLAQUE_W, PLAQUE_H);
-		float fit = PLAQUE_W * DOORWAY_FILL / w;
-		boolean clipped = clipTo(opening.set(x + DOORWAY_INSET, y + DOORWAY_INSET, PLAQUE_W - 2 * DOORWAY_INSET,
-				PLAQUE_H - DOORWAY_INSET - DOORWAY_ARCH));
-		doorwayFit.set(batch.getTransformMatrix()).translate(x + PLAQUE_W / 2, y + PLAQUE_H / 2, 0).scale(fit, fit, 1);
-		batch.setTransformMatrix(doorwayFit);
-		doorway.drawMist(batch, 0, 0);
-		doorway.draw(batch, 0, 0);
-		batch.setTransformMatrix(dive);
-		if (clipped) {
-			unclip();
-		}
-		float shade = 1 - 0.45f * open;
-		batch.setColor(shade, shade, shade, alpha);
-		batch.draw(assets.plaque, x, y, leaf, PLAQUE_H, 0, 0, tw / 2, th, false, false);
-		batch.draw(assets.plaque, x + PLAQUE_W - leaf, y, leaf, PLAQUE_H, tw / 2, 0, tw / 2, th, false, false);
-		batch.setColor(Color.WHITE);
-	}
-
-	private void pourLight(float x, float y, float k) {
-		float a = MathUtils.sin(k * MathUtils.PI), bw = PLAQUE_W * (0.6f + 1.6f * k), bh = h * 1.3f;
-		paint.glow(x + PLAQUE_W / 2 - bw / 2, y + PLAQUE_H / 2 - bh / 2, bw, bh, Palette.SPARKLE, 0.55f * a);
-	}
-
-	private void pips(float cx, float y, boolean... done) {
-		for (int i = 0; i < done.length; i++) {
-			float px = cx + (i - (done.length - 1) / 2f) * PIP_GAP - PIP / 2;
-			batch.draw(done[i] ? assets.pipOn : assets.pipOff, px, y, PIP, PIP);
-		}
-	}
-
-	private void drawChapter(Campaign progress, Chapter c) {
-		float top = h - MenuChrome.HEADER_H;
-		paint.centred(paint.serif(1.5f, Palette.GOLD_LIGHT), c.mode.label, w / 2, top - 26);
-		paint.centred(paint.ui(1.0f, Palette.MUTED), beatLine, w / 2, top - 58);
-		float span = STEPS.length * STEP_W + (STEPS.length - 1) * STEP_GAP, x0 = (w - span) / 2;
-		float laid = LAYING.progress(chosenFor), y = (top - 80) / 2 - STEP_H / 2 + 20 - (1 - laid) * 40;
-		for (int i = 0; i < STEPS.length; i++) {
-			float x = x0 + i * (STEP_W + STEP_GAP);
-			stepCards[i].set(x, y, STEP_W, STEP_H);
-			if (stepOpen(progress, c, i)) {
-				paint.pressable(stepCards[i]);
-			}
-			art.shadow(x, y, STEP_W, STEP_H, 4);
-			boolean faceUp = stepOpen(progress, c, i);
-			batch.setColor(1, 1, 1, laid);
-			if (faceUp) {
-				drawStepFace(progress, c, i, x, y, laid);
-			} else {
-				batch.draw(assets.back(), x, y, STEP_W, STEP_H);
-				batch.setColor(Color.WHITE);
-				paint.textIn(paint.ui(0.9f, Palette.MUTED, laid), i == STEPS.length - 1 ? "Win the final table" : "Win the table first",
-						x - 20, y - 26, STEP_W + 40, 20);
-			}
-			batch.setColor(Color.WHITE);
-		}
-	}
-
-	private void drawStepFace(Campaign progress, Chapter c, int step, float x, float y, float alpha) {
-		batch.draw(assets.campaignFace, x, y, STEP_W, STEP_H);
-		batch.draw(stepIcon(step),
-				x + STEP_W / 2 - ICON / 2, y + STEP_H / 2 - ICON / 2 + 4, ICON, ICON);
-		batch.setColor(Color.WHITE);
-		paint.textIn(paint.serif(1.25f, Palette.GOLD_LIGHT, alpha), STEPS[step], x, y + STEP_H - 46, STEP_W, 28);
-		boolean done = stepDone(progress, c, step);
-		paint.textIn(paint.ui(0.9f, done ? Palette.GOLD : Palette.CREAM, alpha), stepNote(progress, c, step), x, y + 18, STEP_W, 20);
-	}
-
-	private String stepNote(Campaign progress, Chapter c, int step) {
-		if (step == SHOTS) {
-			return progress.madeIn(c) + " of " + TrickShots.of(c).size() + " made";
-		}
-		return stepDone(progress, c, step) ? "Won" : "Play";
-	}
-
 	private void glow(float x, float y, float cw, float ch) {
 		float gw = cw * GLOW_W, gh = ch * GLOW_H, pulse = 0.8f + 0.2f * MathUtils.sin(shownFor * 2f);
 		paint.glow(x + cw / 2 - gw / 2, y + ch / 2 - gh / 2, gw, gh, GLOW, GLOW.a * pulse);
@@ -628,9 +556,123 @@ public class CampaignScreen extends BaseScreen {
 		return i == CHAMPION ? c.champion() : c.rivals.at(i);
 	}
 
+	private Briefing stepBriefing(Campaign progress, Chapter c, int step) {
+		Stage s = STAGE_AT[step];
+		return s == null ? Briefing.trickShots(c, progress) : s == Stage.TABLE ? Briefing.table(c) : s == Stage.FINAL ? Briefing.finalTable(c)
+				: Briefing.duel(c);
+	}
+
+	private void playStep(Campaign progress, Chapter c, int step) {
+		Stage s = STAGE_AT[step];
+		if (s == null) {
+			game.playTrickShot(progress.nextTrickShot(c));
+		} else {
+			game.playCampaign(c, s);
+		}
+	}
+
+	private void showInfo(Campaign progress, Chapter c) {
+		info.clear();
+		info.add(Briefing.chapter(c));
+		for (int step = 0; step < STEPS.length; step++) {
+			info.add(stepBriefing(progress, c, step));
+		}
+		nextInfo();
+	}
+
+	private void nextInfo() {
+		if (info.isEmpty()) {
+			briefing = null;
+			return;
+		}
+		Briefing b = info.remove(0);
+		brief(new Briefing(b.tag(), b.chapter(), info.isEmpty() ? DONE : NEXT, b.pages()), this::nextInfo);
+	}
+
+	private boolean stepOpen(Campaign progress, Chapter c, int step) {
+		return STAGE_AT[step] == null ? progress.shotsOpen(c) : progress.open(c, STAGE_AT[step]);
+	}
+
+	private boolean stepDone(Campaign progress, Chapter c, int step) {
+		return STAGE_AT[step] == null ? progress.allMade(c) : progress.won(c, STAGE_AT[step]);
+	}
+
+	private String stepNote(Campaign progress, Chapter c, int step) {
+		if (step == SHOTS) {
+			return progress.madeIn(c) + " of " + TrickShots.of(c).size() + " made";
+		}
+		return stepDone(progress, c, step) ? "Won" : "Play";
+	}
+
+	private Texture stepIcon(int step) {
+		return step == SHOTS ? assets.stepShots : STAGE_AT[step] == Stage.DUEL ? assets.stepDuel : assets.stepTable;
+	}
+
+	public void brief(Briefing b, Runnable then) {
+		briefing = b;
+		afterBriefing = then;
+		briefedFor = 0;
+		page = 0;
+		rival = 0;
+		stageText.setLength(0);
+		for (Briefing.Page p : b.pages()) {
+			stageText.append(stageText.length() > 0 ? " " : "").append(p.line());
+		}
+	}
+
+	private void closeOrTurnBack() {
+		if (!briefing.isStage() && page > 0) {
+			page--;
+			rival = 0;
+		} else {
+			briefing = null;
+		}
+	}
+
+	public void briefTable(Chapter c) {
+		game.settings().seeFirstTime(c.name() + "." + Stage.TABLE.name());
+		brief(Briefing.table(c), () -> game.playCampaign(c, Stage.TABLE));
+	}
+
+	public void go() {
+		Runnable then = afterBriefing;
+		briefing = null;
+		then.run();
+	}
+
+	public void reveal(Chapter next) {
+		chosen = null;
+		briefing = null;
+		revealing = next;
+		revealFor = -REVEAL_WAIT;
+	}
+
+	public void wipeIn() {
+		wipeFor = 0;
+	}
+
+	private Chapter current(Campaign progress) {
+		for (Chapter c : Chapter.values()) {
+			if (progress.open(c) && !progress.cleared(c)) {
+				return c;
+			}
+		}
+		return null;
+	}
+
+	private void jiggle() {
+		jiggleFor = 0;
+		game.audio().play(Audio.Effect.TANKARD);
+		game.audio().buzz(Audio.Buzz.DOUBLE);
+	}
+
 	@Override
 	protected void tap(float x, float y) {
-		if (entering != null) {
+		if (walkFor >= 0) {
+			endOfTheCorridor();
+			return;
+		}
+		if (busy()) {
 			return;
 		}
 		if (briefing != null) {
@@ -662,37 +704,39 @@ public class CampaignScreen extends BaseScreen {
 		}
 		Campaign progress = game.records().campaign();
 		if (chosen == null) {
-			for (int i = 0; i < chapterCards.length; i++) {
-				Chapter c = Chapter.values()[i];
-				if (chapterCards[i].contains(x, y) && progress.open(c)) {
-					enter(c);
-					return;
-				}
-				if (chapterCards[i].contains(x, y)) {
-					jiggling = c;
-					jiggleFor = 0;
-					game.audio().play(Audio.Effect.TANKARD);
-					game.audio().buzz(Audio.Buzz.DOUBLE);
+			for (Chapter c : Chapter.values()) {
+				if (map.marker(c).contains(x, y)) {
+					if (progress.open(c)) {
+						enter(c);
+					} else {
+						jigglingSeal = c;
+						jiggle();
+					}
 					return;
 				}
 			}
 			return;
 		}
-		Chapter c = chosen;
 		if (infoButton.contains(x, y)) {
-			showInfo(progress, c);
+			showInfo(progress, chosen);
 			return;
 		}
 		for (int i = 0; i < STEPS.length; i++) {
-			if (stepCards[i].contains(x, y) && stepOpen(progress, c, i)) {
-				openStep(progress, c, i);
+			if (arches[i].contains(x, y)) {
+				if (stepOpen(progress, chosen, i)) {
+					openStage(i);
+				} else {
+					jigglingArch = i;
+					jiggle();
+				}
+				return;
 			}
 		}
 	}
 
 	@Override
 	protected void back() {
-		if (entering != null) {
+		if (busy()) {
 			return;
 		}
 		if (briefing != null) {
@@ -706,8 +750,17 @@ public class CampaignScreen extends BaseScreen {
 
 	@Override
 	public String stateTag() {
-		if (entering != null) {
+		if (!TILT.done(unfoldFor)) {
+			return "unfolding";
+		}
+		if (entering != null && enterFor > 0) {
 			return "entering";
+		}
+		if (door >= 0) {
+			return "door";
+		}
+		if (walkFor >= 0) {
+			return "corridor";
 		}
 		if (briefing != null) {
 			return briefing.tag();

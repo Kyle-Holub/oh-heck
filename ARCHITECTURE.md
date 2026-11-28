@@ -173,7 +173,7 @@ first six have no libGDX and test in plain JUnit.
 Table and Rules pages pick the difficulty and the game mode, where changing any rule makes the
 game Custom, and whose header deals the game), `PlayMenuScreen` (where to play, as a row of
 cards: Continue, Campaign, Custom game, High scores; a first visit asks "New to Oh Heck?" and can start the
-practice round; Campaign walks the torchlit 3D `Corridor` to the hall), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
+practice round), `PlayersScreen` (the Roster), `HighScoresScreen` (difficulty tabs down the left filter both the high scores and the
 statistics, a switch at the top of the panel picks which, high scores have a button per game
 mode, and Reset statistics sits in the header; the panel scrolls, clipped with `BaseScreen.clipTo`).
 
@@ -186,9 +186,11 @@ game's rules.
 
 The title's **Play** opens the Play screen: **Campaign**, **Custom game** (set up, then saved as it
 goes), High scores, and Continue when a custom game is in progress.
-The campaign (`CampaignScreen`) shows its chapters as a hall of four arched, gold-framed doors in a row,
-joined by a path (locked ones ash grey with a padlock; an unlock lifts the padlock and pours light); a chapter lays out its
-four steps in order: table play (a normal game against the chapter's rivals), trick shots
+The campaign (`CampaignScreen`) opens with the eye dropping onto a parchment map (`ChapterMap`, the map drawn by
+`make_art.py`), a tavern for each chapter marked by a wax seal along an inked trail (locked seals ash grey with a padlock
+that jiggles; an unlock breaks it with sparks). A tavern zooms into its chapter: a hall of four arched doors, one per
+stage, opening with a misty dive through the door; the duel's door leads instead down the torchlit 3D `Corridor`
+(`ohheck.fx`). The four stages in order: table play (a normal game against the chapter's rivals), trick shots
 (`TrickShotScreen`, a fixed deal with every hand face up, a restart and every card gliding
 into place; its title and goal pop up on the felt and fade, and the goal stays in the header; the players are
 unnamed, each bid shown with the table's icons on a small placard, the one to block outlined), open once the table is won as practice, a final table (the champion sits in for a rival, under the house rules
@@ -211,7 +213,7 @@ duel adds the house hand order, scoring and the twist to `RuleSet.DUEL`. A chapt
 page-by-page style (Back turns back a page; tapping a player shows their habit in a box below); each step opens with one
 page of panels, its text in a box beneath and Play in the corner. A chapter's briefing and each step's appear by themselves only
 the first time (`Settings.seeFirstTime`); a chapter's Chapter info button (top right) shows them all again in turn. All are worded from the rules and the roster. The
-campaign opens on chapter 1's briefing the first time. A new player learns in the practice round (above); finished
+campaign's first visit zooms into chapter 1 by itself, to its briefing. A new player learns in the practice round (above); finished
 from the first Play, it turns into the Chapter 1 card and opens the campaign. Options, Start fresh forgets everything (preferences,
 records, campaign) and replays the intro, as for a new player. The plan the campaign follows is `docs/CAMPAIGN.md`.
 
