@@ -82,7 +82,7 @@ public class CampaignScreen extends BaseScreen {
 	private Runnable afterBriefing;
 	private static final float ENTER_WAIT = 0.9f, ENTER_LENGTH = 1.0f, DIVE_SCALE = 9f, DOOR_SWING = 80f, ARRIVE = 0.45f;
 	private static final Tween DOORS = Tween.over(0.5f, Ease.SMOOTH), DIVE = Tween.over(0.6f, Ease.IN).after(ENTER_LENGTH - 0.6f),
-			ENTER_FLASH = Tween.over(0.2f, Ease.IN).after(ENTER_LENGTH - 0.2f);
+			ENTER_FLASH = Tween.over(0.2f, Ease.IN).after(ENTER_LENGTH - 0.2f), PAN = Tween.over(0.7f, Ease.SMOOTH).after(0.2f);
 	private Chapter entering;
 	private float enterFor, arrivedFor = ARRIVE;
 	private final Matrix4 dive = new Matrix4(), still = new Matrix4();
@@ -270,9 +270,9 @@ public class CampaignScreen extends BaseScreen {
 		Campaign progress = game.records().campaign();
 		if (entering != null) {
 			Rectangle door = chapterCards[entering.ordinal()];
-			float p = DIVE.progress(enterFor), scale = 1 + (DIVE_SCALE - 1) * p;
+			float pan = PAN.progress(enterFor), scale = 1 + (DIVE_SCALE - 1) * DIVE.progress(enterFor);
 			float cx = door.x + door.width / 2, cy = door.y + door.height * 0.45f;
-			batch.setTransformMatrix(dive.idt().translate(MathUtils.lerp(cx, w / 2, p), MathUtils.lerp(cy, h / 2, p), 0).scale(scale, scale, 1)
+			batch.setTransformMatrix(dive.idt().translate(MathUtils.lerp(cx, w / 2, pan), MathUtils.lerp(cy, h / 2, pan), 0).scale(scale, scale, 1)
 					.translate(-cx, -cy, 0));
 		}
 		batch.draw(assets.table, 0, 0, w, h);
