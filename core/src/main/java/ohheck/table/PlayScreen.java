@@ -103,7 +103,7 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	public static PlayScreen resume(GameHost game, SavedGame saved) {
-		return new PlayScreen(game, saved, null, null, false);
+		return new PlayScreen(game, saved, saved.chapter(), saved.stage(), false);
 	}
 
 	public static PlayScreen campaign(GameHost game, Chapter chapter, Stage stage) {
@@ -323,7 +323,9 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	private void resumeGame(SavedGame saved) {
 		level = saved.level();
 		seatPlayers(saved.players() != null ? saved.players() : Player.draw(level, streams.seating));
-		recorder.table(level, players, false);
+		if (chapter == null) {
+			recorder.table(level, players, false);
+		}
 		overlays.setMatch(saved.match());
 		flow.resume(saved.match());
 	}
@@ -459,14 +461,18 @@ public class PlayScreen extends BaseScreen implements TableScene, TableActions {
 	}
 
 	private void save() {
-		if (chapter != null || guide != null) {
+		if (guide != null) {
 			return;
 		}
 		if (isGameOver()) {
 			game.records().clearSavedGame();
 		} else {
-			game.records().saveGame(new SavedGame(match(), level, players));
+			game.records().saveGame(new SavedGame(match(), level, players, chapter, stage));
 		}
+	}
+
+	public boolean isCampaign() {
+		return chapter != null;
 	}
 
 	@Override

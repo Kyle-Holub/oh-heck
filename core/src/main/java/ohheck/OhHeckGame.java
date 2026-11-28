@@ -58,7 +58,7 @@ public class OhHeckGame extends Game implements GameHost {
 	private ChapterClearedScreen clearedScreen;
 	private PlayScreen practicePlay;
 	private final List<Screen> keptScreens = new ArrayList<Screen>();
-	private PlayScreen play, campaignPlay;
+	private PlayScreen play, campaignPlay, lastPlayed;
 
 	private final FramePacer pacer = new FramePacer();
 	private boolean capturing;
@@ -246,6 +246,7 @@ public class OhHeckGame extends Game implements GameHost {
 			campaignPlay.dispose();
 		}
 		campaignPlay = PlayScreen.campaign(this, chapter, stage);
+		lastPlayed = campaignPlay;
 		screens.replaceAll(title);
 		screens.open(campaignScreen);
 		screens.flashTo(campaignPlay);
@@ -286,20 +287,32 @@ public class OhHeckGame extends Game implements GameHost {
 			play.dispose();
 		}
 		play = PlayScreen.fresh(this);
+		lastPlayed = play;
 		screens.replaceAll(play);
 	}
 
 	@Override
 	public void continueGame() {
-		if (play == null) {
+		if (lastPlayed == null) {
 			SavedGame saved = records.savedGame(new Random());
 			if (saved == null) {
 				newGame();
 				return;
 			}
-			play = PlayScreen.resume(this, saved);
+			lastPlayed = PlayScreen.resume(this, saved);
+			if (saved.campaign()) {
+				campaignPlay = lastPlayed;
+			} else {
+				play = lastPlayed;
+			}
 		}
-		screens.replaceAll(play);
+		if (lastPlayed.isCampaign()) {
+			screens.replaceAll(title);
+			screens.open(campaignScreen);
+			screens.flashTo(lastPlayed);
+		} else {
+			screens.replaceAll(lastPlayed);
+		}
 	}
 
 	@Override
@@ -312,7 +325,7 @@ public class OhHeckGame extends Game implements GameHost {
 				p.dispose();
 			}
 		}
-		play = campaignPlay = null;
+		play = campaignPlay = lastPlayed = null;
 		campaignScreen.openChapter(null);
 		title.replayIntro();
 		screens.replaceAll(title);
@@ -321,8 +334,8 @@ public class OhHeckGame extends Game implements GameHost {
 
 	@Override
 	public boolean hasGameInProgress() {
-		if (play != null) {
-			return !play.isGameOver();
+		if (lastPlayed != null) {
+			return !lastPlayed.isGameOver();
 		}
 		return records.hasSavedGame();
 	}

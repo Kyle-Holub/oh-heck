@@ -48,7 +48,8 @@ public class CampaignScreen extends BaseScreen {
 	private static final float PLAQUE_W = 200, PLAQUE_H = 300, PLAQUE_GAP = 54, PADLOCK = 46, RISE_STAGGER = 0.08f, LIFT = 26, ICON = 64,
 			STAGE_ICON = 70;
 	private static final String MAP_LINE = "Four taverns, four champions. Win each chapter's duel to open the road ahead.";
-	private static final float GLOW_W = 1.9f, GLOW_H = 1.6f;
+	private static final float GLOW_W = 1.9f, GLOW_H = 1.6f, GILT = 1.3f, FIT_PAD = 12, STAGE_TEXT = 1.1f, STAGE_TEXT_LEAST = 0.75f,
+			STAGE_TEXT_ROOM = 30;
 	private static final Color GLOW = new Color(1f, 0.78f, 0.4f, 0.3f);
 	private static final Tween LAYING = Tween.over(0.35f, Ease.OUT);
 	private static final float CAPTION_H = 112, STAGE_CAPTION_H = 136, CAPTION_W = 860, BIG_W = 170, BIG_H = BIG_W * 98 / 73, SMALL_W = 120,
@@ -583,7 +584,7 @@ public class CampaignScreen extends BaseScreen {
 		paint.fade(a);
 		paint.frame(assets.panel, 30, 12, boxW, STAGE_CAPTION_H);
 		paint.fade(1f);
-		paint.ui(1.1f, Palette.CREAM, a).draw(batch, stageText, 52, 12 + STAGE_CAPTION_H - 18, boxW - 44, Align.left, true);
+		paint.ui(stageTextSize(boxW - 44), Palette.CREAM, a).draw(batch, stageText, 52, 12 + STAGE_CAPTION_H - 18, boxW - 44, Align.left, true);
 		paint.button(goButton, briefing.go(), w - 30 - bw / 2, 12 + (STAGE_CAPTION_H - 44) / 2, bw, 44, assets.button);
 	}
 
@@ -592,11 +593,11 @@ public class CampaignScreen extends BaseScreen {
 		case TABLE -> assets.stepTable;
 		case WIN -> assets.badge;
 		case SHOTS -> assets.stepShots;
-		case CHAMPION -> assets.stepDuel;
+		case CHAMPION -> championBadge();
 		default -> null;
 		};
 		if (icon != null) {
-			smallCard(cx, cy, icon, p.figure(), a);
+			smallCard(cx, cy, icon, p.figure(), a, p.picture() == Briefing.Picture.CHAMPION);
 			return;
 		}
 		float x = cx - SMALL_W / 2, y = cy - SMALL_H / 2;
@@ -604,15 +605,22 @@ public class CampaignScreen extends BaseScreen {
 		batch.setColor(1, 1, 1, a);
 		batch.draw(assets.campaignFace, x, y, SMALL_W, SMALL_H);
 		batch.setColor(Color.WHITE);
-		paint.textIn(paint.serif(2.6f, Palette.GOLD_LIGHT, a), p.figure(), x, cy - 20, SMALL_W, 40);
-		paint.textIn(paint.ui(0.85f, Palette.GOLD, a), p.heading().toUpperCase(), x, y + 14, SMALL_W, 20);
+		fit(true, 2.6f, Palette.GOLD_LIGHT, a, p.figure(), x, cy - 20, SMALL_W, 40);
+		String heading = p.heading().toUpperCase();
+		BitmapFont f = paint.ui(0.85f, Palette.GOLD, a);
+		paint.glyphs.setText(f, heading);
+		if (paint.glyphs.width > SMALL_W - FIT_PAD) {
+			paint.ui(0.7f, Palette.GOLD, a).draw(batch, heading, x + FIT_PAD / 2, y + 52, SMALL_W - FIT_PAD, Align.center, true);
+		} else {
+			paint.textIn(f, heading, x, y + 14, SMALL_W, 20);
+		}
 	}
 
 	private void drawPicture(Briefing.Page p, float cy, float a) {
 		Chapter c = briefing.chapter();
 		switch (p.picture()) {
 		case CHAPTER:
-			bigCard(w / 2, cy, assets.emblem(c.emblem), p.figure(), a);
+			bigCard(w / 2, cy, assets.emblem(c.emblem), p.figure(), a, false);
 			paint.centred(paint.ui(0.9f, Palette.GOLD, a), "CHAPTER", w / 2, cy + BIG_H / 2 - 20);
 			break;
 		case HOUSE_RULES:
@@ -626,7 +634,7 @@ public class CampaignScreen extends BaseScreen {
 					glow(rx - SMALL_W / 2, ry - SMALL_H / 2, SMALL_W, SMALL_H);
 				}
 				Player pl = player(c, i);
-				smallCard(rx, ry, i == CHAMPION ? assets.stepDuel : assets.levelBadge[pl.level.ordinal()], pl.name, a);
+				smallCard(rx, ry, assets.levelBadge[pl.level.ordinal()], pl.name, a, i == CHAMPION);
 			}
 			if (rival > 0) {
 				Player shown = player(c, rival);
@@ -637,30 +645,69 @@ public class CampaignScreen extends BaseScreen {
 			}
 			break;
 		case CHAMPION:
-			bigCard(w / 2, cy, assets.stepDuel, p.figure(), a);
+			bigCard(w / 2, cy, championBadge(), p.figure(), a, true);
 			break;
 		}
 	}
 
-	private void bigCard(float cx, float cy, Texture icon, String label, float a) {
+	private void fit(boolean serif, float size, Color c, float a, String s, float x, float y, float bw, float bh) {
+		float room = bw - FIT_PAD;
+		BitmapFont f = serif ? paint.serif(size, c, a) : paint.ui(size, c, a);
+		paint.glyphs.setText(f, s);
+		if (paint.glyphs.width > room) {
+			float smaller = size * room / paint.glyphs.width;
+			f = serif ? paint.serif(smaller, c, a) : paint.ui(smaller, c, a);
+		}
+		paint.textIn(f, s, x, y, bw, bh);
+	}
+
+	private float stageTextSize(float width) {
+		if (stageSize == 0) {
+			stageSize = STAGE_TEXT;
+			while (stageSize > STAGE_TEXT_LEAST) {
+				paint.glyphs.setText(paint.ui(stageSize), stageText, 0, stageText.length(), Palette.CREAM, width, Align.left, true, null);
+				if (paint.glyphs.height <= STAGE_CAPTION_H - STAGE_TEXT_ROOM) {
+					break;
+				}
+				stageSize -= 0.05f;
+			}
+		}
+		return stageSize;
+	}
+
+	private float stageSize;
+
+	private Texture championBadge() {
+		return assets.levelBadge[briefing.chapter().champion().level.ordinal()];
+	}
+
+	private void icon(Texture icon, float cx, float cy, float size, boolean gilt) {
+		batch.draw(icon, cx - size / 2, cy - size / 2, size, size);
+		if (gilt) {
+			float ring = size * GILT;
+			batch.draw(assets.giltRing, cx - ring / 2, cy - ring / 2, ring, ring);
+		}
+	}
+
+	private void bigCard(float cx, float cy, Texture icon, String label, float a, boolean gilt) {
 		float x = cx - BIG_W / 2, y = cy - BIG_H / 2;
 		glow(x, y, BIG_W, BIG_H);
 		art.shadow(x, y, BIG_W, BIG_H, 8);
 		batch.setColor(1, 1, 1, a);
 		batch.draw(assets.campaignFace, x, y, BIG_W, BIG_H);
-		batch.draw(icon, cx - BIG_ICON / 2, cy - BIG_ICON / 2 + 6, BIG_ICON, BIG_ICON);
+		icon(icon, cx, cy + 6, gilt ? BIG_ICON / GILT : BIG_ICON, gilt);
 		batch.setColor(Color.WHITE);
-		paint.textIn(paint.serif(1.3f, Palette.GOLD_LIGHT, a), label, x, y + 22, BIG_W, 28);
+		fit(true, 1.3f, Palette.GOLD_LIGHT, a, label, x, y + 22, BIG_W, 28);
 	}
 
-	private void smallCard(float cx, float cy, Texture icon, String label, float a) {
+	private void smallCard(float cx, float cy, Texture icon, String label, float a, boolean gilt) {
 		float x = cx - SMALL_W / 2, y = cy - SMALL_H / 2;
 		art.shadow(x, y, SMALL_W, SMALL_H, 4);
 		batch.setColor(1, 1, 1, a);
 		batch.draw(assets.campaignFace, x, y, SMALL_W, SMALL_H);
-		batch.draw(icon, cx - ICON / 2, cy - ICON / 2 + 8, ICON, ICON);
+		icon(icon, cx, cy + 8, gilt ? ICON / GILT : ICON, gilt);
 		batch.setColor(Color.WHITE);
-		paint.textIn(paint.serif(1.1f, Palette.GOLD_LIGHT, a), label, x, y + 16, SMALL_W, 24);
+		fit(true, 1.1f, Palette.GOLD_LIGHT, a, label, x, y + 16, SMALL_W, 24);
 	}
 
 	private void glow(float x, float y, float cw, float ch) {
@@ -740,6 +787,7 @@ public class CampaignScreen extends BaseScreen {
 		page = 0;
 		rival = 0;
 		stageText.setLength(0);
+		stageSize = 0;
 		for (Briefing.Page p : b.pages()) {
 			stageText.append(stageText.length() > 0 ? " " : "").append(p.line());
 		}
