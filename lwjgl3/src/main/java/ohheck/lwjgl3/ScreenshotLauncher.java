@@ -32,6 +32,7 @@ import ohheck.records.Stats;
 import ohheck.rules.Match;
 import ohheck.screens.CampaignScreen;
 import ohheck.screens.HighScoresScreen;
+import ohheck.screens.PlayMenuScreen;
 import ohheck.screens.PlayersScreen;
 import ohheck.screens.TitleScreen;
 import ohheck.table.PlayScreen;
@@ -42,7 +43,7 @@ import ohheck.table.PlayScreen;
  */
 public class ScreenshotLauncher {
 
-	private static final String[] WANTED = { "intro", "title", "zooming", "play", "setup", "highscores", "statistics", "badges", "options", "players", "campaign", "entering", "brief:chapter", "chapter:1", "brief:table", "shot:lone-ace", "cleared", "tip:welcome", "tip:trump", "tip:bid", "picking", "shuffle:1", "deal:3", "bid:3",
+	private static final String[] WANTED = { "intro", "title", "zooming", "play", "setup", "highscores", "statistics", "badges", "options", "players", "corridor", "campaign", "entering", "brief:chapter", "chapter:1", "brief:table", "shot:lone-ace", "cleared", "tip:welcome", "tip:trump", "tip:bid", "picking", "shuffle:1", "deal:3", "bid:3",
 			"trick:4", "collect:4", "trickwon:", "handend:4", "handover:4", "deal:4", "deal:7", "bidding:7", "menu:7", "tricks:7", "tricks:7:", "play:8:",
 			"tossing", "gameover" };
 
@@ -72,6 +73,9 @@ public class ScreenshotLauncher {
 		}
 		if (state.equals("title")) {
 			return 10;
+		}
+		if (state.equals("corridor")) {
+			return 7;
 		}
 		if (state.equals("zooming") || state.equals("entering")) {
 			return 3;
@@ -236,7 +240,8 @@ public class ScreenshotLauncher {
 			then("badges", 1.5f, s -> game.showOptions());
 			then("options", 1.5f, s -> game.showPlayers());
 			then("players", 1.0f, s -> ((PlayersScreen) s).scrollToEnd());
-			then("players", 1.2f, s -> game.showCampaign());
+			then("players", 1.2f, s -> game.showPlayMenu());
+			then("play", 1.0f, s -> ((PlayMenuScreen) s).walkToCampaign());
 			then("campaign", 1.5f, s -> ((CampaignScreen) s).enter(Chapter.ONE));
 			then("brief:chapter", 1.5f, s -> ((CampaignScreen) s).go());
 			then("chapter:1", 1.5f, s -> ((CampaignScreen) s).briefTable(Chapter.ONE));
