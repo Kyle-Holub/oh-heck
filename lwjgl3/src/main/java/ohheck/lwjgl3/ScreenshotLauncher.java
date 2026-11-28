@@ -80,7 +80,7 @@ public class ScreenshotLauncher {
 			return 4;
 		}
 		if (state.equals("picking")) {
-			return 5;
+			return 10;
 		}
 		if (state.equals("entering")) {
 			return 6;
